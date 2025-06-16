@@ -123,7 +123,7 @@ body {
 
 .homepage-name-container {
     display: flex;
-    align-items: flex-end;
+    align-items: baseline;
     justify-content: center;
     gap: 1rem;
     position: relative;
@@ -134,15 +134,13 @@ body {
     width: 4.5rem;
     height: 4.5rem;
     display: inline-block;
-    vertical-align: baseline;
-    margin-top: -0.15rem;
-    margin-bottom: -0.05rem;
     color: var(--dark-brown);
     opacity: 0;
     transform: translateY(10px);
     transition: opacity 0.8s ease,
                 transform 0.8s ease,
                 color 1.5s ease;
+    align-self: baseline;
 }
 
 /* Fade-in animation */
@@ -872,15 +870,13 @@ body {
         width: 2.5rem;
         height: 2.5rem;
         display: inline-block;
-        vertical-align: baseline;
-        margin-top: -0.15rem;
-        margin-bottom: -0.05rem;
         color: var(--dark-brown);
         opacity: 0;
         transform: translateY(10px);
         transition: opacity 0.8s ease,
                     transform 0.8s ease,
                     color 1.5s ease;
+        align-self: baseline;
     }
 
     .homepage-name-shadow {
