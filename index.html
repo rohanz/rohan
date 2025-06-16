@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rohan - Personal Brand</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="./assets/css/style.css">
+    <link rel="icon" type="image/png" href="./favicon.png">
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar -->
+        <nav class="sidebar" id="sidebar">
+            <div class="logo">
+                <h1><span class="logo-link" onclick="goToHomepage()">rohan.jk</span></h1>
+            </div>
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <span class="nav-link" data-section="music">music</span>
+                </li>
+                <li class="nav-item">
+                    <span class="nav-link" data-section="projects">projects</span>
+                </li>
+                <li class="nav-item">
+                    <span class="nav-link" data-section="about">about me</span>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content homepage-active" id="mainContent">
+            <!-- Homepage -->
+            <section id="homepage" class="homepage active">
+                <div class="homepage-content">
+                    <div class="homepage-name-container">
+                        <img src="./assets/images/logo.svg" alt="Logo" class="homepage-logo">
+                        <div style="position: relative;">
+                            <div class="homepage-name-shadow">rohan.jk</div>
+                            <h1 class="homepage-name">rohan.jk</h1>
+                        </div>
+                    </div>
+                    <div class="homepage-menu">
+                        <span class="homepage-menu-item" data-section="music">music</span>
+                        <span class="homepage-menu-item" data-section="projects">projects</span>
+                        <span class="homepage-menu-item" data-section="about">about me</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Music Section -->
+            <section id="music" class="section">
+                <div class="music-list">
+                    <div style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+                        Loading music...
+                    </div>
+                </div>
+            </section>
+
+            <!-- Projects Section -->
+            <section id="projects" class="section">
+                <div id="projects-list">
+                    <div class="projects-list">
+                        <div id="loading-projects" style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+                            Loading projects...
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- About Section -->
+            <section id="about" class="section">
+                <div class="about-grid">
+                    <div class="bio-section">
+                        <h3 class="bio-title">bio</h3>
+                        <p class="bio-text">
+                            hey, i'm rohan! this should be a compelling introduction to who you are, what you do, and what drives you. keep it personal but professional.
+                        </p>
+                        <p class="bio-text">
+                            you can add multiple paragraphs to tell your story effectively.
+                        </p>
+                    </div>
+
+                    <div class="cv-section">
+                        <h3 class="bio-title">resume/cv</h3>
+                        <a href="https://drive.google.com/file/d/1NGaHHvSA33uMK2TnGepP4IhQNMyEjIcc/view?usp=sharing" class="cv-download" target="_blank">
+                            <i class="fas fa-download"></i> download cv
+                        </a>
+                        
+                        <div class="cv-content">
+                            <h4>experience</h4>
+                            <p><strong>job title</strong> - company name (2022-present)</p>
+                            <p>brief description of your role and achievements.</p>
+                            
+                            <h4>education</h4>
+                            <p><strong>degree</strong> - university name (2018-2022)</p>
+                            <p>relevant coursework or achievements.</p>
+                            
+                            <h4>skills</h4>
+                            <p>list your key skills here, separated by commas or in a structured format.</p>
+                        </div>
+                    </div>
+
+                    <div class="scrolling-testimonials">
+                        <div class="testimonials-scroll-container">
+                            <div class="scroll-testimonial">
+                                <div class="scroll-quote">"Working with them was an absolute pleasure. Their attention to detail and creative problem-solving skills are exceptional."</div>
+                                <div class="scroll-author">— Sarah Johnson</div>
+                            </div>
+                            
+                            <div class="scroll-testimonial">
+                                <div class="scroll-quote">"Incredible technical skills paired with great communication. They delivered beyond our expectations."</div>
+                                <div class="scroll-author">— Mike Chen</div>
+                            </div>
+                            
+                            <div class="scroll-testimonial">
+                                <div class="scroll-quote">"A true professional who brings both creativity and reliability to every project."</div>
+                                <div class="scroll-author">— Emily Rodriguez</div>
+                            </div>
+                            
+                            <div class="scroll-testimonial">
+                                <div class="scroll-quote">"Their innovative approach and dedication to quality made our collaboration incredibly successful."</div>
+                                <div class="scroll-author">— David Park</div>
+                            </div>
+                            
+                            <div class="scroll-testimonial">
+                                <div class="scroll-quote">"Outstanding work ethic and creative vision. A pleasure to collaborate with on every level."</div>
+                                <div class="scroll-author">— Lisa Wang</div>
+                            </div>
+                            
+                            <div class="scroll-testimonial">
+                                <div class="scroll-quote">"Brings fresh perspectives and technical excellence to every challenge."</div>
+                                <div class="scroll-author">— Alex Thompson</div>
+                            </div>
+                            
+                            <div class="scroll-testimonial">
+                                <div class="scroll-quote">"Consistently delivers high-quality results with remarkable attention to detail."</div>
+                                <div class="scroll-author">— Maria Santos</div>
+                            </div>
+                            
+                            <div class="scroll-testimonial">
+                                <div class="scroll-quote">"Their passion for excellence is evident in every project they touch."</div>
+                                <div class="scroll-author">— James Wilson</div>
+                            </div>
+                            
+                            <!-- Duplicate set for seamless loop -->
+                            <div class="scroll-testimonial">
+                                <div class="scroll-quote">"Working with them was an absolute pleasure. Their attention to detail and creative problem-solving skills are exceptional."</div>
+                                <div class="scroll-author">— Sarah Johnson</div>
+                            </div>
+                            
+                            <div class="scroll-testimonial">
+                                <div class="scroll-quote">"Incredible technical skills paired with great communication. They delivered beyond our expectations."</div>
+                                <div class="scroll-author">— Mike Chen</div>
+                            </div>
+                            
+                            <div class="scroll-testimonial">
+                                <div class="scroll-quote">"A true professional who brings both creativity and reliability to every project."</div>
+                                <div class="scroll-author">— Emily Rodriguez</div>
+                            </div>
+                            
+                            <div class="scroll-testimonial">
+                                <div class="scroll-quote">"Their innovative approach and dedication to quality made our collaboration incredibly successful."</div>
+                                <div class="scroll-author">— David Park</div>
+                            </div>
+                            
+                            <div class="scroll-testimonial">
+                                <div class="scroll-quote">"Outstanding work ethic and creative vision. A pleasure to collaborate with on every level."</div>
+                                <div class="scroll-author">— Lisa Wang</div>
+                            </div>
+                            
+                            <div class="scroll-testimonial">
+                                <div class="scroll-quote">"Brings fresh perspectives and technical excellence to every challenge."</div>
+                                <div class="scroll-author">— Alex Thompson</div>
+                            </div>
+                            
+                            <div class="scroll-testimonial">
+                                <div class="scroll-quote">"Consistently delivers high-quality results with remarkable attention to detail."</div>
+                                <div class="scroll-author">— Maria Santos</div>
+                            </div>
+                            
+                            <div class="scroll-testimonial">
+                                <div class="scroll-quote">"Their passion for excellence is evident in every project they touch."</div>
+                                <div class="scroll-author">— James Wilson</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Floating Contact Info -->
+        <div class="floating-contact" id="floatingContact">
+            <div class="contact-item">
+                <a href="https://www.instagram.com/rrohan.jk/" class="contact-link" target="_blank">
+                    <i class="fab fa-instagram"></i>
+                </a>
+            </div>
+            
+            <div class="contact-item">
+                <a href="https://open.spotify.com/artist/3I1V2FxqX2qs3zrUY0fCPp?si=SiJ7DZ_xQXiNG9uy_G1SsQ" class="contact-link" target="_blank">
+                    <i class="fab fa-spotify"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script src="./assets/js/main.js"></script>
+</body>
+</html>
