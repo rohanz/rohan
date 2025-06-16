@@ -131,22 +131,38 @@ body {
 }
 
 .homepage-logo {
-    width: 3.5rem;
-    height: 3.5rem;
+    width: 4.5rem;
+    height: 4.5rem;
+    display: inline-block;
+    vertical-align: baseline;
+    margin-top: -0.15rem;
+    margin-bottom: -0.05rem;
+    color: var(--dark-brown);
     opacity: 0;
     transform: translateY(10px);
-    transition: opacity 0.8s ease, transform 0.8s ease, filter 1.5s ease;
-    filter: brightness(0) saturate(100%) invert(17%) sepia(16%) saturate(1285%) hue-rotate(357deg) brightness(94%) contrast(90%);
+    transition: opacity 0.8s ease,
+                transform 0.8s ease,
+                color 1.5s ease;
 }
 
+/* Fade-in animation */
 .homepage-logo.animate {
     opacity: 1;
     transform: translateY(0);
 }
 
-.homepage-logo.fade-to-amber {
-    filter: brightness(0) saturate(100%) invert(67%) sepia(95%) saturate(1664%) hue-rotate(359deg) brightness(102%) contrast(102%);
+/* Use currentColor for inline SVG paths */
+.homepage-logo path {
+    fill: currentColor;
 }
+
+/* Fade-to-amber on sync with text shadow */
+.homepage-logo.fade-to-amber {
+    color: #FFCC80;
+}
+
+
+
 
 .homepage-name {
     font-size: 5.5rem;
@@ -853,8 +869,18 @@ body {
     }
 
     .homepage-logo {
-        width: 2rem;
-        height: 2rem;
+        width: 2.5rem;
+        height: 2.5rem;
+        display: inline-block;
+        vertical-align: baseline;
+        margin-top: -0.15rem;
+        margin-bottom: -0.05rem;
+        color: var(--dark-brown);
+        opacity: 0;
+        transform: translateY(10px);
+        transition: opacity 0.8s ease,
+                    transform 0.8s ease,
+                    color 1.5s ease;
     }
 
     .homepage-name-shadow {
