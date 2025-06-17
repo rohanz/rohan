@@ -155,62 +155,83 @@ function showMusicErrorMessage() {
         </div>`;
 }
 
-// Load projects from Google Sheets
+// Simple front-matter parser using js-yaml
+function parseFrontMatter(text) {
+  if (!text.startsWith('---')) {
+    return { data: {}, content: text };
+  }
+  // Find the closing front-matter delimiter on its own line
+  const fmEndMarker = '\n---';
+  const fmEndIndex = text.indexOf(fmEndMarker, 3);
+  if (fmEndIndex === -1) {
+    return { data: {}, content: text };
+  }
+  // Extract front-matter block and the rest of the content
+  const fmText = text.slice(3, fmEndIndex).trim();
+  const content = text.slice(fmEndIndex + fmEndMarker.length).trimStart();
+  let data = {};
+  try {
+    data = jsyaml.load(fmText) || {};
+  } catch (e) {
+    console.error('Error parsing front matter:', e);
+  }
+  return { data, content };
+}
+
+// Load projects from Markdown files
 function loadProjects() {
-    const SHEET_ID = '1et5adrpulwSRzli18GykZl8XCPwB81_LLfskspjhSLo';
-    const SHEET_NAME = 'Sheet1';
-    
-    const SHEETS_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&tq=SELECT%20*&sheet=${SHEET_NAME}`;
-    const PROXY_URL = 'https://api.allorigins.win/get?url=';
-    const FULL_URL = PROXY_URL + encodeURIComponent(SHEETS_URL);
-    
-    fetch(FULL_URL)
-        .then(response => response.json())
-        .then(data => {
-            const jsonpText = data.contents;
-            
-            const jsonStart = jsonpText.indexOf('(') + 1;
-            const jsonEnd = jsonpText.lastIndexOf(')');
-            const jsonString = jsonpText.substring(jsonStart, jsonEnd);
-            const sheetsData = JSON.parse(jsonString);
-            
-            const projects = parseGoogleSheetsData(sheetsData);
+    fetch('/projects/index.json')
+        .then(res => res.json())
+        .then(files => Promise.all(files.map(file => fetch(`/projects/${file}`).then(r => r.text()))))
+        .then(markdownContents => {
+            const projects = markdownContents.map(text => {
+                const { data, content } = parseFrontMatter(text);
+                return {
+                    title: data.title || '',
+                    summary: data.summary || '',
+                    image: data.image || '',
+                    technologies: data.technologies || '',
+                    descriptionHTML: marked.parse ? marked.parse(content) : marked(content)
+                };
+            });
             displayProjects(projects);
         })
         .catch(error => {
-            console.error('Error loading projects:', error);
+            console.error('❌ Error loading projects:', error);
             showErrorMessage();
         });
 }
 
-// Parse Google Sheets JSON data
-function parseGoogleSheetsData(data) {
-    const projects = [];
-    
-    if (!data.table || !data.table.rows) {
-        return projects;
+// Display projects parsed from Markdown
+function displayProjects(projects) {
+    const projectsList = document.querySelector('.projects-list');
+    if (projects.length === 0) {
+        projectsList.innerHTML = '<div style="text-align: center; padding: 2rem; color: var(--text-secondary);">No projects found. Add some markdown files to the projects folder!</div>';
+        return;
     }
-    
-    const rows = data.table.rows;
-    
-    for (let i = 1; i < rows.length; i++) {
-        const row = rows[i];
-        if (row.c && row.c.length >= 1) {
-            const project = {
-                title: row.c[0] ? (row.c[0].v || '').toString() : '',
-                summary: row.c[1] ? (row.c[1].v || '').toString() : '',
-                description: row.c[2] ? (row.c[2].v || '').toString() : '',
-                image: row.c[3] ? (row.c[3].v || '').toString() : '',
-                technologies: row.c[4] ? (row.c[4].v || '').toString() : ''
-            };
-            
-            if (project.title && project.title.trim()) {
-                projects.push(project);
-            }
-        }
-    }
-    
-    return projects;
+
+    let projectsHTML = '';
+    projects.forEach((project, index) => {
+        const projectId = `project${index + 1}`;
+        const imageUrl = project.image || `https://placehold.co/600x300/6D4C41/FFF8E1?text=${encodeURIComponent(project.title)}`;
+        projectsHTML += `
+            <div class="project-item" onclick="toggleProject('${projectId}')">
+                <div class="project-header">
+                    <h3 class="project-title">${project.title}</h3>
+                    ${project.summary ? `<p class="project-summary">${project.summary}</p>` : ''}
+                </div>
+                <div id="${projectId}-details" class="project-details-inline">
+                    <img src="${imageUrl}" alt="${project.title}" class="project-image">
+                    <div class="project-description">
+                        ${project.descriptionHTML}
+                        ${project.technologies ? `<div class="project-technologies" style="margin-top: 1rem;"><strong>Technologies:</strong> ${project.technologies}</div>` : ''}
+                    </div>
+                </div>
+            </div>
+            ${index < projects.length - 1 ? '<div class="project-divider"></div>' : ''}
+        `;
+    });
+    projectsList.innerHTML = projectsHTML + '<div class="project-divider"></div>';
 }
 
 function showErrorMessage() {
@@ -221,52 +242,7 @@ function showErrorMessage() {
         </div>`;
 }
 
-// Display projects
-function displayProjects(projects) {
-    const projectsList = document.querySelector('.projects-list');
-    
-    if (projects.length === 0) {
-        projectsList.innerHTML = '<div style="text-align: center; padding: 2rem; color: var(--text-secondary);">No projects found. Add some projects to your Google Sheet!</div>';
-        return;
-    }
-
-    let projectsHTML = '';
-    
-    projects.forEach((project, index) => {
-        const projectId = `project${index + 1}`;
-        const imageUrl = project.image || `https://placehold.co/600x300/6D4C41/FFF8E1?text=${encodeURIComponent(project.title)}`;
-        
-        const descriptionParagraphs = project.description.split('\n\n').map(p => `<p>${p.trim()}</p>`).join('');
-        
-        const technologiesHTML = project.technologies ? 
-            `<div class="project-technologies" style="margin-top: 1rem;">
-                <strong>Technologies:</strong> ${project.technologies}
-            </div>` : '';
-
-        projectsHTML += `
-            <div class="project-item" onclick="toggleProject('${projectId}')">
-                <div class="project-header">
-                    <h3 class="project-title">${project.title}</h3>
-                    <p class="project-summary">${project.summary}</p>
-                </div>
-                <div id="${projectId}-details" class="project-details-inline">
-                    <img src="${imageUrl}" alt="${project.title}" class="project-image">
-                    <div class="project-description">
-                        ${descriptionParagraphs}
-                        ${technologiesHTML}
-                    </div>
-                </div>
-            </div>
-        `;
-
-        if (index < projects.length - 1) {
-            projectsHTML += '<div class="project-divider"></div>';
-        }
-    });
-
-    projectsHTML += '<div class="project-divider"></div>';
-    projectsList.innerHTML = projectsHTML;
-}
+// (Removed duplicate displayProjects function)
 
 // Load testimonials
 function loadTestimonials() {
