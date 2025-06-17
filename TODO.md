@@ -5,3 +5,4 @@ make text bigger in home page
 change tab text
 check phone scrolling
 add audio to music preview 
+decrease space between summary and project header
