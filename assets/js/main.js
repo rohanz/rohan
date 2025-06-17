@@ -48,7 +48,7 @@ function parseMusicData(data) {
     
     const rows = data.table.rows;
     
-    // Expected columns: Title, Artist, Spotify, YouTube, Apple Music, Summary
+    // Expected columns: Title, Artist, Spotify, YouTube, Apple Music, Summary, Video URL
     for (let i = 1; i < rows.length; i++) {
         const row = rows[i];
         if (row.c && row.c.length >= 1) {
@@ -58,7 +58,8 @@ function parseMusicData(data) {
                 spotifyUrl: row.c[2] ? (row.c[2].v || '').toString().trim() : '',
                 youtubeUrl: row.c[3] ? (row.c[3].v || '').toString().trim() : '',
                 appleMusicUrl: row.c[4] ? (row.c[4].v || '').toString().trim() : '',
-                summary: row.c[5] ? (row.c[5].v || '').toString().trim() : ''
+                summary: row.c[5] ? (row.c[5].v || '').toString().trim() : '',
+                videoUrl: row.c[6] ? (row.c[6].v || '').toString().trim() : ''
             };
             
             if (track.title && track.title.trim()) {
@@ -101,15 +102,23 @@ function displayMusic(tracks) {
 
         musicHTML += `
             <div class="music-item">
-                <div class="music-header">
-                    <h3 class="music-title">${track.title}</h3>
-                    ${track.artist ? `<p class="music-artist">${track.artist}</p>` : ''}
-                    ${track.summary ? `<p class="music-summary">${track.summary}</p>` : ''}
-                </div>
-                ${links.length > 0 ? `
-                    <div class="music-links">
-                        ${links.join('')}
+                <div class="music-content">
+                    <div class="music-header">
+                        <h3 class="music-title">${track.title}</h3>
+                        ${track.artist ? `<p class="music-artist">${track.artist}</p>` : ''}
+                        ${track.summary ? `<p class="music-summary">${track.summary}</p>` : ''}
                     </div>
+                    ${links.length > 0 ? `
+                        <div class="music-links">
+                            ${links.join('')}
+                        </div>
+                    ` : ''}
+                </div>
+                ${track.videoUrl ? `
+                    <video class="music-preview"
+                           src="${track.videoUrl}"
+                           muted loop preload="metadata">
+                    </video>
                 ` : ''}
             </div>
         `;
@@ -121,6 +130,20 @@ function displayMusic(tracks) {
 
     musicHTML += '<div class="music-divider"></div>';
     musicList.innerHTML = musicHTML;
+    
+    // Add hover event listeners after content is loaded
+    document.querySelectorAll('.music-item').forEach(item => {
+        const video = item.querySelector('.music-preview');
+        if (video) {
+            item.addEventListener('mouseenter', () => {
+                video.play().catch(() => {});
+            });
+            item.addEventListener('mouseleave', () => {
+                video.pause();
+                video.currentTime = 0;
+            });
+        }
+    });
 }
 
 function showMusicErrorMessage() {

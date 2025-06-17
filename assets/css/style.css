@@ -302,7 +302,7 @@ body {
     margin-left: 400px;
     padding: 4rem 6rem;
     max-width: calc(100vw - 400px);
-    overflow: hidden;
+    overflow-y: auto;
     height: 100vh;
 }
 
@@ -353,7 +353,14 @@ body {
 }
 
 .music-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 2rem;
     transition: all 0.3s ease;
+}
+
+.music-content {
+    flex: 1;
 }
 
 .music-header {
@@ -426,6 +433,21 @@ body {
     line-height: 1.5;
     margin-top: 0.5rem;
     opacity: 0.8;
+}
+
+/* Music preview video styles */
+.music-preview {
+    width: 600px;
+    height: auto;
+    border-radius: 8px;
+    object-fit: cover;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    align-self: center;
+}
+
+.music-item:hover .music-preview {
+    opacity: 0.75;
 }
 
 /* Music preview styles */
@@ -890,5 +912,18 @@ body {
 
     .homepage-menu-item {
         font-size: 1.2rem;
+    }
+
+    /* Mobile music item layout */
+    .music-item {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .music-preview {
+        width: 100%;
+        max-width: 300px;
+        height: 200px;
+        align-self: center;
     }
 }

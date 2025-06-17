@@ -1,1 +1,5 @@
-.DS_Store
+add loading pages for projects, music, testimonials
+add icon to menu bar
+add baby picture to about me
+make text bigger in home page
+change tab text
