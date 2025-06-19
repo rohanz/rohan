@@ -389,7 +389,7 @@ body {
     gap: 1.5rem;
     align-items: center;
     flex-wrap: wrap;
-    padding: 3rem 0 3rem 2rem; /* Add 2rem left padding to match projects */
+    padding: 0rem 0 0rem 1rem; /* Add 2rem left padding to match projects */
 
 }
 
