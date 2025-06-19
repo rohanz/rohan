@@ -131,7 +131,6 @@ function displayMusic(tracks) {
     musicHTML += '<div class="music-divider"></div>';
     musicList.innerHTML = musicHTML;
     
-    // Add hover event listeners after content is loaded
     document.querySelectorAll('.music-item').forEach(item => {
         const video = item.querySelector('.music-preview');
         if (video) {
@@ -160,13 +159,11 @@ function parseFrontMatter(text) {
   if (!text.startsWith('---')) {
     return { data: {}, content: text };
   }
-  // Find the closing front-matter delimiter on its own line
   const fmEndMarker = '\n---';
   const fmEndIndex = text.indexOf(fmEndMarker, 3);
   if (fmEndIndex === -1) {
     return { data: {}, content: text };
   }
-  // Extract front-matter block and the rest of the content
   const fmText = text.slice(3, fmEndIndex).trim();
   const content = text.slice(fmEndIndex + fmEndMarker.length).trimStart();
   let data = {};
@@ -206,43 +203,42 @@ function loadProjects() {
 function displayProjects(projects) {
     const projectsList = document.querySelector('.projects-list');
     if (projects.length === 0) {
-        projectsList.innerHTML = '<div style="text-align: center; padding: 2rem; color: var(--text-secondary);">No projects found. Add some markdown files to the projects folder!</div>';
+        projectsList.innerHTML = '<div style="text-align: center; padding: 2rem; color: var(--text-secondary);">No projects found.</div>';
         return;
     }
 
     let projectsHTML = '';
     projects.forEach((project, index) => {
-        const projectId = `project${index + 1}`;
-        const imageUrl = project.image || `https://placehold.co/600x300/6D4C41/FFF8E1?text=${encodeURIComponent(project.title)}`;
+        const projectId = `project${index}`;
+        const imageUrl = project.image || `https://placehold.co/800x400/6D4C41/FFF8E1?text=${encodeURIComponent(project.title)}`;
+        
+        // Simplified HTML structure for the new grid layout
         projectsHTML += `
-            <div class="project-item" onclick="toggleProject('${projectId}')">
-                <div class="project-header">
-                    <h3 class="project-title">${project.title}</h3>
-                    ${project.summary ? `<p class="project-summary">${project.summary}</p>` : ''}
-                </div>
-                <div id="${projectId}-details" class="project-details-inline">
+            <div class="project-item" id="${projectId}" onclick="toggleProject('${projectId}')">
+                <h3 class="project-title">${project.title}</h3>
+                ${project.summary ? `<p class="project-summary">${project.summary}</p>` : ''}
+                
+                <div class="project-details-inline">
                     <img src="${imageUrl}" alt="${project.title}" class="project-image">
                     <div class="project-description">
                         ${project.descriptionHTML}
-                        ${project.technologies ? `<div class="project-technologies" style="margin-top: 1rem;"><strong>Technologies:</strong> ${project.technologies}</div>` : ''}
+                        ${project.technologies ? `<div class="project-technologies" style="margin-top: 2rem;"><strong>Technologies:</strong> ${project.technologies}</div>` : ''}
                     </div>
                 </div>
             </div>
-            ${index < projects.length - 1 ? '<div class="project-divider"></div>' : ''}
+            <div class="project-divider"></div>
         `;
     });
-    projectsList.innerHTML = projectsHTML + '<div class="project-divider"></div>';
+    
+    projectsList.innerHTML = projectsHTML;
 }
 
 function showErrorMessage() {
-    document.getElementById('loading-projects').innerHTML = `
+    document.querySelector('.projects-list').innerHTML = `
         <div style="text-align: center; padding: 2rem; color: var(--text-secondary);">
-            <p>Unable to load projects from Google Sheets.</p>
-            <p style="font-size: 0.9em; margin-top: 0.5rem;">Make sure your Google Sheet is published to the web</p>
+            <p>Unable to load projects.</p>
         </div>`;
 }
-
-// (Removed duplicate displayProjects function)
 
 // Load testimonials
 function loadTestimonials() {
@@ -363,13 +359,11 @@ function triggerHomepageAnimation() {
     const menu = document.querySelector('.homepage-menu');
     const logo = document.querySelector('.homepage-logo');
     
-    // COMPLETELY reset all elements to initial invisible state
     name.classList.remove('animate');
     shadow.classList.remove('animate');
     menu.classList.remove('animate');
     logo.classList.remove('animate', 'fade-to-amber');
     
-    // Force elements to be invisible using both CSS and inline styles
     name.style.opacity = '0';
     name.style.transform = 'translateY(10px)';
     shadow.style.opacity = '0';
@@ -379,15 +373,12 @@ function triggerHomepageAnimation() {
     logo.style.opacity = '0';
     logo.style.transform = 'translateY(10px)';
     
-    // Force reflow to ensure reset is processed
     name.offsetHeight;
     shadow.offsetHeight;
     menu.offsetHeight;
     logo.offsetHeight;
     
-    // Wait a moment, then start the animation sequence
     setTimeout(() => {
-        // Clear inline styles but keep shadow hidden initially
         name.style.opacity = '';
         name.style.transform = '';
         menu.style.opacity = '';
@@ -395,20 +386,16 @@ function triggerHomepageAnimation() {
         logo.style.opacity = '';
         logo.style.transform = '';
         
-        // Start animation sequence
         setTimeout(() => {
-            // 1. Name and logo appear together
             name.classList.add('animate');
             logo.classList.add('animate');
         }, 300);
         
         setTimeout(() => {
-            // 2. Menu appears second
             menu.classList.add('animate');
         }, 700);
         
         setTimeout(() => {
-            // 3. Shadow appears and logo fades to amber
             shadow.style.opacity = '';
             shadow.style.visibility = '';
             shadow.classList.add('animate');
@@ -427,7 +414,6 @@ function goToHomepage() {
     const menu = document.querySelector('.homepage-menu');
     const logo = document.querySelector('.homepage-logo');
     
-    // IMMEDIATELY hide all elements to prepare for animation (no transition)
     name.style.transition = 'none';
     shadow.style.transition = 'none';
     menu.style.transition = 'none';
@@ -447,13 +433,11 @@ function goToHomepage() {
     logo.style.opacity = '0';
     logo.style.transform = 'translateY(10px)';
     
-    // Force reflow to apply immediate changes
     name.offsetHeight;
     shadow.offsetHeight;
     menu.offsetHeight;
     logo.offsetHeight;
     
-    // Re-enable transitions after elements are hidden
     setTimeout(() => {
         name.style.transition = '';
         shadow.style.transition = '';
@@ -461,28 +445,16 @@ function goToHomepage() {
         logo.style.transition = '';
     }, 50);
     
-    // Hide sidebar completely on both desktop and mobile
     sidebar.classList.remove('show');
-    
-    // Reset main content to homepage mode
     mainContent.classList.add('homepage-active');
     mainContent.classList.remove('nav-visible');
     homepage.classList.remove('nav-visible');
     
-    // Remove active from all nav links
-    document.querySelectorAll('.nav-link').forEach(l => {
-        l.classList.remove('active');
-    });
+    document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+    document.querySelectorAll('.section').forEach(section => section.classList.remove('active'));
     
-    // Hide all sections
-    document.querySelectorAll('.section').forEach(section => {
-        section.classList.remove('active');
-    });
-    
-    // Show homepage
     homepage.classList.add('active');
     
-    // Start the animation sequence after elements are hidden
     setTimeout(() => {
         triggerHomepageAnimation();
     }, 100);
@@ -497,50 +469,29 @@ function showSection(sectionName) {
     const sidebar = document.getElementById('sidebar');
     const mainContent = document.getElementById('mainContent');
     
-    console.log('Showing section:', sectionName);
-    
-    // Hide homepage
     homepage.classList.remove('active');
-    
-    // Show sidebar with slide animation
     sidebar.classList.add('show');
-    
     mainContent.classList.remove('homepage-active');
     
-    // Reset nav links
-    const navLinks = document.querySelectorAll('.nav-link');
-    navLinks.forEach(l => {
-        l.classList.remove('active');
-    });
+    document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
     
-    // Add active class to current nav link
     const activeLink = document.querySelector(`[data-section="${sectionName}"]`);
     if (activeLink) {
         activeLink.classList.add('active');
     }
     
-    // RESET all sections to starting position
-    document.querySelectorAll('section').forEach(section => {
+    document.querySelectorAll('.section').forEach(section => {
         section.classList.remove('active');
-        section.style.transform = 'translateX(100vw)';
     });
     
     const targetSection = document.getElementById(sectionName);
     if (targetSection) {
-        console.log('Will animate section after delay:', sectionName);
-        
-        setTimeout(() => {
-            targetSection.classList.add('active');
-            setTimeout(() => {
-                targetSection.style.transform = 'translateX(0)';
-            }, 50);
-        }, 100);
+        targetSection.classList.add('active');
     }
     
     hideProject();
     updateFloatingContactVisibility();
     
-    // Start testimonial tracking and load content based on section
     if (sectionName === 'about') {
         loadTestimonials();
         setTimeout(startTestimonialTracking, 800);
@@ -557,34 +508,38 @@ function showSection(sectionName) {
 
 // Project toggle functionality
 function toggleProject(projectId) {
-    const projectDetails = document.getElementById(projectId + '-details');
-    
-    if (currentOpenProject === projectId) {
-        projectDetails.style.height = '0px';
+    const projectItem = document.getElementById(projectId);
+    if (!projectItem) return;
+
+    const details = projectItem.querySelector('.project-details-inline');
+
+    // If another project is open, close it first.
+    if (currentOpenProject && currentOpenProject !== projectId) {
+        const lastOpenProject = document.getElementById(currentOpenProject);
+        if(lastOpenProject) {
+            lastOpenProject.classList.remove('open');
+            const lastOpenDetails = lastOpenProject.querySelector('.project-details-inline');
+            lastOpenDetails.style.maxHeight = '0';
+        }
+    }
+
+    // Toggle the clicked project
+    if (projectItem.classList.contains('open')) {
+        // Close it
+        projectItem.classList.remove('open');
+        details.style.maxHeight = '0';
         currentOpenProject = null;
-        return;
+    } else {
+        // Open it
+        projectItem.classList.add('open');
+        details.style.maxHeight = details.scrollHeight + "px";
+        currentOpenProject = projectId;
     }
-    
-    if (currentOpenProject) {
-        const currentDetails = document.getElementById(currentOpenProject + '-details');
-        currentDetails.style.height = '0px';
-    }
-    
-    projectDetails.style.height = 'auto';
-    const targetHeight = projectDetails.scrollHeight;
-    projectDetails.style.height = '0px';
-    
-    requestAnimationFrame(() => {
-        projectDetails.style.height = targetHeight + 'px';
-    });
-    
-    currentOpenProject = projectId;
 }
 
 function hideProject() {
     if (currentOpenProject) {
-        document.getElementById(currentOpenProject + '-details').style.height = '0px';
-        currentOpenProject = null;
+        toggleProject(currentOpenProject); // Use the toggle function to properly close it
     }
 }
 
@@ -678,4 +633,4 @@ document.addEventListener('DOMContentLoaded', function() {
     setTimeout(() => {
         triggerHomepageAnimation();
     }, 500);
-});
+});e

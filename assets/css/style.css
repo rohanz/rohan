@@ -159,9 +159,6 @@ body {
     color: #FFCC80;
 }
 
-
-
-
 .homepage-name {
     font-size: 5.5rem;
     font-weight: 700;
@@ -316,7 +313,6 @@ body {
 /* SECTIONS - slide in from right */
 .section {
     display: none;
-    /* Allow sections to expand and scroll naturally */
     height: auto;
     overflow: visible;
     padding-right: 1rem;
@@ -383,7 +379,7 @@ body {
 .music-divider {
     height: 1px;
     background-color: #D7CCC8;
-    margin: 1rem 0;
+    margin: 3rem 0;
     width: 100%;
     display: block;
 }
@@ -492,72 +488,122 @@ body {
     to { transform: rotate(360deg); }
 }
 
-/* Projects Section */
+/*
+██████╗ ██████╗  ██████╗ ██╗     ███████╗ ██████╗████████╗
+██╔══██╗██╔══██╗██╔═══██╗██║     ██╔════╝██╔════╝╚══██╔══╝
+██████╔╝██████╔╝██║   ██║██║     █████╗  ██║        ██║
+██╔═══╝ ██╔══██╗██║   ██║██║     ██╔══╝  ██║        ██║
+██║     ██║  ██║╚██████╔╝███████╗███████╗╚██████╗   ██║
+╚═╝     ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚══════╝ ╚═════╝   ╚═╝
+*/
+
 .projects-list {
-    max-width: 1300px;
-    padding-left: 20rem;
+    max-width: 100%;
+    padding-left: 0;
 }
 
+/* Use CSS Grid for the new alignment */
 .project-item {
+    display: grid;
+    /* Define two columns: one for the title (auto-width), one for the rest (1fr) */
+    grid-template-columns: 450px 1fr;
+    /* Align all items to their text baseline */
+    align-items: baseline;
+    padding: 3rem 2rem 1.5rem;
+    column-gap: 3rem; /* Space between title and summary */
+    row-gap: 1.5rem;   /* Space between header and details */
     cursor: pointer;
 }
 
-.project-header {
-    padding: 3rem 0;
-}
-
+/* The project title will now be the clickable toggle */
 .project-title {
     font-size: 1.8rem;
     font-weight: 600;
-    margin-bottom: 1rem;
     color: var(--dark-brown);
-    transition: color 0.3s ease, transform 0.3s ease;
+    transition: color 0.3s ease;
+    grid-column: 1 / 2; /* Place in the first column */
+    grid-row: 1; /* Place in the first row */
 }
 
 .project-item:hover .project-title {
     color: #A1887F;
-    transform: translateX(5px);
 }
 
+/* The summary sits next to the title */
 .project-summary {
-    color: var(--text-secondary);
-    font-weight: 400;
+    position: relative;
+    transform: translateY(-8px); /* Move upwards by 3 pixels */
+    grid-column: 2 / 3; /* Place in the second column */
+    grid-row: 1; /* Place in the first row */
+    color: #A1887F;             /* Lighter color */
+    font-weight: 600;           /* Bolder text */
+    font-style: italic;         /* Italic text */
     line-height: 1.6;
     font-size: 1.1rem;
-    margin-bottom: 1rem;
+    max-width: 800px;
+    
 }
 
-.project-divider {
-    height: 1px;
-    background-color: #D7CCC8;
-    margin: 1rem;
-}
-
+/* The expandable details container */
 .project-details-inline {
+    /* This container will span the second column ONLY, aligning with the summary */
+    grid-column: 2 / 3;
+    grid-row: 2; /* Place in the second row, underneath the header */
+
+    max-width: 800px;
+
+    /* Animation styles */
+    max-height: 0;
     overflow: hidden;
-    height: 0;
-    transition: height 0.5s ease-in-out;
+    transition: max-height 0.5s ease-in-out;
+
+    /* Resetting old styles */
+    display: block;
+    height: auto !important;
+    padding: 0;
 }
 
 .project-details-inline .project-image {
     width: 100%;
-    max-width: 800px;
-    height: 400px;
+    height: auto;
     object-fit: cover;
     border-radius: 8px;
-    margin: 2rem 0;
+    margin-bottom: 2rem;
 }
 
 .project-description {
     color: var(--text-secondary);
     line-height: 1.7;
-    padding: 0 0 2rem 0;
     font-size: 1.2rem;
 }
 
-.project-description p {
-    margin-bottom: 1rem;
+.project-divider {
+    height: 1px;
+    background-color: #D7CCC8;
+    /* Place the divider in the second grid column */
+    grid-column: 2 / 3; 
+
+    /* Match the max-width of the details container */
+    max-width: 1350px; 
+
+    /* Ensure it fills the container it's in */
+    width: 100%; 
+    
+    /* Add some vertical space */
+    margin-top: 0 rem;
 }
+
+/* Show bullets for Markdown lists in project descriptions */
+.project-description ul {
+  list-style-type: disc;
+  margin-left: 1.5rem;
+}
+
+.project-description ul ul {
+  list-style-type: circle;
+  margin-top: 0.25rem;
+}
+
 
 /* About Section */
 .about-grid {
@@ -862,7 +908,7 @@ body {
         padding-right: 0;
         padding-top: 2rem;
     }
-
+    
     .floating-contact {
         display: none;
     }
@@ -929,66 +975,9 @@ body {
         height: 200px;
         align-self: center;
     }
-}
-/* Show bullets for Markdown lists in project descriptions */
-.project-description ul {
-  list-style-type: disc;
-  margin-left: 1.5rem;
-  padding-left: 0;
-  /* reduce space around top-level lists */
-  margin-top: 0.5rem;
-  margin-bottom: 0.5rem;
-}
-
-.project-description ul ul {
-  list-style-type: circle;
-  margin-left: 1.5rem;
-  /* override to bring nested bullets closer */
-  margin-top: 0 !important;
-  margin-bottom: 0.25rem;
-}
-
-/* further reduce spacing between nested list items */
-.project-description ul ul li {
-  margin-bottom: 0.15rem;
-}
-
-.project-description ul li {
-  margin-bottom: 0.25rem;
-}
-
-/* Tighten spacing between list label paragraph and its nested list */
-.project-description li > p {
-  margin-bottom: 0.25rem;
-}
-
-.project-description li > p + ul {
-  /* reduce space above nested list */
-  margin-top: 0.25rem;
-  /* ensure appropriate space below nested list */
-  margin-bottom: 0.5rem;
-}
-
-/* Ensure project description text does not exceed image width */
-.project-details-inline {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.project-details-inline .project-image,
-.project-details-inline .project-description {
-  max-width: 1000px; /* match the image max-width */
-  width: 100%;
-  box-sizing: border-box;
-  padding: 0 1rem; /* optional: add horizontal padding */
-}
-
-/* Align project headers, summaries, and dividers with the image */
-.project-header,
-.project-divider {
-  max-width: 1000px;      /* match image max-width */
-  margin-left: auto;
-  margin-right: auto;
-  padding: 0 1rem;       /* same horizontal padding as image/description */
+    
+    /* Mobile project item layout */
+    .project-item {
+        display: block; /* Stack everything vertically on mobile */
+    }
 }
