@@ -1,158 +1,323 @@
 // Global variables
-let currentPreviewAudio = null;
-let previewTimeout = null;
+
+let audioPlayer = null;
+let audioContext = null;
 let currentOpenProject = null;
 let testimonialInterval;
 
-// Load music from Google Sheets
-function loadMusic() {
-    const SHEET_ID = '1et5adrpulwSRzli18GykZl8XCPwB81_LLfskspjhSLo';
-    const MUSIC_SHEET_NAME = 'music';
-    
-    const SHEETS_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&tq=SELECT%20*&sheet=${MUSIC_SHEET_NAME}`;
-    const PROXY_URL = 'https://api.allorigins.win/get?url=';
-    const FULL_URL = PROXY_URL + encodeURIComponent(SHEETS_URL);
-    
-    console.log('🔍 Fetching music from sheet:', MUSIC_SHEET_NAME);
-    
-    fetch(FULL_URL)
-        .then(response => response.json())
-        .then(data => {
-            console.log('✅ Music API response received');
-            const jsonpText = data.contents;
-            
-            const jsonStart = jsonpText.indexOf('(') + 1;
-            const jsonEnd = jsonpText.lastIndexOf(')');
-            const jsonString = jsonpText.substring(jsonStart, jsonEnd);
-            const sheetsData = JSON.parse(jsonString);
-            
-            console.log('🔍 Parsed sheets data for music:', sheetsData);
-            
-            const musicTracks = parseMusicData(sheetsData);
-            console.log('🎵 Parsed music tracks:', musicTracks);
-            displayMusic(musicTracks);
-        })
-        .catch(error => {
-            console.error('❌ Error loading music:', error);
-            showMusicErrorMessage();
-        });
+// --- NEW: Local Music Data ---
+// All music data is now managed here. Edit or add new objects to this array.
+const musicData = [
+    {
+        title: "call me back",
+        artist: "rohan.jk and kairi",
+        summary: "feng kai and i tried writing a fun indie pop song with groovy bass and an upbeat tempo",
+        spotifyUrl: "https://open.spotify.com/track/3m1PQRxlKQh1tzxFP1C0ZY?si=642929c16c284e61", // Replace with your actual Spotify link
+        youtubeUrl: "https://www.youtube.com/watch?v=iXYprE6T5ec", // Replace with your actual YouTube link
+        appleMusicUrl: "https://music.apple.com/sg/album/call-me-back/1756849369?i=1756849370", // Replace with your actual Apple Music link
+        videoUrl: "assets/video/callmeback_profile.mp4", // IMPORTANT: Update this path
+        audioSnippetUrl: "assets/audio/snippets/callmeback.wav", // The local audio filename
+        audioDelay: 350
+    },
+    {
+        title: "where have u been?",
+        artist: "rohan.jk, tristan and hannah",
+        summary: "chill rnb/pop song with a smooth feel",
+        spotifyUrl: "https://open.spotify.com/track/0CqWJMqXpq2CqtyCfPWigj?si=0ad5ddf4f7c449ee", // Replace with your actual Spotify link
+        youtubeUrl: "https://www.youtube.com/watch?v=XUDQDO6qpQA", // Replace with your actual YouTube link
+        appleMusicUrl: "https://music.apple.com/sg/album/where-have-u-been-feat-trxstan-hannah-single/1727956658", // Replace with your actual Apple Music link
+        videoUrl: "assets/video/wherehaveubeen_profile.mp4", // IMPORTANT: Update this path
+        audioSnippetUrl: "assets/audio/snippets/wherehaveubeen.wav", // The local audio filename
+        audioDelay: 100
+    }
+];
+
+// --- NEW: Function to display music from the local `musicData` array ---
+function initializeMusicSection() {
+    displayMusic(musicData);
 }
 
-// Parse music data from Google Sheets
-function parseMusicData(data) {
-    const tracks = [];
-    
-    if (!data.table || !data.table.rows) {
-        return tracks;
-    }
-    
-    const rows = data.table.rows;
-    
-    // Expected columns: Title, Artist, Spotify, YouTube, Apple Music, Summary, Video URL
-    for (let i = 1; i < rows.length; i++) {
-        const row = rows[i];
-        if (row.c && row.c.length >= 1) {
-            const track = {
-                title: row.c[0] ? (row.c[0].v || '').toString().trim() : '',
-                artist: row.c[1] ? (row.c[1].v || '').toString().trim() : '',
-                spotifyUrl: row.c[2] ? (row.c[2].v || '').toString().trim() : '',
-                youtubeUrl: row.c[3] ? (row.c[3].v || '').toString().trim() : '',
-                appleMusicUrl: row.c[4] ? (row.c[4].v || '').toString().trim() : '',
-                summary: row.c[5] ? (row.c[5].v || '').toString().trim() : '',
-                videoUrl: row.c[6] ? (row.c[6].v || '').toString().trim() : ''
-            };
-            
-            if (track.title && track.title.trim()) {
-                tracks.push(track);
-            }
-        }
-    }
-    
-    return tracks;
-}
 
-// Display music
 function displayMusic(tracks) {
     const musicList = document.querySelector('.music-list');
-    
-    if (tracks.length === 0) {
-        musicList.innerHTML = '<div style="text-align: center; padding: 2rem; color: var(--text-secondary);">No music found. Add some tracks to your Google Sheet!</div>';
+    if (!tracks || tracks.length === 0) {
+        musicList.innerHTML = '<div style="text-align: center; padding: 2rem; color: var(--text-secondary);">No music found.</div>';
         return;
     }
 
-    let musicHTML = '';
-    
-    tracks.forEach((track, index) => {
-        const links = [];
-        if (track.spotifyUrl) {
-            links.push(`<a href="${track.spotifyUrl}" class="music-link" target="_blank">
-                <i class="fab fa-spotify"></i> Spotify
-            </a>`);
-        }
-        if (track.appleMusicUrl) {
-            links.push(`<a href="${track.appleMusicUrl}" class="music-link" target="_blank">
-                <i class="fab fa-apple"></i> Apple Music
-            </a>`);
-        }
-        if (track.youtubeUrl) {
-            links.push(`<a href="${track.youtubeUrl}" class="music-link" target="_blank">
-                <i class="fab fa-youtube"></i> YouTube
-            </a>`);
-        }
+    // Clear the list before we begin
+    musicList.innerHTML = '';
 
-        musicHTML += `
-            <div class="music-item">
-                <div class="music-content">
-                    <div class="music-header">
-                        <h3 class="music-title">${track.title}</h3>
-                        ${track.artist ? `<p class="music-artist">${track.artist}</p>` : ''}
-                        ${track.summary ? `<p class="music-summary">${track.summary}</p>` : ''}
+    // We will now create each item individually
+    tracks.forEach((track, index) => {
+        
+        // This function contains all the logic to create and set up one item
+        const createAndSetupItem = () => {
+            const links = [];
+            if (track.spotifyUrl && track.spotifyUrl !== "#") links.push(`<a href="${track.spotifyUrl}" class="music-link" target="_blank"><i class="fab fa-spotify"></i> Spotify</a>`);
+            if (track.appleMusicUrl && track.appleMusicUrl !== "#") links.push(`<a href="${track.appleMusicUrl}" class="music-link" target="_blank"><i class="fab fa-apple"></i> Apple Music</a>`);
+            if (track.youtubeUrl && track.youtubeUrl !== "#") links.push(`<a href="${track.youtubeUrl}" class="music-link" target="_blank"><i class="fab fa-youtube"></i> YouTube</a>`);
+
+            const itemHTML = `
+                <div class="music-item">
+                    <div class="music-content">
+                        <div class="music-header">
+                            <h3 class="music-title">${track.title}</h3>
+                            ${track.artist ? `<p class="music-artist">${track.artist}</p>` : ''}
+                            ${track.summary ? `<p class="music-summary">${track.summary}</p>` : ''}
+                        </div>
+                        ${links.length > 0 ? `<div class="music-links">${links.join('')}</div>` : ''}
                     </div>
-                    ${links.length > 0 ? `
-                        <div class="music-links">
-                            ${links.join('')}
+                    ${track.videoUrl ? `
+                        <div class="music-preview-container" 
+                            ${track.audioSnippetUrl ? `data-audio-url="${track.audioSnippetUrl}"` : ''} 
+                            ${track.audioDelay ? `data-audio-delay="${track.audioDelay}"` : ''}>
+                            <video class="music-preview" src="${track.videoUrl}" muted playsinline preload="auto"></video>
+                            ${track.audioSnippetUrl ? `<p class="snippet-text"><i class="fas fa-volume-up"></i> click to play a snippet</p>` : ''}
                         </div>
                     ` : ''}
                 </div>
-                ${track.videoUrl ? `
-                    <video class="music-preview"
-                           src="${track.videoUrl}"
-                           muted loop preload="metadata">
-                    </video>
-                ` : ''}
-            </div>
-        `;
+                <div class="music-divider"></div>
+            `;
+            
+            // Create the DOM nodes from the HTML string
+            const tempContainer = document.createElement('div');
+            tempContainer.innerHTML = itemHTML;
+            const itemElement = tempContainer.firstElementChild;
+            const dividerElement = tempContainer.lastElementChild;
+            
+            // Append the new elements to the actual list in the document
+            musicList.appendChild(itemElement);
+            musicList.appendChild(dividerElement);
+            
+            // --- Attach Event Listeners to the item we just created ---
+            const video = itemElement.querySelector('.music-preview');
+            if (video) {
+                // Declare variables FIRST, before any event listeners
+                let isPlaying = false;
+                let audioInitialized = false;
+                
+                // Force the video to start loading with a small delay to ensure DOM is ready
+                setTimeout(() => {
+                    video.load();
 
-        if (index < tracks.length - 1) {
-            musicHTML += '<div class="music-divider"></div>';
-        }
-    });
+                    // Handle video end - reset to beginning and pause
+                    video.addEventListener('ended', () => {
+                        // Only reset if we're currently playing
+                        if (isPlaying) {
+                            // Reset both video and audio to beginning
+                            video.currentTime = 0;
+                            
+                            // Stop audio properly if it's playing
+                            if (!audioPlayer.paused) {
+                                audioPlayer.pause();
+                            }
+                            audioPlayer.currentTime = 0;
+                            
+                            // Reset ALL state so next click starts fresh
+                            isPlaying = false;
+                            audioInitialized = false; // Reset so next play starts from beginning
+                            
+                            // Update text back to "click to listen"
+                            const snippetText = itemElement.querySelector('.snippet-text');
+                            if (snippetText) {
+                                snippetText.innerHTML = '<i class="fas fa-volume-up"></i> click to play a snippet';
+                            }
+                            
+                            // Ensure video shows first frame
+                            video.pause();
+                        }
+                    });
+                }, 50);
+                
+                const handleMouseEnter = () => {
+                    const snippetText = itemElement.querySelector('.snippet-text');
+                    
+                    // Check if video is ready before trying to show
+                    if (video.readyState >= 2) {
+                        video.style.opacity = '0.75';
+                        if (snippetText) {
+                            snippetText.style.opacity = '1';
+                            snippetText.innerHTML = '<i class="fas fa-volume-up"></i> click to play a snippet';
+                        }
+                        // Show first frame but don't play
+                        video.currentTime = 0;
+                        isPlaying = false;
+                    } else {
+                        // If not ready, force load and wait
+                        video.load();
+                        const waitForLoad = () => {
+                            if (video.readyState >= 2) {
+                                video.style.opacity = '0.75';
+                                if (snippetText) {
+                                    snippetText.style.opacity = '1';
+                                    snippetText.innerHTML = '<i class="fas fa-volume-up"></i> click to play a snippet';
+                                }
+                                video.currentTime = 0;
+                                isPlaying = false;
+                            } else {
+                                // Keep checking every 100ms until ready
+                                setTimeout(waitForLoad, 100);
+                            }
+                        };
+                        waitForLoad();
+                    }
+                };
+                
+                const handleMouseLeave = () => {
+                    const snippetText = itemElement.querySelector('.snippet-text');
+                    
+                    video.style.opacity = '0';
+                    if (snippetText) snippetText.style.opacity = '0';
+                    
+                    // Stop both video and audio with fade out, reset to beginning
+                    if (isPlaying && !audioPlayer.paused) {
+                        fadeOut(audioPlayer, 150, true); // Pause after fade on mouse leave
+                    } else {
+                        audioPlayer.pause();
+                    }
+                    video.pause();
+                    video.currentTime = 0;
+                    audioInitialized = false; // Reset so it starts fresh next time
+                    isPlaying = false;
+                };
+                
+                // Attach click handler to the entire music item
+                let clickTimeout = null;
+                let fadeInterval = null;
+                
+                const fadeIn = (audio, targetVolume = 0.5, duration = 150) => {
+                    if (fadeInterval) clearInterval(fadeInterval);
+                    audio.volume = 0;
+                    const steps = 30;
+                    const stepTime = duration / steps;
+                    const volumeStep = targetVolume / steps;
+                    let currentStep = 0;
+                    
+                    fadeInterval = setInterval(() => {
+                        currentStep++;
+                        audio.volume = Math.min(volumeStep * currentStep, targetVolume);
+                        if (currentStep >= steps) {
+                            clearInterval(fadeInterval);
+                            fadeInterval = null;
+                        }
+                    }, stepTime);
+                };
+                
+                const fadeOut = (audio, duration = 200, shouldPause = true) => {
+                    if (fadeInterval) clearInterval(fadeInterval);
+                    const startVolume = audio.volume;
+                    const steps = 20;
+                    const stepTime = duration / steps;
+                    const volumeStep = startVolume / steps;
+                    let currentStep = 0;
+                    
+                    fadeInterval = setInterval(() => {
+                        currentStep++;
+                        audio.volume = Math.max(startVolume - (volumeStep * currentStep), 0);
+                        if (currentStep >= steps) {
+                            clearInterval(fadeInterval);
+                            fadeInterval = null;
+                            if (shouldPause) {
+                                audio.pause();
+                            }
+                        }
+                    }, stepTime);
+                };
+                
+                const handleClick = function(event) {
+                    // Debounce rapid clicks
+                    if (clickTimeout) return;
+                    clickTimeout = setTimeout(() => { clickTimeout = null; }, 200);
+                    
+                    // Check if we clicked on the preview container area
+                    const previewContainer = event.target.closest('.music-preview-container');
+                    if (!previewContainer) return;
+                    
+                    const audioPath = previewContainer.dataset.audioUrl;
+                    const snippetTextElement = previewContainer.querySelector('.snippet-text');
+                    
+                    if (!audioPath) return;
+                    
+                    if (audioContext && audioContext.state === 'suspended') audioContext.resume();
+                    
+                    // Toggle play/pause for both video and audio
+                    if (isPlaying) {
+                        // Currently playing - fade out and pause both
+                        fadeOut(audioPlayer, 200, true); // Pause after fade
+                        video.pause();
+                        isPlaying = false;
+                        if (snippetTextElement) {
+                            snippetTextElement.innerHTML = '<i class="fas fa-volume-up"></i> click to play a snippet';
+                        }
+                    } else {
+                        // Currently paused - play both
+                        // Only set new src and reset times if this is a completely new session
+                        if (!audioInitialized) {
+                            audioPlayer.src = audioPath;
+                            audioPlayer.currentTime = 0;
+                            video.currentTime = 0;
+                            audioInitialized = true;
+                        }
+                        
+                        // Get the audio delay for this track
+                        const audioDelay = parseInt(previewContainer.dataset.audioDelay) || 0;
+                        
+                        // Start video immediately
+                        const videoPlayPromise = video.play();
+                        
+                        // Start audio AND fade-in together after the delay
+                        let audioPlayPromise;
+                        if (audioDelay > 0) {
+                            audioPlayPromise = new Promise((resolve, reject) => {
+                                setTimeout(() => {
+                                    // Start both audio and fade-in at the same time
+                                    audioPlayer.play().then(() => {
+                                        fadeIn(audioPlayer, 0.5, 150);
+                                        resolve();
+                                    }).catch(reject);
+                                }, audioDelay);
+                            });
+                        } else {
+                            audioPlayPromise = audioPlayer.play().then(() => {
+                                fadeIn(audioPlayer, 0.5, 150);
+                            });
+                        }
+                        
+                        Promise.all([
+                            videoPlayPromise.catch(() => {}),
+                            audioPlayPromise.catch(() => {})
+                        ]).then(() => {
+                            // Both are now playing
+                            isPlaying = true;
+                            if (snippetTextElement) {
+                                snippetTextElement.innerHTML = '<i class="fas fa-pause"></i> click to pause snippet';
+                            }
+                        }).catch(() => {
+                            // If either fails, make sure both are stopped
+                            video.pause();
+                            audioPlayer.pause();
+                            isPlaying = false;
+                        });
+                    }
+                };
+                
+                // Attach click to the entire item, not just the container
+                itemElement.addEventListener('click', handleClick);
+                itemElement.addEventListener('mouseenter', handleMouseEnter);
+                itemElement.addEventListener('mouseleave', handleMouseLeave);
+            }
 
-    musicHTML += '<div class="music-divider"></div>';
-    musicList.innerHTML = musicHTML;
-    
-    document.querySelectorAll('.music-item').forEach(item => {
-        const video = item.querySelector('.music-preview');
-        if (video) {
-            item.addEventListener('mouseenter', () => {
-                video.play().catch(() => {});
-            });
-            item.addEventListener('mouseleave', () => {
-                video.pause();
-                video.currentTime = 0;
-            });
-        }
+        
+        };
+
+        // --- THE KEY CHANGE ---
+        // Create the first item immediately, but delay the second one slightly.
+        createAndSetupItem();
+
     });
 }
 
-function showMusicErrorMessage() {
-    const musicList = document.querySelector('.music-list');
-    musicList.innerHTML = `
-        <div style="text-align: center; padding: 2rem; color: var(--text-secondary);">
-            <p>Unable to load music from Google Sheets.</p>
-            <p style="font-size: 0.9em; margin-top: 0.5rem;">Make sure your Google Sheet is published to the web</p>
-        </div>`;
-}
 
 // Simple front-matter parser using js-yaml
 function parseFrontMatter(text) {
@@ -463,46 +628,51 @@ function goToHomepage() {
     updateFloatingContactVisibility();
 }
 
-// Show section
+// Show section (Updated to call the new music function)
 function showSection(sectionName) {
+    // Add the class to the body to block hover effects immediately.
+    document.body.classList.add('is-transitioning');
+
+    document.getElementById('sidebar').classList.add('show');
+    document.getElementById('mainContent').classList.remove('homepage-active');
+
     const homepage = document.getElementById('homepage');
-    const sidebar = document.getElementById('sidebar');
-    const mainContent = document.getElementById('mainContent');
-    
-    homepage.classList.remove('active');
-    sidebar.classList.add('show');
-    mainContent.classList.remove('homepage-active');
-    
+    if (homepage) homepage.classList.remove('active');
+
     document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-    
-    const activeLink = document.querySelector(`[data-section="${sectionName}"]`);
-    if (activeLink) {
-        activeLink.classList.add('active');
+    document.querySelector(`[data-section="${sectionName}"]`)?.classList.add('active');
+
+    document.querySelectorAll('.section').forEach(section => section.classList.remove('active'));
+
+    const activeSection = document.getElementById(sectionName);
+
+    if (activeSection) {
+        // --- The New, More Reliable Fix ---
+        
+        // 1. Define what to do when the animation ends.
+        const onAnimationEnd = () => {
+            // Remove the blocking class now that the animation is truly complete.
+            document.body.classList.remove('is-transitioning');
+        };
+
+        // 2. Listen for the 'animationend' event on the section that will be animated.
+        //    We use { once: true } so the listener automatically removes itself after firing once.
+        activeSection.addEventListener('animationend', onAnimationEnd, { once: true });
+
+        // 3. Now, add the 'active' class to start the animation.
+        activeSection.classList.add('active');
     }
-    
-    document.querySelectorAll('.section').forEach(section => {
-        section.classList.remove('active');
-    });
-    
-    const targetSection = document.getElementById(sectionName);
-    if (targetSection) {
-        targetSection.classList.add('active');
-    }
-    
+
     hideProject();
     updateFloatingContactVisibility();
-    
+
     if (sectionName === 'about') {
         loadTestimonials();
         setTimeout(startTestimonialTracking, 800);
-    } else if (sectionName === 'projects') {
-        loadProjects();
-        stopTestimonialTracking();
-    } else if (sectionName === 'music') {
-        loadMusic();
-        stopTestimonialTracking();
     } else {
         stopTestimonialTracking();
+        if (sectionName === 'projects') loadProjects();
+        if (sectionName === 'music') initializeMusicSection();
     }
 }
 
@@ -612,25 +782,31 @@ function stopTestimonialTracking() {
 
 // Event listeners
 document.addEventListener('DOMContentLoaded', function() {
-    // Handle homepage menu clicks
-    document.querySelectorAll('.homepage-menu-item').forEach(item => {
-        item.addEventListener('click', function(e) {
+    // Initialize the audio player and context
+    audioPlayer = document.getElementById('audio-player');
+    try {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    } catch (e) {
+        console.error("Web Audio API is not supported in this browser.");
+    }
+
+    // Handle clicks for homepage and sidebar navigation
+    document.querySelectorAll('.homepage-menu-item, .nav-link').forEach(item => {
+        item.addEventListener('click', function() {
             const section = this.getAttribute('data-section');
-            showSection(section);
+            if (section) showSection(section);
         });
     });
+    
+    // Handle click for the main logo to go home
+    const logoLink = document.querySelector('.logo-link');
+    if(logoLink) logoLink.addEventListener('click', goToHomepage);
 
-    // Handle sidebar navigation clicks  
-    document.querySelectorAll('.nav-link').forEach(link => {
-        link.addEventListener('click', function(e) {
-            const section = this.getAttribute('data-section');
-            showSection(section);
-        });
-    });
-
-    // Load projects and trigger animation
+    // Initial setup calls
     loadProjects();
-    setTimeout(() => {
-        triggerHomepageAnimation();
-    }, 500);
-});e
+    
+    const homepage = document.getElementById('homepage');
+    if(homepage && homepage.classList.contains('active')) {
+      triggerHomepageAnimation();
+    }
+});

@@ -361,7 +361,7 @@ body {
 }
 
 .music-header {
-    padding: 3rem 0;
+    padding: 3rem 0 3rem 2rem; /* Add 2rem left padding to match projects */
 }
 
 .music-title {
@@ -389,6 +389,8 @@ body {
     gap: 1.5rem;
     align-items: center;
     flex-wrap: wrap;
+    padding: 3rem 0 3rem 2rem; /* Add 2rem left padding to match projects */
+
 }
 
 .music-link {
@@ -416,8 +418,8 @@ body {
 }
 
 .music-artist {
-    color: var(--light-brown);
-    font-size: 1rem;
+    color: #A1887F;
+    font-size: 1.2rem;
     font-weight: 600;
     margin-top: 0.5rem;
     margin-bottom: 0.5rem;
@@ -432,20 +434,78 @@ body {
     opacity: 0.8;
 }
 
-/* Music preview video styles */
-.music-preview {
+/* --- In style.css, in the Music Section --- */
+
+/* Container for the video and the new text */
+.music-preview-container {
+    position: relative; /* Needed to position the text inside */
+    cursor: pointer;
     width: 600px;
+    align-self: center;
+}
+
+/* The new snippet text */
+.snippet-text {
+    position: absolute;
+    bottom: -30px; /* Positions it below the video (adjust as needed) */
+    left: 0;
+    transform: translateX(0);
+    color: #A1887F;             /* Grey color from project summary */
+    background-color: transparent; /* Removes the bubble */
+    padding: 0;
+    border-radius: 0;
+    font-size: 0.9rem;
+    font-weight: 500;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    display: flex;
+    align-items: center;
+}
+
+.snippet-text {
+    position: absolute;
+    bottom: -30px; /* Positions it below the video (adjust as needed) */
+    left: 0;
+    transform: translateX(0);
+    color: #A1887F;             /* Grey color from project summary */
+    background-color: transparent; /* Removes the bubble */
+    padding: 0;
+    border-radius: 0;
+    font-size: 0.9rem;
+    font-weight: 500;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    display: flex;
+    align-items: center;
+}
+
+/* Show the text when hovering over the music item */
+.music-item:hover .snippet-text {
+    opacity: 1;
+}
+
+.snippet-text i {
+    margin-right: 0.5rem;
+}
+
+/* Existing rule for the video preview */
+.music-preview {
+    width: 100%;
     height: auto;
     border-radius: 8px;
     object-fit: cover;
     opacity: 0;
-    transition: opacity 0.3s ease;
-    align-self: center;
+    transition: opacity 0.3s ease; /* The transition is good, leave it */
 }
+
+/* 
 
 .music-item:hover .music-preview {
     opacity: 0.75;
-}
+    transform: scale(1.02) translateZ(0);
+} */
 
 /* Music preview styles */
 .music-title.has-preview {
@@ -469,6 +529,16 @@ body {
 .music-title:hover .preview-icon {
     opacity: 1;
     color: #FFCC80;
+}
+
+/* --- In style.css --- */
+
+/* Temporarily disable music item hover effects while the page is transitioning 
+  to prevent animation glitches. 
+*/
+body.is-transitioning .music-item:hover .music-preview,
+body.is-transitioning .music-item:hover .snippet-text {
+    opacity: 0 !important;
 }
 
 .deezer-badge {
@@ -536,7 +606,7 @@ body {
     grid-column: 2 / 3; /* Place in the second column */
     grid-row: 1; /* Place in the first row */
     color: #A1887F;             /* Lighter color */
-    font-weight: 600;           /* Bolder text */
+    font-weight: 500;           /* Bolder text */
     font-style: italic;         /* Italic text */
     line-height: 1.6;
     font-size: 1.1rem;
