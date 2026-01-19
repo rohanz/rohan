@@ -19,7 +19,8 @@ body {
     color: var(--text-primary);
     line-height: 1.6;
     text-transform: lowercase;
-    overflow-y: auto;
+    overflow: hidden;
+    height: 100vh;
 }
 
 .container {
@@ -32,7 +33,7 @@ body {
 .sidebar {
     width: 400px;
     background-color: var(--dark-brown);
-    padding: 3rem 0;
+    padding: 7rem 0 3rem 0;
     position: fixed;
     height: 100vh;
     left: -400px;
@@ -463,24 +464,6 @@ body {
     align-items: center;
 }
 
-.snippet-text {
-    position: absolute;
-    bottom: -30px; /* Positions it below the video (adjust as needed) */
-    left: 0;
-    transform: translateX(0);
-    color: #A1887F;             /* Grey color from project summary */
-    background-color: transparent; /* Removes the bubble */
-    padding: 0;
-    border-radius: 0;
-    font-size: 0.9rem;
-    font-weight: 500;
-    white-space: nowrap;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    display: flex;
-    align-items: center;
-}
-
 /* Show the text when hovering over the music item */
 .music-item:hover .snippet-text {
     opacity: 1;
@@ -567,73 +550,371 @@ body.is-transitioning .music-item:hover .snippet-text {
 ╚═╝     ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚══════╝ ╚═════╝   ╚═╝
 */
 
+/* Override section padding for projects */
+#projects.section {
+    padding-right: 0;
+}
+
+/* Remove transform after animation to allow fixed positioning inside.
+   Any transform on an ancestor creates a containing block for position:fixed,
+   breaking the viewport-relative positioning. */
+#projects.section.active {
+    animation: fadeInLinear 0.7s linear forwards;
+    transform: none;
+}
+
 .projects-list {
-    max-width: 100%;
-    padding-left: 0;
-}
-
-/* Use CSS Grid for the new alignment */
-.project-item {
-    display: grid;
-    /* Define two columns: one for the title (auto-width), one for the rest (1fr) */
-    grid-template-columns: 450px 1fr;
-    /* Align all items to their text baseline */
-    align-items: baseline;
-    padding: 3rem 2rem 1.5rem;
-    column-gap: 3rem; /* Space between title and summary */
-    row-gap: 1.5rem;   /* Space between header and details */
-    cursor: pointer;
-}
-
-/* The project title will now be the clickable toggle */
-.project-title {
-    font-size: 1.8rem;
-    font-weight: 600;
-    color: var(--dark-brown);
-    transition: color 0.3s ease;
-    grid-column: 1 / 2; /* Place in the first column */
-    grid-row: 1; /* Place in the first row */
-}
-
-.project-item:hover .project-title {
-    color: #A1887F;
-}
-
-/* The summary sits next to the title */
-.project-summary {
-    position: relative;
-    transform: translateY(-8px); /* Move upwards by 3 pixels */
-    grid-column: 2 / 3; /* Place in the second column */
-    grid-row: 1; /* Place in the first row */
-    color: #A1887F;             /* Lighter color */
-    font-weight: 500;           /* Bolder text */
-    font-style: italic;         /* Italic text */
-    line-height: 1.6;
-    font-size: 1.1rem;
-    max-width: 800px;
-    
-}
-
-/* The expandable details container */
-.project-details-inline {
-    /* This container will span the second column ONLY, aligning with the summary */
-    grid-column: 2 / 3;
-    grid-row: 2; /* Place in the second row, underneath the header */
-
-    max-width: 800px;
-
-    /* Animation styles */
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 0.5s ease-in-out;
-
-    /* Resetting old styles */
-    display: block;
-    height: auto !important;
+    width: 100%;
     padding: 0;
 }
 
-.project-details-inline .project-image {
+/* Projects Overview - card grid */
+.projects-overview {
+    display: none;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 400px));
+    gap: 2.5rem;
+    padding: 2rem 0;
+    justify-content: center;
+    align-content: center;
+    min-height: calc(100vh - 8rem);
+}
+
+.projects-overview.active {
+    display: grid;
+}
+
+.projects-overview.fade-in {
+    animation: projectFadeIn 0.4s ease forwards;
+}
+
+.projects-overview.fade-out {
+    animation: projectFadeOut 0.3s ease forwards;
+}
+
+.project-card {
+    width: 100%;
+    max-width: 400px;
+    background: rgba(255, 255, 255, 0.4);
+    border-radius: 10px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(62, 39, 35, 0.08);
+}
+
+.project-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(62, 39, 35, 0.12);
+    border-color: rgba(62, 39, 35, 0.15);
+}
+
+.project-card-image {
+    width: 100%;
+    height: 175px;
+    object-fit: cover;
+}
+
+.project-card-content {
+    padding: 1rem;
+}
+
+.project-card-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--dark-brown);
+    margin-bottom: 0.5rem;
+    text-transform: none;
+}
+
+.project-card-summary {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    line-height: 1.5;
+    opacity: 0.8;
+    text-transform: none;
+}
+
+/* Single project detail view */
+.project-item {
+    display: block;
+    padding: 3rem 2rem 1.5rem;
+    visibility: hidden;
+    position: absolute;
+    opacity: 0;
+}
+
+/* Project transition animations */
+@keyframes projectFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes projectSlideInFromRight {
+    from {
+        opacity: 0;
+        transform: translateX(100px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes projectSlideInFromLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-100px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes projectSlideOutToLeft {
+    from {
+        opacity: 1;
+        transform: translateX(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateX(-100px);
+    }
+}
+
+@keyframes projectSlideOutToRight {
+    from {
+        opacity: 1;
+        transform: translateX(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateX(100px);
+    }
+}
+
+.project-item.active {
+    visibility: visible;
+    position: relative;
+    min-height: min-content;
+    opacity: 1;
+}
+
+/* Fade in when clicking from overview */
+.project-item.fade-in {
+    animation: projectFadeIn 0.4s ease forwards;
+}
+
+/* Fade out when going back to overview */
+.project-item.fade-out {
+    animation: projectFadeOut 0.3s ease forwards;
+}
+
+/* Slide animations for next/previous navigation - only animate content column */
+.project-item.slide-in-from-right .project-content-column {
+    animation: projectSlideInFromRight 0.4s cubic-bezier(.32,.81,.55,.97) forwards;
+}
+
+.project-item.slide-in-from-left .project-content-column {
+    animation: projectSlideInFromLeft 0.4s cubic-bezier(.32,.81,.55,.97) forwards;
+}
+
+.project-item.slide-out-to-left .project-content-column {
+    animation: projectSlideOutToLeft 0.3s cubic-bezier(.32,.81,.55,.97) forwards;
+}
+
+.project-item.slide-out-to-right .project-content-column {
+    animation: projectSlideOutToRight 0.3s cubic-bezier(.32,.81,.55,.97) forwards;
+}
+
+/* Header column fades independently during navigation */
+.project-item.slide-in-from-right .project-header-column,
+.project-item.slide-in-from-left .project-header-column {
+    animation: projectFadeIn 0.4s ease forwards;
+}
+
+.project-item.slide-out-to-left .project-header-column,
+.project-item.slide-out-to-right .project-header-column {
+    animation: projectFadeOut 0.3s ease forwards;
+}
+
+@keyframes projectFadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+
+/* Left column - title and TOC - fixed position, never moves on scroll */
+.project-header-column {
+    position: fixed;
+    top: 7rem;
+    left: calc(400px + 6rem);
+    width: 200px;
+    height: calc(100vh - 10rem);
+    display: flex;
+    flex-direction: column;
+    z-index: 10;
+}
+
+/* Right column - summary and details - centered to viewport */
+.project-content-column {
+    /* Center relative to full viewport, with min margin to clear fixed header */
+    width: 100%;
+    max-width: 800px;
+    /* 50vw - 400px centers 800px content in viewport; subtract offsets from parent containers */
+    margin-left: max(calc(200px + 6rem), calc(50vw - 928px));
+    margin-right: auto;
+}
+
+/* Project title */
+.project-title {
+    font-size: 2.4rem;
+    font-weight: 600;
+    color: var(--dark-brown);
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+/* The summary sits in the right column */
+.project-summary {
+    margin-top: 0;
+    color: #A1887F;
+    font-weight: 500;
+    font-style: italic;
+    line-height: 1.6;
+    font-size: 1.1rem;
+    max-width: 800px;
+    margin-bottom: 1.5rem;
+}
+
+/* Project details - always visible */
+.project-details {
+    max-width: 800px;
+    padding-bottom: 50vh; /* Allow last section to reach 50% scroll trigger */
+}
+
+.project-details img {
+    width: 100%;
+    height: auto;
+}
+
+/* TOC Sidebar - always visible for active project */
+.project-toc {
+    margin-top: 1.5rem;
+}
+
+.project-item.active .project-toc {
+    max-height: 500px;
+    opacity: 1;
+}
+
+.toc-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.toc-item {
+    padding: 0.4rem 0;
+    padding-left: 0;
+    cursor: pointer;
+    color: var(--text-secondary);
+    font-size: 1rem;
+    font-weight: 600;
+    text-transform: lowercase;
+    transition: all 0.2s ease;
+    opacity: 0.5;
+    position: relative;
+}
+
+.toc-collapse {
+    padding: 0.6rem 0;
+    padding-top: 1rem;
+    cursor: pointer;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    font-weight: 500;
+    text-transform: lowercase;
+    transition: all 0.2s ease;
+    opacity: 0.5;
+    margin-top: 0.5rem;
+    border-top: 1px solid rgba(62, 39, 35, 0.1);
+}
+
+.toc-collapse:hover {
+    color: var(--dark-brown);
+    opacity: 0.8;
+}
+
+.toc-item:hover {
+    color: var(--dark-brown);
+    opacity: 0.8;
+}
+
+.toc-item.active {
+    color: var(--dark-brown);
+    opacity: 1;
+    padding-left: 1rem;
+}
+
+.toc-item.active::before {
+    content: '>';
+    position: absolute;
+    left: 0;
+    animation: tocIndicatorSlideIn 0.25s ease forwards;
+}
+
+@keyframes tocIndicatorSlideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Parent h2 highlight when child h3 is active */
+.toc-item.parent-active {
+    color: var(--dark-brown);
+    opacity: 0.85;
+}
+
+/* H2s with children don't get the > indicator or outjog when active */
+.toc-h2.has-children.active {
+    padding-left: 0;
+}
+
+.toc-h2.has-children.active::before {
+    display: none;
+}
+
+.toc-h2 {
+    font-size: 1.25rem;
+}
+
+.toc-h3 {
+    padding-left: 1rem;
+    font-size: 1.15rem;
+}
+
+/* When h3 is active, add extra padding for the > indicator */
+.toc-h3.active {
+    padding-left: 2rem;
+}
+
+.toc-h3.active::before {
+    left: 1rem;
+}
+
+/* Anchor points for scroll tracking */
+.toc-anchor {
+    height: 0;
+    margin-top: -0.5rem;
+    padding-top: 0.5rem;
+}
+
+.project-details .project-image {
     width: 100%;
     height: auto;
     object-fit: cover;
@@ -647,22 +928,6 @@ body.is-transitioning .music-item:hover .snippet-text {
     font-size: 1.2rem;
 }
 
-.project-divider {
-    height: 1px;
-    background-color: #D7CCC8;
-    /* Place the divider in the second grid column */
-    grid-column: 2 / 3; 
-
-    /* Match the max-width of the details container */
-    max-width: 1350px; 
-
-    /* Ensure it fills the container it's in */
-    width: 100%; 
-    
-    /* Add some vertical space */
-    margin-top: 0 rem;
-}
-
 /* Show bullets for Markdown lists in project descriptions */
 .project-description ul {
   list-style-type: disc;
@@ -672,6 +937,84 @@ body.is-transitioning .music-item:hover .snippet-text {
 .project-description ul ul {
   list-style-type: circle;
   margin-top: 0.25rem;
+}
+
+/* Project description images - full width by default */
+.project-description img {
+  max-width: 100%;
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+  margin: 1.5rem auto;
+  display: block;
+  box-shadow: 0 4px 12px rgba(62, 39, 35, 0.15);
+}
+
+/* Phone screenshots - constrained width */
+.project-description img[src*="screenshot"] {
+  max-width: 350px;
+  width: 100%;
+}
+
+/* Keep normal casing for all project content */
+.project-item {
+  text-transform: none;
+}
+
+/* Loading state */
+.loading-state {
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-secondary);
+}
+
+/* Name shadow wrapper */
+.homepage-name-wrapper {
+  position: relative;
+}
+
+/* Project technologies */
+.project-technologies {
+  margin-top: 2rem;
+}
+
+/* Projects navigation - in left column, pushed to bottom */
+.projects-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-top: auto;
+    margin-bottom: 10vh;
+    padding-top: 2rem;
+}
+
+.projects-nav-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: var(--dark-brown);
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    opacity: 0.7;
+    text-decoration: none;
+    padding: 0.5rem 0;
+}
+
+.projects-nav-link:hover:not(.disabled) {
+    color: var(--dark-brown);
+    opacity: 1;
+}
+
+.projects-nav-link.disabled {
+    opacity: 0.25;
+    cursor: default;
+}
+
+.projects-nav-link .nav-arrow {
+    font-size: 1.2rem;
+    font-weight: 700;
 }
 
 
@@ -992,6 +1335,86 @@ body.is-transitioning .music-item:hover .snippet-text {
         display: none;
     }
 
+    /* Projects overview on mobile */
+    .projects-overview {
+        grid-template-columns: 1fr;
+        padding: 1rem;
+        gap: 1rem;
+    }
+
+    .project-card-image {
+        height: 150px;
+    }
+
+    .project-card-content {
+        padding: 1rem;
+    }
+
+    .project-card-title {
+        font-size: 1.1rem;
+    }
+
+    /* Hide TOC on mobile and stack layout */
+    .project-toc {
+        display: none;
+    }
+
+    /* Single project view on mobile - only active shows */
+    .project-item {
+        display: none;
+        padding: 1.5rem 1rem;
+    }
+
+    .project-item.active {
+        display: block;
+    }
+
+    .project-header-column {
+        position: static;
+        top: auto;
+        left: auto;
+        width: auto;
+        height: auto;
+        margin-bottom: 1rem;
+    }
+
+    .project-content-column {
+        margin-left: 0;
+    }
+
+    .project-item {
+        padding-left: 1rem;
+    }
+
+    .project-title {
+        font-size: 1.6rem;
+    }
+
+    .project-summary {
+        font-size: 1rem;
+    }
+
+    .project-description {
+        font-size: 1rem;
+    }
+
+    /* Projects navigation on mobile - show at bottom of content */
+    .projects-nav {
+        position: static;
+        margin-top: 2rem;
+        padding-top: 1rem;
+        flex-direction: row;
+        justify-content: space-between;
+    }
+
+    .projects-nav-link {
+        font-size: 0.85rem;
+    }
+
+    .projects-nav-link .nav-label {
+        display: none;
+    }
+
     .music-links,
     .social-links {
         flex-direction: column;
@@ -1044,10 +1467,5 @@ body.is-transitioning .music-item:hover .snippet-text {
         max-width: 300px;
         height: 200px;
         align-self: center;
-    }
-    
-    /* Mobile project item layout */
-    .project-item {
-        display: block; /* Stack everything vertically on mobile */
     }
 }

@@ -2,7 +2,6 @@
 
 let audioPlayer = null;
 let audioContext = null;
-let currentOpenProject = null;
 let testimonialInterval;
 
 // --- NEW: Local Music Data ---
@@ -40,6 +39,10 @@ function initializeMusicSection() {
 
 function displayMusic(tracks) {
     const musicList = document.querySelector('.music-list');
+    if (!musicList) {
+        console.error('Music list container not found');
+        return;
+    }
     if (!tracks || tracks.length === 0) {
         musicList.innerHTML = '<div style="text-align: center; padding: 2rem; color: var(--text-secondary);">No music found.</div>';
         return;
@@ -340,6 +343,39 @@ function parseFrontMatter(text) {
   return { data, content };
 }
 
+// Extract headers from markdown content and return TOC data
+function extractHeaders(markdown) {
+    const headers = [];
+    const lines = markdown.split('\n');
+    lines.forEach((line) => {
+        const match = line.match(/^(#{2,3})\s+(.+)$/);
+        if (match) {
+            const level = match[1].length; // 2 for ##, 3 for ###
+            const text = match[2].trim();
+            const id = text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+            headers.push({ level, text, id });
+        }
+    });
+    return headers;
+}
+
+// Remove headers from HTML content (we'll show them in TOC instead)
+function stripHeadersFromHTML(html) {
+    const temp = document.createElement('div');
+    temp.innerHTML = html;
+    temp.querySelectorAll('h2, h3').forEach(header => {
+        // Add an anchor point before removing
+        // Always use consistent ID generation (same as extractHeaders)
+        const anchor = document.createElement('div');
+        const headerText = header.textContent.trim();
+        anchor.id = headerText.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+        anchor.className = 'toc-anchor';
+        header.parentNode.insertBefore(anchor, header);
+        header.remove();
+    });
+    return temp.innerHTML;
+}
+
 // Load projects from Markdown files
 function loadProjects() {
     fetch('/projects/index.json')
@@ -348,12 +384,15 @@ function loadProjects() {
         .then(markdownContents => {
             const projects = markdownContents.map(text => {
                 const { data, content } = parseFrontMatter(text);
+                const headers = extractHeaders(content);
+                const rawHTML = marked.parse ? marked.parse(content) : marked(content);
                 return {
                     title: data.title || '',
                     summary: data.summary || '',
                     image: data.image || '',
                     technologies: data.technologies || '',
-                    descriptionHTML: marked.parse ? marked.parse(content) : marked(content)
+                    descriptionHTML: rawHTML,
+                    headers: headers
                 };
             });
             displayProjects(projects);
@@ -364,109 +403,660 @@ function loadProjects() {
         });
 }
 
-// Display projects parsed from Markdown
+// Display projects parsed from Markdown - overview + detail views
 function displayProjects(projects) {
     const projectsList = document.querySelector('.projects-list');
+    if (!projectsList) {
+        console.error('Projects list container not found');
+        return;
+    }
     if (projects.length === 0) {
         projectsList.innerHTML = '<div style="text-align: center; padding: 2rem; color: var(--text-secondary);">No projects found.</div>';
         return;
     }
 
-    let projectsHTML = '';
+    // Store projects globally for navigation
+    window.projectsData = projects;
+
+    // Generate overview cards
+    let overviewHTML = '<div class="projects-overview active">';
+    projects.forEach((project, index) => {
+        const imageUrl = project.image || `https://placehold.co/400x200/6D4C41/FFF8E1?text=${encodeURIComponent(project.title)}`;
+        overviewHTML += `
+            <div class="project-card" data-index="${index}">
+                <img src="${imageUrl}" alt="${project.title}" class="project-card-image" loading="lazy">
+                <div class="project-card-content">
+                    <h3 class="project-card-title">${DOMPurify.sanitize(project.title)}</h3>
+                    ${project.summary ? `<p class="project-card-summary">${DOMPurify.sanitize(project.summary)}</p>` : ''}
+                </div>
+            </div>
+        `;
+    });
+    overviewHTML += '</div>';
+
+    // Generate detail views
+    let detailsHTML = '';
     projects.forEach((project, index) => {
         const projectId = `project${index}`;
         const imageUrl = project.image || `https://placehold.co/800x400/6D4C41/FFF8E1?text=${encodeURIComponent(project.title)}`;
-        
-        // Simplified HTML structure for the new grid layout
-        projectsHTML += `
-            <div class="project-item" id="${projectId}" onclick="toggleProject('${projectId}')">
-                <h3 class="project-title">${project.title}</h3>
-                ${project.summary ? `<p class="project-summary">${project.summary}</p>` : ''}
-                
-                <div class="project-details-inline">
-                    <img src="${imageUrl}" alt="${project.title}" class="project-image">
-                    <div class="project-description">
-                        ${project.descriptionHTML}
-                        ${project.technologies ? `<div class="project-technologies" style="margin-top: 2rem;"><strong>Technologies:</strong> ${project.technologies}</div>` : ''}
+
+        // Generate TOC HTML from headers with parent tracking
+        let tocHTML = '';
+        if (project.headers && project.headers.length > 0) {
+            tocHTML = '<nav class="project-toc"><ul class="toc-list">';
+            let currentParentIndex = -1;
+
+            // First pass: identify h2s that have children
+            const h2HasChildren = new Set();
+            project.headers.forEach((header, idx) => {
+                if (header.level === 2) {
+                    currentParentIndex = idx;
+                } else if (header.level === 3 && currentParentIndex >= 0) {
+                    h2HasChildren.add(currentParentIndex);
+                }
+            });
+
+            // Second pass: generate HTML
+            currentParentIndex = -1;
+            project.headers.forEach((header, idx) => {
+                const levelClass = header.level === 2 ? 'toc-h2' : 'toc-h3';
+                const activeClass = idx === 0 ? ' active' : '';
+                const hasChildrenClass = header.level === 2 && h2HasChildren.has(idx) ? ' has-children' : '';
+
+                if (header.level === 2) {
+                    currentParentIndex = idx;
+                }
+                const parentAttr = header.level === 3 && currentParentIndex >= 0
+                    ? ` data-parent-index="${currentParentIndex}"`
+                    : '';
+
+                tocHTML += `<li class="toc-item ${levelClass}${hasChildrenClass}${activeClass}" data-target="${header.id}"${parentAttr}>${DOMPurify.sanitize(header.text)}</li>`;
+            });
+            tocHTML += '</ul></nav>';
+        }
+
+        const strippedHTML = stripHeadersFromHTML(project.descriptionHTML);
+
+        // Navigation for this project (in left column under TOC)
+        const navHTML = `
+            <div class="projects-nav">
+                <a class="projects-nav-link projects-nav-prev" data-direction="prev">
+                    <span class="nav-arrow">&lt;</span>
+                    <span class="nav-label">previous</span>
+                </a>
+                <a class="projects-nav-link projects-nav-next" data-direction="next">
+                    <span class="nav-label">next</span>
+                    <span class="nav-arrow">&gt;</span>
+                </a>
+                <a class="projects-nav-link projects-nav-all">
+                    all projects
+                </a>
+            </div>
+        `;
+
+        detailsHTML += `
+            <div class="project-item" id="${projectId}" data-project-id="${projectId}" data-index="${index}">
+                <div class="project-header-column">
+                    <h3 class="project-title">${DOMPurify.sanitize(project.title)}</h3>
+                    ${tocHTML}
+                    ${navHTML}
+                </div>
+                <div class="project-content-column">
+                    <div class="project-details">
+                        <img src="${imageUrl}" alt="${project.title} project screenshot" class="project-image" loading="lazy">
+                        ${project.summary ? `<p class="project-summary">${DOMPurify.sanitize(project.summary)}</p>` : ''}
+                        <div class="project-description">
+                            ${DOMPurify.sanitize(strippedHTML)}
+                            ${project.technologies ? `<p class="project-technologies"><strong>Technologies:</strong> ${DOMPurify.sanitize(Array.isArray(project.technologies) ? project.technologies.join(', ') : project.technologies)}</p>` : ''}
+                        </div>
                     </div>
                 </div>
             </div>
-            <div class="project-divider"></div>
         `;
     });
-    
-    projectsList.innerHTML = projectsHTML;
-}
 
-function showErrorMessage() {
-    document.querySelector('.projects-list').innerHTML = `
-        <div style="text-align: center; padding: 2rem; color: var(--text-secondary);">
-            <p>Unable to load projects.</p>
-        </div>`;
-}
+    projectsList.innerHTML = overviewHTML + detailsHTML;
 
-// Load testimonials
-function loadTestimonials() {
-    console.log('🎯 Loading testimonials from Google Sheets...');
-    const SHEET_ID = '1et5adrpulwSRzli18GykZl8XCPwB81_LLfskspjhSLo';
-    const QUOTES_GID = '404494035';
-    
-    const SHEETS_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&tq=SELECT%20*&gid=${QUOTES_GID}`;
-    const PROXY_URL = 'https://api.allorigins.win/get?url=';
-    const FULL_URL = PROXY_URL + encodeURIComponent(SHEETS_URL);
-    
-    fetch(FULL_URL)
-        .then(response => response.json())
-        .then(data => {
-            console.log('✅ Testimonials API response received');
-            const jsonpText = data.contents;
-            
-            const jsonStart = jsonpText.indexOf('(') + 1;
-            const jsonEnd = jsonpText.lastIndexOf(')');
-            const jsonString = jsonpText.substring(jsonStart, jsonEnd);
-            const sheetsData = JSON.parse(jsonString);
-            
-            const testimonials = parseTestimonialsData(sheetsData);
-            console.log('📝 Parsed testimonials:', testimonials);
-            displayTestimonials(testimonials);
-        })
-        .catch(error => {
-            console.error('❌ Error loading testimonials:', error);
+    // Handle image load errors
+    projectsList.querySelectorAll('.project-image, .project-card-image').forEach(img => {
+        img.addEventListener('error', function() {
+            this.style.display = 'none';
+            console.warn('Project image failed to load:', this.src);
         });
+    });
+
+    // Initialize handlers
+    initProjectCardHandlers();
+    initTocHandlers();
+    initProjectNavHandlers();
 }
 
-// Parse testimonials data
-function parseTestimonialsData(data) {
-    const testimonials = [];
-    
-    if (!data.table || !data.table.rows) {
-        return testimonials;
+// Show project detail view
+function showProjectDetail(index) {
+    const projects = window.projectsData;
+    if (!projects) return;
+
+    const overview = document.querySelector('.projects-overview');
+
+    // Fade out overview, then show project detail
+    if (overview && overview.classList.contains('active')) {
+        overview.classList.add('fade-out');
+
+        // After fade-out animation, hide overview and show project
+        setTimeout(() => {
+            overview.classList.remove('active', 'fade-out');
+
+            // Show selected project with fade-in animation
+            document.querySelectorAll('.project-item').forEach((item, idx) => {
+                item.classList.remove('active', 'fade-in', 'slide-in-from-right', 'slide-in-from-left', 'slide-out-to-left', 'slide-out-to-right');
+                if (idx === index) {
+                    item.classList.add('active', 'fade-in');
+                }
+            });
+
+            // Update navigation state for the active project
+            updateProjectNav(index, projects);
+
+            // Start scroll tracking
+            const activeProject = document.querySelector('.project-item.active');
+            if (activeProject) {
+                setTimeout(() => {
+                    observeProjectAnchors(activeProject);
+                }, 300);
+            }
+        }, 300);
+    } else {
+        // Overview not active, just show project directly
+        document.querySelectorAll('.project-item').forEach((item, idx) => {
+            item.classList.remove('active', 'fade-in', 'slide-in-from-right', 'slide-in-from-left', 'slide-out-to-left', 'slide-out-to-right');
+            if (idx === index) {
+                item.classList.add('active', 'fade-in');
+            }
+        });
+        updateProjectNav(index, projects);
     }
-    
-    const rows = data.table.rows;
-    
-    for (let i = 1; i < rows.length; i++) {
-        const row = rows[i];
-        if (row.c && row.c.length >= 1) {
-            const testimonial = {
-                quote: row.c[0] ? (row.c[0].v || '').toString() : '',
-                author: row.c[1] ? (row.c[1].v || '').toString() : '',
-                title: row.c[2] ? (row.c[2].v || '').toString() : ''
-            };
-            
-            if (testimonial.quote && testimonial.author) {
-                testimonials.push(testimonial);
+
+    // Scroll to top
+    const mainContent = document.getElementById('mainContent');
+    if (mainContent) {
+        mainContent.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+}
+
+// Show projects overview
+function showProjectsOverview() {
+    const overview = document.querySelector('.projects-overview');
+    const currentProject = document.querySelector('.project-item.active');
+
+    if (currentProject) {
+        // Clear any existing animation classes
+        currentProject.classList.remove('fade-in', 'slide-in-from-right', 'slide-in-from-left', 'slide-out-to-left', 'slide-out-to-right');
+
+        // Add fade-out animation class
+        currentProject.classList.add('fade-out');
+
+        // After fade-out, switch to overview
+        setTimeout(() => {
+            currentProject.classList.remove('active', 'fade-out');
+
+            // Show overview with fade-in
+            if (overview) {
+                overview.classList.add('active', 'fade-in');
+            }
+
+            // Scroll to top
+            const mainContent = document.getElementById('mainContent');
+            if (mainContent) {
+                mainContent.scrollTo({ top: 0, behavior: 'instant' });
+            }
+        }, 300);
+    } else {
+        // No current project, just show overview
+        if (overview) overview.classList.add('active');
+
+        const mainContent = document.getElementById('mainContent');
+        if (mainContent) {
+            mainContent.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    }
+}
+
+// Initialize project card click handlers
+function initProjectCardHandlers() {
+    document.querySelectorAll('.project-card').forEach(card => {
+        card.addEventListener('click', function() {
+            const index = parseInt(this.dataset.index, 10);
+            showProjectDetail(index);
+        });
+    });
+}
+
+// Update the navigation bar state for the active project
+function updateProjectNav(currentIndex, projects) {
+    const activeProject = document.querySelector('.project-item.active');
+    if (!activeProject) return;
+
+    const prevLink = activeProject.querySelector('.projects-nav-prev');
+    const nextLink = activeProject.querySelector('.projects-nav-next');
+
+    if (!prevLink || !nextLink) return;
+
+    // Update previous link
+    if (currentIndex > 0) {
+        prevLink.classList.remove('disabled');
+    } else {
+        prevLink.classList.add('disabled');
+    }
+
+    // Update next link
+    if (currentIndex < projects.length - 1) {
+        nextLink.classList.remove('disabled');
+    } else {
+        nextLink.classList.add('disabled');
+    }
+}
+
+// Navigate to a specific project
+function navigateToProject(direction) {
+    const projects = window.projectsData;
+    if (!projects) return;
+
+    const currentProject = document.querySelector('.project-item.active');
+    if (!currentProject) return;
+
+    const currentIndex = parseInt(currentProject.dataset.index, 10);
+    let newIndex;
+
+    if (direction === 'prev' && currentIndex > 0) {
+        newIndex = currentIndex - 1;
+    } else if (direction === 'next' && currentIndex < projects.length - 1) {
+        newIndex = currentIndex + 1;
+    } else {
+        return; // Can't navigate
+    }
+
+    const newProject = document.getElementById(`project${newIndex}`);
+    if (!newProject) return;
+
+    // Clear any existing animation classes from all projects
+    document.querySelectorAll('.project-item').forEach(item => {
+        item.classList.remove('fade-in', 'slide-in-from-right', 'slide-in-from-left', 'slide-out-to-left', 'slide-out-to-right');
+    });
+
+    // Determine animation direction
+    const slideOutClass = direction === 'next' ? 'slide-out-to-left' : 'slide-out-to-right';
+    const slideInClass = direction === 'next' ? 'slide-in-from-right' : 'slide-in-from-left';
+
+    // Animate out the current project
+    currentProject.classList.add(slideOutClass);
+
+    // After the out animation, switch projects
+    setTimeout(() => {
+        currentProject.classList.remove('active', slideOutClass);
+
+        // Show and animate in the new project
+        newProject.classList.add('active', slideInClass);
+
+        // Reset TOC to first item
+        const tocItems = newProject.querySelectorAll('.toc-item');
+        tocItems.forEach((item, idx) => {
+            item.classList.remove('active', 'parent-active');
+            if (idx === 0) {
+                item.classList.add('active');
+            }
+        });
+
+        // Update navigation
+        updateProjectNav(newIndex, projects);
+
+        // Scroll to top of projects section
+        const mainContent = document.getElementById('mainContent');
+        if (mainContent) {
+            mainContent.scrollTo({ top: 0, behavior: 'instant' });
+        }
+
+        // Update scroll tracking
+        setTimeout(() => {
+            observeProjectAnchors(newProject);
+        }, 300);
+    }, 300); // Match the slide-out animation duration
+}
+
+// Initialize project navigation handlers
+function initProjectNavHandlers() {
+    // Previous/Next handlers
+    document.querySelectorAll('.projects-nav-prev, .projects-nav-next').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const direction = this.dataset.direction;
+            if (direction && !this.classList.contains('disabled')) {
+                navigateToProject(direction);
+            }
+        });
+    });
+
+    // All projects handler - use querySelectorAll to attach to ALL "all projects" links
+    document.querySelectorAll('.projects-nav-all').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            showProjectsOverview();
+        });
+    });
+}
+
+// Flag to prevent scroll tracking during click-initiated scrolls
+let isClickScrolling = false;
+let clickedTocItem = null;
+let scrollEndTimer = null;
+
+// Initialize TOC click handlers and scroll tracking
+function initTocHandlers() {
+    // Click handler for TOC items
+    document.querySelectorAll('.toc-item').forEach((item) => {
+        item.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const projectItem = this.closest('.project-item');
+            const allTocItems = projectItem.querySelectorAll('.toc-item');
+
+            // If clicking an h2 with children, redirect to its first child
+            let targetItem = this;
+            let targetId = this.dataset.target;
+            if (this.classList.contains('has-children')) {
+                const myIndex = Array.from(allTocItems).indexOf(this);
+                // Find the first child (next item with parentIndex pointing to this)
+                for (let i = myIndex + 1; i < allTocItems.length; i++) {
+                    if (allTocItems[i].dataset.parentIndex === String(myIndex)) {
+                        targetItem = allTocItems[i];
+                        targetId = targetItem.dataset.target;
+                        break;
+                    }
+                }
+            }
+
+            const targetAnchor = projectItem.querySelector(`#${targetId}`);
+
+            if (targetAnchor) {
+                const isAlreadyActive = targetItem.classList.contains('active');
+
+                // Disable scroll tracking during smooth scroll
+                isClickScrolling = true;
+                clickedTocItem = targetItem;
+                currentVisibleAnchors.clear(); // Clear stale observer data
+
+                // Only update if clicking a NEW item
+                if (!isAlreadyActive) {
+                    allTocItems.forEach(i => i.classList.remove('active', 'parent-active'));
+                    targetItem.classList.add('active');
+                }
+
+                // Handle parent highlighting for h3 items
+                const parentIndex = targetItem.dataset.parentIndex;
+                if (parentIndex !== undefined) {
+                    const parentItem = allTocItems[parseInt(parentIndex, 10)];
+                    if (parentItem) {
+                        parentItem.classList.add('parent-active');
+                    }
+                }
+
+                // Check if this is the first or last TOC item
+                const isFirstItem = targetItem === allTocItems[0];
+                const isLastItem = targetItem === allTocItems[allTocItems.length - 1];
+                const mainContent = document.getElementById('mainContent');
+
+                if (isFirstItem) {
+                    // For the first item, scroll to very top
+                    mainContent.scrollTo({ top: 0, behavior: 'smooth' });
+                } else if (isLastItem) {
+                    // For the last item, scroll to bottom of article
+                    mainContent.scrollTo({
+                        top: mainContent.scrollHeight,
+                        behavior: 'smooth'
+                    });
+                } else {
+                    // Scroll so anchor lands at 50% from top (matching scroll tracking trigger)
+                    const anchorRect = targetAnchor.getBoundingClientRect();
+                    const containerRect = mainContent.getBoundingClientRect();
+                    const offset = window.innerHeight * 0.5;
+                    const scrollTop = mainContent.scrollTop + anchorRect.top - containerRect.top - offset;
+                    mainContent.scrollTo({ top: Math.max(0, scrollTop), behavior: 'smooth' });
+                }
+            }
+        });
+    });
+
+    // Set up scroll tracking
+    setupScrollTracking();
+}
+
+// Intersection Observer for TOC scroll tracking (industry standard approach)
+let tocObserver = null;
+let currentVisibleAnchors = new Map();
+
+function setupScrollTracking() {
+    // Create observer with root as the scroll container
+    const mainContent = document.getElementById('mainContent');
+
+    // Observer only tracks visibility, doesn't trigger updates (prevents dual-system conflicts)
+    tocObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            const anchorId = entry.target.id;
+            if (entry.isIntersecting) {
+                currentVisibleAnchors.set(anchorId, entry.intersectionRatio);
+            } else {
+                currentVisibleAnchors.delete(anchorId);
+            }
+        });
+        // Don't call updateActiveTocFromObserver - scroll listener handles all updates
+    }, {
+        root: mainContent,
+        rootMargin: '-50% 0px -48% 0px',
+        threshold: [0, 0.5, 1]
+    });
+
+    // Add scroll listener for fast scrolling - updates TOC directly
+    let scrollTimeout;
+    mainContent.addEventListener('scroll', () => {
+        // Throttle to 60fps for performance
+        if (!scrollTimeout) {
+            scrollTimeout = requestAnimationFrame(() => {
+                updateActiveTocFromScroll();
+                scrollTimeout = null;
+            });
+        }
+
+        // Scroll-end detection: re-enable tracking after scroll stops
+        if (isClickScrolling) {
+            clearTimeout(scrollEndTimer);
+            scrollEndTimer = setTimeout(() => {
+                isClickScrolling = false;
+                clickedTocItem = null;
+            }, 150); // 150ms after last scroll event = scroll ended
+        }
+    }, { passive: true });
+}
+
+function updateActiveTocFromScroll() {
+    if (isClickScrolling) return; // Skip during click-initiated scrolls
+
+    const activeProject = document.querySelector('.project-item.active');
+    if (!activeProject) return;
+
+    const toc = activeProject.querySelector('.project-toc');
+    if (!toc) return;
+
+    const tocItems = toc.querySelectorAll('.toc-item');
+    const anchors = activeProject.querySelectorAll('.toc-anchor');
+
+    if (tocItems.length === 0 || anchors.length === 0) return;
+
+    // Find which section contains the reading position (2/3 trigger point)
+    // A section is active if its anchor is above the trigger AND the next anchor is at/below it
+    const triggerPoint = window.innerHeight * 0.5;
+    let activeIndex = 0;
+
+    for (let i = 0; i < anchors.length; i++) {
+        const rect = anchors[i].getBoundingClientRect();
+        if (rect.top <= triggerPoint) {
+            activeIndex = i;
+            // If this is the last anchor, or the next anchor is still below trigger, we're in this section
+            if (i === anchors.length - 1) break;
+            const nextRect = anchors[i + 1].getBoundingClientRect();
+            if (nextRect.top > triggerPoint) break;
+        } else {
+            break; // This anchor is below trigger, use previous activeIndex
+        }
+    }
+
+    // Check if active item has changed - skip update if same item is already active
+    const currentActiveItem = toc.querySelector('.toc-item.active');
+    const currentActiveIndex = currentActiveItem ? Array.from(tocItems).indexOf(currentActiveItem) : -1;
+
+    if (currentActiveIndex === activeIndex) {
+        return; // Same item already active, no update needed
+    }
+
+    // Update active state (only runs when changing to a new section)
+    const newActiveItem = tocItems[activeIndex];
+    tocItems.forEach((item) => {
+        item.classList.remove('active', 'parent-active');
+    });
+
+    if (newActiveItem) {
+        newActiveItem.classList.add('active');
+
+        const parentIndex = newActiveItem.dataset.parentIndex;
+        if (parentIndex !== undefined) {
+            const parentItem = tocItems[parseInt(parentIndex, 10)];
+            if (parentItem) {
+                parentItem.classList.add('parent-active');
             }
         }
     }
-    
-    return testimonials;
+}
+
+function updateActiveTocFromObserver() {
+    if (isClickScrolling) return; // Skip during click-initiated scrolls
+
+    const activeProject = document.querySelector('.project-item.active');
+    if (!activeProject) return;
+
+    const toc = activeProject.querySelector('.project-toc');
+    if (!toc) return;
+
+    const tocItems = toc.querySelectorAll('.toc-item');
+    const anchors = activeProject.querySelectorAll('.toc-anchor');
+
+    if (tocItems.length === 0 || anchors.length === 0) return;
+
+    // Find the first visible anchor (topmost in viewport)
+    let activeIndex = 0;
+
+    anchors.forEach((anchor, index) => {
+        if (currentVisibleAnchors.has(anchor.id)) {
+            activeIndex = index;
+        }
+    });
+
+    // If no anchors visible, find which section contains the trigger point
+    if (currentVisibleAnchors.size === 0) {
+        const triggerPoint = window.innerHeight * 0.5;
+        for (let i = 0; i < anchors.length; i++) {
+            const rect = anchors[i].getBoundingClientRect();
+            if (rect.top <= triggerPoint) {
+                activeIndex = i;
+                if (i === anchors.length - 1) break;
+                const nextRect = anchors[i + 1].getBoundingClientRect();
+                if (nextRect.top > triggerPoint) break;
+            } else {
+                break;
+            }
+        }
+    }
+
+    // Check if active item has changed - skip update if same item is already active
+    const currentActiveItem = toc.querySelector('.toc-item.active');
+    const currentActiveIndex = currentActiveItem ? Array.from(tocItems).indexOf(currentActiveItem) : -1;
+
+    if (currentActiveIndex === activeIndex) {
+        return; // Same item already active, no update needed
+    }
+
+    // Update active state (only runs when changing to a new section)
+    const newActiveItem = tocItems[activeIndex];
+    tocItems.forEach((item) => {
+        item.classList.remove('active', 'parent-active');
+    });
+
+    if (newActiveItem) {
+        newActiveItem.classList.add('active');
+
+        // If this is an h3, also highlight its parent h2
+        const parentIndex = newActiveItem.dataset.parentIndex;
+        if (parentIndex !== undefined) {
+            const parentItem = tocItems[parseInt(parentIndex, 10)];
+            if (parentItem) {
+                parentItem.classList.add('parent-active');
+            }
+        }
+    }
+}
+
+function observeProjectAnchors(projectItem) {
+    if (!tocObserver) setupScrollTracking();
+
+    // Stop observing previous anchors
+    if (tocObserver) {
+        document.querySelectorAll('.toc-anchor').forEach(anchor => {
+            tocObserver.unobserve(anchor);
+        });
+        currentVisibleAnchors.clear();
+    }
+
+    // Start observing new project's anchors
+    if (projectItem) {
+        const anchors = projectItem.querySelectorAll('.toc-anchor');
+        anchors.forEach(anchor => {
+            tocObserver.observe(anchor);
+        });
+    }
+}
+
+// Fallback update function for initial state
+function updateActiveTocItem() {
+    updateActiveTocFromObserver();
+}
+
+function showErrorMessage() {
+    const projectsList = document.querySelector('.projects-list');
+    if (projectsList) {
+        projectsList.innerHTML = `
+            <div style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+                <p>Unable to load projects. Please refresh the page.</p>
+            </div>`;
+    }
+}
+
+// Load testimonials from markdown file
+function loadTestimonials() {
+    fetch('/testimonials.md')
+        .then(res => res.text())
+        .then(text => {
+            const { data } = parseFrontMatter(text);
+            const testimonials = data.testimonials || [];
+            displayTestimonials(testimonials);
+        })
+        .catch(error => {
+            console.error('Error loading testimonials:', error);
+        });
 }
 
 // Display testimonials
 function displayTestimonials(testimonials) {
     const container = document.querySelector('.testimonials-scroll-container');
-    if (!container) return;
+    if (!container) {
+        console.warn('Testimonials container not found - testimonials section may not be visible');
+        return;
+    }
     
     if (testimonials.length === 0) {
         container.innerHTML = '<div class="scroll-testimonial"><div class="scroll-quote">No testimonials found. Add some to your Google Sheet!</div><div class="scroll-author">— System</div></div>';
@@ -578,54 +1168,76 @@ function goToHomepage() {
     const name = document.querySelector('.homepage-name');
     const menu = document.querySelector('.homepage-menu');
     const logo = document.querySelector('.homepage-logo');
-    
-    name.style.transition = 'none';
-    shadow.style.transition = 'none';
-    menu.style.transition = 'none';
-    logo.style.transition = 'none';
-    
-    name.classList.remove('animate');
-    shadow.classList.remove('animate');
-    menu.classList.remove('animate');
-    logo.classList.remove('animate', 'fade-to-amber');
-    
-    name.style.opacity = '0';
-    name.style.transform = 'translateY(10px)';
-    shadow.style.opacity = '0';
-    shadow.style.visibility = 'hidden';
-    menu.style.opacity = '0';
-    menu.style.transform = 'translateY(10px)';
-    logo.style.opacity = '0';
-    logo.style.transform = 'translateY(10px)';
-    
-    name.offsetHeight;
-    shadow.offsetHeight;
-    menu.offsetHeight;
-    logo.offsetHeight;
-    
-    setTimeout(() => {
-        name.style.transition = '';
-        shadow.style.transition = '';
-        menu.style.transition = '';
-        logo.style.transition = '';
-    }, 50);
-    
-    sidebar.classList.remove('show');
-    mainContent.classList.add('homepage-active');
-    mainContent.classList.remove('nav-visible');
-    homepage.classList.remove('nav-visible');
-    
-    document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-    document.querySelectorAll('.section').forEach(section => section.classList.remove('active'));
-    
-    homepage.classList.add('active');
-    
-    setTimeout(() => {
-        triggerHomepageAnimation();
-    }, 100);
-    
-    hideProject();
-    updateFloatingContactVisibility();
+
+    // Check if projects needs to fade out
+    const projectsSection = document.getElementById('projects');
+    const projectsOverview = document.querySelector('.projects-overview');
+    const activeProjectDetail = document.querySelector('.project-item.active');
+    const needsProjectsFadeOut = projectsSection && projectsSection.classList.contains('active') &&
+                                  (projectsOverview?.classList.contains('active') || activeProjectDetail);
+
+    const proceedToHomepage = () => {
+        name.style.transition = 'none';
+        shadow.style.transition = 'none';
+        menu.style.transition = 'none';
+        logo.style.transition = 'none';
+
+        name.classList.remove('animate');
+        shadow.classList.remove('animate');
+        menu.classList.remove('animate');
+        logo.classList.remove('animate', 'fade-to-amber');
+
+        name.style.opacity = '0';
+        name.style.transform = 'translateY(10px)';
+        shadow.style.opacity = '0';
+        shadow.style.visibility = 'hidden';
+        menu.style.opacity = '0';
+        menu.style.transform = 'translateY(10px)';
+        logo.style.opacity = '0';
+        logo.style.transform = 'translateY(10px)';
+
+        name.offsetHeight;
+        shadow.offsetHeight;
+        menu.offsetHeight;
+        logo.offsetHeight;
+
+        setTimeout(() => {
+            name.style.transition = '';
+            shadow.style.transition = '';
+            menu.style.transition = '';
+            logo.style.transition = '';
+        }, 50);
+
+        sidebar.classList.remove('show');
+        mainContent.classList.add('homepage-active');
+        mainContent.classList.remove('nav-visible');
+        homepage.classList.remove('nav-visible');
+
+        document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+        document.querySelectorAll('.section').forEach(section => section.classList.remove('active'));
+
+        homepage.classList.add('active');
+
+        setTimeout(() => {
+            triggerHomepageAnimation();
+        }, 100);
+
+        resetProjectsView();
+        updateFloatingContactVisibility();
+    };
+
+    if (needsProjectsFadeOut) {
+        // Fade out projects content first
+        if (projectsOverview?.classList.contains('active')) {
+            projectsOverview.classList.add('fade-out');
+        }
+        if (activeProjectDetail) {
+            activeProjectDetail.classList.add('fade-out');
+        }
+        setTimeout(proceedToHomepage, 300);
+    } else {
+        proceedToHomepage();
+    }
 }
 
 // Show section (Updated to call the new music function)
@@ -642,75 +1254,65 @@ function showSection(sectionName) {
     document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
     document.querySelector(`[data-section="${sectionName}"]`)?.classList.add('active');
 
-    document.querySelectorAll('.section').forEach(section => section.classList.remove('active'));
+    // Check if projects overview or detail needs to fade out
+    const projectsSection = document.getElementById('projects');
+    const projectsOverview = document.querySelector('.projects-overview');
+    const activeProjectDetail = document.querySelector('.project-item.active');
+    const needsProjectsFadeOut = projectsSection && projectsSection.classList.contains('active') &&
+                                  sectionName !== 'projects' &&
+                                  (projectsOverview?.classList.contains('active') || activeProjectDetail);
 
-    const activeSection = document.getElementById(sectionName);
+    const proceedWithSectionChange = () => {
+        document.querySelectorAll('.section').forEach(section => section.classList.remove('active'));
 
-    if (activeSection) {
-        // --- The New, More Reliable Fix ---
-        
-        // 1. Define what to do when the animation ends.
-        const onAnimationEnd = () => {
-            // Remove the blocking class now that the animation is truly complete.
-            document.body.classList.remove('is-transitioning');
-        };
+        const activeSection = document.getElementById(sectionName);
 
-        // 2. Listen for the 'animationend' event on the section that will be animated.
-        //    We use { once: true } so the listener automatically removes itself after firing once.
-        activeSection.addEventListener('animationend', onAnimationEnd, { once: true });
-
-        // 3. Now, add the 'active' class to start the animation.
-        activeSection.classList.add('active');
-    }
-
-    hideProject();
-    updateFloatingContactVisibility();
-
-    if (sectionName === 'about') {
-        loadTestimonials();
-        setTimeout(startTestimonialTracking, 800);
-    } else {
-        stopTestimonialTracking();
-        if (sectionName === 'projects') loadProjects();
-        if (sectionName === 'music') initializeMusicSection();
-    }
-}
-
-// Project toggle functionality
-function toggleProject(projectId) {
-    const projectItem = document.getElementById(projectId);
-    if (!projectItem) return;
-
-    const details = projectItem.querySelector('.project-details-inline');
-
-    // If another project is open, close it first.
-    if (currentOpenProject && currentOpenProject !== projectId) {
-        const lastOpenProject = document.getElementById(currentOpenProject);
-        if(lastOpenProject) {
-            lastOpenProject.classList.remove('open');
-            const lastOpenDetails = lastOpenProject.querySelector('.project-details-inline');
-            lastOpenDetails.style.maxHeight = '0';
+        if (activeSection) {
+            const onAnimationEnd = () => {
+                document.body.classList.remove('is-transitioning');
+            };
+            activeSection.addEventListener('animationend', onAnimationEnd, { once: true });
+            activeSection.classList.add('active');
         }
-    }
 
-    // Toggle the clicked project
-    if (projectItem.classList.contains('open')) {
-        // Close it
-        projectItem.classList.remove('open');
-        details.style.maxHeight = '0';
-        currentOpenProject = null;
+        resetProjectsView();
+        updateFloatingContactVisibility();
+
+        if (sectionName === 'about') {
+            loadTestimonials();
+            setTimeout(startTestimonialTracking, 800);
+        } else {
+            stopTestimonialTracking();
+            if (sectionName === 'projects') loadProjects();
+            if (sectionName === 'music') initializeMusicSection();
+        }
+    };
+
+    if (needsProjectsFadeOut) {
+        // Fade out projects content first
+        if (projectsOverview?.classList.contains('active')) {
+            projectsOverview.classList.add('fade-out');
+        }
+        if (activeProjectDetail) {
+            activeProjectDetail.classList.add('fade-out');
+        }
+        setTimeout(proceedWithSectionChange, 300);
     } else {
-        // Open it
-        projectItem.classList.add('open');
-        details.style.maxHeight = details.scrollHeight + "px";
-        currentOpenProject = projectId;
+        proceedWithSectionChange();
     }
 }
 
-function hideProject() {
-    if (currentOpenProject) {
-        toggleProject(currentOpenProject); // Use the toggle function to properly close it
-    }
+// Reset projects view to overview
+function resetProjectsView() {
+    const overview = document.querySelector('.projects-overview');
+
+    // Hide all project detail views
+    document.querySelectorAll('.project-item').forEach(item => {
+        item.classList.remove('active');
+    });
+
+    // Show overview
+    if (overview) overview.classList.add('active');
 }
 
 // Floating contact functionality
@@ -784,17 +1386,43 @@ function stopTestimonialTracking() {
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize the audio player and context
     audioPlayer = document.getElementById('audio-player');
+    if (!audioPlayer) {
+        console.error('Audio player element not found');
+        return;
+    }
+    
     try {
-        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        // Handle older browsers that use webkit prefix
+        const AudioContextClass = window.AudioContext || 
+                                 (window.webkitAudioContext && window.webkitAudioContext) || 
+                                 null;
+        if (AudioContextClass) {
+            audioContext = new AudioContextClass();
+        } else {
+            throw new Error('AudioContext not supported');
+        }
     } catch (e) {
-        console.error("Web Audio API is not supported in this browser.");
+        console.error("Web Audio API is not supported in this browser:", e);
+        audioContext = null;
     }
 
     // Handle clicks for homepage and sidebar navigation
     document.querySelectorAll('.homepage-menu-item, .nav-link').forEach(item => {
         item.addEventListener('click', function() {
             const section = this.getAttribute('data-section');
-            if (section) showSection(section);
+            if (section) {
+                // Special case: clicking "projects" while viewing a project detail
+                // should behave like "all projects" (fade out and show overview)
+                if (section === 'projects') {
+                    const projectsSection = document.getElementById('projects');
+                    const activeProjectDetail = document.querySelector('.project-item.active');
+                    if (projectsSection && projectsSection.classList.contains('active') && activeProjectDetail) {
+                        showProjectsOverview();
+                        return;
+                    }
+                }
+                showSection(section);
+            }
         });
     });
     
@@ -804,7 +1432,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initial setup calls
     loadProjects();
-    
+
     const homepage = document.getElementById('homepage');
     if(homepage && homepage.classList.contains('active')) {
       triggerHomepageAnimation();
