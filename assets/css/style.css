@@ -2,6 +2,17 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Mobile tap flash effect */
+.tap-flash {
+    color: #FFCC80 !important;
+    transition: color 0.1s ease !important;
+}
+
+.tap-flash-out {
+    transition: color 0.4s ease !important;
 }
 
 :root {
@@ -90,9 +101,12 @@ body {
     transition: color 0.3s ease, transform 0.3s ease;
 }
 
-.nav-link:hover {
-    color: #FFCC80;
-    transform: translateX(5px);
+/* Only apply hover effects on devices with true hover (not touch) */
+@media (hover: hover) {
+    .nav-link:hover {
+        color: #FFCC80;
+        transform: translateX(5px);
+    }
 }
 
 .nav-link.active {
@@ -553,6 +567,7 @@ body.is-transitioning .music-item:hover .snippet-text {
 /* Override section padding for projects */
 #projects.section {
     padding-right: 0;
+    overflow-x: hidden;
 }
 
 /* Remove transform after animation to allow fixed positioning inside.
@@ -743,35 +758,39 @@ body.is-transitioning .music-item:hover .snippet-text {
     to { opacity: 0; }
 }
 
-/* Left column - title and TOC - fixed position, never moves on scroll */
+/* Project item layout */
+.project-item.active {
+    display: block;
+}
+
+/* Left column - title and TOC - fixed positioning (like nav bar) */
 .project-header-column {
     position: fixed;
     top: 7rem;
     left: calc(400px + 6rem);
     width: 200px;
-    height: calc(100vh - 10rem);
+    height: calc(100vh - 9rem);
     display: flex;
     flex-direction: column;
     z-index: 10;
 }
 
-/* Right column - summary and details - centered to viewport */
+/* Right column - summary and details - centered in remaining space */
 .project-content-column {
-    /* Center relative to full viewport, with min margin to clear fixed header */
-    width: 100%;
-    max-width: 800px;
-    /* 50vw - 400px centers 800px content in viewport; subtract offsets from parent containers */
-    margin-left: max(calc(200px + 6rem), calc(50vw - 928px));
-    margin-right: auto;
+    /* Width accounts for TOC clearance on smaller screens */
+    width: min(800px, calc(100% - 200px - 3rem));
+    /* Center with minimum clearance for TOC (200px + 2rem gap) */
+    margin-left: max(calc(200px + 2rem), calc(50% - 400px));
+    margin-right: max(1rem, calc(50% - 400px));
 }
 
-/* Project title */
+/* Project title - now in content column above banner */
 .project-title {
     font-size: 2.4rem;
     font-weight: 600;
     color: var(--dark-brown);
     margin-top: 0;
-    margin-bottom: 0;
+    margin-bottom: 1.5rem;
 }
 
 /* The summary sits in the right column */
@@ -788,13 +807,22 @@ body.is-transitioning .music-item:hover .snippet-text {
 
 /* Project details - always visible */
 .project-details {
-    max-width: 800px;
+    max-width: 100%;
     padding-bottom: 50vh; /* Allow last section to reach 50% scroll trigger */
+    overflow-x: hidden;
 }
 
 .project-details img {
     width: 100%;
+    max-width: 100%;
     height: auto;
+    display: block;
+}
+
+/* Ensure all content respects container width */
+.project-description {
+    overflow-wrap: break-word;
+    word-wrap: break-word;
 }
 
 /* TOC Sidebar - always visible for active project */
@@ -978,14 +1006,14 @@ body.is-transitioning .music-item:hover .snippet-text {
   margin-top: 2rem;
 }
 
-/* Projects navigation - in left column, pushed to bottom */
+/* Projects navigation - in left column, pinned to bottom */
 .projects-nav {
+    position: absolute;
+    bottom: 10vh;
+    left: 0;
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
-    margin-top: auto;
-    margin-bottom: 10vh;
-    padding-top: 2rem;
 }
 
 .projects-nav-link {
@@ -1000,6 +1028,14 @@ body.is-transitioning .music-item:hover .snippet-text {
     opacity: 0.7;
     text-decoration: none;
     padding: 0.5rem 0;
+    outline: none;
+    border: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.projects-nav-link:focus,
+.projects-nav-link:active {
+    outline: none;
 }
 
 .projects-nav-link:hover:not(.disabled) {
@@ -1222,8 +1258,28 @@ body.is-transitioning .music-item:hover .snippet-text {
     color: rgba(62, 39, 35, 0.7) !important;
 }
 
+/* Tablet/Small Laptop - Hide TOC, prioritize content */
+@media (max-width: 1024px) {
+    .project-header-column {
+        display: none;
+    }
+
+    .project-content-column {
+        width: min(800px, calc(100% - 2rem));
+        margin-left: auto;
+        margin-right: auto;
+        padding: 0 1rem;
+    }
+}
+
 /* Mobile Responsiveness */
 @media (max-width: 768px) {
+    body {
+        overflow: auto;
+        height: auto;
+        min-height: 100vh;
+    }
+
     .sidebar {
         width: 100%;
         height: auto;
@@ -1242,7 +1298,20 @@ body.is-transitioning .music-item:hover .snippet-text {
     }
 
     .logo {
-        display: none;
+        display: block;
+        text-align: center;
+        margin-bottom: 0.5rem;
+        padding: 0;
+    }
+
+    .logo h1 {
+        font-size: 1.1rem;
+        margin: 0;
+    }
+
+    .logo-link {
+        color: var(--cream);
+        font-weight: 600;
     }
 
     .nav-menu {
@@ -1276,6 +1345,7 @@ body.is-transitioning .music-item:hover .snippet-text {
         font-size: 1rem;
         background-color: transparent;
         color: #8D6E63;
+        transform: translateY(3px);
     }
 
     .main-content {
@@ -1287,13 +1357,12 @@ body.is-transitioning .music-item:hover .snippet-text {
         min-height: 100vh;
         overflow-y: auto;
         overflow-x: hidden;
-        transition: margin-top 0.7s cubic-bezier(.32,.81,.55,.97);
     }
 
     .main-content.nav-visible {
-        margin-top: 80px;
-        min-height: calc(100vh - 80px);
-        padding-top: 2rem;
+        margin-top: 110px;
+        min-height: calc(100vh - 110px);
+        padding-top: 0;
     }
 
     .main-content.homepage-active {
@@ -1314,12 +1383,12 @@ body.is-transitioning .music-item:hover .snippet-text {
 
     .section {
         height: auto;
-        min-height: calc(100vh - 80px);
+        min-height: calc(100vh - 110px);
         overflow-y: auto;
         overflow-x: visible;
         padding-bottom: 2rem;
         padding-right: 0;
-        padding-top: 2rem;
+        padding-top: 0;
     }
     
     .floating-contact {
@@ -1370,6 +1439,7 @@ body.is-transitioning .music-item:hover .snippet-text {
     }
 
     .project-header-column {
+        display: flex;
         position: static;
         top: auto;
         left: auto;
@@ -1379,11 +1449,14 @@ body.is-transitioning .music-item:hover .snippet-text {
     }
 
     .project-content-column {
-        margin-left: 0;
+        margin-left: auto;
+        margin-right: auto;
+        padding: 0 1rem;
     }
 
     .project-item {
-        padding-left: 1rem;
+        padding-left: 0;
+        padding-right: 0;
     }
 
     .project-title {
@@ -1398,21 +1471,54 @@ body.is-transitioning .music-item:hover .snippet-text {
         font-size: 1rem;
     }
 
-    /* Projects navigation on mobile - show at bottom of content */
+    /* Projects navigation on mobile */
     .projects-nav {
         position: static;
-        margin-top: 2rem;
-        padding-top: 1rem;
         flex-direction: row;
-        justify-content: space-between;
+        margin: 0;
+        padding: 0;
+        gap: 0;
     }
 
-    .projects-nav-link {
-        font-size: 0.85rem;
+    /* Hide "all projects" bar on mobile - nav bar serves same purpose */
+    .projects-nav-link.projects-nav-all {
+        display: none;
+    }
+
+    /* < and > buttons - floating on sides */
+    .projects-nav-prev,
+    .projects-nav-next {
+        position: fixed;
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 100;
+        background: transparent;
+        padding: 1rem 0.5rem;
+        font-size: 1.2rem;
+        outline: none;
+        border: none;
+    }
+
+    .projects-nav-prev {
+        left: 0.5rem;
+    }
+
+    .projects-nav-next {
+        right: 0.5rem;
     }
 
     .projects-nav-link .nav-label {
         display: none;
+    }
+
+    /* Standard padding for project content on mobile */
+    .project-item.active .project-content-column {
+        padding-top: 1rem;
+    }
+
+    /* Projects overview spacing on mobile - match gap between cards */
+    .projects-overview {
+        padding-top: 1rem;
     }
 
     .music-links,
@@ -1454,6 +1560,14 @@ body.is-transitioning .music-item:hover .snippet-text {
 
     .homepage-menu-item {
         font-size: 1.2rem;
+    }
+
+    .homepage-content {
+        padding-bottom: 20vh;
+    }
+
+    .homepage-name-container {
+        margin-bottom: 7rem;
     }
 
     /* Mobile music item layout */

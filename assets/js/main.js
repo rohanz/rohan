@@ -497,11 +497,11 @@ function displayProjects(projects) {
         detailsHTML += `
             <div class="project-item" id="${projectId}" data-project-id="${projectId}" data-index="${index}">
                 <div class="project-header-column">
-                    <h3 class="project-title">${DOMPurify.sanitize(project.title)}</h3>
                     ${tocHTML}
                     ${navHTML}
                 </div>
                 <div class="project-content-column">
+                    <h3 class="project-title">${DOMPurify.sanitize(project.title)}</h3>
                     <div class="project-details">
                         <img src="${imageUrl}" alt="${project.title} project screenshot" class="project-image" loading="lazy">
                         ${project.summary ? `<p class="project-summary">${DOMPurify.sanitize(project.summary)}</p>` : ''}
@@ -742,6 +742,149 @@ function initProjectNavHandlers() {
             showProjectsOverview();
         });
     });
+
+    // Swipe gesture support for mobile
+    initSwipeGestures();
+}
+
+// Initialize swipe gestures for project navigation
+function initSwipeGestures() {
+    let touchStartX = 0;
+    let touchEndX = 0;
+    const minSwipeDistance = 50;
+
+    const projectsSection = document.getElementById('projects');
+    if (!projectsSection) return;
+
+    projectsSection.addEventListener('touchstart', function(e) {
+        touchStartX = e.changedTouches[0].screenX;
+    }, { passive: true });
+
+    projectsSection.addEventListener('touchend', function(e) {
+        touchEndX = e.changedTouches[0].screenX;
+        handleSwipe();
+    }, { passive: true });
+
+    function handleSwipe() {
+        const swipeDistance = touchEndX - touchStartX;
+
+        // Only handle swipe if we're in a project detail view (not overview)
+        const activeProject = document.querySelector('.project-item.active');
+        if (!activeProject) return;
+
+        if (Math.abs(swipeDistance) < minSwipeDistance) return;
+
+        if (swipeDistance > 0) {
+            // Swipe right = previous project
+            const prevLink = activeProject.querySelector('.projects-nav-prev');
+            if (prevLink && !prevLink.classList.contains('disabled')) {
+                navigateToProject('prev');
+            }
+        } else {
+            // Swipe left = next project
+            const nextLink = activeProject.querySelector('.projects-nav-next');
+            if (nextLink && !nextLink.classList.contains('disabled')) {
+                navigateToProject('next');
+            }
+        }
+    }
+}
+
+// Initialize swipe gestures for section navigation (mobile)
+function initSectionSwipeGestures() {
+    let touchStartX = 0;
+    let touchEndX = 0;
+    const minSwipeDistance = 50;
+    const sections = ['music', 'projects', 'about'];
+
+    const mainContent = document.getElementById('mainContent');
+    if (!mainContent) return;
+
+    mainContent.addEventListener('touchstart', function(e) {
+        touchStartX = e.changedTouches[0].screenX;
+    }, { passive: true });
+
+    mainContent.addEventListener('touchend', function(e) {
+        touchEndX = e.changedTouches[0].screenX;
+        handleSectionSwipe();
+    }, { passive: true });
+
+    function handleSectionSwipe() {
+        const swipeDistance = touchEndX - touchStartX;
+        if (Math.abs(swipeDistance) < minSwipeDistance) return;
+
+        // Don't handle section swipe if we're in a project detail view
+        const activeProject = document.querySelector('.project-item.active');
+        if (activeProject) return;
+
+        // Find current active section
+        const activeSection = document.querySelector('.section.active');
+        if (!activeSection) return;
+
+        const currentId = activeSection.id;
+
+        // Skip if on homepage
+        if (currentId === 'homepage') return;
+
+        const currentIndex = sections.indexOf(currentId);
+        if (currentIndex === -1) return;
+
+        let newIndex;
+        if (swipeDistance > 0) {
+            // Swipe right = previous section
+            newIndex = currentIndex - 1;
+        } else {
+            // Swipe left = next section
+            newIndex = currentIndex + 1;
+        }
+
+        // Check bounds
+        if (newIndex >= 0 && newIndex < sections.length) {
+            showSection(sections[newIndex]);
+        }
+    }
+}
+
+// Initialize mobile tap flash effect
+function initTapFlash() {
+    // Only apply on touch devices
+    if (!('ontouchstart' in window)) return;
+
+    // Selectors for tappable elements
+    const tappableSelectors = [
+        '.nav-link',
+        '.homepage-menu-item',
+        '.logo-link',
+        '.project-card',
+        '.projects-nav-link',
+        '.music-link',
+        '.social-link',
+        '.toc-item'
+    ];
+
+    document.addEventListener('touchstart', function(e) {
+        const target = e.target.closest(tappableSelectors.join(', '));
+        if (target) {
+            // Add flash class immediately
+            target.classList.add('tap-flash');
+        }
+    }, { passive: true });
+
+    document.addEventListener('touchend', function(e) {
+        const target = e.target.closest(tappableSelectors.join(', '));
+        if (target) {
+            // After a brief moment, start the fade out
+            setTimeout(() => {
+                target.classList.remove('tap-flash');
+                target.classList.add('tap-flash-out');
+
+                // Remove the transition class after animation completes
+                setTimeout(() => {
+                    target.classList.remove('tap-flash-out');
+                }, 400);
+            }, 150);
+        }
+    }, { passive: true });
 }
 
 // Flag to prevent scroll tracking during click-initiated scrolls
@@ -1245,8 +1388,11 @@ function showSection(sectionName) {
     // Add the class to the body to block hover effects immediately.
     document.body.classList.add('is-transitioning');
 
+    const mainContent = document.getElementById('mainContent');
+
     document.getElementById('sidebar').classList.add('show');
-    document.getElementById('mainContent').classList.remove('homepage-active');
+    mainContent.classList.remove('homepage-active');
+    mainContent.classList.add('nav-visible');
 
     const homepage = document.getElementById('homepage');
     if (homepage) homepage.classList.remove('active');
@@ -1263,6 +1409,11 @@ function showSection(sectionName) {
                                   (projectsOverview?.classList.contains('active') || activeProjectDetail);
 
     const proceedWithSectionChange = () => {
+        // Reset scroll position after fade-out, before showing new section
+        if (mainContent) mainContent.scrollTop = 0;
+        document.body.scrollTop = 0;
+        document.documentElement.scrollTop = 0;
+
         document.querySelectorAll('.section').forEach(section => section.classList.remove('active'));
 
         const activeSection = document.getElementById(sectionName);
@@ -1432,6 +1583,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initial setup calls
     loadProjects();
+    initSectionSwipeGestures();
+    initTapFlash();
 
     const homepage = document.getElementById('homepage');
     if(homepage && homepage.classList.contains('active')) {
