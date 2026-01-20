@@ -4,6 +4,22 @@ let audioPlayer = null;
 let audioContext = null;
 let testimonialInterval;
 
+// Dynamically update mobile nav height CSS variable
+function updateMobileNavHeight() {
+    const sidebar = document.querySelector('.sidebar');
+    if (sidebar && window.innerWidth <= 768) {
+        const height = sidebar.offsetHeight;
+        document.documentElement.style.setProperty('--mobile-nav-height', height + 'px');
+    }
+}
+
+// Update on resize (debounced)
+let resizeTimeout;
+window.addEventListener('resize', function() {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(updateMobileNavHeight, 100);
+});
+
 // --- NEW: Local Music Data ---
 // All music data is now managed here. Edit or add new objects to this array.
 const musicData = [
@@ -793,8 +809,11 @@ function initSwipeGestures() {
 // Initialize swipe gestures for section navigation (mobile)
 function initSectionSwipeGestures() {
     let touchStartX = 0;
+    let touchStartY = 0;
     let touchEndX = 0;
+    let lockedAxis = null; // 'horizontal', 'vertical', or null
     const minSwipeDistance = 50;
+    const axisLockThreshold = 10; // Pixels before locking to an axis
     const sections = ['music', 'projects', 'about'];
 
     const mainContent = document.getElementById('mainContent');
@@ -802,11 +821,34 @@ function initSectionSwipeGestures() {
 
     mainContent.addEventListener('touchstart', function(e) {
         touchStartX = e.changedTouches[0].screenX;
+        touchStartY = e.changedTouches[0].screenY;
+        touchEndX = touchStartX;
+        lockedAxis = null; // Reset axis lock
+    }, { passive: true });
+
+    mainContent.addEventListener('touchmove', function(e) {
+        const currentX = e.changedTouches[0].screenX;
+        const currentY = e.changedTouches[0].screenY;
+        const deltaX = Math.abs(currentX - touchStartX);
+        const deltaY = Math.abs(currentY - touchStartY);
+
+        // Determine axis lock once threshold is reached
+        if (!lockedAxis && (deltaX > axisLockThreshold || deltaY > axisLockThreshold)) {
+            lockedAxis = deltaX > deltaY ? 'horizontal' : 'vertical';
+        }
+
+        // Update end position for horizontal swipes
+        if (lockedAxis === 'horizontal') {
+            touchEndX = currentX;
+        }
     }, { passive: true });
 
     mainContent.addEventListener('touchend', function(e) {
-        touchEndX = e.changedTouches[0].screenX;
-        handleSectionSwipe();
+        // Only handle section swipe if locked to horizontal
+        if (lockedAxis === 'horizontal') {
+            handleSectionSwipe();
+        }
+        lockedAxis = null;
     }, { passive: true });
 
     function handleSectionSwipe() {
@@ -1394,6 +1436,9 @@ function showSection(sectionName) {
     mainContent.classList.remove('homepage-active');
     mainContent.classList.add('nav-visible');
 
+    // Update nav height after sidebar becomes visible
+    setTimeout(updateMobileNavHeight, 50);
+
     const homepage = document.getElementById('homepage');
     if (homepage) homepage.classList.remove('active');
 
@@ -1585,6 +1630,9 @@ document.addEventListener('DOMContentLoaded', function() {
     loadProjects();
     initSectionSwipeGestures();
     initTapFlash();
+
+    // Update mobile nav height after a brief delay to ensure sidebar is rendered
+    setTimeout(updateMobileNavHeight, 100);
 
     const homepage = document.getElementById('homepage');
     if(homepage && homepage.classList.contains('active')) {

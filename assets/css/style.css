@@ -22,6 +22,7 @@
     --cream-dark: #F5F5DC;
     --text-primary: #3E2723;
     --text-secondary: #6D4C41;
+    --mobile-nav-height: 125px; /* Updated dynamically by JS */
 }
 
 body {
@@ -1286,15 +1287,18 @@ body.is-transitioning .music-item:hover .snippet-text {
         position: fixed;
         top: -120px;
         left: 0;
-        padding: 0.75rem 0;
+        padding: 1.25rem 0 0.75rem 0;
         display: block;
         z-index: 1000;
         background-color: var(--dark-brown);
-        transition: top 0.7s cubic-bezier(.32,.81,.55,.97);
+        transition: top 0.7s cubic-bezier(.32,.81,.55,.97), visibility 0s linear 0.7s;
+        visibility: hidden;
     }
 
     .sidebar.show {
         top: 0;
+        visibility: visible;
+        transition: top 0.7s cubic-bezier(.32,.81,.55,.97), visibility 0s linear 0s;
     }
 
     .logo {
@@ -1305,7 +1309,7 @@ body.is-transitioning .music-item:hover .snippet-text {
     }
 
     .logo h1 {
-        font-size: 1.1rem;
+        font-size: 1.3rem;
         margin: 0;
     }
 
@@ -1360,8 +1364,8 @@ body.is-transitioning .music-item:hover .snippet-text {
     }
 
     .main-content.nav-visible {
-        margin-top: 110px;
-        min-height: calc(100vh - 110px);
+        margin-top: var(--mobile-nav-height);
+        min-height: calc(100vh - var(--mobile-nav-height));
         padding-top: 0;
     }
 
@@ -1375,6 +1379,7 @@ body.is-transitioning .music-item:hover .snippet-text {
     .homepage {
         padding-top: 0;
         transition: padding-top 0.7s cubic-bezier(.32,.81,.55,.97);
+        overflow: hidden;
     }
 
     .homepage.nav-visible {
@@ -1383,7 +1388,7 @@ body.is-transitioning .music-item:hover .snippet-text {
 
     .section {
         height: auto;
-        min-height: calc(100vh - 110px);
+        min-height: calc(100vh - var(--mobile-nav-height));
         overflow-y: auto;
         overflow-x: visible;
         padding-bottom: 2rem;
