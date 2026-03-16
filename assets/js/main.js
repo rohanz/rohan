@@ -109,6 +109,9 @@ function initThemeToggle() {
             setTimeout(initAsciiGlobe, 50);
         }
 
+        // Redraw meter canvases with new theme colors
+        window.dispatchEvent(new Event('theme-changed'));
+
         // Remove transition class after animation completes
         setTimeout(() => {
             document.body.classList.remove('theme-transitioning');
@@ -390,15 +393,13 @@ function initWaveformPlayer(playerEl) {
     const vuCanvas = playerEl.querySelector('.vu-meter-canvas');
     if (vuCanvas && !vuCanvas._scaled) {
         vuCanvas._scaled = true;
-        const mw = 76, mh = 110;
+        const mw = 150, mh = 100;
         vuCanvas.width = mw * dpr;
         vuCanvas.height = mh * dpr;
     }
     const vuCtx = vuCanvas ? vuCanvas.getContext('2d') : null;
     if (vuCtx) vuCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    let vuSmoothed = -60;
-    let vuPeak = -60;
-    let vuPeakHold = 0;
+    let vuSmoothed = -40;
 
     function getAccentColor() {
         const isLight = document.documentElement.getAttribute('data-theme') === 'light';
@@ -410,34 +411,110 @@ function initWaveformPlayer(playerEl) {
         return isLight ? `rgba(141,110,99,${alpha})` : `rgba(255,204,128,${alpha})`;
     }
 
-    const vuW = 76, vuH = 110;
+    const vuW = 150, vuH = 100;
     const vecW = 110, vecH = 110;
+    const redThresholdDb = -10; // red zone starts at -10 dB
+
+    // Non-linear dB-to-fraction mapping: piecewise to spread upper range
+    // -40 to -10 gets 70% of arc, -10 to 0 gets 30%
+    function dbToFrac(db) {
+        const clamped = Math.max(-40, Math.min(0, db));
+        if (clamped <= -10) {
+            return ((clamped + 40) / 30) * 0.70;
+        }
+        return 0.70 + ((clamped + 10) / 10) * 0.30;
+    }
+
+    function drawAnalogArc(ctx, w, h, needleFrac) {
+        const cx = w / 2;
+        const cy = h * 0.92;
+        const arcRadius = w * 0.36;
+        const startAngle = Math.PI * 0.85;
+        const endAngle = Math.PI * 0.15;
+        const totalSweep = startAngle - endAngle;
+
+        // Arc line
+        const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+        ctx.strokeStyle = getAccentRgba(isLight ? 0.3 : 0.18);
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(cx, cy, arcRadius, -startAngle, -endAngle);
+        ctx.stroke();
+
+        // Red zone arc (-10 to 0)
+        const redStartFrac = dbToFrac(redThresholdDb);
+        const redStartAngle = startAngle - redStartFrac * totalSweep;
+        ctx.strokeStyle = isLight ? 'rgba(180, 50, 50, 0.35)' : 'rgba(224, 85, 85, 0.3)';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(cx, cy, arcRadius - 4, -redStartAngle, -endAngle);
+        ctx.stroke();
+
+        // dB marks on the arc
+        const dbMarks = [-40, -20, -10, -5, -3, 0];
+        ctx.font = '8px Courier New';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        dbMarks.forEach(db => {
+            const frac = dbToFrac(db);
+            const angle = startAngle - frac * totalSweep;
+            const tickInner = arcRadius - 6;
+            const tickOuter = arcRadius + 3;
+            const labelR = arcRadius + 14;
+
+            const isRed = db >= redThresholdDb;
+            ctx.strokeStyle = isRed ? (isLight ? 'rgba(180, 50, 50, 0.85)' : 'rgba(224, 85, 85, 0.8)') : getAccentRgba(isLight ? 0.7 : 0.45);
+            ctx.lineWidth = db === 0 ? 2 : 1;
+            ctx.beginPath();
+            ctx.moveTo(cx + tickInner * Math.cos(angle), cy - tickInner * Math.sin(angle));
+            ctx.lineTo(cx + tickOuter * Math.cos(angle), cy - tickOuter * Math.sin(angle));
+            ctx.stroke();
+
+            ctx.fillStyle = isRed ? (isLight ? 'rgba(180, 50, 50, 0.85)' : 'rgba(224, 85, 85, 0.75)') : getAccentRgba(isLight ? 0.8 : 0.6);
+            ctx.fillText(String(db), cx + labelR * Math.cos(angle), cy - labelR * Math.sin(angle));
+        });
+
+        // Minor tick marks (every 1 dB from -10 to 0, every 5 dB below)
+        for (let db = -40; db <= 0; db += 1) {
+            if (dbMarks.includes(db)) continue;
+            if (db < -10 && db % 5 !== 0) continue;
+            const frac = dbToFrac(db);
+            const angle = startAngle - frac * totalSweep;
+            const tickInner = arcRadius - 3;
+            const tickOuter = arcRadius + 2;
+            const isRed = db >= redThresholdDb;
+            ctx.strokeStyle = isRed ? (isLight ? 'rgba(180, 50, 50, 0.4)' : 'rgba(224, 85, 85, 0.3)') : getAccentRgba(isLight ? 0.3 : 0.15);
+            ctx.lineWidth = 0.6;
+            ctx.beginPath();
+            ctx.moveTo(cx + tickInner * Math.cos(angle), cy - tickInner * Math.sin(angle));
+            ctx.lineTo(cx + tickOuter * Math.cos(angle), cy - tickOuter * Math.sin(angle));
+            ctx.stroke();
+        }
+
+        // Needle
+        if (needleFrac !== null) {
+            const needleAngle = startAngle - needleFrac * totalSweep;
+            const needleLen = arcRadius + 5;
+            ctx.strokeStyle = getAccentColor();
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.lineTo(cx + needleLen * Math.cos(needleAngle), cy - needleLen * Math.sin(needleAngle));
+            ctx.stroke();
+        }
+
+        // Pivot dot
+        ctx.fillStyle = getAccentColor();
+        ctx.beginPath();
+        ctx.arc(cx, cy, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+    }
 
     function drawVuIdle() {
         if (!vuCtx) return;
-        const w = vuW, h = vuH;
-        vuCtx.clearRect(0, 0, w, h);
-
-        const meterX = 8;
-        const meterW = 22;
-        const meterTop = 8;
-        const meterBot = h - 16;
-        const meterH = meterBot - meterTop;
-
-        // Background track
-        vuCtx.fillStyle = getAccentRgba(0.06);
-        vuCtx.fillRect(meterX, meterTop, meterW, meterH);
-
-        // dB scale labels
-        const dbMarks = [0, -6, -12, -20, -40, -60];
-        vuCtx.font = '10px Courier New';
-        vuCtx.fillStyle = getAccentRgba(0.35);
-        vuCtx.textAlign = 'left';
-        dbMarks.forEach(db => {
-            const y = meterTop + (1 - (db + 60) / 60) * meterH;
-            vuCtx.fillRect(meterX, y, meterW, 0.5);
-            vuCtx.fillText(db === 0 ? ' 0' : db.toString(), meterX + meterW + 4, y + 4);
-        });
+        vuCtx.clearRect(0, 0, vuW, vuH);
+        drawAnalogArc(vuCtx, vuW, vuH, 0); // needle at -40dB (leftmost)
     }
 
     function drawVecIdle() {
@@ -460,6 +537,7 @@ function initWaveformPlayer(playerEl) {
         drawVecIdle();
     }
     drawMetersIdle();
+    window.addEventListener('theme-changed', drawMetersIdle);
 
     function drawMetersLive() {
         if (!analyserL || !analyserR) return;
@@ -470,7 +548,7 @@ function initWaveformPlayer(playerEl) {
         analyserL.getFloatTimeDomainData(dataL);
         analyserR.getFloatTimeDomainData(dataR);
 
-        // --- VU Meter (canvas) ---
+        // --- VU Meter (analog needle) ---
         if (vuCtx) {
             let sumSq = 0;
             for (let i = 0; i < bufLen; i++) {
@@ -478,59 +556,13 @@ function initWaveformPlayer(playerEl) {
                 sumSq += mid * mid;
             }
             const rms = Math.sqrt(sumSq / bufLen);
-            const dbFS = rms > 0 ? 20 * Math.log10(rms) : -60;
-            const vuNow = Math.max(-60, Math.min(0, dbFS));
-            vuSmoothed += (vuNow - vuSmoothed) * 0.25;
+            const dbFS = rms > 0 ? 20 * Math.log10(rms) : -40;
+            const vuNow = Math.max(-40, Math.min(0, dbFS));
+            vuSmoothed += (vuNow - vuSmoothed) * 0.18;
 
-            // Peak hold
-            if (vuNow > vuPeak) { vuPeak = vuNow; vuPeakHold = 30; }
-            else if (vuPeakHold > 0) vuPeakHold--;
-            else vuPeak += (-60 - vuPeak) * 0.08;
-
-            const w = vuW, h = vuH;
-            vuCtx.clearRect(0, 0, w, h);
-
-            const meterX = 8;
-            const meterW = 22;
-            const meterTop = 8;
-            const meterBot = h - 16;
-            const meterH = meterBot - meterTop;
-
-            // Background track
-            vuCtx.fillStyle = getAccentRgba(0.06);
-            vuCtx.fillRect(meterX, meterTop, meterW, meterH);
-
-            // Filled bar
-            const fillFrac = (vuSmoothed + 60) / 60;
-            const fillH = fillFrac * meterH;
-            const fillY = meterBot - fillH;
-
-            // Gradient: green → yellow → red from bottom to top
-            const grad = vuCtx.createLinearGradient(0, meterBot, 0, meterTop);
-            grad.addColorStop(0, getAccentRgba(0.5));
-            grad.addColorStop(0.6, getAccentRgba(0.7));
-            grad.addColorStop(0.85, '#e6a23c');
-            grad.addColorStop(1, '#e05555');
-            vuCtx.fillStyle = grad;
-            vuCtx.fillRect(meterX, fillY, meterW, fillH);
-
-            // Peak indicator line
-            const peakFrac = (vuPeak + 60) / 60;
-            const peakY = meterBot - peakFrac * meterH;
-            vuCtx.fillStyle = peakFrac > 0.9 ? '#e05555' : getAccentColor();
-            vuCtx.fillRect(meterX, peakY, meterW, 1.5);
-
-            // dB scale labels
-            const dbMarks = [0, -6, -12, -20, -40, -60];
-            vuCtx.font = '10px Courier New';
-            vuCtx.textAlign = 'left';
-            dbMarks.forEach(db => {
-                const y = meterTop + (1 - (db + 60) / 60) * meterH;
-                vuCtx.fillStyle = getAccentRgba(0.2);
-                vuCtx.fillRect(meterX, y, meterW, 0.5);
-                vuCtx.fillStyle = getAccentRgba(0.5);
-                vuCtx.fillText(db === 0 ? ' 0' : db.toString(), meterX + meterW + 4, y + 4);
-            });
+            vuCtx.clearRect(0, 0, vuW, vuH);
+            const needleFrac = dbToFrac(vuSmoothed);
+            drawAnalogArc(vuCtx, vuW, vuH, needleFrac);
         }
 
         // --- Vectorscope (Lissajous) ---
@@ -568,6 +600,7 @@ function initWaveformPlayer(playerEl) {
 
     let isPlaying = false;
     let animationId = null;
+    let vuReturnId = null;
 
     function getWaveColor(alpha) {
         const isLight = document.documentElement.getAttribute('data-theme') === 'light';
@@ -644,17 +677,45 @@ function initWaveformPlayer(playerEl) {
         btn.innerHTML = '<i class="fas fa-play"></i>';
         if (animationId) { cancelAnimationFrame(animationId); animationId = null; }
         drawIdle();
-        vuSmoothed = -60;
-        vuPeak = -60;
-        vuPeakHold = 0;
-        drawMetersIdle();
+        // Clear stereoscope particles immediately
+        drawVecIdle();
+        // Animate needle back with ease-out cubic
+        if (vuReturnId) { cancelAnimationFrame(vuReturnId); vuReturnId = null; }
+        const vuReturnStart = vuSmoothed;
+        const vuReturnDuration = 900; // ms
+        let vuReturnT0 = null;
+        function vuReturnAnim(ts) {
+            if (!vuReturnT0) vuReturnT0 = ts;
+            const elapsed = ts - vuReturnT0;
+            const t = Math.min(elapsed / vuReturnDuration, 1);
+            const eased = 1 - Math.pow(1 - t, 3);
+            vuSmoothed = vuReturnStart + (-40 - vuReturnStart) * eased;
+            if (t >= 1) {
+                vuSmoothed = -40;
+                vuReturnId = null;
+                vuCtx && vuCtx.clearRect(0, 0, vuW, vuH);
+                drawVuIdle();
+                return;
+            }
+            if (vuCtx) {
+                vuCtx.clearRect(0, 0, vuW, vuH);
+                drawAnalogArc(vuCtx, vuW, vuH, dbToFrac(vuSmoothed));
+            }
+            vuReturnId = requestAnimationFrame(vuReturnAnim);
+        }
+        vuReturnId = requestAnimationFrame(vuReturnAnim);
     }
 
+    let playIntent = 0; // guards against stale async play callbacks
     btn.addEventListener('click', () => {
         if (isPlaying) {
             stopPlayback();
             return;
         }
+
+        // Cancel any in-progress animations
+        if (vuReturnId) { cancelAnimationFrame(vuReturnId); vuReturnId = null; }
+        if (animationId) { cancelAnimationFrame(animationId); animationId = null; }
 
         document.querySelectorAll('.waveform-play-btn.playing').forEach(b => {
             if (b !== btn) b.click();
@@ -669,7 +730,9 @@ function initWaveformPlayer(playerEl) {
         audioPlayer.src = audioUrl;
         audioPlayer.currentTime = 0;
 
+        const thisIntent = ++playIntent;
         audioPlayer.play().then(() => {
+            if (thisIntent !== playIntent) return; // stale — user clicked again
             isPlaying = true;
             btn.classList.add('playing');
             btn.setAttribute('aria-pressed', 'true');
@@ -679,6 +742,7 @@ function initWaveformPlayer(playerEl) {
 
         audioPlayer.onended = () => stopPlayback();
     });
+
 }
 
 // ============================================================
@@ -890,12 +954,28 @@ function showProjectDetail(index, slideDirection) {
         <img src="${imgUrl}" alt="${DOMPurify.sanitize(project.title)}" class="detail-hero-image">
         <h2 class="detail-title">${DOMPurify.sanitize(project.title)}</h2>
         ${project.summary ? `<p class="detail-summary">${DOMPurify.sanitize(project.summary)}</p>` : ''}
-        <div class="detail-body">${DOMPurify.sanitize(strippedHTML)}</div>
+        <div class="detail-body">${DOMPurify.sanitize(strippedHTML, { ADD_ATTR: ['target'] })}</div>
         <div class="detail-tags">${tagsHTML}</div>
     `;
 
     const heroImg = detailContent.querySelector('.detail-hero-image');
     if (heroImg) heroImg.addEventListener('error', function () { this.style.display = 'none'; });
+
+    // Classify body images by aspect ratio
+    detailContent.querySelectorAll('.detail-body img').forEach(img => {
+        const classify = () => {
+            const isPortrait = img.naturalHeight > img.naturalWidth * 1.3;
+            img.classList.toggle('img-portrait', isPortrait);
+            img.classList.toggle('img-landscape', !isPortrait);
+        };
+        if (img.complete) classify();
+        else img.addEventListener('load', classify);
+    });
+
+    // Inject live demo player if this is the website project
+    initDemoPlayer(detailContent);
+    // Inject theme palette if placeholder exists
+    initThemePalette(detailContent);
 
     // Build TOC from headers
     buildToc(project.headers);
@@ -1100,10 +1180,13 @@ function navigateProject(direction) {
     }, 300);
 }
 
-function showProjectGrid() {
+function showProjectGrid(instant) {
     const gridView = document.getElementById('projectsGridView');
     const detailView = document.getElementById('projectDetailView');
     if (!gridView || !detailView) return;
+
+    // Clean up demo player if running
+    if (demoCleanup) { demoCleanup(); demoCleanup = null; }
 
     // Clean up scroll tracking
     const mc = cachedMainContent || document.getElementById('mainContent');
@@ -1112,10 +1195,29 @@ function showProjectGrid() {
         mc._tocScrollHandler = null;
     }
 
-    detailView.classList.remove('detail-active');
-    gridView.style.display = '';
-    gridView.scrollTop = gridScrollTop;
-    currentDetailIndex = -1;
+    function finishShowGrid() {
+        detailView.classList.remove('detail-active');
+        gridView.style.display = '';
+        gridView.scrollTop = gridScrollTop;
+        currentDetailIndex = -1;
+    }
+
+    if (instant) {
+        finishShowGrid();
+        return;
+    }
+
+    // Fade out detail view, then fade in grid
+    const contentCol = document.getElementById('detailContentColumn');
+    const headerCol = document.getElementById('detailHeaderColumn');
+    if (contentCol) contentCol.classList.add('slide-fade-out');
+    if (headerCol) headerCol.classList.add('slide-fade-out');
+
+    setTimeout(() => {
+        if (contentCol) contentCol.classList.remove('slide-fade-out');
+        if (headerCol) headerCol.classList.remove('slide-fade-out');
+        finishShowGrid();
+    }, 300);
 }
 
 function getVisibleProjectIndices() {
@@ -1138,7 +1240,7 @@ function initDetailNavHandlers() {
     const prevBtn = document.getElementById('detailPrevBtn');
     const nextBtn = document.getElementById('detailNextBtn');
 
-    if (backBtn) backBtn.addEventListener('click', showProjectGrid);
+    if (backBtn) backBtn.addEventListener('click', () => showSection('projects'));
     if (prevBtn) prevBtn.addEventListener('click', () => navigateProject('prev'));
     if (nextBtn) nextBtn.addEventListener('click', () => navigateProject('next'));
 }
@@ -1369,6 +1471,7 @@ function goToHomepage() {
             mc.classList.remove('nav-visible');
             homepage.classList.remove('nav-visible');
             if (activeSection) activeSection.classList.remove('active', 'fade-out');
+            resetProjectsView();
             triggerHomepageAnimation();
         };
 
@@ -1380,8 +1483,6 @@ function goToHomepage() {
         } else {
             finishTransition();
         }
-
-        resetProjectsView();
         updateFloatingContactVisibility();
     };
 
@@ -1476,7 +1577,7 @@ function showSection(sectionName) {
 }
 
 function resetProjectsView() {
-    showProjectGrid();
+    showProjectGrid(true);
     activeFilter = 'all';
     const filterBar = document.getElementById('projectsFilterBar');
     if (filterBar) {
@@ -1503,6 +1604,322 @@ function updateFloatingContactVisibility() {
         fc.classList.remove('homepage-active');
         setTimeout(() => fc.classList.add('show'), 300);
     }
+}
+
+// ============================================================
+// DEMO PLAYER (for "This Website" project article)
+// ============================================================
+let demoCleanup = null;
+
+function initDemoPlayer(container) {
+    const placeholder = container.querySelector('#demo-player-placeholder');
+    if (!placeholder) return;
+
+    // Clean up previous demo if any
+    if (demoCleanup) { demoCleanup(); demoCleanup = null; }
+
+    placeholder.innerHTML = `
+        <div class="demo-player">
+            <canvas class="demo-waveform-canvas"></canvas>
+            <div class="demo-meters">
+                <div class="demo-meter-group">
+                    <canvas class="demo-vec-canvas"></canvas>
+                    <span class="demo-meter-label">stereo</span>
+                </div>
+                <div class="demo-meter-group">
+                    <canvas class="demo-vu-canvas"></canvas>
+                    <span class="demo-meter-label">vu</span>
+                </div>
+            </div>
+        </div>
+    `;
+
+    const player = placeholder.querySelector('.demo-player');
+    const waveCanvas = player.querySelector('.demo-waveform-canvas');
+    const vuCanvas = player.querySelector('.demo-vu-canvas');
+    const vecCanvas = player.querySelector('.demo-vec-canvas');
+
+    const dpr = window.devicePixelRatio || 1;
+
+    function sizeCanvas(c, w, h) {
+        c.width = w * dpr;
+        c.height = h * dpr;
+        const ctx = c.getContext('2d');
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        return ctx;
+    }
+
+    const vuW = 190, vuH = 130, vecW = 140, vecH = 140;
+    const vuCtx = sizeCanvas(vuCanvas, vuW, vuH);
+    const vecCtx = sizeCanvas(vecCanvas, vecW, vecH);
+
+    function sizeWave() {
+        const rect = waveCanvas.getBoundingClientRect();
+        const w = Math.max(rect.width, 100); // fallback if not laid out yet
+        const h = Math.max(rect.height, 56);
+        waveCanvas.width = w * dpr;
+        waveCanvas.height = h * dpr;
+        const ctx = waveCanvas.getContext('2d');
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        return ctx;
+    }
+    let waveCtx;
+    // Defer initial sizing until layout is ready
+    requestAnimationFrame(() => { waveCtx = sizeWave(); drawWaveIdle(); });
+
+    function accentColor() {
+        return document.documentElement.getAttribute('data-theme') === 'light' ? '#8D6E63' : '#FFCC80';
+    }
+    function accentRgba(a) {
+        return document.documentElement.getAttribute('data-theme') === 'light'
+            ? `rgba(141,110,99,${a})` : `rgba(255,204,128,${a})`;
+    }
+
+    function dbToFrac(db) {
+        const c = Math.max(-40, Math.min(0, db));
+        return c <= -10 ? ((c + 40) / 30) * 0.70 : 0.70 + ((c + 10) / 10) * 0.30;
+    }
+
+    // Full VU arc matching the music page exactly
+    function drawArc(ctx, w, h, needleFrac) {
+        const cx = w / 2, cy = h * 0.92;
+        const r = w * 0.36;
+        const sa = Math.PI * 0.85, ea = Math.PI * 0.15;
+        const sweep = sa - ea;
+        const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+
+        ctx.strokeStyle = accentRgba(isLight ? 0.3 : 0.18);
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.arc(cx, cy, r, -sa, -ea); ctx.stroke();
+
+        // Red zone
+        const rs = dbToFrac(-10);
+        ctx.strokeStyle = isLight ? 'rgba(180,50,50,0.35)' : 'rgba(224,85,85,0.3)';
+        ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(cx, cy, r - 4, -(sa - rs * sweep), -ea); ctx.stroke();
+
+        // dB marks
+        const dbMarks = [-40, -20, -10, -5, -3, 0];
+        ctx.font = '8px Courier New'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        dbMarks.forEach(db => {
+            const f = dbToFrac(db);
+            const a = sa - f * sweep;
+            const isRed = db >= -10;
+            ctx.strokeStyle = isRed ? (isLight ? 'rgba(180,50,50,0.85)' : 'rgba(224,85,85,0.8)') : accentRgba(isLight ? 0.7 : 0.45);
+            ctx.lineWidth = db === 0 ? 2 : 1;
+            ctx.beginPath();
+            ctx.moveTo(cx + (r - 6) * Math.cos(a), cy - (r - 6) * Math.sin(a));
+            ctx.lineTo(cx + (r + 3) * Math.cos(a), cy - (r + 3) * Math.sin(a));
+            ctx.stroke();
+            ctx.fillStyle = isRed ? (isLight ? 'rgba(180,50,50,0.85)' : 'rgba(224,85,85,0.75)') : accentRgba(isLight ? 0.8 : 0.6);
+            ctx.fillText(String(db), cx + (r + 14) * Math.cos(a), cy - (r + 14) * Math.sin(a));
+        });
+
+        // Minor ticks
+        for (let db = -40; db <= 0; db += 1) {
+            if (dbMarks.includes(db)) continue;
+            if (db < -10 && db % 5 !== 0) continue;
+            const f = dbToFrac(db);
+            const a = sa - f * sweep;
+            const isRed = db >= -10;
+            ctx.strokeStyle = isRed ? (isLight ? 'rgba(180,50,50,0.4)' : 'rgba(224,85,85,0.3)') : accentRgba(isLight ? 0.3 : 0.15);
+            ctx.lineWidth = 0.6;
+            ctx.beginPath();
+            ctx.moveTo(cx + (r - 3) * Math.cos(a), cy - (r - 3) * Math.sin(a));
+            ctx.lineTo(cx + (r + 2) * Math.cos(a), cy - (r + 2) * Math.sin(a));
+            ctx.stroke();
+        }
+
+        // Needle
+        if (needleFrac !== null) {
+            const na = sa - needleFrac * sweep;
+            ctx.strokeStyle = accentColor(); ctx.lineWidth = 1.5;
+            ctx.beginPath(); ctx.moveTo(cx, cy);
+            ctx.lineTo(cx + (r + 5) * Math.cos(na), cy - (r + 5) * Math.sin(na));
+            ctx.stroke();
+        }
+        ctx.fillStyle = accentColor();
+        ctx.beginPath(); ctx.arc(cx, cy, 2.5, 0, Math.PI * 2); ctx.fill();
+    }
+
+    function drawVecIdle() {
+        vecCtx.clearRect(0, 0, vecW, vecH);
+        vecCtx.strokeStyle = accentRgba(0.08); vecCtx.lineWidth = 1;
+        vecCtx.beginPath();
+        vecCtx.moveTo(vecW / 2, 0); vecCtx.lineTo(vecW / 2, vecH);
+        vecCtx.moveTo(0, vecH / 2); vecCtx.lineTo(vecW, vecH / 2);
+        vecCtx.stroke();
+        vecCtx.beginPath(); vecCtx.arc(vecW / 2, vecH / 2, Math.min(vecW, vecH) / 2 - 4, 0, Math.PI * 2); vecCtx.stroke();
+    }
+
+    function drawWaveIdle() {
+        if (!waveCtx) return;
+        const rect = waveCanvas.getBoundingClientRect();
+        const w = rect.width, h = rect.height;
+        waveCtx.clearRect(0, 0, w, h);
+        waveCtx.beginPath();
+        waveCtx.strokeStyle = accentRgba(0.3); waveCtx.lineWidth = 1.5;
+        waveCtx.moveTo(0, h / 2); waveCtx.lineTo(w, h / 2);
+        waveCtx.stroke();
+    }
+
+    function drawAllIdle() {
+        vuCtx.clearRect(0, 0, vuW, vuH); drawArc(vuCtx, vuW, vuH, 0);
+        drawVecIdle();
+        drawWaveIdle();
+    }
+    drawAllIdle();
+
+    // Decode audio into raw buffers — no AudioContext.destination needed, bypasses autoplay
+    let audioBuffer = null, demoAnimId = null, vuSmoothed = -40;
+    let playbackStart = 0;
+    const CHUNK = 1024; // samples per frame
+
+    fetch('assets/audio/snippets/dontwantme.mp3')
+        .then(r => r.arrayBuffer())
+        .then(buf => new (window.AudioContext || window.webkitAudioContext)().decodeAudioData(buf))
+        .then(decoded => {
+            audioBuffer = decoded;
+            playbackStart = performance.now();
+            demoAnimId = requestAnimationFrame(drawLive);
+        })
+        .catch(() => {});
+
+    function drawLive() {
+        demoAnimId = requestAnimationFrame(drawLive);
+        if (!audioBuffer) return;
+
+        const sampleRate = audioBuffer.sampleRate;
+        const elapsed = (performance.now() - playbackStart) / 1000; // seconds
+        const totalSamples = audioBuffer.length;
+        // Loop position
+        const sampleOffset = Math.floor((elapsed * sampleRate) % totalSamples);
+
+        const chanL = audioBuffer.getChannelData(0);
+        const chanR = audioBuffer.numberOfChannels > 1 ? audioBuffer.getChannelData(1) : chanL;
+
+        // Extract a chunk of samples at current playback position
+        const dataL = new Float32Array(CHUNK);
+        const dataR = new Float32Array(CHUNK);
+        for (let i = 0; i < CHUNK; i++) {
+            const idx = (sampleOffset + i) % totalSamples;
+            dataL[i] = chanL[idx];
+            dataR[i] = chanR[idx];
+        }
+
+        // VU meter
+        let sumSq = 0;
+        for (let i = 0; i < CHUNK; i++) { const m = (dataL[i] + dataR[i]) * 0.5; sumSq += m * m; }
+        const rms = Math.sqrt(sumSq / CHUNK);
+        const dbFS = rms > 0 ? 20 * Math.log10(rms) : -40;
+        vuSmoothed += (Math.max(-40, Math.min(0, dbFS)) - vuSmoothed) * 0.18;
+        vuCtx.clearRect(0, 0, vuW, vuH);
+        drawArc(vuCtx, vuW, vuH, dbToFrac(vuSmoothed));
+
+        // Vectorscope — phosphor persistence
+        const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+        vecCtx.fillStyle = isLight ? 'rgba(255,248,225,0.3)' : 'rgba(26,26,46,0.3)';
+        vecCtx.fillRect(0, 0, vecW, vecH);
+        vecCtx.strokeStyle = accentRgba(0.08); vecCtx.lineWidth = 1;
+        vecCtx.beginPath();
+        vecCtx.moveTo(vecW / 2, 0); vecCtx.lineTo(vecW / 2, vecH);
+        vecCtx.moveTo(0, vecH / 2); vecCtx.lineTo(vecW, vecH / 2);
+        vecCtx.stroke();
+        vecCtx.beginPath(); vecCtx.arc(vecW / 2, vecH / 2, Math.min(vecW, vecH) / 2 - 4, 0, Math.PI * 2); vecCtx.stroke();
+        vecCtx.fillStyle = isLight ? 'rgba(141,110,99,0.85)' : 'rgba(255,204,128,0.85)';
+        const step = Math.max(1, Math.floor(CHUNK / 256));
+        const rad = Math.min(vecW, vecH) / 2 - 4;
+        for (let i = 0; i < CHUNK; i += step) {
+            const mid = (dataL[i] + dataR[i]) * 0.5;
+            const side = (dataL[i] - dataR[i]) * 0.5;
+            vecCtx.fillRect(vecW / 2 + side * rad * 2, vecH / 2 - mid * rad * 2, 1.5, 1.5);
+        }
+
+        // Waveform
+        if (!waveCtx) return;
+        const rect = waveCanvas.getBoundingClientRect();
+        const w = rect.width, h = rect.height;
+        waveCtx.clearRect(0, 0, w, h);
+        const sliceW = w / CHUNK;
+        const cy = h / 2;
+        // Fill glow
+        waveCtx.beginPath(); waveCtx.moveTo(0, cy);
+        for (let i = 0; i < CHUNK; i++) {
+            const v = (dataL[i] + dataR[i]) * 0.5;
+            waveCtx.lineTo(i * sliceW, cy - v * cy);
+        }
+        waveCtx.lineTo(w, cy); waveCtx.closePath();
+        waveCtx.fillStyle = accentRgba(0.12);
+        waveCtx.fill();
+        // Stroke
+        waveCtx.beginPath();
+        for (let i = 0; i < CHUNK; i++) {
+            const v = (dataL[i] + dataR[i]) * 0.5;
+            const y = cy - v * cy;
+            i === 0 ? waveCtx.moveTo(0, y) : waveCtx.lineTo(i * sliceW, y);
+        }
+        waveCtx.strokeStyle = accentRgba(0.95); waveCtx.lineWidth = 1.5;
+        waveCtx.stroke();
+    }
+
+    // Handle resize
+    let demoResizeTimer;
+    function onResize() {
+        clearTimeout(demoResizeTimer);
+        demoResizeTimer = setTimeout(() => { waveCtx = sizeWave(); }, 150);
+    }
+    window.addEventListener('resize', onResize);
+    window.addEventListener('theme-changed', () => {});
+
+    demoCleanup = () => {
+        if (demoAnimId) cancelAnimationFrame(demoAnimId);
+        window.removeEventListener('resize', onResize);
+        demoAnimId = null;
+        audioBuffer = null;
+    };
+}
+
+function initThemePalette(container) {
+    const placeholder = container.querySelector('#theme-palette-placeholder');
+    if (!placeholder) return;
+
+    const darkColors = [
+        { color: '#1a1a2e', label: 'page' },
+        { color: '#16213e', label: 'cards' },
+        { color: '#0f0f23', label: 'nav' },
+        { color: '#FFCC80', label: 'accent' },
+        { color: 'rgba(255,204,128,0.6)', label: 'links' },
+        { color: '#e8e6e3', label: 'headings' },
+        { color: 'rgba(232,230,227,0.55)', label: 'body' },
+        { color: 'rgba(255,255,255,0.06)', label: 'borders' },
+    ];
+    const lightColors = [
+        { color: '#FFF8E1', label: 'page' },
+        { color: 'rgba(62,39,35,0.06)', label: 'cards' },
+        { color: '#3E2723', label: 'nav' },
+        { color: '#8D6E63', label: 'accent' },
+        { color: '#A1887F', label: 'links' },
+        { color: '#3E2723', label: 'headings' },
+        { color: '#6D4C41', label: 'body' },
+        { color: 'rgba(62,39,35,0.1)', label: 'borders' },
+    ];
+
+    function swatches(colors, labelColor) {
+        return colors.map(c => `<div class="palette-swatch"><div class="palette-swatch-color" style="background:${c.color}"></div><div class="palette-swatch-label" style="color:${labelColor}">${c.label}</div></div>`).join('');
+    }
+
+    placeholder.innerHTML = `
+        <div class="theme-palette">
+            <div class="palette-group" style="border-color:rgba(255,255,255,0.06);background:#1a1a2e">
+                <div class="palette-label" style="color:rgba(232,230,227,0.55);border-bottom-color:rgba(255,255,255,0.06)">Dark</div>
+                <div class="palette-swatches">${swatches(darkColors, 'rgba(232,230,227,0.7)')}</div>
+            </div>
+            <div class="palette-group" style="border-color:rgba(62,39,35,0.1);background:#FFF8E1">
+                <div class="palette-label" style="color:rgba(62,39,35,0.6);border-bottom-color:rgba(62,39,35,0.1)">Light</div>
+                <div class="palette-swatches">${swatches(lightColors, 'rgba(62,39,35,0.6)')}</div>
+            </div>
+        </div>
+    `;
 }
 
 // ============================================================
