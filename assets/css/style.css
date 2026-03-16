@@ -100,6 +100,7 @@
         animation-duration: 0.01ms !important;
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
     }
 
     .homepage-name,
@@ -201,8 +202,10 @@ body {
     cursor: pointer;
 }
 
-.logo-link:hover {
-    color: var(--accent);
+@media (hover: hover) {
+    .logo-link:hover {
+        color: var(--accent);
+    }
 }
 
 .nav-menu {
@@ -251,6 +254,10 @@ body {
     justify-content: center;
     align-items: center;
     text-align: center;
+}
+
+.section.homepage {
+    padding-right: 0;
 }
 
 .homepage-content {
@@ -378,6 +385,8 @@ body {
     justify-content: center;
     align-items: center;
     gap: 3rem;
+    width: 100%;
+    max-width: 900px;
     opacity: 0;
     transform: translateY(20px);
     transition: opacity 0.8s ease, transform 0.8s var(--ease-out-expo);
@@ -398,6 +407,10 @@ body {
     border-radius: 30px;
     transition: color 0.3s ease, transform 0.3s ease;
     cursor: pointer;
+    flex: 1;
+    min-width: 0;
+    text-align: center;
+    white-space: nowrap;
 }
 
 @media (hover: hover) {
@@ -405,6 +418,20 @@ body {
         color: var(--accent-amber);
         transform: translateY(-3px);
     }
+}
+
+/* Tap feedback for touch devices */
+.homepage-menu-item:active,
+.nav-link:active,
+.project-card:active,
+.music-link:active,
+.filter-tag:active,
+.waveform-play-btn:active {
+    opacity: 0.7;
+}
+
+.music-item:active .music-title {
+    color: var(--accent);
 }
 
 .homepage-menu.fade-out {
@@ -454,18 +481,20 @@ body {
     text-decoration: none;
 }
 
-.contact-link:hover {
-    transform: translateX(-5px) scale(1.2);
+@media (hover: hover) {
+    .contact-link:hover {
+        transform: translateX(-5px) scale(1.2);
+    }
+
+    .contact-link:hover i {
+        color: var(--accent);
+    }
 }
 
 .contact-link i {
     font-size: 2rem;
     color: var(--text-muted);
     transition: color 0.3s ease;
-}
-
-.contact-link:hover i {
-    color: var(--accent);
 }
 
 /* Theme toggle */
@@ -498,7 +527,7 @@ body {
 .main-content {
     flex: 1;
     margin-left: 400px;
-    padding: 7rem 6rem;
+    padding: 7rem 4rem;
     max-width: calc(100vw - 400px);
     overflow-y: scroll;
     height: 100vh;
@@ -537,12 +566,13 @@ body {
 }
 
 .section.fade-out {
-    animation: sectionFadeOut 0.3s ease forwards !important;
+    transform: translateY(0) !important;
+    animation: sectionFadeOut 0.4s ease-in forwards !important;
 }
 
 @keyframes sectionFadeOut {
-    from { opacity: 1; transform: translateY(0); }
-    to { opacity: 0; transform: translateY(-20px); }
+    from { opacity: 1; }
+    to { opacity: 0; }
 }
 
 @keyframes sectionFadeIn {
@@ -581,6 +611,8 @@ body {
    ============================================================ */
 .music-list {
     max-width: 1200px;
+    margin-left: max(0px, calc(50vw - 600px - 400px - 4rem));
+    margin-right: auto;
 }
 
 .music-item {
@@ -598,7 +630,7 @@ body {
     display: flex;
     align-items: flex-start;
     gap: 1.2rem;
-    padding: 0.5rem 0 3rem 2rem;
+    padding: 0 0 3rem 2rem;
 }
 
 .music-item:first-child .music-header {
@@ -629,8 +661,10 @@ body {
     text-transform: none;
 }
 
-.music-item:hover .music-title {
-    color: var(--accent);
+@media (hover: hover) {
+    .music-item:hover .music-title {
+        color: var(--accent);
+    }
 }
 
 .music-divider {
@@ -647,6 +681,7 @@ body {
     flex-wrap: wrap;
     padding-left: 2rem;
     margin-top: 1rem;
+    margin-bottom: 1rem;
 }
 
 .music-link {
@@ -664,11 +699,13 @@ body {
     font-size: 0.9rem;
 }
 
-.music-link:hover {
-    background: var(--bg-card-hover);
-    border-color: var(--border-hover);
-    color: var(--accent);
-    transform: translateY(-2px);
+@media (hover: hover) {
+    .music-link:hover {
+        background: var(--bg-card-hover);
+        border-color: var(--border-hover);
+        color: var(--accent);
+        transform: translateY(-2px);
+    }
 }
 
 .music-link i {
@@ -717,10 +754,12 @@ body {
     transition: background 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
 }
 
-.waveform-play-btn:hover {
-    background: var(--accent);
-    color: var(--bg-primary);
-    box-shadow: 0 0 20px var(--accent-glow);
+@media (hover: hover) {
+    .waveform-play-btn:hover {
+        background: var(--accent);
+        color: var(--bg-primary);
+        box-shadow: 0 0 20px var(--accent-glow);
+    }
 }
 
 .waveform-play-btn.playing {
@@ -798,8 +837,10 @@ body {
 }
 
 /* Disable hover transitions during page transitions */
-body.is-transitioning .music-item:hover .music-title {
-    color: var(--text-primary) !important;
+@media (hover: hover) {
+    body.is-transitioning .music-item:hover .music-title {
+        color: var(--text-primary) !important;
+    }
 }
 
 /* ============================================================
@@ -817,7 +858,10 @@ body.is-transitioning .music-item:hover .music-title {
 
 /* Grid view */
 .projects-grid-view {
-    padding: 3rem 2rem 1.5rem;
+    padding: 0 2rem 1.5rem;
+    max-width: 1200px;
+    margin-left: max(0px, calc(50vw - 600px - 400px - 4rem));
+    margin-right: auto;
 }
 
 /* Filter bar */
@@ -844,9 +888,11 @@ body.is-transitioning .music-item:hover .music-title {
     transition: all 0.25s ease;
 }
 
-.filter-tag:hover {
-    border-color: var(--border-hover);
-    color: var(--text-primary);
+@media (hover: hover) {
+    .filter-tag:hover {
+        border-color: var(--border-hover);
+        color: var(--text-primary);
+    }
 }
 
 .filter-tag.active {
@@ -880,9 +926,11 @@ body.is-transitioning .music-item:hover .music-title {
     text-transform: none;
 }
 
-.project-card:hover {
-    border-color: var(--border-hover);
-    transform: translateY(-3px);
+@media (hover: hover) {
+    .project-card:hover {
+        border-color: var(--border-hover);
+        transform: translateY(-3px);
+    }
 }
 
 .project-card.hidden {
@@ -909,8 +957,10 @@ body.is-transitioning .music-item:hover .music-title {
     transition: color 0.3s ease;
 }
 
-.project-card:hover .project-card-title {
-    color: var(--accent);
+@media (hover: hover) {
+    .project-card:hover .project-card-title {
+        color: var(--accent);
+    }
 }
 
 .project-card-summary {
@@ -963,7 +1013,7 @@ body.is-transitioning .music-item:hover .music-title {
     align-self: flex-start;
     display: flex;
     flex-direction: column;
-    padding: 2.5rem 0 2rem;
+    padding: 0 0 2rem;
     z-index: 10;
 }
 
@@ -973,7 +1023,7 @@ body.is-transitioning .music-item:hover .music-title {
     max-width: 800px;
     min-width: 0;
     margin-left: max(0px, calc(50vw - 400px - 6rem - 180px - 2rem - 400px));
-    padding-top: 3rem;
+    padding-top: 0;
     padding-bottom: 4rem;
 }
 
@@ -1000,9 +1050,11 @@ body.is-transitioning .music-item:hover .music-title {
     position: relative;
 }
 
-.toc-item:hover {
-    opacity: 0.7;
-    color: var(--text-primary);
+@media (hover: hover) {
+    .toc-item:hover {
+        opacity: 0.7;
+        color: var(--text-primary);
+    }
 }
 
 .toc-item.active {
@@ -1086,9 +1138,11 @@ body.is-transitioning .music-item:hover .music-title {
     transition: all 0.2s ease;
 }
 
-.detail-nav-link:hover:not(:disabled) {
-    color: var(--accent);
-    opacity: 1;
+@media (hover: hover) {
+    .detail-nav-link:hover:not(:disabled) {
+        color: var(--accent);
+        opacity: 1;
+    }
 }
 
 .detail-nav-link:disabled {
@@ -1183,11 +1237,11 @@ body.is-transitioning .music-item:hover .music-title {
 
 /* Detail view animations */
 .detail-content-column.fade-in {
-    animation: detailFadeIn 0.4s var(--ease-out-expo) forwards;
+    animation: detailFadeIn 0.7s var(--ease-out-expo) forwards;
 }
 
 .detail-header-column.fade-in {
-    animation: detailFadeIn 0.4s ease forwards;
+    animation: detailFadeIn 0.7s var(--ease-out-expo) forwards;
 }
 
 .detail-content-column.slide-in-right {
@@ -1215,8 +1269,8 @@ body.is-transitioning .music-item:hover .music-title {
 }
 
 @keyframes detailFadeIn {
-    from { opacity: 0; }
-    to   { opacity: 1; }
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes detailFadeOut {
@@ -1426,9 +1480,11 @@ body.is-transitioning .music-item:hover .music-title {
     -webkit-mask: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
 }
 
-.bento-marquee:hover {
-    border-color: transparent;
-    transform: none;
+@media (hover: hover) {
+    .bento-marquee:hover {
+        border-color: transparent;
+        transform: none;
+    }
 }
 
 .marquee-track {
@@ -1517,9 +1573,11 @@ body.is-transitioning .music-item:hover .music-title {
     display: grid;
     grid-template-columns: 1fr 280px;
     gap: 2rem;
-    max-width: 1400px;
+    max-width: 1200px;
     width: 100%;
-    padding-top: 3rem;
+    margin-left: max(0px, calc(50vw - 1056px));
+    margin-right: auto;
+    padding-top: 0;
 }
 
 /* ============================================================
@@ -1551,8 +1609,10 @@ body.is-transitioning .music-item:hover .music-title {
     width: 100%;
 }
 
-.scrolling-testimonials:hover .testimonials-scroll-container {
-    animation-play-state: paused !important;
+@media (hover: hover) {
+    .scrolling-testimonials:hover .testimonials-scroll-container {
+        animation-play-state: paused !important;
+    }
 }
 
 @keyframes scrollTestimonials {
@@ -1576,12 +1636,14 @@ body.is-transitioning .music-item:hover .music-title {
     opacity: 1 !important;
 }
 
-.scrolling-testimonials:hover .scroll-testimonial {
-    opacity: 0.4;
-}
+@media (hover: hover) {
+    .scrolling-testimonials:hover .scroll-testimonial {
+        opacity: 0.4;
+    }
 
-.scrolling-testimonials:hover .scroll-testimonial.center {
-    opacity: 1 !important;
+    .scrolling-testimonials:hover .scroll-testimonial.center {
+        opacity: 1 !important;
+    }
 }
 
 .scroll-quote {
@@ -1741,7 +1803,7 @@ body.is-transitioning .music-item:hover .music-title {
         overflow-x: visible;
         padding-bottom: 2rem;
         padding-right: 0;
-        padding-top: 0;
+        padding-top: 1.5rem;
     }
 
     .floating-contact {
@@ -1829,14 +1891,17 @@ body.is-transitioning .music-item:hover .music-title {
 
     .project-detail-view.detail-active {
         flex-direction: column;
+        gap: 0.5rem;
     }
 
     .detail-header-column {
         position: static;
         width: 100%;
         min-width: 0;
+        min-height: 0;
         height: auto;
         max-height: none;
+        padding: 0.75rem 0 0;
     }
 
     .detail-toc {
@@ -1846,9 +1911,16 @@ body.is-transitioning .music-item:hover .music-title {
     .detail-sidebar-nav {
         position: static;
         flex-direction: row;
-        gap: 1rem;
-        margin-top: 0.5rem;
-        margin-bottom: 1rem;
+        justify-content: center;
+        gap: 2rem;
+        margin-top: 0;
+        margin-bottom: 0.5rem;
+        padding: 0;
+    }
+
+    .detail-sidebar-nav .detail-nav-link {
+        flex: 1;
+        justify-content: center;
     }
 
     .detail-content-column {
@@ -1874,10 +1946,19 @@ body.is-transitioning .music-item:hover .music-title {
         gap: 1rem;
     }
 
+    .music-header {
+        padding-bottom: 1rem;
+        padding-left: 0;
+    }
+
+    .music-cover {
+        align-self: flex-start;
+    }
+
     .music-links {
         flex-direction: column;
         align-items: stretch;
-        padding-left: 1rem;
+        padding-left: 0;
     }
 
     .music-link {

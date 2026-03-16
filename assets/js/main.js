@@ -8,6 +8,12 @@ let analyserL = null;
 let analyserR = null;
 let audioSource = null;
 
+// Cached DOM elements (initialised once in DOMContentLoaded)
+let cachedSidebar = null;
+let cachedMainContent = null;
+let cachedHomepage = null;
+let cachedFloatingContact = null;
+
 // ============================================================
 // MUSIC DATA
 // ============================================================
@@ -58,7 +64,7 @@ const musicData = [
 // UTILITY
 // ============================================================
 function updateMobileNavHeight() {
-    const sidebar = document.querySelector('.sidebar');
+    const sidebar = cachedSidebar || document.querySelector('.sidebar');
     if (sidebar && window.innerWidth <= 768) {
         document.documentElement.style.setProperty('--mobile-nav-height', sidebar.offsetHeight + 'px');
     }
@@ -67,7 +73,7 @@ function updateMobileNavHeight() {
 let resizeTimeout;
 window.addEventListener('resize', () => {
     clearTimeout(resizeTimeout);
-    resizeTimeout = setTimeout(updateMobileNavHeight, 100);
+    resizeTimeout = setTimeout(updateMobileNavHeight, 150);
 });
 
 // ============================================================
@@ -169,6 +175,7 @@ let asciiRAF = null;
 
 function initAsciiGlobe() {
     if (prefersReducedMotion.matches) return;
+    if ('ontouchstart' in window || window.innerWidth <= 768) return;
 
     const canvas = document.getElementById('asciiGrid');
     if (!canvas) return;
@@ -187,7 +194,11 @@ function initAsciiGlobe() {
         canvas.height = window.innerHeight;
     }
     resize();
-    window.addEventListener('resize', resize);
+    let asciiResizeTimer;
+    window.addEventListener('resize', () => {
+        clearTimeout(asciiResizeTimer);
+        asciiResizeTimer = setTimeout(resize, 150);
+    });
 
     document.addEventListener('mousemove', e => {
         const rect = canvas.getBoundingClientRect();
@@ -227,7 +238,9 @@ function initAsciiGlobe() {
             }
         }
 
-        asciiRAF = requestAnimationFrame(draw);
+        if (!prefersReducedMotion.matches) {
+            asciiRAF = requestAnimationFrame(draw);
+        }
     }
 
     draw();
@@ -274,7 +287,7 @@ function displayMusic(tracks) {
                 <div class="music-header">
                     ${track.coverUrl ? `<img src="${track.coverUrl}" alt="${track.title} cover" class="music-cover">` : ''}
                     <div class="music-header-text">
-                        <h3 class="music-title">${track.title}</h3>
+                        <h3 class="music-title" aria-live="polite" aria-atomic="true">${track.title}</h3>
                         ${track.artist ? `<p class="music-artist">${track.artist}</p>` : ''}
                         ${track.summary ? `<p class="music-summary">${track.summary}</p>` : ''}
                     </div>
@@ -356,7 +369,11 @@ function initWaveformPlayer(playerEl) {
         waveCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
     resizeWaveCanvas();
-    window.addEventListener('resize', resizeWaveCanvas);
+    let waveResizeTimer;
+    window.addEventListener('resize', () => {
+        clearTimeout(waveResizeTimer);
+        waveResizeTimer = setTimeout(resizeWaveCanvas, 150);
+    });
 
     // Meter elements — scale for retina
     const dpr = window.devicePixelRatio || 1;
@@ -613,7 +630,9 @@ function initWaveformPlayer(playerEl) {
 
         drawMetersLive();
 
-        if (isPlaying) animationId = requestAnimationFrame(drawLive);
+        if (isPlaying && !prefersReducedMotion.matches) {
+            animationId = requestAnimationFrame(drawLive);
+        }
     }
 
     function stopPlayback() {
@@ -758,9 +777,9 @@ function displayProjects(projects) {
         techs.forEach(t => allTechs.add(t));
     });
 
-    let filterHTML = '<button class="filter-tag active" data-filter="all">all</button>';
+    let filterHTML = '<button class="filter-tag active" data-filter="all" aria-pressed="true">all</button>';
     Array.from(allTechs).sort().forEach(tech => {
-        filterHTML += `<button class="filter-tag" data-filter="${DOMPurify.sanitize(tech)}">${DOMPurify.sanitize(tech)}</button>`;
+        filterHTML += `<button class="filter-tag" data-filter="${DOMPurify.sanitize(tech)}" aria-pressed="false">${DOMPurify.sanitize(tech)}</button>`;
     });
     filterBar.innerHTML = filterHTML;
 
@@ -803,8 +822,12 @@ function initFilterHandlers() {
         const tag = e.target.closest('.filter-tag');
         if (!tag) return;
 
-        filterBar.querySelectorAll('.filter-tag').forEach(t => t.classList.remove('active'));
+        filterBar.querySelectorAll('.filter-tag').forEach(t => {
+            t.classList.remove('active');
+            t.setAttribute('aria-pressed', 'false');
+        });
         tag.classList.add('active');
+        tag.setAttribute('aria-pressed', 'true');
         activeFilter = tag.dataset.filter;
         filterProjectCards();
     });
@@ -883,8 +906,9 @@ function showProjectDetail(index, slideDirection) {
     detailView.classList.add('detail-active');
 
     // Scroll to top
-    const mc = document.getElementById('mainContent');
+    const mc = cachedMainContent || document.getElementById('mainContent');
     if (mc) mc.scrollTop = 0;
+    window.scrollTo(0, 0);
 
     // Clear old animation classes
     contentCol.classList.remove('fade-in', 'slide-in-right', 'slide-in-left', 'slide-out-left', 'slide-out-right');
@@ -972,7 +996,7 @@ function buildToc(headers) {
             }
 
             // Scroll to anchor
-            const mc = document.getElementById('mainContent');
+            const mc = cachedMainContent || document.getElementById('mainContent');
             const anchorRect = anchor.getBoundingClientRect();
             const containerRect = mc.getBoundingClientRect();
             const offset = window.innerHeight * 0.5;
@@ -983,7 +1007,7 @@ function buildToc(headers) {
 }
 
 function setupScrollTracking() {
-    const mc = document.getElementById('mainContent');
+    const mc = cachedMainContent || document.getElementById('mainContent');
     if (!mc) return;
 
     // Remove old listener if any
@@ -1082,7 +1106,7 @@ function showProjectGrid() {
     if (!gridView || !detailView) return;
 
     // Clean up scroll tracking
-    const mc = document.getElementById('mainContent');
+    const mc = cachedMainContent || document.getElementById('mainContent');
     if (mc && mc._tocScrollHandler) {
         mc.removeEventListener('scroll', mc._tocScrollHandler);
         mc._tocScrollHandler = null;
@@ -1119,29 +1143,46 @@ function initDetailNavHandlers() {
     if (nextBtn) nextBtn.addEventListener('click', () => navigateProject('next'));
 }
 
+let _swipeTouchStartHandler = null;
+let _swipeTouchMoveHandler = null;
+let _swipeTouchEndHandler = null;
+
+function cleanupSectionSwipeGestures() {
+    const mc = cachedMainContent || document.getElementById('mainContent');
+    if (!mc) return;
+    if (_swipeTouchStartHandler) mc.removeEventListener('touchstart', _swipeTouchStartHandler);
+    if (_swipeTouchMoveHandler) mc.removeEventListener('touchmove', _swipeTouchMoveHandler);
+    if (_swipeTouchEndHandler) mc.removeEventListener('touchend', _swipeTouchEndHandler);
+    _swipeTouchStartHandler = null;
+    _swipeTouchMoveHandler = null;
+    _swipeTouchEndHandler = null;
+}
+
 function initSectionSwipeGestures() {
+    cleanupSectionSwipeGestures();
+
     let startX = 0, startY = 0, endX = 0, axis = null;
     const minDist = 50;
     const sections = ['music', 'projects', 'about'];
-    const mc = document.getElementById('mainContent');
+    const mc = cachedMainContent || document.getElementById('mainContent');
     if (!mc) return;
 
-    mc.addEventListener('touchstart', e => {
+    _swipeTouchStartHandler = e => {
         startX = endX = e.changedTouches[0].screenX;
         startY = e.changedTouches[0].screenY;
         axis = null;
-    }, { passive: true });
+    };
 
-    mc.addEventListener('touchmove', e => {
+    _swipeTouchMoveHandler = e => {
         const cx = e.changedTouches[0].screenX;
         const cy = e.changedTouches[0].screenY;
         if (!axis && (Math.abs(cx - startX) > 10 || Math.abs(cy - startY) > 10)) {
             axis = Math.abs(cx - startX) > Math.abs(cy - startY) ? 'h' : 'v';
         }
         if (axis === 'h') endX = cx;
-    }, { passive: true });
+    };
 
-    mc.addEventListener('touchend', () => {
+    _swipeTouchEndHandler = () => {
         if (axis !== 'h') return;
         const dist = endX - startX;
         if (Math.abs(dist) < minDist) return;
@@ -1154,7 +1195,11 @@ function initSectionSwipeGestures() {
         const newI = dist > 0 ? i - 1 : i + 1;
         if (newI >= 0 && newI < sections.length) showSection(sections[newI]);
         axis = null;
-    }, { passive: true });
+    };
+
+    mc.addEventListener('touchstart', _swipeTouchStartHandler, { passive: true });
+    mc.addEventListener('touchmove', _swipeTouchMoveHandler, { passive: true });
+    mc.addEventListener('touchend', _swipeTouchEndHandler, { passive: true });
 }
 
 // ============================================================
@@ -1267,12 +1312,14 @@ function stopTestimonialTracking() {
 // NAVIGATION
 // ============================================================
 function goToHomepage() {
+    stopAllAudioPlayback();
+    cleanupSectionSwipeGestures();
     const activeSection = document.querySelector('.section.active:not(.homepage)');
 
     const proceed = () => {
-        const sidebar = document.getElementById('sidebar');
-        const mc = document.getElementById('mainContent');
-        const homepage = document.getElementById('homepage');
+        const sidebar = cachedSidebar || document.getElementById('sidebar');
+        const mc = cachedMainContent || document.getElementById('mainContent');
+        const homepage = cachedHomepage || document.getElementById('homepage');
         const name = document.querySelector('.homepage-name');
         const shadow = document.querySelector('.homepage-name-shadow');
         const menu = document.querySelector('.homepage-menu');
@@ -1307,36 +1354,41 @@ function goToHomepage() {
             logo.style.transition = '';
         }, 50);
 
-        sidebar.classList.remove('show');
-        mc.classList.add('homepage-active');
-        mc.classList.remove('nav-visible');
-        homepage.classList.remove('nav-visible');
-
         document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
         document.querySelectorAll('.section').forEach(s => {
-            s.classList.remove('active', 'fade-out');
+            if (s !== activeSection) s.classList.remove('active', 'fade-out');
         });
 
         homepage.classList.add('active');
-        setTimeout(() => triggerHomepageAnimation(), 100);
+
+        // Start sidebar slide and section fade-out in parallel
+        sidebar.classList.remove('show');
+
+        const finishTransition = () => {
+            mc.classList.add('homepage-active');
+            mc.classList.remove('nav-visible');
+            homepage.classList.remove('nav-visible');
+            if (activeSection) activeSection.classList.remove('active', 'fade-out');
+            triggerHomepageAnimation();
+        };
+
+        if (activeSection) {
+            let done = false;
+            const doFinish = () => { if (done) return; done = true; finishTransition(); };
+            activeSection.addEventListener('animationend', doFinish, { once: true });
+            setTimeout(doFinish, 420);
+        } else {
+            finishTransition();
+        }
 
         resetProjectsView();
         updateFloatingContactVisibility();
     };
 
     if (activeSection) {
-        let proceeded = false;
-        const doProceed = () => {
-            if (proceeded) return;
-            proceeded = true;
-            proceed();
-        };
         activeSection.classList.add('fade-out');
-        activeSection.addEventListener('animationend', doProceed, { once: true });
-        setTimeout(doProceed, 350);
-    } else {
-        proceed();
     }
+    proceed();
 }
 
 function stopAllAudioPlayback() {
@@ -1346,13 +1398,13 @@ function stopAllAudioPlayback() {
 function showSection(sectionName) {
     stopAllAudioPlayback();
     document.body.classList.add('is-transitioning');
-    const mc = document.getElementById('mainContent');
+    const mc = cachedMainContent || document.getElementById('mainContent');
     const currentActive = document.querySelector('.section.active');
     const isFromHomepage = currentActive && currentActive.id === 'homepage';
     const isFromSection = currentActive && !isFromHomepage;
 
     const proceed = () => {
-        document.getElementById('sidebar').classList.add('show');
+        (cachedSidebar || document.getElementById('sidebar')).classList.add('show');
         mc.classList.remove('homepage-active');
         mc.classList.add('nav-visible');
 
@@ -1362,6 +1414,7 @@ function showSection(sectionName) {
         document.querySelector(`[data-section="${sectionName}"]`)?.classList.add('active');
 
         if (mc) mc.scrollTop = 0;
+        window.scrollTo(0, 0);
         document.querySelectorAll('.section').forEach(s => {
             s.classList.remove('active', 'fade-out');
         });
@@ -1416,7 +1469,7 @@ function showSection(sectionName) {
         currentActive.classList.add('fade-out');
         currentActive.addEventListener('animationend', doProceed, { once: true });
         // Fallback in case animationend doesn't fire
-        setTimeout(doProceed, 350);
+        setTimeout(doProceed, 420);
     } else {
         proceed();
     }
@@ -1427,17 +1480,23 @@ function resetProjectsView() {
     activeFilter = 'all';
     const filterBar = document.getElementById('projectsFilterBar');
     if (filterBar) {
-        filterBar.querySelectorAll('.filter-tag').forEach(t => t.classList.remove('active'));
+        filterBar.querySelectorAll('.filter-tag').forEach(t => {
+            t.classList.remove('active');
+            t.setAttribute('aria-pressed', 'false');
+        });
         const allBtn = filterBar.querySelector('[data-filter="all"]');
-        if (allBtn) allBtn.classList.add('active');
+        if (allBtn) {
+            allBtn.classList.add('active');
+            allBtn.setAttribute('aria-pressed', 'true');
+        }
     }
     // Reset card visibility directly (no animation needed)
     document.querySelectorAll('.project-card.hidden').forEach(c => c.classList.remove('hidden'));
 }
 
 function updateFloatingContactVisibility() {
-    const homepage = document.getElementById('homepage');
-    const fc = document.getElementById('floatingContact');
+    const homepage = cachedHomepage || document.getElementById('homepage');
+    const fc = cachedFloatingContact || document.getElementById('floatingContact');
     if (homepage.classList.contains('active')) {
         fc.classList.add('homepage-active');
     } else {
@@ -1452,6 +1511,12 @@ function updateFloatingContactVisibility() {
 document.addEventListener('DOMContentLoaded', () => {
     audioPlayer = document.getElementById('audio-player');
     if (!audioPlayer) return;
+
+    // Cache long-lived DOM elements
+    cachedSidebar = document.querySelector('.sidebar');
+    cachedMainContent = document.getElementById('mainContent');
+    cachedHomepage = document.getElementById('homepage');
+    cachedFloatingContact = document.getElementById('floatingContact');
 
     try {
         const AC = window.AudioContext || window.webkitAudioContext;
