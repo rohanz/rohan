@@ -28,9 +28,8 @@
     <meta name="theme-color" content="#1a1a2e">
     <meta name="msapplication-TileColor" content="#1a1a2e">
     <link rel="canonical" href="https://www.rohanjk.xyz/">
-    <link href="https://api.fontshare.com/v2/css?f[]=chillax@200,300,400,500,600,700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-    <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"></noscript>
+    <link href="https://api.fontshare.com/v2/css?f[]=chillax@200,300,400,500,600,700&display=block" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=block" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="./assets/css/style.css">
     <link rel="icon" type="image/png" href="./favicon.png">
@@ -157,41 +156,83 @@
 
             <!-- About Section -->
             <section id="about" class="section">
-                <div class="about-grid">
-                    <div class="bio-section">
-                        <h3 class="bio-title">bio</h3>
-                        <p class="bio-text">
-                            hi, i'm rohan! i'm a computer engineering student at ntu, singapore. hope you enjoy my page.
+                <div class="about-layout">
+                <div class="bento-grid">
+                    <!-- Bio card — large, spans 2 cols -->
+                    <div class="bento-card bento-bio">
+                        <h3 class="bento-label">bio</h3>
+                        <p class="bento-bio-text">
+                            hi, i'm rohan! i'm a computer engineering student at ntu, singapore.
+                            i love building things with AI, from inception to deployment, whether its complex data pipelines, or consumer apps or even websites (like this one).
+                            i also love writing, producing and recording music, as well as creating and tinkering with audio hardware.
+                            if you wanna get in contact just use any of the social media below!
                         </p>
-                        <p class="bio-text">
-                            more interesting stuff.
-                        </p>
+                        <div class="bento-bio-links">
+                            <a href="https://www.instagram.com/rrohan.jk/" target="_blank" rel="noopener noreferrer" class="bento-social-link"><i class="fab fa-instagram"></i></a>
+                            <a href="https://open.spotify.com/artist/3I1V2FxqX2qs3zrUY0fCPp" target="_blank" rel="noopener noreferrer" class="bento-social-link"><i class="fab fa-spotify"></i></a>
+                            <a href="https://github.com/rohanz" target="_blank" rel="noopener noreferrer" class="bento-social-link"><i class="fab fa-github"></i></a>
+                        </div>
                     </div>
 
-                    <div class="cv-section">
-                        <h3 class="bio-title">cv</h3>
+                    <!-- Photo card -->
+                    <div class="bento-card bento-photo">
+                        <div class="bento-photo-placeholder">
+                            <i class="fas fa-user"></i>
+                        </div>
+                    </div>
+
+                    <!-- Stats card -->
+                    <div class="bento-card bento-stats">
+                        <h3 class="bento-label">stats</h3>
+                        <div class="bento-stats-grid">
+                            <div class="stat-item">
+                                <span class="stat-number">1.3m+</span>
+                                <span class="stat-desc">streams</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number">3</span>
+                                <span class="stat-desc">projects built</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tech stack card -->
+                    <div class="bento-card bento-tech">
+                        <h3 class="bento-label">tech stack</h3>
+                        <div class="bento-tech-icons">
+                            <span class="tech-icon" title="Python"><i class="fab fa-python"></i></span>
+                            <span class="tech-icon" title="JavaScript"><i class="fab fa-js-square"></i></span>
+                            <span class="tech-icon" title="React"><i class="fab fa-react"></i></span>
+                            <span class="tech-icon" title="Node.js"><i class="fab fa-node-js"></i></span>
+                            <span class="tech-icon" title="Git"><i class="fab fa-git-alt"></i></span>
+                            <span class="tech-icon" title="Linux"><i class="fab fa-linux"></i></span>
+                            <span class="tech-icon" title="HTML5"><i class="fab fa-html5"></i></span>
+                            <span class="tech-icon" title="CSS3"><i class="fab fa-css3-alt"></i></span>
+                        </div>
+                    </div>
+
+                    <!-- CV download card -->
+                    <div class="bento-card bento-cv">
+                        <h3 class="bento-label">resume</h3>
                         <a href="docs/resume.pdf" class="cv-download" download="resume.pdf">
                             <i class="fas fa-download"></i> download cv
                         </a>
-
-                        <div class="cv-content">
-                            <h4>experience</h4>
-                            <p><strong>job title</strong> - company name (2022-present)</p>
-                            <p>great things ive done.</p>
-
-                            <h4>education</h4>
-                            <p><strong>degree</strong> - nanyang technological university (2018-2022)</p>
-                            <p>relevant coursework and many achievements.</p>
-
-                            <h4>skills</h4>
-                            <p>these are my many skills.</p>
-                        </div>
+                        <p class="bento-cv-sub">computer engineering @ ntu</p>
                     </div>
 
-                    <div class="scrolling-testimonials">
-                        <div class="testimonials-scroll-container">
+                    <!-- Marquee ticker card -->
+                    <div class="bento-card bento-marquee">
+                        <div class="marquee-track">
+                            <span class="marquee-content">music production &bull; web development &bull; signal processing &bull; embedded systems &bull; indie pop &bull; creative coding &bull; ui/ux design &bull; ableton live &bull;&nbsp;</span>
+                            <span class="marquee-content">music production &bull; web development &bull; signal processing &bull; embedded systems &bull; indie pop &bull; creative coding &bull; ui/ux design &bull; ableton live &bull;&nbsp;</span>
                         </div>
                     </div>
+                </div>
+
+                <div class="scrolling-testimonials">
+                    <div class="testimonials-scroll-container">
+                    </div>
+                </div>
                 </div>
             </section>
         </main>

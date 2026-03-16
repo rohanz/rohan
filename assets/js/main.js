@@ -4,17 +4,39 @@
 let audioPlayer = null;
 let audioContext = null;
 let analyser = null;
+let analyserL = null;
+let analyserR = null;
 let audioSource = null;
-let testimonialInterval = null;
 
 // ============================================================
 // MUSIC DATA
 // ============================================================
 const musicData = [
     {
+        title: "LOOSE ENDS",
+        artist: "rohan.jk and kairi",
+        summary: "hyperpop/pop rock song with heavy guitars and energetic production",
+        coverUrl: "assets/images/looseends.png",
+        spotifyUrl: "https://open.spotify.com/track/7xy7dlw4npEZ88uxVkFCJa?si=4d997b7d891b4214",
+        youtubeUrl: "https://www.youtube.com/watch?v=EJ1uM3mIk7Y",
+        appleMusicUrl: "https://music.apple.com/us/song/loose-ends/1874970496",
+        audioSnippetUrl: "assets/audio/snippets/looseends.mp3",
+    },
+    {
+        title: "DON'T WANT ME",
+        artist: "rohan.jk and kairi",
+        summary: "rnb/house song with a smooth groove, and infectious rhythm",
+        coverUrl: "assets/images/dontwantme.jpg",
+        spotifyUrl: "https://open.spotify.com/track/0zYAFsKdFfbGfnMvRrEDgM?si=d8c21fc716e146d0",
+        youtubeUrl: "https://www.youtube.com/watch?v=UDpBfwxMZvI",
+        appleMusicUrl: "https://music.apple.com/us/song/dont-want-me/1832074479",
+        audioSnippetUrl: "assets/audio/snippets/dontwantme.mp3",
+    },
+    {
         title: "call me back",
         artist: "rohan.jk and kairi",
         summary: "feng kai and i tried writing a fun indie pop song with groovy bass and an upbeat tempo",
+        coverUrl: "assets/images/callmeback.jpg",
         spotifyUrl: "https://open.spotify.com/track/3m1PQRxlKQh1tzxFP1C0ZY?si=642929c16c284e61",
         youtubeUrl: "https://www.youtube.com/watch?v=iXYprE6T5ec",
         appleMusicUrl: "https://music.apple.com/sg/album/call-me-back/1756849369?i=1756849370",
@@ -24,6 +46,7 @@ const musicData = [
         title: "where have u been?",
         artist: "rohan.jk, tristan and hannah",
         summary: "chill rnb/pop song with a smooth feel",
+        coverUrl: "assets/images/wherehaveubeen.png",
         spotifyUrl: "https://open.spotify.com/track/0CqWJMqXpq2CqtyCfPWigj?si=0ad5ddf4f7c449ee",
         youtubeUrl: "https://www.youtube.com/watch?v=XUDQDO6qpQA",
         appleMusicUrl: "https://music.apple.com/sg/album/where-have-u-been-feat-trxstan-hannah-single/1727956658",
@@ -249,16 +272,29 @@ function displayMusic(tracks) {
         itemEl.innerHTML = `
             <div class="music-content">
                 <div class="music-header">
-                    <h3 class="music-title">${track.title}</h3>
-                    ${track.artist ? `<p class="music-artist">${track.artist}</p>` : ''}
-                    ${track.summary ? `<p class="music-summary">${track.summary}</p>` : ''}
+                    ${track.coverUrl ? `<img src="${track.coverUrl}" alt="${track.title} cover" class="music-cover">` : ''}
+                    <div class="music-header-text">
+                        <h3 class="music-title">${track.title}</h3>
+                        ${track.artist ? `<p class="music-artist">${track.artist}</p>` : ''}
+                        ${track.summary ? `<p class="music-summary">${track.summary}</p>` : ''}
+                    </div>
                 </div>
                 ${track.audioSnippetUrl ? `
                 <div class="waveform-player" data-audio-url="${track.audioSnippetUrl}">
                     <button class="waveform-play-btn" aria-label="Play snippet" aria-pressed="false">
                         <i class="fas fa-play"></i>
                     </button>
-                    <pre class="waveform-ascii" aria-hidden="true"></pre>
+                    <canvas class="waveform-canvas" height="56" aria-hidden="true"></canvas>
+                    <div class="audio-meters">
+                        <div class="meter-group">
+                            <canvas class="vectorscope-canvas" width="110" height="110"></canvas>
+                            <span class="meter-label">stereo</span>
+                        </div>
+                        <div class="meter-group">
+                            <canvas class="vu-meter-canvas" width="76" height="110"></canvas>
+                            <span class="meter-label">vu</span>
+                        </div>
+                    </div>
                 </div>` : ''}
                 ${links.length ? `<div class="music-links">${links.join('')}</div>` : ''}
             </div>
@@ -283,7 +319,18 @@ function ensureAudioGraph() {
         audioSource = audioContext.createMediaElementSource(audioPlayer);
         analyser = audioContext.createAnalyser();
         analyser.fftSize = 2048;
+
+        // Stereo split for vectorscope + LUFS
+        const splitter = audioContext.createChannelSplitter(2);
+        analyserL = audioContext.createAnalyser();
+        analyserR = audioContext.createAnalyser();
+        analyserL.fftSize = 2048;
+        analyserR.fftSize = 2048;
+
         audioSource.connect(analyser);
+        audioSource.connect(splitter);
+        splitter.connect(analyserL, 0);
+        splitter.connect(analyserR, 1);
         analyser.connect(audioContext.destination);
     } catch (e) {
         // Already connected
@@ -291,36 +338,237 @@ function ensureAudioGraph() {
 }
 
 function initWaveformPlayer(playerEl) {
-    const btn = playerEl.querySelector('.waveform-play-btn');
-    const asciiEl = playerEl.querySelector('.waveform-ascii');
-    const audioUrl = playerEl.dataset.audioUrl;
-    if (!btn || !asciiEl || !audioUrl) return;
+    if (playerEl._waveformInit) return;
+    playerEl._waveformInit = true;
 
-    const asciiCols = window.innerWidth <= 768 ? 40 : 70;
-    const asciiRows = 9;
-    const gradient = ' .·:░▒▓█';
+    const btn = playerEl.querySelector('.waveform-play-btn');
+    const waveCanvas = playerEl.querySelector('.waveform-canvas');
+    const audioUrl = playerEl.dataset.audioUrl;
+    if (!btn || !waveCanvas || !audioUrl) return;
+
+    const waveCtx = waveCanvas.getContext('2d');
+
+    function resizeWaveCanvas() {
+        const dpr = window.devicePixelRatio || 1;
+        const rect = waveCanvas.getBoundingClientRect();
+        waveCanvas.width = rect.width * dpr;
+        waveCanvas.height = rect.height * dpr;
+        waveCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    resizeWaveCanvas();
+    window.addEventListener('resize', resizeWaveCanvas);
+
+    // Meter elements — scale for retina
+    const dpr = window.devicePixelRatio || 1;
+    const vecCanvas = playerEl.querySelector('.vectorscope-canvas');
+    if (vecCanvas && !vecCanvas._scaled) {
+        vecCanvas._scaled = true;
+        const vw = 110, vh = 110;
+        vecCanvas.width = vw * dpr;
+        vecCanvas.height = vh * dpr;
+    }
+    const vecCtx = vecCanvas ? vecCanvas.getContext('2d') : null;
+    if (vecCtx) vecCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    const vuCanvas = playerEl.querySelector('.vu-meter-canvas');
+    if (vuCanvas && !vuCanvas._scaled) {
+        vuCanvas._scaled = true;
+        const mw = 76, mh = 110;
+        vuCanvas.width = mw * dpr;
+        vuCanvas.height = mh * dpr;
+    }
+    const vuCtx = vuCanvas ? vuCanvas.getContext('2d') : null;
+    if (vuCtx) vuCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    let vuSmoothed = -60;
+    let vuPeak = -60;
+    let vuPeakHold = 0;
+
+    function getAccentColor() {
+        const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+        return isLight ? '#8D6E63' : '#FFCC80';
+    }
+
+    function getAccentRgba(alpha) {
+        const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+        return isLight ? `rgba(141,110,99,${alpha})` : `rgba(255,204,128,${alpha})`;
+    }
+
+    const vuW = 76, vuH = 110;
+    const vecW = 110, vecH = 110;
+
+    function drawVuIdle() {
+        if (!vuCtx) return;
+        const w = vuW, h = vuH;
+        vuCtx.clearRect(0, 0, w, h);
+
+        const meterX = 8;
+        const meterW = 22;
+        const meterTop = 8;
+        const meterBot = h - 16;
+        const meterH = meterBot - meterTop;
+
+        // Background track
+        vuCtx.fillStyle = getAccentRgba(0.06);
+        vuCtx.fillRect(meterX, meterTop, meterW, meterH);
+
+        // dB scale labels
+        const dbMarks = [0, -6, -12, -20, -40, -60];
+        vuCtx.font = '10px Courier New';
+        vuCtx.fillStyle = getAccentRgba(0.35);
+        vuCtx.textAlign = 'left';
+        dbMarks.forEach(db => {
+            const y = meterTop + (1 - (db + 60) / 60) * meterH;
+            vuCtx.fillRect(meterX, y, meterW, 0.5);
+            vuCtx.fillText(db === 0 ? ' 0' : db.toString(), meterX + meterW + 4, y + 4);
+        });
+    }
+
+    function drawVecIdle() {
+        if (!vecCtx) return;
+        const w = vecW, h = vecH;
+        vecCtx.clearRect(0, 0, w, h);
+        vecCtx.strokeStyle = getAccentRgba(0.08);
+        vecCtx.lineWidth = 1;
+        vecCtx.beginPath();
+        vecCtx.moveTo(w / 2, 0); vecCtx.lineTo(w / 2, h);
+        vecCtx.moveTo(0, h / 2); vecCtx.lineTo(w, h / 2);
+        vecCtx.stroke();
+        vecCtx.beginPath();
+        vecCtx.arc(w / 2, h / 2, Math.min(w, h) / 2 - 4, 0, Math.PI * 2);
+        vecCtx.stroke();
+    }
+
+    function drawMetersIdle() {
+        drawVuIdle();
+        drawVecIdle();
+    }
+    drawMetersIdle();
+
+    function drawMetersLive() {
+        if (!analyserL || !analyserR) return;
+
+        const bufLen = analyserL.frequencyBinCount;
+        const dataL = new Float32Array(bufLen);
+        const dataR = new Float32Array(bufLen);
+        analyserL.getFloatTimeDomainData(dataL);
+        analyserR.getFloatTimeDomainData(dataR);
+
+        // --- VU Meter (canvas) ---
+        if (vuCtx) {
+            let sumSq = 0;
+            for (let i = 0; i < bufLen; i++) {
+                const mid = (dataL[i] + dataR[i]) * 0.5;
+                sumSq += mid * mid;
+            }
+            const rms = Math.sqrt(sumSq / bufLen);
+            const dbFS = rms > 0 ? 20 * Math.log10(rms) : -60;
+            const vuNow = Math.max(-60, Math.min(0, dbFS));
+            vuSmoothed += (vuNow - vuSmoothed) * 0.25;
+
+            // Peak hold
+            if (vuNow > vuPeak) { vuPeak = vuNow; vuPeakHold = 30; }
+            else if (vuPeakHold > 0) vuPeakHold--;
+            else vuPeak += (-60 - vuPeak) * 0.08;
+
+            const w = vuW, h = vuH;
+            vuCtx.clearRect(0, 0, w, h);
+
+            const meterX = 8;
+            const meterW = 22;
+            const meterTop = 8;
+            const meterBot = h - 16;
+            const meterH = meterBot - meterTop;
+
+            // Background track
+            vuCtx.fillStyle = getAccentRgba(0.06);
+            vuCtx.fillRect(meterX, meterTop, meterW, meterH);
+
+            // Filled bar
+            const fillFrac = (vuSmoothed + 60) / 60;
+            const fillH = fillFrac * meterH;
+            const fillY = meterBot - fillH;
+
+            // Gradient: green → yellow → red from bottom to top
+            const grad = vuCtx.createLinearGradient(0, meterBot, 0, meterTop);
+            grad.addColorStop(0, getAccentRgba(0.5));
+            grad.addColorStop(0.6, getAccentRgba(0.7));
+            grad.addColorStop(0.85, '#e6a23c');
+            grad.addColorStop(1, '#e05555');
+            vuCtx.fillStyle = grad;
+            vuCtx.fillRect(meterX, fillY, meterW, fillH);
+
+            // Peak indicator line
+            const peakFrac = (vuPeak + 60) / 60;
+            const peakY = meterBot - peakFrac * meterH;
+            vuCtx.fillStyle = peakFrac > 0.9 ? '#e05555' : getAccentColor();
+            vuCtx.fillRect(meterX, peakY, meterW, 1.5);
+
+            // dB scale labels
+            const dbMarks = [0, -6, -12, -20, -40, -60];
+            vuCtx.font = '10px Courier New';
+            vuCtx.textAlign = 'left';
+            dbMarks.forEach(db => {
+                const y = meterTop + (1 - (db + 60) / 60) * meterH;
+                vuCtx.fillStyle = getAccentRgba(0.2);
+                vuCtx.fillRect(meterX, y, meterW, 0.5);
+                vuCtx.fillStyle = getAccentRgba(0.5);
+                vuCtx.fillText(db === 0 ? ' 0' : db.toString(), meterX + meterW + 4, y + 4);
+            });
+        }
+
+        // --- Vectorscope (Lissajous) ---
+        if (vecCtx) {
+            const w = vecW, h = vecH;
+            const cx = w / 2, cy = h / 2;
+            const radius = Math.min(w, h) / 2 - 4;
+
+            const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+            vecCtx.fillStyle = isLight ? 'rgba(255,248,225,0.3)' : 'rgba(26,26,46,0.3)';
+            vecCtx.fillRect(0, 0, w, h);
+
+            vecCtx.strokeStyle = getAccentRgba(0.08);
+            vecCtx.lineWidth = 1;
+            vecCtx.beginPath();
+            vecCtx.moveTo(cx, 0); vecCtx.lineTo(cx, h);
+            vecCtx.moveTo(0, cy); vecCtx.lineTo(w, cy);
+            vecCtx.stroke();
+            vecCtx.beginPath();
+            vecCtx.arc(cx, cy, radius, 0, Math.PI * 2);
+            vecCtx.stroke();
+
+            // Particles: brown in light mode, amber in dark mode
+            vecCtx.fillStyle = isLight ? 'rgba(141,110,99,0.7)' : 'rgba(255,204,128,0.7)';
+            const step = Math.max(1, Math.floor(bufLen / 256));
+            for (let i = 0; i < bufLen; i += step) {
+                const mid = (dataL[i] + dataR[i]) * 0.5;
+                const side = (dataL[i] - dataR[i]) * 0.5;
+                const px = cx + side * radius * 2;
+                const py = cy - mid * radius * 2;
+                vecCtx.fillRect(px, py, 1.5, 1.5);
+            }
+        }
+    }
 
     let isPlaying = false;
     let animationId = null;
 
+    function getWaveColor(alpha) {
+        const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+        return isLight ? `rgba(141,110,99,${alpha})` : `rgba(255,204,128,${alpha})`;
+    }
+
     function drawIdle() {
-        const center = (asciiRows - 1) / 2;
-        let output = '';
-        for (let row = 0; row < asciiRows; row++) {
-            for (let col = 0; col < asciiCols; col++) {
-                const wave = Math.sin(col * 0.15) * 1.2;
-                const dist = Math.abs(row - center - wave);
-                if (dist < 1.2) {
-                    const intensity = 1 - dist / 1.2;
-                    const ci = Math.min(Math.floor(intensity * 4), 3);
-                    output += ' .·:'[ci];
-                } else {
-                    output += ' ';
-                }
-            }
-            if (row < asciiRows - 1) output += '\n';
-        }
-        asciiEl.textContent = output;
+        const rect = waveCanvas.getBoundingClientRect();
+        const w = rect.width, h = rect.height;
+        waveCtx.clearRect(0, 0, w, h);
+
+        waveCtx.beginPath();
+        waveCtx.strokeStyle = getWaveColor(0.3);
+        waveCtx.lineWidth = 1.5;
+        const cy = h / 2;
+        waveCtx.moveTo(0, cy);
+        waveCtx.lineTo(w, cy);
+        waveCtx.stroke();
     }
     drawIdle();
 
@@ -331,38 +579,39 @@ function initWaveformPlayer(playerEl) {
         const dataArray = new Uint8Array(bufferLength);
         analyser.getByteTimeDomainData(dataArray);
 
-        const step = Math.floor(bufferLength / asciiCols);
-        const wavePositions = [];
-        for (let i = 0; i < asciiCols; i++) {
-            let sum = 0;
-            const samples = 4;
-            for (let s = 0; s < samples; s++) {
-                const idx = Math.min(i * step + s, bufferLength - 1);
-                sum += (dataArray[idx] / 128.0 - 1.0);
-            }
-            wavePositions.push(sum / samples);
+        const rect = waveCanvas.getBoundingClientRect();
+        const w = rect.width, h = rect.height;
+        waveCtx.clearRect(0, 0, w, h);
+
+        const sliceWidth = w / bufferLength;
+        const cy = h / 2;
+
+        // Glow fill
+        waveCtx.beginPath();
+        waveCtx.moveTo(0, cy);
+        for (let i = 0; i < bufferLength; i++) {
+            const v = dataArray[i] / 128.0;
+            const y = (v * h) / 2;
+            waveCtx.lineTo(i * sliceWidth, y);
         }
+        waveCtx.lineTo(w, cy);
+        waveCtx.closePath();
+        waveCtx.fillStyle = getWaveColor(0.08);
+        waveCtx.fill();
 
-        const center = (asciiRows - 1) / 2;
-        let output = '';
-
-        for (let row = 0; row < asciiRows; row++) {
-            for (let col = 0; col < asciiCols; col++) {
-                const waveY = wavePositions[col] * center * 2.5;
-                const dist = Math.abs(row - center - waveY);
-
-                if (dist < 2.0) {
-                    const intensity = 1 - dist / 2.0;
-                    const ci = Math.min(Math.floor(intensity * gradient.length), gradient.length - 1);
-                    output += gradient[ci];
-                } else {
-                    output += ' ';
-                }
-            }
-            if (row < asciiRows - 1) output += '\n';
+        // Main line
+        waveCtx.beginPath();
+        for (let i = 0; i < bufferLength; i++) {
+            const v = dataArray[i] / 128.0;
+            const y = (v * h) / 2;
+            if (i === 0) waveCtx.moveTo(0, y);
+            else waveCtx.lineTo(i * sliceWidth, y);
         }
+        waveCtx.strokeStyle = getWaveColor(0.9);
+        waveCtx.lineWidth = 1.5;
+        waveCtx.stroke();
 
-        asciiEl.textContent = output;
+        drawMetersLive();
 
         if (isPlaying) animationId = requestAnimationFrame(drawLive);
     }
@@ -374,9 +623,12 @@ function initWaveformPlayer(playerEl) {
         btn.classList.remove('playing');
         btn.setAttribute('aria-pressed', 'false');
         btn.innerHTML = '<i class="fas fa-play"></i>';
-        asciiEl.classList.remove('playing');
         if (animationId) { cancelAnimationFrame(animationId); animationId = null; }
         drawIdle();
+        vuSmoothed = -60;
+        vuPeak = -60;
+        vuPeakHold = 0;
+        drawMetersIdle();
     }
 
     btn.addEventListener('click', () => {
@@ -403,7 +655,6 @@ function initWaveformPlayer(playerEl) {
             btn.classList.add('playing');
             btn.setAttribute('aria-pressed', 'true');
             btn.innerHTML = '<i class="fas fa-pause"></i>';
-            asciiEl.classList.add('playing');
             drawLive();
         }).catch(() => {});
 
@@ -937,8 +1188,11 @@ function showErrorMessage() {
 }
 
 // ============================================================
+// ============================================================
 // TESTIMONIALS
 // ============================================================
+let testimonialInterval = null;
+
 function loadTestimonials() {
     fetch('/testimonials.md')
         .then(res => res.text())
@@ -1085,7 +1339,12 @@ function goToHomepage() {
     }
 }
 
+function stopAllAudioPlayback() {
+    document.querySelectorAll('.waveform-play-btn.playing').forEach(b => b.click());
+}
+
 function showSection(sectionName) {
+    stopAllAudioPlayback();
     document.body.classList.add('is-transitioning');
     const mc = document.getElementById('mainContent');
     const currentActive = document.querySelector('.section.active');
