@@ -27,15 +27,11 @@ Forgive me, I'm about to get a little nerdy as I explain how I designed the audi
 
 <div id="demo-player-placeholder"></div>
 
-The **waveform** on the left is the most intuitive - it's the raw shape of the sound over time. Louder sections spike, quiet sections flatten. It gives you an immediate feel for the energy and dynamics of a track.
+The **waveform** plots amplitude over time - physically, it's the displacement of air molecules as sound passes through them. Tall spikes mean the air is being pushed hard (loud), flat sections mean silence. It gives you an immediate feel for the energy and dynamics of a track.
 
-On the right, the **VU meter** tells you how loud the track is at any given moment, the way a real analog meter would.
+The **stereoscope** shows how wide the stereo image is. A narrow, vertical shape means the sound is centred (mono), while a wide ellipse means it's spread across left and right. It's a Lissajous vectorscope - the same tool broadcast engineers use to check phase correlation. The glow comes from a phosphor persistence trick: instead of clearing the canvas each frame, previous frames are faded with a semi-transparent fill, so bright points leave trails.
 
-Under the hood, it computes RMS amplitude, maps it to a logarithmic dB scale, and drives a needle across an arc. The scale is deliberately non-linear - the range from -40 to -10 dB spans 70% of the arc, while -10 to 0 dB gets the remaining 30%, giving more resolution where it actually matters. The needle uses exponential smoothing so it responds naturally rather than jumping between frames.
-
-Next to it, the **stereoscope** shows how wide the stereo image is - whether the sound is centred (mono) or spread across left and right.
-
-It's a Lissajous vectorscope, the same tool broadcast engineers use to check phase correlation. Left and right channels are plotted as (x, y) coordinates, so mono signals collapse to a diagonal line and wide stereo spreads into an ellipse. The glow comes from a phosphor persistence trick: instead of clearing the canvas each frame, previous frames are faded with a semi-transparent fill, so bright points leave trails.
+The **VU meter** tells you how loud the track is at any given moment, the way a real analog meter would. Under the hood, it computes RMS amplitude, maps it to a logarithmic dB scale, and drives a needle across an arc. The scale is deliberately non-linear - the range from -40 to -10 dB spans 70% of the arc, while -10 to 0 dB gets the remaining 30%, giving more resolution where it actually matters. The needle uses exponential smoothing so it responds naturally rather than jumping between frames.
 
 I chose these three because together they cover the fundamentals - loudness, dynamics, and stereo width. All three share a single `requestAnimationFrame` loop that's torn down when navigating away to avoid burning CPU while invisible.
 
