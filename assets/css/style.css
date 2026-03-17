@@ -2002,6 +2002,10 @@ body {
         padding-bottom: 20vh;
     }
 
+    .projects-filter-bar {
+        display: none;
+    }
+
     /* About mobile */
     .about-layout {
         grid-template-columns: 1fr;
