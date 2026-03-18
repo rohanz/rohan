@@ -15,6 +15,90 @@ let cachedHomepage = null;
 let cachedFloatingContact = null;
 
 // ============================================================
+// ROUTING
+// ============================================================
+if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+let isNavigatingByPopstate = false;
+
+const sectionTitles = {
+    music: 'music — rohan.jk',
+    projects: 'projects — rohan.jk',
+    about: 'about — rohan.jk',
+};
+
+function updateTitle(section, projectTitle) {
+    if (projectTitle) {
+        document.title = `${projectTitle} — rohan.jk`;
+    } else if (sectionTitles[section]) {
+        document.title = sectionTitles[section];
+    } else {
+        document.title = 'rohan.jk';
+    }
+}
+
+function getProjectSlug(index) {
+    return projectsData[index] ? projectsData[index].slug : null;
+}
+
+function getProjectIndexBySlug(slug) {
+    return projectsData.findIndex(p => p.slug === slug);
+}
+
+function pushRoute(path) {
+    if (isNavigatingByPopstate) return;
+    if (window.location.pathname !== path) {
+        history.pushState({ path }, '', path);
+    }
+}
+
+function handleRoute(pathname) {
+    const path = pathname || window.location.pathname;
+    const parts = path.replace(/^\/|\/$/g, '').split('/');
+    const currentActive = document.querySelector('.section.active');
+    const currentSection = currentActive ? currentActive.id : null;
+
+    if (parts[0] === '' || path === '/') {
+        goToHomepage();
+    } else if (parts[0] === 'projects' && parts[1]) {
+        // /projects/slug — need projects loaded first
+        waitForProjects(() => {
+            const idx = getProjectIndexBySlug(parts[1]);
+            if (idx >= 0) {
+                if (currentSection === 'projects') {
+                    showProjectDetail(idx);
+                } else {
+                    showSection('projects');
+                    setTimeout(() => showProjectDetail(idx), 50);
+                }
+            } else {
+                showSection('projects');
+            }
+        });
+    } else if (parts[0] === 'projects' && currentSection === 'projects') {
+        // Already on projects — just go back to grid
+        showProjectGrid();
+    } else if (['music', 'projects', 'about'].includes(parts[0])) {
+        showSection(parts[0]);
+    } else {
+        goToHomepage();
+    }
+}
+
+let projectsLoadedCallbacks = [];
+let projectsFullyLoaded = false;
+
+function waitForProjects(cb) {
+    if (projectsFullyLoaded) { cb(); return; }
+    projectsLoadedCallbacks.push(cb);
+}
+
+function notifyProjectsLoaded() {
+    projectsFullyLoaded = true;
+    projectsLoadedCallbacks.forEach(cb => cb());
+    projectsLoadedCallbacks = [];
+}
+
+// ============================================================
 // UTILITIES
 // ============================================================
 function isLightTheme() {
@@ -818,12 +902,13 @@ function loadProjects() {
     projectsLoaded = true;
     fetch('/projects/index.json')
         .then(res => res.json())
-        .then(files => Promise.all(files.map(f => fetch(`/projects/${f}`).then(r => r.text()))))
-        .then(contents => {
-            const projects = contents.map(text => {
+        .then(files => Promise.all(files.map(f => fetch(`/projects/${f}`).then(r => r.text()).then(text => ({ text, file: f })))))
+        .then(results => {
+            const projects = results.map(({ text, file }) => {
                 const { data, content } = parseFrontMatter(text);
                 return {
                     title: data.title || '',
+                    slug: file.replace(/\.md$/, ''),
                     summary: data.summary || '',
                     image: data.image || '',
                     technologies: data.technologies || '',
@@ -832,6 +917,7 @@ function loadProjects() {
                 };
             });
             displayProjects(projects);
+            notifyProjectsLoaded();
         })
         .catch(err => {
             console.error('Error loading projects:', err);
@@ -952,6 +1038,8 @@ function showProjectDetail(index, slideDirection) {
     if (!project) return;
 
     currentDetailIndex = index;
+    pushRoute(`/projects/${project.slug}`);
+    updateTitle('projects', project.title);
 
     const gridView = document.getElementById('projectsGridView');
     const detailView = document.getElementById('projectDetailView');
@@ -1186,6 +1274,10 @@ function showProjectGrid(instant) {
     const gridView = document.getElementById('projectsGridView');
     const detailView = document.getElementById('projectDetailView');
     if (!gridView || !detailView) return;
+    if (!instant) {
+        pushRoute('/projects');
+        updateTitle('projects');
+    }
 
     // Clean up demo player if running
     if (demoCleanup) { demoCleanup(); demoCleanup = null; }
@@ -1242,7 +1334,7 @@ function initDetailNavHandlers() {
     const prevBtn = document.getElementById('detailPrevBtn');
     const nextBtn = document.getElementById('detailNextBtn');
 
-    if (backBtn) backBtn.addEventListener('click', () => showSection('projects'));
+    if (backBtn) backBtn.addEventListener('click', () => showProjectGrid());
     if (prevBtn) prevBtn.addEventListener('click', () => navigateProject('prev'));
     if (nextBtn) nextBtn.addEventListener('click', () => navigateProject('next'));
 }
@@ -1313,21 +1405,26 @@ function initTapFlash() {
     if (!('ontouchstart' in window)) return;
 
     const selectors = '.nav-link, .homepage-menu-item, .logo-link, .filter-tag, .detail-back-btn, .detail-nav-btn, .project-card, .music-link';
+    let startX = 0, startY = 0, target = null;
 
     document.addEventListener('touchstart', e => {
-        const t = e.target.closest(selectors);
-        if (t) t.classList.add('tap-flash');
+        target = e.target.closest(selectors);
+        if (target) {
+            startX = e.changedTouches[0].screenX;
+            startY = e.changedTouches[0].screenY;
+        }
     }, { passive: true });
 
     document.addEventListener('touchend', e => {
-        const t = e.target.closest(selectors);
-        if (t) {
-            setTimeout(() => {
-                t.classList.remove('tap-flash');
-                t.classList.add('tap-flash-out');
-                setTimeout(() => t.classList.remove('tap-flash-out'), 400);
-            }, 150);
+        if (!target) return;
+        const dx = e.changedTouches[0].screenX - startX;
+        const dy = e.changedTouches[0].screenY - startY;
+        // Only flash if it was a tap (minimal movement), not a swipe
+        if (Math.abs(dx) < 10 && Math.abs(dy) < 10) {
+            target.classList.add('tap-active');
+            setTimeout(() => target.classList.remove('tap-active'), 150);
         }
+        target = null;
     }, { passive: true });
 }
 
@@ -1417,6 +1514,8 @@ function stopTestimonialTracking() {
 // ============================================================
 function goToHomepage() {
     stopAllAudioPlayback();
+    pushRoute('/');
+    updateTitle();
     cleanupSectionSwipeGestures();
     const activeSection = document.querySelector('.section.active:not(.homepage)');
 
@@ -1481,6 +1580,8 @@ function stopAllAudioPlayback() {
 
 function showSection(sectionName) {
     stopAllAudioPlayback();
+    pushRoute(`/${sectionName}`);
+    updateTitle(sectionName);
     document.body.classList.add('is-transitioning');
     const mc = cachedMainContent || document.getElementById('mainContent');
     const currentActive = document.querySelector('.section.active');
@@ -1920,8 +2021,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
     setTimeout(updateMobileNavHeight, 100);
 
-    const homepage = document.getElementById('homepage');
-    if (homepage && homepage.classList.contains('active')) {
-        triggerHomepageAnimation();
+    // Browser back/forward
+    window.addEventListener('popstate', () => {
+        isNavigatingByPopstate = true;
+        handleRoute();
+        isNavigatingByPopstate = false;
+    });
+
+    // Handle initial URL — check for SPA redirect from 404.html or direct path
+    const redirectPath = sessionStorage.getItem('spa-redirect');
+    if (redirectPath) {
+        sessionStorage.removeItem('spa-redirect');
+        history.replaceState({ path: redirectPath }, '', redirectPath);
+        handleRoute(redirectPath);
+    } else if (window.location.pathname !== '/') {
+        history.replaceState({ path: window.location.pathname }, '', window.location.pathname);
+        handleRoute(window.location.pathname);
+    } else {
+        const homepage = document.getElementById('homepage');
+        if (homepage && homepage.classList.contains('active')) {
+            triggerHomepageAnimation();
+        }
     }
 });
