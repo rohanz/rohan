@@ -1007,10 +1007,9 @@ body {
 
 .project-detail-view.detail-active {
     display: flex;
-    gap: 10rem;
-    /* Extend left into main-content padding so article can center on screen,
-       but never past the sidebar boundary */
-    margin-left: max(-4rem, calc(50vw - 980px - 14rem));
+    gap: 4rem;
+    /* Center content column on full viewport, clamped at 0 for smaller screens */
+    margin-left: max(0px, calc(50vw - 980px - 8rem));
 }
 
 /* Left column - TOC + nav, sticky */
@@ -1441,21 +1440,10 @@ body {
     to   { opacity: 0; transform: translateX(80px); }
 }
 
-/* Laptop: center detail view and reduce gap for better balance */
-@media (min-width: 1401px) and (max-width: 1800px) {
-    .project-detail-view.detail-active {
-        gap: 4rem;
-        margin-left: 0;
-        max-width: calc(100% - 4rem);
-    }
-}
-
-/* Small laptop: tighter TOC, narrower gap */
+/* Small laptop: tighter TOC */
 @media (min-width: 1101px) and (max-width: 1400px) {
     .project-detail-view.detail-active {
         gap: 2rem;
-        margin-left: 0;
-        max-width: calc(100% - 2rem);
     }
 
     .detail-header-column {
