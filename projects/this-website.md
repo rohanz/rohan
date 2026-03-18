@@ -11,9 +11,9 @@ technologies:
 
 ## Why Build From Scratch?
 
-I wanted a portfolio that reflected my interests - music, design, and building things from the ground up. No templates, no frameworks. One HTML file, one JS file, one CSS file, full control over every pixel.
+I wanted a portfolio website that reflected my interests - AI, music, design, and building things from the ground up. No pre-made templates or frameworks. One HTML file, one JS file, one CSS file, and complete control over every pixel.
 
-It was also a deliberate exercise in design and UI/UX, something I haven't always had the luck of delving deep into. With AI, I believe a developer can and should take a project from concept through design, architecture, and deployment entirely solo. It's a newfound superpower that's somehow become accessible to all of us. That's the reason I do so many projects - and why I push each one to a finished, production-quality product.
+It was also a deliberate exercise in design and UI/UX, something I haven't always had the chance to delve deep into. With AI, I believe a developer can, and should, take a project from concept through design, architecture, and deployment entirely solo. It's a newfound superpower that's somehow become accessible to all of us. That's the reason I do so many projects - and why I push each one to a finished, production-quality product.
 
 ## Development Workflow
 
