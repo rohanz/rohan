@@ -15,6 +15,60 @@ let cachedHomepage = null;
 let cachedFloatingContact = null;
 
 // ============================================================
+// UTILITIES
+// ============================================================
+function isLightTheme() {
+    return document.documentElement.getAttribute('data-theme') === 'light';
+}
+
+function sizeCanvas(canvas, w, h) {
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return ctx;
+}
+
+function resetHomepageElements(name, shadow, menu, logo) {
+    name.classList.remove('animate');
+    shadow.classList.remove('animate');
+    menu.classList.remove('animate');
+    logo.classList.remove('animate', 'fade-to-amber');
+
+    name.style.opacity = '0';
+    name.style.transform = 'translateY(10px)';
+    shadow.style.opacity = '0';
+    shadow.style.visibility = 'hidden';
+    menu.style.opacity = '0';
+    menu.style.transform = 'translateY(10px)';
+    logo.style.opacity = '0';
+    logo.style.transform = 'translateY(10px)';
+}
+
+function setTocItemActive(tocItems, targetItem) {
+    tocItems.forEach(t => t.classList.remove('active', 'parent-active'));
+    if (!targetItem) return;
+    targetItem.classList.add('active');
+    const parentIdx = targetItem.dataset.parentIndex;
+    if (parentIdx !== undefined) {
+        const parent = tocItems[parseInt(parentIdx, 10)];
+        if (parent) parent.classList.add('parent-active');
+    }
+}
+
+function setActiveFilterTag(filterBar, tag) {
+    filterBar.querySelectorAll('.filter-tag').forEach(t => {
+        t.classList.remove('active');
+        t.setAttribute('aria-pressed', 'false');
+    });
+    if (tag) {
+        tag.classList.add('active');
+        tag.setAttribute('aria-pressed', 'true');
+    }
+}
+
+// ============================================================
 // MUSIC DATA
 // ============================================================
 const musicData = [
@@ -128,19 +182,7 @@ function triggerHomepageAnimation() {
     const menu = document.querySelector('.homepage-menu');
     const logo = document.querySelector('.homepage-logo');
 
-    name.classList.remove('animate');
-    shadow.classList.remove('animate');
-    menu.classList.remove('animate');
-    logo.classList.remove('animate', 'fade-to-amber');
-
-    name.style.opacity = '0';
-    name.style.transform = 'translateY(10px)';
-    shadow.style.opacity = '0';
-    shadow.style.visibility = 'hidden';
-    menu.style.opacity = '0';
-    menu.style.transform = 'translateY(10px)';
-    logo.style.opacity = '0';
-    logo.style.transform = 'translateY(10px)';
+    resetHomepageElements(name, shadow, menu, logo);
 
     name.offsetHeight;
 
@@ -210,7 +252,7 @@ function initAsciiGlobe() {
     });
 
     function getGridColor() {
-        const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+        const isLight = isLightTheme();
         return isLight ? '161, 136, 127' : '255, 204, 128'; // warm brown vs amber
     }
 
@@ -288,7 +330,7 @@ function displayMusic(tracks) {
         itemEl.innerHTML = `
             <div class="music-content">
                 <div class="music-header">
-                    ${track.coverUrl ? `<img src="${track.coverUrl}" alt="${track.title} cover" class="music-cover">` : ''}
+                    ${track.coverUrl ? `<img src="${track.coverUrl}" alt="${track.title} cover" class="music-cover img-fade" onload="this.classList.add('loaded')">` : ''}
                     <div class="music-header-text">
                         <h3 class="music-title" aria-live="polite" aria-atomic="true">${track.title}</h3>
                         ${track.artist ? `<p class="music-artist">${track.artist}</p>` : ''}
@@ -365,11 +407,8 @@ function initWaveformPlayer(playerEl) {
     const waveCtx = waveCanvas.getContext('2d');
 
     function resizeWaveCanvas() {
-        const dpr = window.devicePixelRatio || 1;
         const rect = waveCanvas.getBoundingClientRect();
-        waveCanvas.width = rect.width * dpr;
-        waveCanvas.height = rect.height * dpr;
-        waveCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        sizeCanvas(waveCanvas, rect.width, rect.height);
     }
     resizeWaveCanvas();
     let waveResizeTimer;
@@ -379,35 +418,20 @@ function initWaveformPlayer(playerEl) {
     });
 
     // Meter elements — scale for retina
-    const dpr = window.devicePixelRatio || 1;
     const vecCanvas = playerEl.querySelector('.vectorscope-canvas');
-    if (vecCanvas && !vecCanvas._scaled) {
-        vecCanvas._scaled = true;
-        const vw = 110, vh = 110;
-        vecCanvas.width = vw * dpr;
-        vecCanvas.height = vh * dpr;
-    }
-    const vecCtx = vecCanvas ? vecCanvas.getContext('2d') : null;
-    if (vecCtx) vecCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const vecCtx = vecCanvas ? sizeCanvas(vecCanvas, 110, 110) : null;
 
     const vuCanvas = playerEl.querySelector('.vu-meter-canvas');
-    if (vuCanvas && !vuCanvas._scaled) {
-        vuCanvas._scaled = true;
-        const mw = 150, mh = 100;
-        vuCanvas.width = mw * dpr;
-        vuCanvas.height = mh * dpr;
-    }
-    const vuCtx = vuCanvas ? vuCanvas.getContext('2d') : null;
-    if (vuCtx) vuCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const vuCtx = vuCanvas ? sizeCanvas(vuCanvas, 150, 100) : null;
     let vuSmoothed = -40;
 
     function getAccentColor() {
-        const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+        const isLight = isLightTheme();
         return isLight ? '#8D6E63' : '#FFCC80';
     }
 
     function getAccentRgba(alpha) {
-        const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+        const isLight = isLightTheme();
         return isLight ? `rgba(141,110,99,${alpha})` : `rgba(255,204,128,${alpha})`;
     }
 
@@ -434,7 +458,7 @@ function initWaveformPlayer(playerEl) {
         const totalSweep = startAngle - endAngle;
 
         // Arc line
-        const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+        const isLight = isLightTheme();
         ctx.strokeStyle = getAccentRgba(isLight ? 0.3 : 0.18);
         ctx.lineWidth = 1;
         ctx.beginPath();
@@ -571,7 +595,7 @@ function initWaveformPlayer(playerEl) {
             const cx = w / 2, cy = h / 2;
             const radius = Math.min(w, h) / 2 - 4;
 
-            const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+            const isLight = isLightTheme();
             vecCtx.fillStyle = isLight ? 'rgba(255,248,225,0.3)' : 'rgba(26,26,46,0.3)';
             vecCtx.fillRect(0, 0, w, h);
 
@@ -603,7 +627,7 @@ function initWaveformPlayer(playerEl) {
     let vuReturnId = null;
 
     function getWaveColor(alpha) {
-        const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+        const isLight = isLightTheme();
         return isLight ? `rgba(141,110,99,${alpha})` : `rgba(255,204,128,${alpha})`;
     }
 
@@ -857,7 +881,7 @@ function displayProjects(projects) {
         cardsHTML += `
             <div class="project-card" data-index="${i}" data-techs="${DOMPurify.sanitize(techs.join(','))}" style="animation-delay: ${i * 0.05}s">
                 <div class="project-card-image-wrap">
-                    <img src="${imgUrl}" alt="${DOMPurify.sanitize(project.title)}" class="project-card-image" loading="lazy">
+                    <img src="${imgUrl}" alt="${DOMPurify.sanitize(project.title)}" class="project-card-image img-fade" loading="lazy" onload="this.classList.add('loaded')">
                 </div>
                 <div class="project-card-body">
                     <h3 class="project-card-title">${DOMPurify.sanitize(project.title)}</h3>
@@ -886,12 +910,7 @@ function initFilterHandlers() {
         const tag = e.target.closest('.filter-tag');
         if (!tag) return;
 
-        filterBar.querySelectorAll('.filter-tag').forEach(t => {
-            t.classList.remove('active');
-            t.setAttribute('aria-pressed', 'false');
-        });
-        tag.classList.add('active');
-        tag.setAttribute('aria-pressed', 'true');
+        setActiveFilterTag(filterBar, tag);
         activeFilter = tag.dataset.filter;
         filterProjectCards();
     });
@@ -951,7 +970,7 @@ function showProjectDetail(index, slideDirection) {
     const tagsHTML = techs.map(t => `<span class="detail-tag">${DOMPurify.sanitize(t)}</span>`).join('');
 
     detailContent.innerHTML = `
-        <img src="${imgUrl}" alt="${DOMPurify.sanitize(project.title)}" class="detail-hero-image">
+        <img src="${imgUrl}" alt="${DOMPurify.sanitize(project.title)}" class="detail-hero-image img-fade" loading="lazy" onload="this.classList.add('loaded')">
         <h2 class="detail-title">${DOMPurify.sanitize(project.title)}</h2>
         ${project.summary ? `<p class="detail-summary">${DOMPurify.sanitize(project.summary)}</p>` : ''}
         <div class="detail-body">${DOMPurify.sanitize(strippedHTML, { ADD_ATTR: ['target'] })}</div>
@@ -1066,14 +1085,7 @@ function buildToc(headers) {
             isClickScrolling = true;
 
             // Update active states
-            allItems.forEach(t => t.classList.remove('active', 'parent-active'));
-            targetItem.classList.add('active');
-
-            const parentIdx = targetItem.dataset.parentIndex;
-            if (parentIdx !== undefined) {
-                const parent = allItems[parseInt(parentIdx, 10)];
-                if (parent) parent.classList.add('parent-active');
-            }
+            setTocItemActive(allItems, targetItem);
 
             // Scroll to anchor
             const mc = cachedMainContent || document.getElementById('mainContent');
@@ -1125,17 +1137,7 @@ function setupScrollTracking() {
         if (currentIndex === activeIndex) return;
 
         // Update active state
-        tocItems.forEach(item => item.classList.remove('active', 'parent-active'));
-
-        const newActive = tocItems[activeIndex];
-        if (newActive) {
-            newActive.classList.add('active');
-            const parentIndex = newActive.dataset.parentIndex;
-            if (parentIndex !== undefined) {
-                const parent = tocItems[parseInt(parentIndex, 10)];
-                if (parent) parent.classList.add('parent-active');
-            }
-        }
+        setTocItemActive(tocItems, tocItems[activeIndex]);
     }
 
     mc._tocScrollHandler = () => {
@@ -1428,32 +1430,13 @@ function goToHomepage() {
         const logo = document.querySelector('.homepage-logo');
 
         // Reset elements to invisible BEFORE showing the homepage
-        name.style.transition = 'none';
-        shadow.style.transition = 'none';
-        menu.style.transition = 'none';
-        logo.style.transition = 'none';
-
-        name.classList.remove('animate');
-        shadow.classList.remove('animate');
-        menu.classList.remove('animate');
-        logo.classList.remove('animate', 'fade-to-amber');
-
-        name.style.opacity = '0';
-        name.style.transform = 'translateY(10px)';
-        shadow.style.opacity = '0';
-        shadow.style.visibility = 'hidden';
-        menu.style.opacity = '0';
-        menu.style.transform = 'translateY(10px)';
-        logo.style.opacity = '0';
-        logo.style.transform = 'translateY(10px)';
+        [name, shadow, menu, logo].forEach(el => el.style.transition = 'none');
+        resetHomepageElements(name, shadow, menu, logo);
 
         name.offsetHeight;
 
         setTimeout(() => {
-            name.style.transition = '';
-            shadow.style.transition = '';
-            menu.style.transition = '';
-            logo.style.transition = '';
+            [name, shadow, menu, logo].forEach(el => el.style.transition = '');
         }, 50);
 
         document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
@@ -1581,15 +1564,7 @@ function resetProjectsView() {
     activeFilter = 'all';
     const filterBar = document.getElementById('projectsFilterBar');
     if (filterBar) {
-        filterBar.querySelectorAll('.filter-tag').forEach(t => {
-            t.classList.remove('active');
-            t.setAttribute('aria-pressed', 'false');
-        });
-        const allBtn = filterBar.querySelector('[data-filter="all"]');
-        if (allBtn) {
-            allBtn.classList.add('active');
-            allBtn.setAttribute('aria-pressed', 'true');
-        }
+        setActiveFilterTag(filterBar, filterBar.querySelector('[data-filter="all"]'));
     }
     // Reset card visibility directly (no animation needed)
     document.querySelectorAll('.project-card.hidden').forEach(c => c.classList.remove('hidden'));
@@ -1639,39 +1614,23 @@ function initDemoPlayer(container) {
     const vuCanvas = player.querySelector('.demo-vu-canvas');
     const vecCanvas = player.querySelector('.demo-vec-canvas');
 
-    const dpr = window.devicePixelRatio || 1;
-
-    function sizeCanvas(c, w, h) {
-        c.width = w * dpr;
-        c.height = h * dpr;
-        const ctx = c.getContext('2d');
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        return ctx;
-    }
-
     const vuW = 190, vuH = 130, vecW = 140, vecH = 140;
     const vuCtx = sizeCanvas(vuCanvas, vuW, vuH);
     const vecCtx = sizeCanvas(vecCanvas, vecW, vecH);
 
     function sizeWave() {
         const rect = waveCanvas.getBoundingClientRect();
-        const w = Math.max(rect.width, 100); // fallback if not laid out yet
-        const h = Math.max(rect.height, 56);
-        waveCanvas.width = w * dpr;
-        waveCanvas.height = h * dpr;
-        const ctx = waveCanvas.getContext('2d');
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        return ctx;
+        return sizeCanvas(waveCanvas, Math.max(rect.width, 100), Math.max(rect.height, 56));
     }
     let waveCtx;
     // Defer initial sizing until layout is ready
     requestAnimationFrame(() => { waveCtx = sizeWave(); drawWaveIdle(); });
 
     function accentColor() {
-        return document.documentElement.getAttribute('data-theme') === 'light' ? '#8D6E63' : '#FFCC80';
+        return isLightTheme() ? '#8D6E63' : '#FFCC80';
     }
     function accentRgba(a) {
-        return document.documentElement.getAttribute('data-theme') === 'light'
+        return isLightTheme()
             ? `rgba(141,110,99,${a})` : `rgba(255,204,128,${a})`;
     }
 
@@ -1686,7 +1645,7 @@ function initDemoPlayer(container) {
         const r = w * 0.36;
         const sa = Math.PI * 0.85, ea = Math.PI * 0.15;
         const sweep = sa - ea;
-        const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+        const isLight = isLightTheme();
 
         ctx.strokeStyle = accentRgba(isLight ? 0.3 : 0.18);
         ctx.lineWidth = 1;
@@ -1817,7 +1776,7 @@ function initDemoPlayer(container) {
         drawArc(vuCtx, vuW, vuH, dbToFrac(vuSmoothed));
 
         // Vectorscope — phosphor persistence
-        const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+        const isLight = isLightTheme();
         vecCtx.fillStyle = isLight ? 'rgba(255,248,225,0.3)' : 'rgba(26,26,46,0.3)';
         vecCtx.fillRect(0, 0, vecW, vecH);
         vecCtx.strokeStyle = accentRgba(0.08); vecCtx.lineWidth = 1;
