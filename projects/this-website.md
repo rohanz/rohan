@@ -11,13 +11,13 @@ technologies:
 
 ## Why Build From Scratch?
 
-I wanted a portfolio website that reflected my interests - AI, music, design, and building things from the ground up. No pre-made templates or frameworks. One HTML file, one JS file, one CSS file, and complete control over every pixel.
+I wanted a portfolio website that reflected my interests - AI, software development, music, design, and building things from the ground up. It would feel pretty antithetical to those interests to use pre-made templates or frameworks, so I made everything from scratch. One HTML file, one JS file, one CSS file, and complete control over every pixel.
 
 It was also a deliberate exercise in design and UI/UX, something I haven't always had the chance to delve deep into. With AI, I believe a developer can, and should, take a project from concept through design, architecture, and deployment entirely solo. It's a newfound superpower that's somehow become accessible to all of us. That's the reason I do so many projects - and why I push each one to a finished, production-quality product.
 
 ## Development Workflow
 
-The entire site was built in collaboration with Claude Code. Not just code autocomplete or mindless slave to do everything for me - I used it as a genuine development partner across the full stack. Skills and agents handled discrete tasks like generating project writeups from GitHub repos, while plugins connected to Chrome DevTools for live visual debugging. The workflow was conversational: I'd describe what I wanted, review the output in the browser, and occasionally have to tweak the code, and iterate in real time.
+The entire site was built in collaboration with Claude Code. Not just code autocomplete or as a mindless slave to do everything for me - I used it as a genuine development partner across the full stack. Skills and agents handled discrete tasks like generating project writeups from GitHub repos, while plugins connected to Chrome DevTools for live visual debugging. The workflow was conversational: I'd describe what I wanted, review the output in the browser, and occasionally have to tweak the code, and iterate in real time.
 
 It's a good example of what AI-assisted development actually looks like in practice - not replacing the developer, but compressing the feedback loop so one person can move between design, frontend, content, and infrastructure without context-switching overhead.
 
@@ -53,4 +53,4 @@ A few things that stood out:
 
 **AI is a collaborator, not a replacement.** The best results came from treating Claude like a pair programmer - describing intent, reviewing output, and steering. The taste and judgement are still yours.
 
-**You don't need a framework for everything.** No build step, no dependency updates, no virtual DOM. The entire site loads in three files and deploys by pushing static assets. Sometimes less really is more.
+**Own the full stack.** Routing, theming, audio visualizations, canvas rendering, responsive layout - every layer is code I understand and control. Building end-to-end is how you actually learn how things work.
