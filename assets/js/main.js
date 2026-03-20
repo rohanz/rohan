@@ -67,8 +67,7 @@ function handleRoute(pathname) {
                 if (currentSection === 'projects') {
                     showProjectDetail(idx);
                 } else {
-                    showSection('projects');
-                    setTimeout(() => showProjectDetail(idx), 50);
+                    showSection('projects', () => showProjectDetail(idx));
                 }
             } else {
                 showSection('projects');
@@ -1578,10 +1577,12 @@ function stopAllAudioPlayback() {
     document.querySelectorAll('.waveform-play-btn.playing').forEach(b => b.click());
 }
 
-function showSection(sectionName) {
+function showSection(sectionName, onComplete) {
     stopAllAudioPlayback();
-    pushRoute(`/${sectionName}`);
-    updateTitle(sectionName);
+    if (!onComplete) {
+        pushRoute(`/${sectionName}`);
+        updateTitle(sectionName);
+    }
     document.body.classList.add('is-transitioning');
     const mc = cachedMainContent || document.getElementById('mainContent');
     const currentActive = document.querySelector('.section.active');
@@ -1612,7 +1613,11 @@ function showSection(sectionName) {
             section.classList.add('active');
         }
 
-        resetProjectsView();
+        if (onComplete) {
+            onComplete();
+        } else {
+            resetProjectsView();
+        }
         updateFloatingContactVisibility();
 
         if (sectionName === 'about') {
