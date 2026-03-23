@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Redirecting...</title>
+    <script>
+        // SPA redirect for GitHub Pages.
+        // Stores the requested path and redirects to root index.html,
+        // which picks it up and routes accordingly.
+        sessionStorage.setItem('spa-redirect', window.location.pathname);
+        window.location.replace('/');
+    </script>
+</head>
+<body></body>
+</html>
