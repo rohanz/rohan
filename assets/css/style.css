@@ -1736,15 +1736,17 @@ body {
 
 .bqst-audio-wave i {
     position: absolute;
-    inset: 0;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 0;
     display: block;
     pointer-events: none;
-    transform: scaleX(0);
-    transform-origin: left center;
     background: linear-gradient(90deg,
         color-mix(in srgb, var(--accent) 26%, transparent),
         color-mix(in srgb, var(--accent) 8%, transparent));
     border-right: 2px solid var(--accent);
+    will-change: width;
 }
 
 /* BQST DSP lab in project detail */

@@ -2487,7 +2487,7 @@ function initBqstAudioDemo(container) {
     function drawProgress() {
         const duration = cleanBuffer?.duration || processedBuffer?.duration || 0;
         const ratio = duration > 0 ? (getPlaybackTime() % duration) / duration : 0;
-        progress.style.transform = `scaleX(${Math.max(0, Math.min(1, ratio))})`;
+        progress.style.width = `${Math.max(0, Math.min(1, ratio)) * 100}%`;
         if (isPlaying) rafId = requestAnimationFrame(drawProgress);
     }
 
