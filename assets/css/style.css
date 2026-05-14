@@ -2629,6 +2629,19 @@ body {
         height: 320px;
     }
 
+    .bqst-data-table {
+        table-layout: fixed;
+        font-size: 0.72rem;
+        line-height: 1.25;
+    }
+
+    .bqst-data-table th,
+    .bqst-data-table td {
+        padding: 0.5rem 0.32rem;
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+
     .demo-waveform-canvas {
         width: 100%;
         height: 48px;

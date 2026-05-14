@@ -2064,6 +2064,9 @@ function initBqstAudioDemo(container) {
 
     if (!context || !masterGain || !cleanGain || !processedGain) return;
 
+    playButton.disabled = true;
+    playButton.setAttribute('aria-busy', 'true');
+
     masterGain.connect(context.destination);
     cleanGain.connect(masterGain);
     processedGain.connect(masterGain);
@@ -2226,10 +2229,14 @@ function initBqstAudioDemo(container) {
             processedBuffer = processed;
             isReady = true;
             root.classList.add('is-ready');
+            playButton.disabled = false;
+            playButton.removeAttribute('aria-busy');
             drawWaveform();
         })
         .catch(() => {
             root.classList.add('is-error');
+            playButton.disabled = true;
+            playButton.removeAttribute('aria-busy');
         });
 
     function makeSource(buffer, gainNode, offset) {
@@ -2274,6 +2281,7 @@ function initBqstAudioDemo(container) {
     }
 
     async function start() {
+        if (!isReady) return;
         stopOtherPlayers();
         if (context.state === 'suspended') await context.resume();
         await readyPromise;
@@ -2613,9 +2621,9 @@ function initBqstDspLab(container) {
         plotCurve('high', 4800, -6, '#8D6E63', 0.48, 2.0, true);
 
         ctx.fillStyle = textColor(0.82);
-        ctx.font = '14px Chillax, Inter, sans-serif';
+        ctx.font = `${w < 520 ? 12 : 14}px Chillax, Inter, sans-serif`;
         ctx.textAlign = 'left';
-        ctx.fillText('broad shelf curves, not surgical bands', pad.l, 22);
+        ctx.fillText(w < 520 ? 'broad shelf curves' : 'broad shelf curves, not surgical bands', pad.l, 22);
     }
 
     function densitySaturate(sample, drive01) {
@@ -2721,9 +2729,9 @@ function initBqstDspLab(container) {
         ctx.restore();
 
         ctx.fillStyle = textColor(0.82);
-        ctx.font = '14px Chillax, Inter, sans-serif';
+        ctx.font = `${w < 520 ? 12 : 14}px Chillax, Inter, sans-serif`;
         ctx.textAlign = 'left';
-        ctx.fillText('rounded peaks create density without hard clipping', pad.l, 18);
+        ctx.fillText(w < 520 ? 'rounded peaks, not hard clipping' : 'rounded peaks create density without hard clipping', pad.l, 18);
     }
 
     function drawHarmonics(canvas) {
@@ -2779,9 +2787,9 @@ function initBqstDspLab(container) {
         ctx.restore();
 
         ctx.fillStyle = textColor(0.82);
-        ctx.font = '14px Chillax, Inter, sans-serif';
+        ctx.font = `${w < 520 ? 12 : 14}px Chillax, Inter, sans-serif`;
         ctx.textAlign = 'left';
-        ctx.fillText('relative harmonic energy below the fundamental', pad.l, 22);
+        ctx.fillText(w < 520 ? 'relative harmonic energy' : 'relative harmonic energy below the fundamental', pad.l, 22);
     }
 
     function foldFrequency(freq, sampleRate) {
@@ -2834,9 +2842,9 @@ function initBqstDspLab(container) {
 
         ctx.clearRect(0, 0, w, h);
         ctx.fillStyle = textColor(0.82);
-        ctx.font = '600 16px Chillax, Inter, sans-serif';
+        ctx.font = `600 ${w < 520 ? 13 : 16}px Chillax, Inter, sans-serif`;
         ctx.textAlign = 'left';
-        ctx.fillText('a 6 kHz tone creates harmonics above the host nyquist point', pad.l, 28);
+        ctx.fillText(w < 520 ? '6 kHz harmonics can fold past Nyquist' : 'a 6 kHz tone creates harmonics above the host nyquist point', pad.l, 28);
 
         ctx.fillStyle = gridColor(0.07);
         roundedPath(plotX, plotY, plotW, plotH, 12);
@@ -2937,9 +2945,9 @@ function initBqstDspLab(container) {
         });
 
         ctx.fillStyle = textColor(0.72);
-        ctx.font = '700 14px Inter, sans-serif';
+        ctx.font = `700 ${w < 520 ? 12 : 14}px Inter, sans-serif`;
         ctx.textAlign = 'left';
-        ctx.fillText('red dots show where high harmonics would fold back without oversampling', plotX, plotY + plotH + 34);
+        ctx.fillText(w < 520 ? 'red dots show foldback positions without oversampling' : 'red dots show where high harmonics would fold back without oversampling', plotX, plotY + plotH + 34);
 
     }
 

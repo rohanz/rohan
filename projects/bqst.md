@@ -68,7 +68,7 @@ The early versions exposed the usual problems with saturation quickly. Loud kick
 
 The fix was to treat saturation as a small system rather than a single function. The <span class="gloss-term" data-gloss="A plot of input level against output level. A straight line is clean; a bent line means the processor is adding saturation or distortion.">transfer curve</span> still matters, but it sits inside a chain: low-end control before the nonlinear stage, a carefully shaped soft-clipping function, tone shaping after saturation, and static autogain calibrated against different kinds of material. That made the algorithms behave more like a usable audio tool and less like a distortion demo.
 
-The graph below isolates the waveshaping part of that saturation system. Click and drag upward on the Drive knob to see how the algorithms change as they are pushed harder.
+The graph below isolates the waveshaping part of that saturation system. **Click and drag upward on the Drive knob** to see how the algorithms change as they are pushed harder.
 
 <div id="bqst-transfer-visual"></div>
 
@@ -112,7 +112,7 @@ Grit is transformer-inspired. It is a little firmer and more forward, but I stil
 
 Those design choices show up more clearly in the harmonic fingerprint graph below, which uses a simple 1 kHz tone. Lower harmonics tend to read as thickness or warmth; stronger upper harmonics can read as edge or bite.
 
-This one is interactive too. Turn the Drive knob to see how the harmonic balance shifts between gentle density and more obvious saturation.
+This one is interactive too. **Turn the Drive knob** to see how the harmonic balance shifts between gentle density and more obvious saturation.
 
 <div id="bqst-harmonics-visual"></div>
 
@@ -152,7 +152,7 @@ Oversampling gives those new harmonics more room to exist before the <span class
 
 ## demo
 
-Finally, let's actually listen to it. The demo below is the same drum loop twice: once clean, and once processed through BQST. Headphones or monitors are ideal here, because the changes are more about density, transient shape, and tone than a huge volume jump. The processed version uses a +1.6 dB high-shelf boost at 3.4 kHz, a +1.7 dB low-shelf boost at 116 Hz, Cream Drive around 17 dB, and Mix around 80%. Press play, then flip between Clean and BQST while it is playing. Listen for added density and a touch more edge on the <span class="gloss-term" data-gloss="Transients are the short initial peaks of sounds like drum hits. They strongly affect punch, clarity, and perceived attack.">transients</span>, even though the peak level is lower after processing: roughly -1.7 to -2.6 <span class="gloss-term" data-gloss="dBFS means decibels relative to full scale. In digital audio, 0 dBFS is the maximum level before clipping.">dBFS</span> peak.
+Finally, let's actually listen to it. The demo below is the same drum loop twice: once clean, and once processed through BQST. Headphones or monitors are ideal here, because the changes are more about density, transient shape, and tone than a huge volume jump. The processed version uses a +1.6 dB high-shelf boost at 3.4 kHz, a +1.7 dB low-shelf boost at 116 Hz, Cream Drive around 17 dB, and Mix around 80%. **Press play, then flip between Clean and BQST while it is playing.** Listen for added density and a touch more edge on the <span class="gloss-term" data-gloss="Transients are the short initial peaks of sounds like drum hits. They strongly affect punch, clarity, and perceived attack.">transients</span>, even though the peak level is lower after processing: roughly -1.7 to -2.6 <span class="gloss-term" data-gloss="dBFS means decibels relative to full scale. In digital audio, 0 dBFS is the maximum level before clipping.">dBFS</span> peak.
 
 <div id="bqst-audio-demo" data-clean="assets/audio/bqst/drums-clean.wav" data-processed="assets/audio/bqst/drums-bqst.wav" data-bpm="90" data-settings="3.4 kHz +1.6 dB · 116 Hz +1.7 dB · Cream Drive ~17 dB · Mix ~80%"></div>
 
