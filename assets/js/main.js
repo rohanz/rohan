@@ -889,7 +889,7 @@ function stripHeadersFromHTML(html) {
         anchor.id = header.textContent.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
         anchor.className = 'toc-anchor';
         header.parentNode.insertBefore(anchor, header);
-        header.remove();
+        header.classList.add('detail-section-heading');
     });
     return temp.innerHTML;
 }
@@ -2001,7 +2001,7 @@ function initBqstDspLab(container) {
             id: 'bqst-eq-visual',
             type: 'eq',
             title: 'baxandall-style eq curves',
-            meta: 'q 0.38 · +/-6 db shelves · audible range',
+            meta: 'q 0.38 · all stepped shelf positions · +/-6 db',
             label: 'BQST low and high shelf frequency response'
         },
         {
@@ -2089,9 +2089,9 @@ function initBqstDspLab(container) {
     function legendForBqstVisual(type) {
         if (type === 'eq') {
             return `
-                <span><i style="background:#FFCC80"></i>low shelf boost</span>
-                <span><i style="background:#E05555"></i>high shelf boost</span>
-                <span><i style="background:#8D6E63"></i>cut mirror</span>
+                <span><i style="background:#FFCC80"></i>low shelf positions</span>
+                <span><i style="background:#E05555"></i>high shelf positions</span>
+                <span><i style="background:#8D6E63"></i>cut reference</span>
             `;
         }
         if (type === 'transfer') {
@@ -2232,10 +2232,10 @@ function initBqstDspLab(container) {
         ctx.font = axisFont;
         ctx.fillText('gain (dB)', 0, 0);
         ctx.restore();
-        function plotCurve(kind, f0, gainDb, color, alpha, dash) {
+        function plotCurve(kind, f0, gainDb, color, alpha, width = 2.0, dash = false) {
             ctx.strokeStyle = color;
             ctx.globalAlpha = alpha;
-            ctx.lineWidth = 2.6;
+            ctx.lineWidth = width;
             ctx.setLineDash(dash ? [5, 5] : []);
             ctx.beginPath();
             for (let i = 0; i <= 360; i++) {
@@ -2250,10 +2250,16 @@ function initBqstDspLab(container) {
             ctx.globalAlpha = 1;
         }
 
-        [74, 131, 361].forEach((f, i) => plotCurve('low', f, 6, '#FFCC80', 0.95 - i * 0.18, false));
-        [1600, 4800, 18000].forEach((f, i) => plotCurve('high', f, 6, '#E05555', 0.95 - i * 0.18, false));
-        plotCurve('low', 131, -6, accent(), 0.42, true);
-        plotCurve('high', 4800, -6, accent(), 0.42, true);
+        [74, 84, 98, 116, 131, 166, 230, 361].forEach((f, i, all) => {
+            const alpha = 0.94 - (i / Math.max(1, all.length - 1)) * 0.44;
+            plotCurve('low', f, 6, '#FFCC80', alpha, f === 131 ? 2.8 : 1.9);
+        });
+        [1600, 1800, 2100, 2500, 3400, 4800, 7100, 18000].forEach((f, i, all) => {
+            const alpha = 0.50 + (i / Math.max(1, all.length - 1)) * 0.44;
+            plotCurve('high', f, 6, '#E05555', alpha, f === 4800 ? 2.8 : 1.9);
+        });
+        plotCurve('low', 131, -6, '#8D6E63', 0.48, 2.0, true);
+        plotCurve('high', 4800, -6, '#8D6E63', 0.48, 2.0, true);
 
         ctx.fillStyle = textColor(0.82);
         ctx.font = '14px Chillax, Inter, sans-serif';

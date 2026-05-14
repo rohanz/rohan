@@ -1202,6 +1202,32 @@ body {
     color: var(--text-secondary);
 }
 
+.detail-body h2,
+.detail-body h3 {
+    color: var(--text-primary);
+    line-height: 1.2;
+    scroll-margin-top: 2rem;
+}
+
+.detail-body h2 {
+    margin: 2.5rem 0 1rem;
+    font-size: clamp(1.45rem, 2.6vw, 2rem);
+    font-weight: 750;
+    letter-spacing: 0;
+}
+
+.detail-body h3 {
+    margin: 1.7rem 0 0.75rem;
+    font-size: clamp(1.12rem, 1.8vw, 1.35rem);
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: 0;
+}
+
+.detail-body .toc-anchor + h2 {
+    margin-top: 2rem;
+}
+
 .detail-body p {
     margin-bottom: 1.15em;
     overflow-wrap: break-word;
@@ -1269,8 +1295,7 @@ body {
     box-shadow: 0 8px 24px rgba(62, 39, 35, 0.16);
 }
 
-.detail-body .gloss-term:hover::after,
-.detail-body .gloss-term:focus-visible::after {
+.detail-body .gloss-term:hover::after {
     opacity: 1;
     visibility: visible;
     transform: translate(-50%, 0);
