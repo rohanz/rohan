@@ -2180,11 +2180,26 @@ function initBqstAudioDemo(container) {
         return context;
     }
 
-    async function unlockAudioContext() {
+    let unlockAttempted = false;
+
+    function unlockAudioContext() {
         ensureAudioContext();
         if (context.state === 'suspended') {
-            try { await context.resume(); } catch (e) {}
+            context.resume().catch(() => {});
         }
+        if (unlockAttempted) return;
+        unlockAttempted = true;
+        // iOS Safari unlock: start a silent buffer source inside the user gesture
+        // so subsequent buffer sources are audible.
+        try {
+            const silent = context.createBuffer(1, 1, context.sampleRate);
+            const source = context.createBufferSource();
+            source.buffer = silent;
+            source.connect(context.destination);
+            source.start(0);
+            source.stop(context.currentTime + 0.01);
+            source.onended = () => source.disconnect();
+        } catch (e) {}
     }
 
     function getPlaybackTime() {
@@ -2542,7 +2557,7 @@ function initBqstAudioDemo(container) {
 
     async function start() {
         stopOtherPlayers();
-        await unlockAudioContext();
+        unlockAudioContext();
         await ensureReady();
         if (!isReady || !cleanBuffer || !processedBuffer) return;
         if (context.state === 'suspended') {
@@ -2611,6 +2626,8 @@ function initBqstAudioDemo(container) {
         if (isPlaying) pause();
         else start();
     });
+    playButton.addEventListener('pointerdown', unlockAudioContext, { passive: true });
+    playButton.addEventListener('touchstart', unlockAudioContext, { passive: true });
 
     versionButtons.forEach(button => {
         button.addEventListener('click', () => crossfadeTo(button.dataset.version));
