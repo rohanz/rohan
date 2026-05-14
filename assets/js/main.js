@@ -2134,7 +2134,6 @@ function initBqstAudioDemo(container) {
     let waveFadeId = null;
     let previousWaveVersion = null;
     let waveFadeStart = 0;
-    let unlockAttempted = false;
     let readyPromise = null;
 
     if (!AC) return;
@@ -2157,7 +2156,9 @@ function initBqstAudioDemo(container) {
     function ensureAudioContext() {
         if (context) return context;
 
-        context = new AC();
+        if (!audioContext) audioContext = new AC();
+        context = audioContext;
+
         masterGain = context.createGain();
         cleanGain = context.createGain();
         processedGain = context.createGain();
@@ -2175,29 +2176,9 @@ function initBqstAudioDemo(container) {
 
     async function unlockAudioContext() {
         ensureAudioContext();
-        if (unlockAttempted && context.state === 'running') return;
-        unlockAttempted = true;
         if (context.state === 'suspended') {
             try { await context.resume(); } catch (e) {}
         }
-
-        // Some mobile browsers need a source started directly from a user gesture
-        // before later scheduled buffer sources are audible.
-        try {
-            const silent = context.createBuffer(1, 1, context.sampleRate);
-            const source = context.createBufferSource();
-            const gain = context.createGain();
-            gain.gain.value = 0;
-            source.buffer = silent;
-            source.connect(gain);
-            gain.connect(context.destination);
-            source.start(0);
-            source.stop(context.currentTime + 0.01);
-            source.onended = () => {
-                source.disconnect();
-                gain.disconnect();
-            };
-        } catch (e) {}
     }
 
     function getPlaybackTime() {
@@ -2567,6 +2548,7 @@ function initBqstAudioDemo(container) {
         playButton.classList.add('playing');
         playButton.setAttribute('aria-pressed', 'true');
         playButton.innerHTML = '<i class="fas fa-pause"></i>';
+        updateMediaSession('playing');
         if (rafId) cancelAnimationFrame(rafId);
         rafId = requestAnimationFrame(drawProgress);
     }
@@ -2577,6 +2559,7 @@ function initBqstAudioDemo(container) {
         playButton.classList.remove('playing');
         playButton.setAttribute('aria-pressed', 'false');
         playButton.innerHTML = '<i class="fas fa-play"></i>';
+        updateMediaSession('paused');
         if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
         if (!context || !masterGain) {
             stopSources();
@@ -2589,12 +2572,27 @@ function initBqstAudioDemo(container) {
         window.setTimeout(stopSources, 60);
     }
 
+    function updateMediaSession(state) {
+        if (!('mediaSession' in navigator)) return;
+        try {
+            if (!navigator.mediaSession.metadata) {
+                navigator.mediaSession.metadata = new MediaMetadata({
+                    title: 'BQST A/B demo',
+                    artist: 'rohan.jk',
+                    album: 'projects',
+                    artwork: [{ src: 'assets/images/projects/bqst/banner.png', sizes: '512x512', type: 'image/png' }]
+                });
+                navigator.mediaSession.setActionHandler('play', () => { if (!isPlaying) start(); });
+                navigator.mediaSession.setActionHandler('pause', () => { if (isPlaying) pause(); });
+            }
+            navigator.mediaSession.playbackState = state;
+        } catch (e) {}
+    }
+
     playButton.addEventListener('click', () => {
         if (isPlaying) pause();
         else start();
     });
-    playButton.addEventListener('pointerdown', unlockAudioContext, { passive: true });
-    playButton.addEventListener('touchstart', unlockAudioContext, { passive: true });
 
     versionButtons.forEach(button => {
         button.addEventListener('click', () => crossfadeTo(button.dataset.version));
@@ -2615,8 +2613,13 @@ function initBqstAudioDemo(container) {
         cleanGain?.disconnect();
         processedGain?.disconnect();
         masterGain?.disconnect();
-        if (context && context !== audioContext) {
-            context.close().catch(() => {});
+        if ('mediaSession' in navigator) {
+            try {
+                navigator.mediaSession.metadata = null;
+                navigator.mediaSession.playbackState = 'none';
+                navigator.mediaSession.setActionHandler('play', null);
+                navigator.mediaSession.setActionHandler('pause', null);
+            } catch (e) {}
         }
         bqstAudioDemoCleanup = null;
     };
