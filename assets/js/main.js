@@ -276,8 +276,6 @@ function initGlossaryInteractions() {
         tooltip.textContent = text;
         tooltip.classList.add('is-visible');
 
-        if (isTouchLike()) return;
-
         const rect = term.getBoundingClientRect();
         const tooltipRect = tooltip.getBoundingClientRect();
         const gap = 10;
@@ -286,8 +284,12 @@ function initGlossaryInteractions() {
             Math.max(rect.left + rect.width * 0.5 - tooltipRect.width * 0.5, margin),
             window.innerWidth - tooltipRect.width - margin
         );
+        const below = rect.bottom + gap;
         const above = rect.top - tooltipRect.height - gap;
-        const top = above >= margin ? above : rect.bottom + gap;
+        const preferBelow = isTouchLike();
+        let top = preferBelow
+            ? (below + tooltipRect.height + margin <= window.innerHeight ? below : above)
+            : (above >= margin ? above : below);
         tooltip.style.left = `${left}px`;
         tooltip.style.top = `${Math.min(Math.max(top, margin), window.innerHeight - tooltipRect.height - margin)}px`;
     }
@@ -2123,6 +2125,9 @@ function initBqstAudioDemo(container) {
     let processedBuffer = null;
     let cleanWaveform = null;
     let processedWaveform = null;
+    let cleanRawData = null;
+    let processedRawData = null;
+    let lastWaveformPoints = 0;
     let cleanSource = null;
     let processedSource = null;
     let startedAt = 0;
@@ -2143,8 +2148,9 @@ function initBqstAudioDemo(container) {
 
     const audioDataPromise = Promise.all([fetchAudioData(cleanUrl), fetchAudioData(processedUrl)])
         .then(([cleanData, processedData]) => {
-            cleanWaveform = extractWavWaveform(cleanData);
-            processedWaveform = extractWavWaveform(processedData);
+            cleanRawData = cleanData;
+            processedRawData = processedData;
+            refreshRawWaveforms();
             drawWaveform();
             return [cleanData, processedData];
         })
@@ -2210,6 +2216,14 @@ function initBqstAudioDemo(container) {
 
     function activeWaveform() {
         return waveformForVersion(activeVersion);
+    }
+
+    function refreshRawWaveforms(targetPoints) {
+        const rect = waveCanvas.getBoundingClientRect();
+        const dpr = window.devicePixelRatio || 1;
+        const points = targetPoints || Math.max(1, Math.floor(rect.width * dpr)) || 900;
+        if (cleanRawData) cleanWaveform = extractWavWaveform(cleanRawData, points);
+        if (processedRawData) processedWaveform = extractWavWaveform(processedRawData, points);
     }
 
     function extractWavWaveform(arrayBuffer, targetPoints = 900) {
@@ -2373,6 +2387,10 @@ function initBqstAudioDemo(container) {
         if (waveCanvas.width !== width || waveCanvas.height !== height) {
             waveCanvas.width = width;
             waveCanvas.height = height;
+        }
+        if (width !== lastWaveformPoints) {
+            refreshRawWaveforms(width);
+            lastWaveformPoints = width;
         }
 
         waveCtx.clearRect(0, 0, width, height);
