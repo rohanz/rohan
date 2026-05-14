@@ -1082,6 +1082,8 @@ function showProjectDetail(index, slideDirection) {
     initDemoPlayer(detailContent);
     // Inject theme palette if placeholder exists
     initThemePalette(detailContent);
+    // Inject BQST A/B audio demo if placeholder exists
+    initBqstAudioDemo(detailContent);
     // Inject BQST DSP visualizations if placeholder exists
     initBqstDspLab(detailContent);
 
@@ -1282,6 +1284,7 @@ function showProjectGrid(instant) {
 
     // Clean up demo player if running
     if (demoCleanup) { demoCleanup(); demoCleanup = null; }
+    if (bqstAudioDemoCleanup) { bqstAudioDemoCleanup(); bqstAudioDemoCleanup = null; }
     if (bqstCleanup) { bqstCleanup(); bqstCleanup = null; }
 
     // Clean up scroll tracking
@@ -1991,6 +1994,354 @@ function initThemePalette(container) {
 }
 
 // ============================================================
+// BQST A/B AUDIO DEMO
+// ============================================================
+let bqstAudioDemoCleanup = null;
+
+function initBqstAudioDemo(container) {
+    const placeholder = container.querySelector('#bqst-audio-demo');
+    if (!placeholder) return;
+
+    if (bqstAudioDemoCleanup) { bqstAudioDemoCleanup(); bqstAudioDemoCleanup = null; }
+
+    const cleanUrl = placeholder.dataset.clean;
+    const processedUrl = placeholder.dataset.processed;
+    const settings = placeholder.dataset.settings || 'matched clean/processed drum loop';
+    const bpm = Number.parseFloat(placeholder.dataset.bpm || '90');
+    if (!cleanUrl || !processedUrl) return;
+
+    placeholder.innerHTML = `
+        <div class="bqst-audio-demo">
+            <div class="bqst-audio-demo-header">
+                <span class="bqst-lab-kicker">drum loop a/b test</span>
+                <span class="bqst-lab-meta">${settings}</span>
+            </div>
+            <div class="bqst-audio-demo-body">
+                <div class="bqst-audio-main">
+                    <div class="bqst-audio-controls">
+                        <button class="bqst-audio-play" type="button" aria-label="Play BQST audio demo" aria-pressed="false">
+                            <i class="fas fa-play"></i>
+                        </button>
+                        <div class="bqst-audio-toggle" role="group" aria-label="Choose audio demo version">
+                            <button type="button" class="is-active" data-version="clean" aria-pressed="true">clean</button>
+                            <button type="button" data-version="processed" aria-pressed="false">bqst</button>
+                        </div>
+                    </div>
+                    <div class="bqst-audio-wave" aria-hidden="true">
+                        <canvas></canvas>
+                        <span></span>
+                        <i></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    const root = placeholder.querySelector('.bqst-audio-demo');
+    const playButton = root.querySelector('.bqst-audio-play');
+    const versionButtons = Array.from(root.querySelectorAll('.bqst-audio-toggle button'));
+    const waveCanvas = root.querySelector('.bqst-audio-wave canvas');
+    const waveCtx = waveCanvas.getContext('2d');
+    const progress = root.querySelector('.bqst-audio-wave i');
+    const AC = window.AudioContext || window.webkitAudioContext;
+    const context = audioContext || (AC ? new AC() : null);
+    const masterGain = context ? context.createGain() : null;
+    const cleanGain = context ? context.createGain() : null;
+    const processedGain = context ? context.createGain() : null;
+    let cleanBuffer = null;
+    let processedBuffer = null;
+    let cleanSource = null;
+    let processedSource = null;
+    let startedAt = 0;
+    let pausedAt = 0;
+    let activeVersion = 'clean';
+    let isPlaying = false;
+    let isReady = false;
+    let rafId = null;
+    let waveFadeId = null;
+    let previousWaveVersion = null;
+    let waveFadeStart = 0;
+
+    if (!context || !masterGain || !cleanGain || !processedGain) return;
+
+    masterGain.connect(context.destination);
+    cleanGain.connect(masterGain);
+    processedGain.connect(masterGain);
+    masterGain.gain.value = 0;
+    cleanGain.gain.value = 1;
+    processedGain.gain.value = 0;
+
+    function getPlaybackTime() {
+        const duration = cleanBuffer?.duration || processedBuffer?.duration || 0;
+        if (duration <= 0) return 0;
+        return isPlaying ? (context.currentTime - startedAt) % duration : pausedAt % duration;
+    }
+
+    function setActiveButton() {
+        versionButtons.forEach(button => {
+            const isActive = button.dataset.version === activeVersion;
+            button.classList.toggle('is-active', isActive);
+            button.setAttribute('aria-pressed', String(isActive));
+        });
+    }
+
+    function bufferForVersion(version) {
+        return version === 'clean' ? cleanBuffer : processedBuffer;
+    }
+
+    function activeBuffer() {
+        return bufferForVersion(activeVersion);
+    }
+
+    function drawBufferWaveform(buffer, alpha = 1) {
+        if (!buffer) return;
+
+        const width = waveCanvas.width;
+        const height = waveCanvas.height;
+        const dpr = window.devicePixelRatio || 1;
+        const isLight = isLightTheme();
+        const bqstPink = '255,173,203';
+        const isProcessed = buffer === processedBuffer;
+        const lineColor = isLight
+            ? (isProcessed ? `rgba(${bqstPink},${0.80 * alpha})` : `rgba(141,110,99,${0.72 * alpha})`)
+            : (isProcessed ? `rgba(${bqstPink},${0.78 * alpha})` : `rgba(255,204,128,${0.74 * alpha})`);
+        const fillColor = isLight
+            ? (isProcessed ? `rgba(${bqstPink},${0.14 * alpha})` : `rgba(141,110,99,${0.13 * alpha})`)
+            : (isProcessed ? `rgba(${bqstPink},${0.12 * alpha})` : `rgba(255,204,128,${0.12 * alpha})`);
+        const center = height * 0.5;
+        const dataL = buffer.getChannelData(0);
+        const dataR = buffer.numberOfChannels > 1 ? buffer.getChannelData(1) : dataL;
+        const step = Math.max(1, Math.floor(buffer.length / width));
+        const amp = height * 0.42;
+
+        waveCtx.beginPath();
+        for (let x = 0; x < width; x++) {
+            let min = 1;
+            let max = -1;
+            const start = x * step;
+            const end = Math.min(buffer.length, start + step);
+            for (let i = start; i < end; i++) {
+                const sample = (dataL[i] + dataR[i]) * 0.5;
+                if (sample < min) min = sample;
+                if (sample > max) max = sample;
+            }
+            const y1 = center - max * amp;
+            const y2 = center - min * amp;
+            waveCtx.moveTo(x + 0.5, y1);
+            waveCtx.lineTo(x + 0.5, y2);
+        }
+        waveCtx.strokeStyle = lineColor;
+        waveCtx.lineWidth = Math.max(1, dpr);
+        waveCtx.stroke();
+
+        waveCtx.fillStyle = fillColor;
+        waveCtx.fillRect(0, center - 1 * dpr, width, 2 * dpr);
+    }
+
+    function drawWaveform(blend = 1) {
+        const rect = waveCanvas.getBoundingClientRect();
+        const dpr = window.devicePixelRatio || 1;
+        const width = Math.max(1, Math.floor(rect.width * dpr));
+        const height = Math.max(1, Math.floor(rect.height * dpr));
+        if (waveCanvas.width !== width || waveCanvas.height !== height) {
+            waveCanvas.width = width;
+            waveCanvas.height = height;
+        }
+
+        waveCtx.clearRect(0, 0, width, height);
+        const buffer = activeBuffer();
+        const isLight = isLightTheme();
+        const gridColor = isLight ? 'rgba(62,39,35,0.10)' : 'rgba(232,230,227,0.10)';
+        const subGridColor = isLight ? 'rgba(62,39,35,0.055)' : 'rgba(232,230,227,0.055)';
+        const barColor = isLight ? 'rgba(141,110,99,0.24)' : 'rgba(255,204,128,0.22)';
+        const center = height * 0.5;
+
+        if (buffer && Number.isFinite(bpm) && bpm > 0) {
+            const beatSeconds = 60 / bpm;
+            const divisionSeconds = beatSeconds / 4;
+            const divisions = Math.floor(buffer.duration / divisionSeconds + 0.001);
+            for (let division = 0; division <= divisions; division++) {
+                const x = Math.round((division * divisionSeconds / buffer.duration) * width) + 0.5;
+                const isBar = division % 16 === 0;
+                const isBeat = division % 4 === 0;
+                waveCtx.strokeStyle = isBar ? barColor : (isBeat ? gridColor : subGridColor);
+                waveCtx.lineWidth = isBar ? Math.max(1.5, dpr * 1.25) : Math.max(1, dpr * (isBeat ? 0.8 : 0.55));
+                waveCtx.beginPath();
+                waveCtx.moveTo(x, 0);
+                waveCtx.lineTo(x, height);
+                waveCtx.stroke();
+            }
+        }
+
+        waveCtx.strokeStyle = isLight ? 'rgba(62,39,35,0.18)' : 'rgba(232,230,227,0.16)';
+        waveCtx.lineWidth = Math.max(1, dpr);
+        waveCtx.beginPath();
+        waveCtx.moveTo(0, center);
+        waveCtx.lineTo(width, center);
+        waveCtx.stroke();
+
+        if (previousWaveVersion && blend < 1)
+            drawBufferWaveform(bufferForVersion(previousWaveVersion), 1 - blend);
+        drawBufferWaveform(buffer, blend);
+    }
+
+    function animateWaveformChange(fromVersion) {
+        if (waveFadeId) cancelAnimationFrame(waveFadeId);
+        previousWaveVersion = fromVersion;
+        waveFadeStart = performance.now();
+        const duration = 180;
+
+        function step(now) {
+            const t = Math.min(1, (now - waveFadeStart) / duration);
+            const eased = t * t * (3 - 2 * t);
+            drawWaveform(eased);
+            if (t < 1) {
+                waveFadeId = requestAnimationFrame(step);
+            } else {
+                previousWaveVersion = null;
+                waveFadeId = null;
+                drawWaveform(1);
+            }
+        }
+
+        waveFadeId = requestAnimationFrame(step);
+    }
+
+    function drawProgress() {
+        const duration = cleanBuffer?.duration || processedBuffer?.duration || 0;
+        const ratio = duration > 0 ? getPlaybackTime() / duration : 0;
+        progress.style.transform = `scaleX(${Math.max(0, Math.min(1, ratio))})`;
+        if (isPlaying) rafId = requestAnimationFrame(drawProgress);
+    }
+
+    async function loadBuffer(url) {
+        const response = await fetch(url);
+        const arrayBuffer = await response.arrayBuffer();
+        return context.decodeAudioData(arrayBuffer);
+    }
+
+    const readyPromise = Promise.all([loadBuffer(cleanUrl), loadBuffer(processedUrl)])
+        .then(([clean, processed]) => {
+            cleanBuffer = clean;
+            processedBuffer = processed;
+            isReady = true;
+            root.classList.add('is-ready');
+            drawWaveform();
+        })
+        .catch(() => {
+            root.classList.add('is-error');
+        });
+
+    function makeSource(buffer, gainNode, offset) {
+        const source = context.createBufferSource();
+        source.buffer = buffer;
+        source.loop = true;
+        source.connect(gainNode);
+        source.start(0, offset);
+        return source;
+    }
+
+    function stopSources() {
+        [cleanSource, processedSource].forEach(source => {
+            if (!source) return;
+            try { source.stop(); } catch (e) {}
+            source.disconnect();
+        });
+        cleanSource = null;
+        processedSource = null;
+    }
+
+    function crossfadeTo(version) {
+        if (version === activeVersion) return;
+
+        const oldVersion = activeVersion;
+        activeVersion = version;
+        setActiveButton();
+        animateWaveformChange(oldVersion);
+
+        const now = context.currentTime;
+        const fadeSeconds = 0.075;
+        cleanGain.gain.cancelScheduledValues(now);
+        processedGain.gain.cancelScheduledValues(now);
+        cleanGain.gain.setValueAtTime(cleanGain.gain.value, now);
+        processedGain.gain.setValueAtTime(processedGain.gain.value, now);
+        cleanGain.gain.linearRampToValueAtTime(version === 'clean' ? 1 : 0, now + fadeSeconds);
+        processedGain.gain.linearRampToValueAtTime(version === 'processed' ? 1 : 0, now + fadeSeconds);
+    }
+
+    function stopOtherPlayers() {
+        document.querySelectorAll('.waveform-play-btn.playing').forEach(button => button.click());
+    }
+
+    async function start() {
+        stopOtherPlayers();
+        if (context.state === 'suspended') await context.resume();
+        await readyPromise;
+        if (!isReady || !cleanBuffer || !processedBuffer) return;
+
+        stopSources();
+        const now = context.currentTime;
+        const duration = cleanBuffer.duration || processedBuffer.duration || 0;
+        const offset = duration > 0 ? pausedAt % duration : 0;
+        startedAt = now - offset;
+        cleanSource = makeSource(cleanBuffer, cleanGain, offset);
+        processedSource = makeSource(processedBuffer, processedGain, offset);
+        cleanGain.gain.setValueAtTime(activeVersion === 'clean' ? 1 : 0, now);
+        processedGain.gain.setValueAtTime(activeVersion === 'processed' ? 1 : 0, now);
+        masterGain.gain.cancelScheduledValues(now);
+        masterGain.gain.setValueAtTime(0, now);
+        masterGain.gain.linearRampToValueAtTime(0.95, now + 0.035);
+        isPlaying = true;
+        playButton.classList.add('playing');
+        playButton.setAttribute('aria-pressed', 'true');
+        playButton.innerHTML = '<i class="fas fa-pause"></i>';
+        if (rafId) cancelAnimationFrame(rafId);
+        rafId = requestAnimationFrame(drawProgress);
+    }
+
+    function pause() {
+        pausedAt = getPlaybackTime();
+        isPlaying = false;
+        playButton.classList.remove('playing');
+        playButton.setAttribute('aria-pressed', 'false');
+        playButton.innerHTML = '<i class="fas fa-play"></i>';
+        if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+        const now = context.currentTime;
+        masterGain.gain.cancelScheduledValues(now);
+        masterGain.gain.setValueAtTime(masterGain.gain.value, now);
+        masterGain.gain.linearRampToValueAtTime(0, now + 0.045);
+        window.setTimeout(stopSources, 60);
+    }
+
+    playButton.addEventListener('click', () => {
+        if (isPlaying) pause();
+        else start();
+    });
+
+    versionButtons.forEach(button => {
+        button.addEventListener('click', () => crossfadeTo(button.dataset.version));
+    });
+
+    function onResize() {
+        drawWaveform();
+    }
+    window.addEventListener('resize', onResize);
+    window.addEventListener('theme-changed', onResize);
+
+    bqstAudioDemoCleanup = () => {
+        if (rafId) cancelAnimationFrame(rafId);
+        if (waveFadeId) cancelAnimationFrame(waveFadeId);
+        window.removeEventListener('resize', onResize);
+        window.removeEventListener('theme-changed', onResize);
+        stopSources();
+        cleanGain.disconnect();
+        processedGain.disconnect();
+        masterGain.disconnect();
+        bqstAudioDemoCleanup = null;
+    };
+}
+
+// ============================================================
 // BQST DSP LAB (for BQST project article)
 // ============================================================
 let bqstCleanup = null;
@@ -2442,10 +2793,10 @@ function initBqstDspLab(container) {
     }
 
     function drawAliasing(canvas) {
-        const ctx = resizeCanvas(canvas, 390);
+        const ctx = resizeCanvas(canvas, 350);
         const w = canvas.getBoundingClientRect().width;
-        const h = 390;
-        const pad = { l: 10, r: 10, t: 58, b: 70 };
+        const h = 350;
+        const pad = { l: 10, r: 10, t: 58, b: 34 };
         const sampleRate = 44100;
         const nyquist = sampleRate / 2;
         const internalNyquist = nyquist * 4;
@@ -2589,12 +2940,6 @@ function initBqstDspLab(container) {
         ctx.font = '700 14px Inter, sans-serif';
         ctx.textAlign = 'left';
         ctx.fillText('red dots show where high harmonics would fold back without oversampling', plotX, plotY + plotH + 34);
-
-        ctx.fillStyle = textColor(0.56);
-        ctx.font = '600 13px Inter, sans-serif';
-        ctx.textAlign = 'left';
-        ctx.fillText('BQST low-passes the oversampled harmonics before returning to the host rate.', plotX, h - 46);
-        ctx.fillText('The 4x engine continues to 88 kHz beyond this cropped view.', plotX, h - 28);
 
     }
 
