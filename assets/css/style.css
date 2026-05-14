@@ -1038,6 +1038,7 @@ body {
     flex: 1;
     max-width: 800px;
     min-width: 0;
+    box-sizing: border-box;
     padding-top: 0;
     padding-bottom: 4rem;
 }
@@ -1193,6 +1194,8 @@ body {
 }
 
 .detail-body {
+    max-width: 100%;
+    min-width: 0;
     color: rgba(232, 230, 227, 0.72);
     line-height: 1.7;
     font-size: 1.05rem;
@@ -1314,6 +1317,7 @@ body {
     box-sizing: border-box;
     max-width: 100%;
     width: 100%;
+    table-layout: fixed;
     margin: 1.4rem 0 1.7rem;
     border-collapse: collapse;
     border: 1px solid rgba(255, 204, 128, 0.16);
@@ -1327,6 +1331,8 @@ body {
     padding: 0.65rem 0.72rem;
     border-bottom: 1px solid rgba(255, 204, 128, 0.10);
     text-align: right;
+    white-space: normal;
+    overflow-wrap: anywhere;
 }
 
 .bqst-data-table th:first-child,
@@ -1532,6 +1538,8 @@ body {
 }
 
 .bqst-asset-strip {
+    box-sizing: border-box;
+    max-width: 100%;
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0;
@@ -1597,6 +1605,8 @@ body {
 
 /* BQST audio A/B demo */
 .bqst-audio-demo {
+    box-sizing: border-box;
+    max-width: 100%;
     margin: 1.4rem 0 2rem;
     border: 1px solid var(--border-subtle);
     border-radius: 8px;
@@ -1734,6 +1744,8 @@ body {
 
 /* BQST DSP lab in project detail */
 .bqst-lab {
+    box-sizing: border-box;
+    max-width: 100%;
     margin: 1.4rem 0 2rem;
     border: 1px solid var(--border-subtle);
     border-radius: 8px;
@@ -1886,10 +1898,11 @@ body {
 }
 
 .bqst-visual-canvas {
+    box-sizing: border-box;
     display: block;
+    max-width: 100%;
     width: 100%;
     height: 340px;
-    padding: 0 0.5rem;
 }
 
 .bqst-legend {
@@ -2638,8 +2651,20 @@ body {
     .bqst-data-table th,
     .bqst-data-table td {
         padding: 0.5rem 0.32rem;
-        white-space: normal;
-        overflow-wrap: anywhere;
+    }
+
+    .detail-body .gloss-term::after {
+        position: fixed;
+        left: 1rem;
+        right: 1rem;
+        bottom: 1rem;
+        width: auto;
+        max-width: none;
+        transform: translateY(0.35rem);
+    }
+
+    .detail-body .gloss-term:hover::after {
+        transform: translateY(0);
     }
 
     .demo-waveform-canvas {

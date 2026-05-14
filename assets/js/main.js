@@ -2061,6 +2061,7 @@ function initBqstAudioDemo(container) {
     let waveFadeId = null;
     let previousWaveVersion = null;
     let waveFadeStart = 0;
+    let unlockAttempted = false;
 
     if (!context || !masterGain || !cleanGain || !processedGain) return;
 
@@ -2073,6 +2074,32 @@ function initBqstAudioDemo(container) {
     masterGain.gain.value = 0;
     cleanGain.gain.value = 1;
     processedGain.gain.value = 0;
+
+    async function unlockAudioContext() {
+        if (unlockAttempted && context.state === 'running') return;
+        unlockAttempted = true;
+        if (context.state === 'suspended') {
+            try { await context.resume(); } catch (e) {}
+        }
+
+        // Some mobile browsers need a source started directly from a user gesture
+        // before later scheduled buffer sources are audible.
+        try {
+            const silent = context.createBuffer(1, 1, context.sampleRate);
+            const source = context.createBufferSource();
+            const gain = context.createGain();
+            gain.gain.value = 0;
+            source.buffer = silent;
+            source.connect(gain);
+            gain.connect(context.destination);
+            source.start(0);
+            source.stop(context.currentTime + 0.01);
+            source.onended = () => {
+                source.disconnect();
+                gain.disconnect();
+            };
+        } catch (e) {}
+    }
 
     function getPlaybackTime() {
         const duration = cleanBuffer?.duration || processedBuffer?.duration || 0;
@@ -2219,6 +2246,7 @@ function initBqstAudioDemo(container) {
 
     async function loadBuffer(url) {
         const response = await fetch(url);
+        if (!response.ok) throw new Error(`Could not load audio: ${url}`);
         const arrayBuffer = await response.arrayBuffer();
         return context.decodeAudioData(arrayBuffer);
     }
@@ -2283,7 +2311,7 @@ function initBqstAudioDemo(container) {
     async function start() {
         if (!isReady) return;
         stopOtherPlayers();
-        if (context.state === 'suspended') await context.resume();
+        await unlockAudioContext();
         await readyPromise;
         if (!isReady || !cleanBuffer || !processedBuffer) return;
 
@@ -2294,9 +2322,9 @@ function initBqstAudioDemo(container) {
         startedAt = now - offset;
         cleanSource = makeSource(cleanBuffer, cleanGain, offset);
         processedSource = makeSource(processedBuffer, processedGain, offset);
+        masterGain.gain.cancelScheduledValues(now);
         cleanGain.gain.setValueAtTime(activeVersion === 'clean' ? 1 : 0, now);
         processedGain.gain.setValueAtTime(activeVersion === 'processed' ? 1 : 0, now);
-        masterGain.gain.cancelScheduledValues(now);
         masterGain.gain.setValueAtTime(0, now);
         masterGain.gain.linearRampToValueAtTime(0.95, now + 0.035);
         isPlaying = true;
@@ -2325,6 +2353,8 @@ function initBqstAudioDemo(container) {
         if (isPlaying) pause();
         else start();
     });
+    playButton.addEventListener('pointerdown', unlockAudioContext, { passive: true });
+    playButton.addEventListener('touchstart', unlockAudioContext, { passive: true });
 
     versionButtons.forEach(button => {
         button.addEventListener('click', () => crossfadeTo(button.dataset.version));
@@ -2621,7 +2651,7 @@ function initBqstDspLab(container) {
         plotCurve('high', 4800, -6, '#8D6E63', 0.48, 2.0, true);
 
         ctx.fillStyle = textColor(0.82);
-        ctx.font = `${w < 520 ? 12 : 14}px Chillax, Inter, sans-serif`;
+        ctx.font = `700 ${w < 520 ? 12 : 14}px Chillax, Inter, sans-serif`;
         ctx.textAlign = 'left';
         ctx.fillText(w < 520 ? 'broad shelf curves' : 'broad shelf curves, not surgical bands', pad.l, 22);
     }
@@ -2729,7 +2759,7 @@ function initBqstDspLab(container) {
         ctx.restore();
 
         ctx.fillStyle = textColor(0.82);
-        ctx.font = `${w < 520 ? 12 : 14}px Chillax, Inter, sans-serif`;
+        ctx.font = `700 ${w < 520 ? 12 : 14}px Chillax, Inter, sans-serif`;
         ctx.textAlign = 'left';
         ctx.fillText(w < 520 ? 'rounded peaks, not hard clipping' : 'rounded peaks create density without hard clipping', pad.l, 18);
     }
@@ -2787,7 +2817,7 @@ function initBqstDspLab(container) {
         ctx.restore();
 
         ctx.fillStyle = textColor(0.82);
-        ctx.font = `${w < 520 ? 12 : 14}px Chillax, Inter, sans-serif`;
+        ctx.font = `700 ${w < 520 ? 12 : 14}px Chillax, Inter, sans-serif`;
         ctx.textAlign = 'left';
         ctx.fillText(w < 520 ? 'relative harmonic energy' : 'relative harmonic energy below the fundamental', pad.l, 22);
     }
@@ -2842,7 +2872,7 @@ function initBqstDspLab(container) {
 
         ctx.clearRect(0, 0, w, h);
         ctx.fillStyle = textColor(0.82);
-        ctx.font = `600 ${w < 520 ? 13 : 16}px Chillax, Inter, sans-serif`;
+        ctx.font = `700 ${w < 520 ? 13 : 16}px Chillax, Inter, sans-serif`;
         ctx.textAlign = 'left';
         ctx.fillText(w < 520 ? '6 kHz harmonics can fold past Nyquist' : 'a 6 kHz tone creates harmonics above the host nyquist point', pad.l, 28);
 
