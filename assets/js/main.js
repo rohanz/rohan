@@ -274,6 +274,7 @@ function initGlossaryInteractions() {
 
         activeTerm = term;
         tooltip.textContent = text;
+        tooltip.style.maxHeight = '';
         tooltip.classList.add('is-visible');
 
         const rect = term.getBoundingClientRect();
@@ -284,14 +285,28 @@ function initGlossaryInteractions() {
             Math.max(rect.left + rect.width * 0.5 - tooltipRect.width * 0.5, margin),
             window.innerWidth - tooltipRect.width - margin
         );
-        const below = rect.bottom + gap;
-        const above = rect.top - tooltipRect.height - gap;
-        const preferBelow = isTouchLike();
-        let top = preferBelow
-            ? (below + tooltipRect.height + margin <= window.innerHeight ? below : above)
-            : (above >= margin ? above : below);
+
+        const spaceBelow = window.innerHeight - rect.bottom - gap - margin;
+        const spaceAbove = rect.top - gap - margin;
+        const fitsBelow = tooltipRect.height <= spaceBelow;
+        const fitsAbove = tooltipRect.height <= spaceAbove;
+        const placeBelow = isTouchLike()
+            ? (fitsBelow || spaceBelow >= spaceAbove)
+            : (fitsAbove ? false : (fitsBelow || spaceBelow >= spaceAbove));
+
+        let top;
+        if (placeBelow) {
+            top = rect.bottom + gap;
+            if (!fitsBelow) tooltip.style.maxHeight = `${Math.max(60, spaceBelow)}px`;
+        } else {
+            top = rect.top - tooltipRect.height - gap;
+            if (!fitsAbove) {
+                tooltip.style.maxHeight = `${Math.max(60, spaceAbove)}px`;
+                top = margin;
+            }
+        }
         tooltip.style.left = `${left}px`;
-        tooltip.style.top = `${Math.min(Math.max(top, margin), window.innerHeight - tooltipRect.height - margin)}px`;
+        tooltip.style.top = `${top}px`;
     }
 
     function hideTooltip(term = null) {
