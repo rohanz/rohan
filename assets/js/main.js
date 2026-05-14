@@ -2128,11 +2128,11 @@ function initBqstAudioDemo(container) {
     let cleanRawData = null;
     let processedRawData = null;
     let lastWaveformPoints = 0;
-    let cleanAudio = null;
-    let processedAudio = null;
-    let cleanSrcNode = null;
-    let processedSrcNode = null;
+    let cleanSource = null;
+    let processedSource = null;
+    let startedAt = 0;
     let pausedAt = 0;
+    let wantsToPlay = false;
     let activeVersion = 'clean';
     let isPlaying = false;
     let isReady = false;
@@ -2140,24 +2140,34 @@ function initBqstAudioDemo(container) {
     let waveFadeId = null;
     let previousWaveVersion = null;
     let waveFadeStart = 0;
-    let readyPromise = null;
 
     if (!AC) return;
 
     root.classList.add('is-ready');
     drawWaveform();
 
-    const audioDataPromise = Promise.all([fetchAudioData(cleanUrl), fetchAudioData(processedUrl)])
-        .then(([cleanData, processedData]) => {
+    Promise.all([fetchAudioData(cleanUrl), fetchAudioData(processedUrl)])
+        .then(async ([cleanData, processedData]) => {
             cleanRawData = cleanData;
             processedRawData = processedData;
             refreshRawWaveforms();
             drawWaveform();
-            return [cleanData, processedData];
+
+            ensureAudioContext();
+            const [clean, processed] = await Promise.all([
+                context.decodeAudioData(cleanData.slice(0)),
+                context.decodeAudioData(processedData.slice(0)),
+            ]);
+            cleanBuffer = clean;
+            processedBuffer = processed;
+            isReady = true;
+            playButton.removeAttribute('aria-busy');
+            drawWaveform();
+            if (wantsToPlay && !isPlaying) start();
         })
-        .catch(error => {
+        .catch(() => {
             root.classList.add('is-error');
-            throw error;
+            playButton.removeAttribute('aria-busy');
         });
 
     function ensureAudioContext() {
@@ -2204,38 +2214,10 @@ function initBqstAudioDemo(container) {
     }
 
     function getPlaybackTime() {
-        if (cleanAudio) return cleanAudio.currentTime;
-        return pausedAt;
-    }
-
-    function ensureAudioElements() {
-        if (cleanAudio && processedAudio) return;
-        cleanAudio = new Audio();
-        cleanAudio.src = cleanUrl;
-        cleanAudio.loop = true;
-        cleanAudio.crossOrigin = 'anonymous';
-        cleanAudio.preload = 'auto';
-        processedAudio = new Audio();
-        processedAudio.src = processedUrl;
-        processedAudio.loop = true;
-        processedAudio.crossOrigin = 'anonymous';
-        processedAudio.preload = 'auto';
-    }
-
-    function ensureAudioGraph() {
-        if (cleanSrcNode && processedSrcNode) return;
-        ensureAudioContext();
-        ensureAudioElements();
-        try {
-            if (!cleanSrcNode) {
-                cleanSrcNode = context.createMediaElementSource(cleanAudio);
-                cleanSrcNode.connect(cleanGain);
-            }
-            if (!processedSrcNode) {
-                processedSrcNode = context.createMediaElementSource(processedAudio);
-                processedSrcNode.connect(processedGain);
-            }
-        } catch (e) {}
+        const duration = cleanBuffer?.duration || processedBuffer?.duration || 0;
+        if (duration <= 0) return 0;
+        if (!isPlaying || !context) return pausedAt % duration;
+        return (context.currentTime - startedAt) % duration;
     }
 
     function setActiveButton() {
@@ -2503,16 +2485,9 @@ function initBqstAudioDemo(container) {
     }
 
     function drawProgress() {
-        const duration = cleanAudio?.duration || cleanWaveform?.duration || processedWaveform?.duration || 0;
+        const duration = cleanBuffer?.duration || processedBuffer?.duration || 0;
         const ratio = duration > 0 ? (getPlaybackTime() % duration) / duration : 0;
         progress.style.transform = `scaleX(${Math.max(0, Math.min(1, ratio))})`;
-        // Keep the two streams in lockstep so crossfade is phase-coherent.
-        if (cleanAudio && processedAudio && !cleanAudio.paused && !processedAudio.paused) {
-            const drift = processedAudio.currentTime - cleanAudio.currentTime;
-            if (Math.abs(drift) > 0.015) {
-                try { processedAudio.currentTime = cleanAudio.currentTime; } catch (e) {}
-            }
-        }
         if (isPlaying) rafId = requestAnimationFrame(drawProgress);
     }
 
@@ -2522,30 +2497,22 @@ function initBqstAudioDemo(container) {
         return response.arrayBuffer();
     }
 
-    async function ensureReady() {
-        if (isReady) return true;
-        if (readyPromise) return readyPromise;
+    function makeSource(buffer, gainNode) {
+        const source = context.createBufferSource();
+        source.buffer = buffer;
+        source.loop = true;
+        source.connect(gainNode);
+        return source;
+    }
 
-        ensureAudioContext();
-        playButton.setAttribute('aria-busy', 'true');
-        readyPromise = audioDataPromise
-            .then(async ([cleanData, processedData]) => {
-                const clean = await context.decodeAudioData(cleanData.slice(0));
-                const processed = await context.decodeAudioData(processedData.slice(0));
-                cleanBuffer = clean;
-                processedBuffer = processed;
-                isReady = true;
-                playButton.removeAttribute('aria-busy');
-                drawWaveform();
-                return true;
-            })
-            .catch(() => {
-                root.classList.add('is-error');
-                playButton.removeAttribute('aria-busy');
-                return false;
-            });
-
-        return readyPromise;
+    function stopSources() {
+        [cleanSource, processedSource].forEach(source => {
+            if (!source) return;
+            try { source.stop(); } catch (e) {}
+            source.disconnect();
+        });
+        cleanSource = null;
+        processedSource = null;
     }
 
     function crossfadeTo(version) {
@@ -2575,27 +2542,31 @@ function initBqstAudioDemo(container) {
     function start() {
         stopOtherPlayers();
         unlockAudioContext();
-        ensureAudioGraph();
 
-        const t = pausedAt;
-        try { cleanAudio.currentTime = t; processedAudio.currentTime = t; } catch (e) {}
+        if (!isReady || !cleanBuffer || !processedBuffer) {
+            wantsToPlay = true;
+            playButton.setAttribute('aria-busy', 'true');
+            return;
+        }
+        wantsToPlay = false;
 
-        const playClean = cleanAudio.play();
-        const playProcessed = processedAudio.play();
-        Promise.all([
-            playClean && playClean.catch ? playClean.catch(() => {}) : Promise.resolve(),
-            playProcessed && playProcessed.catch ? playProcessed.catch(() => {}) : Promise.resolve(),
-        ]).then(() => {
-            // Re-sync after both started (iOS may stagger play start slightly)
-            try { processedAudio.currentTime = cleanAudio.currentTime; } catch (e) {}
-        });
+        stopSources();
 
-        const now = context.currentTime;
-        masterGain.gain.cancelScheduledValues(now);
-        cleanGain.gain.setValueAtTime(activeVersion === 'clean' ? 1 : 0, now);
-        processedGain.gain.setValueAtTime(activeVersion === 'processed' ? 1 : 0, now);
-        masterGain.gain.setValueAtTime(0, now);
-        masterGain.gain.linearRampToValueAtTime(0.95, now + 0.035);
+        const duration = cleanBuffer.duration;
+        const offset = duration > 0 ? pausedAt % duration : 0;
+        const when = context.currentTime;
+        startedAt = when - offset;
+
+        cleanSource = makeSource(cleanBuffer, cleanGain);
+        processedSource = makeSource(processedBuffer, processedGain);
+        cleanSource.start(when, offset);
+        processedSource.start(when, offset);
+
+        masterGain.gain.cancelScheduledValues(when);
+        cleanGain.gain.setValueAtTime(activeVersion === 'clean' ? 1 : 0, when);
+        processedGain.gain.setValueAtTime(activeVersion === 'processed' ? 1 : 0, when);
+        masterGain.gain.setValueAtTime(0, when);
+        masterGain.gain.linearRampToValueAtTime(0.95, when + 0.035);
 
         isPlaying = true;
         playButton.classList.add('playing');
@@ -2609,6 +2580,7 @@ function initBqstAudioDemo(container) {
     function pause() {
         pausedAt = getPlaybackTime();
         isPlaying = false;
+        wantsToPlay = false;
         playButton.classList.remove('playing');
         playButton.setAttribute('aria-pressed', 'false');
         playButton.innerHTML = '<i class="fas fa-play"></i>';
@@ -2620,10 +2592,7 @@ function initBqstAudioDemo(container) {
             masterGain.gain.setValueAtTime(masterGain.gain.value, now);
             masterGain.gain.linearRampToValueAtTime(0, now + 0.045);
         }
-        window.setTimeout(() => {
-            cleanAudio?.pause();
-            processedAudio?.pause();
-        }, 60);
+        window.setTimeout(stopSources, 60);
     }
 
     function updateMediaSession(state) {
@@ -2665,9 +2634,7 @@ function initBqstAudioDemo(container) {
         if (waveFadeId) cancelAnimationFrame(waveFadeId);
         window.removeEventListener('resize', onResize);
         window.removeEventListener('theme-changed', onResize);
-        try { cleanAudio?.pause(); processedAudio?.pause(); } catch (e) {}
-        cleanSrcNode?.disconnect();
-        processedSrcNode?.disconnect();
+        stopSources();
         cleanGain?.disconnect();
         processedGain?.disconnect();
         masterGain?.disconnect();
