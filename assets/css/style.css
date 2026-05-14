@@ -1237,7 +1237,7 @@ body {
 
 .detail-body p {
     margin-bottom: 1.15em;
-    overflow-wrap: break-word;
+    overflow-wrap: anywhere;
 }
 
 .detail-body p:last-child {
@@ -1250,6 +1250,7 @@ body {
     text-decoration-thickness: 1px;
     text-underline-offset: 0.18em;
     transition: color 160ms ease, text-decoration-color 160ms ease;
+    overflow-wrap: anywhere;
 }
 
 @media (hover: hover) {
@@ -1299,6 +1300,8 @@ body {
 .detail-body code {
     font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
     font-size: 0.92em;
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 .detail-body pre code {
@@ -1372,6 +1375,8 @@ body {
     border-radius: 3px;
     padding: 0.02em 0.12em;
     outline: none;
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 [data-theme="light"] .detail-body .gloss-term {
@@ -1379,13 +1384,13 @@ body {
     border-bottom-color: rgba(141, 110, 99, 0.45);
 }
 
-.detail-body .gloss-term::after {
-    content: attr(data-gloss);
-    position: absolute;
-    left: 50%;
-    bottom: calc(100% + 0.55rem);
-    z-index: 20;
-    width: min(280px, 70vw);
+.gloss-tooltip {
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 1000;
+    box-sizing: border-box;
+    width: min(280px, calc(100vw - 2rem));
     padding: 0.65rem 0.75rem;
     border: 1px solid rgba(255, 204, 128, 0.24);
     border-radius: 6px;
@@ -1400,21 +1405,21 @@ body {
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
-    transform: translate(-50%, 0.25rem);
+    transform: translateY(0.25rem);
     transition: opacity 160ms ease, transform 160ms ease, visibility 160ms ease;
 }
 
-[data-theme="light"] .detail-body .gloss-term::after {
+.gloss-tooltip.is-visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+[data-theme="light"] .gloss-tooltip {
     border-color: rgba(62, 39, 35, 0.14);
     background: rgba(255, 248, 225, 0.98);
     color: var(--text-primary);
     box-shadow: 0 8px 24px rgba(62, 39, 35, 0.16);
-}
-
-.detail-body .gloss-term:hover::after {
-    opacity: 1;
-    visibility: visible;
-    transform: translate(-50%, 0);
 }
 
 .detail-body img {
@@ -2653,18 +2658,13 @@ body {
         padding: 0.5rem 0.32rem;
     }
 
-    .detail-body .gloss-term::after {
-        position: fixed;
-        left: 1rem;
+    .gloss-tooltip {
+        left: 1rem !important;
         right: 1rem;
         bottom: 1rem;
+        top: auto !important;
         width: auto;
         max-width: none;
-        transform: translateY(0.35rem);
-    }
-
-    .detail-body .gloss-term:hover::after {
-        transform: translateY(0);
     }
 
     .demo-waveform-canvas {

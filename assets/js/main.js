@@ -256,6 +256,77 @@ function initThemeToggle() {
     });
 }
 
+function initGlossaryInteractions() {
+    if (document._glossaryInteractionsInit) return;
+    document._glossaryInteractionsInit = true;
+
+    const tooltip = document.createElement('div');
+    tooltip.className = 'gloss-tooltip';
+    tooltip.setAttribute('role', 'tooltip');
+    document.body.appendChild(tooltip);
+
+    let activeTerm = null;
+    const isTouchLike = () => window.matchMedia('(hover: none), (pointer: coarse)').matches;
+
+    function showTooltip(term) {
+        const text = term?.dataset?.gloss;
+        if (!text) return;
+
+        activeTerm = term;
+        tooltip.textContent = text;
+        tooltip.classList.add('is-visible');
+
+        if (isTouchLike()) return;
+
+        const rect = term.getBoundingClientRect();
+        const tooltipRect = tooltip.getBoundingClientRect();
+        const gap = 10;
+        const margin = 12;
+        const left = Math.min(
+            Math.max(rect.left + rect.width * 0.5 - tooltipRect.width * 0.5, margin),
+            window.innerWidth - tooltipRect.width - margin
+        );
+        const above = rect.top - tooltipRect.height - gap;
+        const top = above >= margin ? above : rect.bottom + gap;
+        tooltip.style.left = `${left}px`;
+        tooltip.style.top = `${Math.min(Math.max(top, margin), window.innerHeight - tooltipRect.height - margin)}px`;
+    }
+
+    function hideTooltip(term = null) {
+        if (term && term !== activeTerm) return;
+        activeTerm = null;
+        tooltip.classList.remove('is-visible');
+    }
+
+    document.addEventListener('mouseover', event => {
+        if (isTouchLike()) return;
+        const term = event.target.closest?.('.gloss-term');
+        if (term) showTooltip(term);
+    });
+
+    document.addEventListener('mouseout', event => {
+        if (isTouchLike()) return;
+        const term = event.target.closest?.('.gloss-term');
+        if (term) hideTooltip(term);
+    });
+
+    document.addEventListener('click', event => {
+        const term = event.target.closest?.('.gloss-term');
+        if (!term) {
+            hideTooltip();
+            return;
+        }
+
+        if (!isTouchLike()) return;
+        event.preventDefault();
+        if (term === activeTerm && tooltip.classList.contains('is-visible')) hideTooltip();
+        else showTooltip(term);
+    });
+
+    window.addEventListener('scroll', () => hideTooltip(), { passive: true });
+    window.addEventListener('resize', () => hideTooltip(), { passive: true });
+}
+
 // ============================================================
 // HOMEPAGE ANIMATION
 // ============================================================
@@ -2044,12 +2115,14 @@ function initBqstAudioDemo(container) {
     const waveCtx = waveCanvas.getContext('2d');
     const progress = root.querySelector('.bqst-audio-wave i');
     const AC = window.AudioContext || window.webkitAudioContext;
-    const context = audioContext || (AC ? new AC() : null);
-    const masterGain = context ? context.createGain() : null;
-    const cleanGain = context ? context.createGain() : null;
-    const processedGain = context ? context.createGain() : null;
+    let context = null;
+    let masterGain = null;
+    let cleanGain = null;
+    let processedGain = null;
     let cleanBuffer = null;
     let processedBuffer = null;
+    let cleanWaveform = null;
+    let processedWaveform = null;
     let cleanSource = null;
     let processedSource = null;
     let startedAt = 0;
@@ -2062,20 +2135,46 @@ function initBqstAudioDemo(container) {
     let previousWaveVersion = null;
     let waveFadeStart = 0;
     let unlockAttempted = false;
+    let readyPromise = null;
 
-    if (!context || !masterGain || !cleanGain || !processedGain) return;
+    if (!AC) return;
 
-    playButton.disabled = true;
-    playButton.setAttribute('aria-busy', 'true');
+    root.classList.add('is-ready');
+    drawWaveform();
 
-    masterGain.connect(context.destination);
-    cleanGain.connect(masterGain);
-    processedGain.connect(masterGain);
-    masterGain.gain.value = 0;
-    cleanGain.gain.value = 1;
-    processedGain.gain.value = 0;
+    const audioDataPromise = Promise.all([fetchAudioData(cleanUrl), fetchAudioData(processedUrl)])
+        .then(([cleanData, processedData]) => {
+            cleanWaveform = extractWavWaveform(cleanData);
+            processedWaveform = extractWavWaveform(processedData);
+            drawWaveform();
+            return [cleanData, processedData];
+        })
+        .catch(error => {
+            root.classList.add('is-error');
+            throw error;
+        });
+
+    function ensureAudioContext() {
+        if (context) return context;
+
+        context = new AC();
+        masterGain = context.createGain();
+        cleanGain = context.createGain();
+        processedGain = context.createGain();
+
+        cleanGain.connect(masterGain);
+        processedGain.connect(masterGain);
+        masterGain.connect(context.destination);
+
+        masterGain.gain.value = 0;
+        cleanGain.gain.value = 1;
+        processedGain.gain.value = 0;
+
+        return context;
+    }
 
     async function unlockAudioContext() {
+        ensureAudioContext();
         if (unlockAttempted && context.state === 'running') return;
         unlockAttempted = true;
         if (context.state === 'suspended') {
@@ -2104,6 +2203,7 @@ function initBqstAudioDemo(container) {
     function getPlaybackTime() {
         const duration = cleanBuffer?.duration || processedBuffer?.duration || 0;
         if (duration <= 0) return 0;
+        if (!context) return pausedAt % duration;
         return isPlaying ? (context.currentTime - startedAt) % duration : pausedAt % duration;
     }
 
@@ -2119,8 +2219,124 @@ function initBqstAudioDemo(container) {
         return version === 'clean' ? cleanBuffer : processedBuffer;
     }
 
+    function waveformForVersion(version) {
+        return version === 'clean' ? cleanWaveform : processedWaveform;
+    }
+
     function activeBuffer() {
         return bufferForVersion(activeVersion);
+    }
+
+    function activeWaveform() {
+        return waveformForVersion(activeVersion);
+    }
+
+    function extractWavWaveform(arrayBuffer, targetPoints = 900) {
+        try {
+            const view = new DataView(arrayBuffer);
+            const readId = offset => String.fromCharCode(
+                view.getUint8(offset),
+                view.getUint8(offset + 1),
+                view.getUint8(offset + 2),
+                view.getUint8(offset + 3)
+            );
+            if (readId(0) !== 'RIFF' || readId(8) !== 'WAVE') return null;
+
+            let format = null;
+            let dataOffset = 0;
+            let dataSize = 0;
+            for (let offset = 12; offset + 8 <= view.byteLength;) {
+                const id = readId(offset);
+                const size = view.getUint32(offset + 4, true);
+                const chunkData = offset + 8;
+                if (id === 'fmt ') {
+                    format = {
+                        audioFormat: view.getUint16(chunkData, true),
+                        channels: view.getUint16(chunkData + 2, true),
+                        sampleRate: view.getUint32(chunkData + 4, true),
+                        blockAlign: view.getUint16(chunkData + 12, true),
+                        bitsPerSample: view.getUint16(chunkData + 14, true)
+                    };
+                } else if (id === 'data') {
+                    dataOffset = chunkData;
+                    dataSize = size;
+                    break;
+                }
+                offset = chunkData + size + (size % 2);
+            }
+            if (!format || !dataOffset || !dataSize || !format.channels || !format.blockAlign) return null;
+
+            const bytesPerSample = format.bitsPerSample / 8;
+            const frames = Math.floor(dataSize / format.blockAlign);
+            const points = Math.max(1, Math.min(targetPoints, frames));
+            const samplesPerPoint = Math.max(1, Math.floor(frames / points));
+            const peaks = [];
+
+            const readSample = offset => {
+                if (format.audioFormat === 3 && format.bitsPerSample === 32) return view.getFloat32(offset, true);
+                if (format.bitsPerSample === 16) return view.getInt16(offset, true) / 32768;
+                if (format.bitsPerSample === 24) {
+                    const value = view.getUint8(offset) | (view.getUint8(offset + 1) << 8) | (view.getUint8(offset + 2) << 16);
+                    return ((value & 0x800000) ? value | 0xff000000 : value) / 8388608;
+                }
+                if (format.bitsPerSample === 32) return view.getInt32(offset, true) / 2147483648;
+                return 0;
+            };
+
+            for (let point = 0; point < points; point++) {
+                const startFrame = point * samplesPerPoint;
+                const endFrame = point === points - 1 ? frames : Math.min(frames, startFrame + samplesPerPoint);
+                let min = 1;
+                let max = -1;
+                for (let frame = startFrame; frame < endFrame; frame++) {
+                    const frameOffset = dataOffset + frame * format.blockAlign;
+                    let mono = 0;
+                    for (let channel = 0; channel < format.channels; channel++) {
+                        mono += readSample(frameOffset + channel * bytesPerSample);
+                    }
+                    mono /= format.channels;
+                    if (mono < min) min = mono;
+                    if (mono > max) max = mono;
+                }
+                peaks.push({ min, max });
+            }
+
+            return { peaks, duration: frames / format.sampleRate };
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function drawWaveformData(waveform, version, alpha = 1) {
+        if (!waveform?.peaks?.length) return;
+
+        const width = waveCanvas.width;
+        const height = waveCanvas.height;
+        const dpr = window.devicePixelRatio || 1;
+        const isLight = isLightTheme();
+        const bqstPink = '255,173,203';
+        const isProcessed = version === 'processed';
+        const lineColor = isLight
+            ? (isProcessed ? `rgba(${bqstPink},${0.80 * alpha})` : `rgba(141,110,99,${0.72 * alpha})`)
+            : (isProcessed ? `rgba(${bqstPink},${0.78 * alpha})` : `rgba(255,204,128,${0.74 * alpha})`);
+        const fillColor = isLight
+            ? (isProcessed ? `rgba(${bqstPink},${0.14 * alpha})` : `rgba(141,110,99,${0.13 * alpha})`)
+            : (isProcessed ? `rgba(${bqstPink},${0.12 * alpha})` : `rgba(255,204,128,${0.12 * alpha})`);
+        const center = height * 0.5;
+        const amp = height * 0.42;
+
+        waveCtx.beginPath();
+        for (let x = 0; x < width; x++) {
+            const peak = waveform.peaks[Math.min(waveform.peaks.length - 1, Math.floor((x / width) * waveform.peaks.length))];
+            waveCtx.moveTo(x + 0.5, center - peak.max * amp);
+            waveCtx.lineTo(x + 0.5, center - peak.min * amp);
+        }
+        waveCtx.strokeStyle = lineColor;
+        waveCtx.lineWidth = Math.max(1, dpr);
+        waveCtx.stroke();
+
+        waveCtx.fillStyle = fillColor;
+        waveCtx.fillRect(0, center - 1 * dpr, width, 2 * dpr);
     }
 
     function drawBufferWaveform(buffer, alpha = 1) {
@@ -2180,18 +2396,20 @@ function initBqstAudioDemo(container) {
 
         waveCtx.clearRect(0, 0, width, height);
         const buffer = activeBuffer();
+        const waveform = activeWaveform();
+        const duration = buffer?.duration || waveform?.duration || 0;
         const isLight = isLightTheme();
         const gridColor = isLight ? 'rgba(62,39,35,0.10)' : 'rgba(232,230,227,0.10)';
         const subGridColor = isLight ? 'rgba(62,39,35,0.055)' : 'rgba(232,230,227,0.055)';
         const barColor = isLight ? 'rgba(141,110,99,0.24)' : 'rgba(255,204,128,0.22)';
         const center = height * 0.5;
 
-        if (buffer && Number.isFinite(bpm) && bpm > 0) {
+        if (duration > 0 && Number.isFinite(bpm) && bpm > 0) {
             const beatSeconds = 60 / bpm;
             const divisionSeconds = beatSeconds / 4;
-            const divisions = Math.floor(buffer.duration / divisionSeconds + 0.001);
+            const divisions = Math.floor(duration / divisionSeconds + 0.001);
             for (let division = 0; division <= divisions; division++) {
-                const x = Math.round((division * divisionSeconds / buffer.duration) * width) + 0.5;
+                const x = Math.round((division * divisionSeconds / duration) * width) + 0.5;
                 const isBar = division % 16 === 0;
                 const isBeat = division % 4 === 0;
                 waveCtx.strokeStyle = isBar ? barColor : (isBeat ? gridColor : subGridColor);
@@ -2210,9 +2428,13 @@ function initBqstAudioDemo(container) {
         waveCtx.lineTo(width, center);
         waveCtx.stroke();
 
-        if (previousWaveVersion && blend < 1)
-            drawBufferWaveform(bufferForVersion(previousWaveVersion), 1 - blend);
-        drawBufferWaveform(buffer, blend);
+        if (previousWaveVersion && blend < 1) {
+            const previousBuffer = bufferForVersion(previousWaveVersion);
+            if (previousBuffer) drawBufferWaveform(previousBuffer, 1 - blend);
+            else drawWaveformData(waveformForVersion(previousWaveVersion), previousWaveVersion, 1 - blend);
+        }
+        if (buffer) drawBufferWaveform(buffer, blend);
+        else drawWaveformData(waveform, activeVersion, blend);
     }
 
     function animateWaveformChange(fromVersion) {
@@ -2244,28 +2466,37 @@ function initBqstAudioDemo(container) {
         if (isPlaying) rafId = requestAnimationFrame(drawProgress);
     }
 
-    async function loadBuffer(url) {
+    async function fetchAudioData(url) {
         const response = await fetch(url);
         if (!response.ok) throw new Error(`Could not load audio: ${url}`);
-        const arrayBuffer = await response.arrayBuffer();
-        return context.decodeAudioData(arrayBuffer);
+        return response.arrayBuffer();
     }
 
-    const readyPromise = Promise.all([loadBuffer(cleanUrl), loadBuffer(processedUrl)])
-        .then(([clean, processed]) => {
-            cleanBuffer = clean;
-            processedBuffer = processed;
-            isReady = true;
-            root.classList.add('is-ready');
-            playButton.disabled = false;
-            playButton.removeAttribute('aria-busy');
-            drawWaveform();
-        })
-        .catch(() => {
-            root.classList.add('is-error');
-            playButton.disabled = true;
-            playButton.removeAttribute('aria-busy');
-        });
+    async function ensureReady() {
+        if (isReady) return true;
+        if (readyPromise) return readyPromise;
+
+        ensureAudioContext();
+        playButton.setAttribute('aria-busy', 'true');
+        readyPromise = audioDataPromise
+            .then(async ([cleanData, processedData]) => {
+                const clean = await context.decodeAudioData(cleanData.slice(0));
+                const processed = await context.decodeAudioData(processedData.slice(0));
+                cleanBuffer = clean;
+                processedBuffer = processed;
+                isReady = true;
+                playButton.removeAttribute('aria-busy');
+                drawWaveform();
+                return true;
+            })
+            .catch(() => {
+                root.classList.add('is-error');
+                playButton.removeAttribute('aria-busy');
+                return false;
+            });
+
+        return readyPromise;
+    }
 
     function makeSource(buffer, gainNode, offset) {
         const source = context.createBufferSource();
@@ -2294,6 +2525,8 @@ function initBqstAudioDemo(container) {
         setActiveButton();
         animateWaveformChange(oldVersion);
 
+        if (!context || !cleanGain || !processedGain) return;
+
         const now = context.currentTime;
         const fadeSeconds = 0.075;
         cleanGain.gain.cancelScheduledValues(now);
@@ -2309,11 +2542,14 @@ function initBqstAudioDemo(container) {
     }
 
     async function start() {
-        if (!isReady) return;
         stopOtherPlayers();
         await unlockAudioContext();
-        await readyPromise;
+        await ensureReady();
         if (!isReady || !cleanBuffer || !processedBuffer) return;
+        if (context.state === 'suspended') {
+            try { await context.resume(); } catch (e) {}
+        }
+        if (context.state !== 'running') return;
 
         stopSources();
         const now = context.currentTime;
@@ -2342,6 +2578,10 @@ function initBqstAudioDemo(container) {
         playButton.setAttribute('aria-pressed', 'false');
         playButton.innerHTML = '<i class="fas fa-play"></i>';
         if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+        if (!context || !masterGain) {
+            stopSources();
+            return;
+        }
         const now = context.currentTime;
         masterGain.gain.cancelScheduledValues(now);
         masterGain.gain.setValueAtTime(masterGain.gain.value, now);
@@ -2372,9 +2612,12 @@ function initBqstAudioDemo(container) {
         window.removeEventListener('resize', onResize);
         window.removeEventListener('theme-changed', onResize);
         stopSources();
-        cleanGain.disconnect();
-        processedGain.disconnect();
-        masterGain.disconnect();
+        cleanGain?.disconnect();
+        processedGain?.disconnect();
+        masterGain?.disconnect();
+        if (context && context !== audioContext) {
+            context.close().catch(() => {});
+        }
         bqstAudioDemoCleanup = null;
     };
 }
@@ -3142,6 +3385,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (logoLink) logoLink.addEventListener('click', goToHomepage);
 
     initThemeToggle();
+    initGlossaryInteractions();
     loadProjects();
     initSectionSwipeGestures();
     initTapFlash();
