@@ -2207,9 +2207,11 @@ function initBqstAudioDemo(container) {
     }
 
     let unlockAttempted = false;
+    let isUnlocked = false;
+    let unlockPromise = null;
     let silentPrimer = null;
 
-    function buildSilentWavUrl(seconds = 0.5) {
+    function buildSilentWavUrl(seconds = 0.1) {
         const sampleRate = 22050;
         const samples = Math.floor(sampleRate * seconds);
         const dataSize = samples * 2;
@@ -2239,18 +2241,33 @@ function initBqstAudioDemo(container) {
         if (context.state === 'suspended') {
             context.resume().catch(() => {});
         }
-        if (unlockAttempted) return;
+        if (isUnlocked) return Promise.resolve();
+        if (unlockPromise) return unlockPromise;
         unlockAttempted = true;
         // iOS Safari only grants tab-wide audio output after an HTMLMediaElement
-        // actually plays samples in a user gesture. A zero-length data URL isn't
-        // enough — prime with a real short silent WAV.
-        try {
-            if (!silentPrimer) {
-                silentPrimer = new Audio(buildSilentWavUrl(0.5));
-                silentPrimer.loop = false;
+        // actually plays samples through to completion in a user gesture. Wait
+        // for the primer's `ended` event (with a timeout fallback) before
+        // considering the unlock complete and starting real audio.
+        unlockPromise = new Promise((resolve) => {
+            const done = () => {
+                if (isUnlocked) return;
+                isUnlocked = true;
+                resolve();
+            };
+            try {
+                if (!silentPrimer) {
+                    silentPrimer = new Audio(buildSilentWavUrl(0.1));
+                    silentPrimer.loop = false;
+                }
+                silentPrimer.addEventListener('ended', done, { once: true });
+                silentPrimer.play().catch(() => setTimeout(done, 60));
+                // Fallback: resolve after 250ms even if `ended` never fires.
+                setTimeout(done, 250);
+            } catch (e) {
+                done();
             }
-            silentPrimer.play().catch(() => {});
-        } catch (e) {}
+        });
+        return unlockPromise;
     }
 
     function getPlaybackTime() {
@@ -2579,9 +2596,9 @@ function initBqstAudioDemo(container) {
         document.querySelectorAll('.waveform-play-btn.playing').forEach(button => button.click());
     }
 
-    function start() {
+    async function start() {
         stopOtherPlayers();
-        unlockAudioContext();
+        const unlock = unlockAudioContext();
 
         if (!isReady || !cleanBuffer || !processedBuffer) {
             wantsToPlay = true;
@@ -2589,6 +2606,11 @@ function initBqstAudioDemo(container) {
             return;
         }
         wantsToPlay = false;
+
+        // Wait for iOS unlock to complete before scheduling sources.
+        // Web Audio sources don't need the user gesture themselves — they just
+        // need the context to be unlocked at the moment they begin output.
+        if (!isUnlocked) await unlock;
 
         stopSources();
 
