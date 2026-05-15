@@ -2209,6 +2209,31 @@ function initBqstAudioDemo(container) {
     let unlockAttempted = false;
     let silentPrimer = null;
 
+    function buildSilentWavUrl(seconds = 0.5) {
+        const sampleRate = 22050;
+        const samples = Math.floor(sampleRate * seconds);
+        const dataSize = samples * 2;
+        const buffer = new ArrayBuffer(44 + dataSize);
+        const view = new DataView(buffer);
+        const writeAscii = (offset, str) => {
+            for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
+        };
+        writeAscii(0, 'RIFF');
+        view.setUint32(4, 36 + dataSize, true);
+        writeAscii(8, 'WAVE');
+        writeAscii(12, 'fmt ');
+        view.setUint32(16, 16, true);
+        view.setUint16(20, 1, true);
+        view.setUint16(22, 1, true);
+        view.setUint32(24, sampleRate, true);
+        view.setUint32(28, sampleRate * 2, true);
+        view.setUint16(32, 2, true);
+        view.setUint16(34, 16, true);
+        writeAscii(36, 'data');
+        view.setUint32(40, dataSize, true);
+        return URL.createObjectURL(new Blob([buffer], { type: 'audio/wav' }));
+    }
+
     function unlockAudioContext() {
         ensureAudioContext();
         if (context.state === 'suspended') {
@@ -2217,12 +2242,11 @@ function initBqstAudioDemo(container) {
         if (unlockAttempted) return;
         unlockAttempted = true;
         // iOS Safari only grants tab-wide audio output after an HTMLMediaElement
-        // play() succeeds in a user gesture. Prime a hidden silent <audio> here so
-        // the AudioBufferSource path below is audible without needing the music
-        // player to be tapped first.
+        // actually plays samples in a user gesture. A zero-length data URL isn't
+        // enough — prime with a real short silent WAV.
         try {
             if (!silentPrimer) {
-                silentPrimer = new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=');
+                silentPrimer = new Audio(buildSilentWavUrl(0.5));
                 silentPrimer.loop = false;
             }
             silentPrimer.play().catch(() => {});
