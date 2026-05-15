@@ -2550,7 +2550,7 @@ function initBqstAudioDemo(container) {
         const duration = cleanBuffer?.duration || processedBuffer?.duration || 0;
         const ratio = duration > 0 ? (getPlaybackTime() % duration) / duration : 0;
         const clamped = Math.max(0, Math.min(1, ratio));
-        progress.style.transform = `translateX(${(clamped - 1) * 100}%)`;
+        progress.style.transform = `translate3d(${(clamped - 1) * 100}%, 0, 0)`;
         if (isPlaying) rafId = requestAnimationFrame(drawProgress);
     }
 
