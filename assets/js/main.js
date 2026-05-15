@@ -2207,6 +2207,7 @@ function initBqstAudioDemo(container) {
     }
 
     let unlockAttempted = false;
+    let silentPrimer = null;
 
     function unlockAudioContext() {
         ensureAudioContext();
@@ -2215,16 +2216,16 @@ function initBqstAudioDemo(container) {
         }
         if (unlockAttempted) return;
         unlockAttempted = true;
-        // iOS Safari unlock: start a silent buffer source inside the user gesture
-        // so subsequent buffer sources are audible.
+        // iOS Safari only grants tab-wide audio output after an HTMLMediaElement
+        // play() succeeds in a user gesture. Prime a hidden silent <audio> here so
+        // the AudioBufferSource path below is audible without needing the music
+        // player to be tapped first.
         try {
-            const silent = context.createBuffer(1, 1, context.sampleRate);
-            const source = context.createBufferSource();
-            source.buffer = silent;
-            source.connect(context.destination);
-            source.start(0);
-            source.stop(context.currentTime + 0.01);
-            source.onended = () => source.disconnect();
+            if (!silentPrimer) {
+                silentPrimer = new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=');
+                silentPrimer.loop = false;
+            }
+            silentPrimer.play().catch(() => {});
         } catch (e) {}
     }
 
