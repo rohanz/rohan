@@ -91,13 +91,14 @@ The pre/de-emphasis matters because full-band saturation can make treble harsh v
 
 ```cpp
 const auto push = drive01 * drive01;
-const auto asymmetry = drive01 * (0.012f + drive01 * 0.048f + push * 0.028f);
-const auto oddWeight = drive01 * (0.040f + drive01 * 0.135f + push * 0.105f);
-const auto softKnee = 0.82f + drive01 * 0.38f + push * 0.36f;
-const auto blend = drive01 * 0.38f + push * 0.13f;
+const auto maxPush = push * drive01;
+const auto asymmetry = drive01 * (0.016f + drive01 * 0.045f + push * 0.040f);
+const auto oddWeight = drive01 * (0.032f + drive01 * 0.095f + push * 0.115f + maxPush * 0.135f);
+const auto softKnee = 0.80f + drive01 * 0.42f + push * 0.36f + maxPush * 0.60f;
 
 const auto driven = sample * softKnee + oddWeight * sample * sample * sample + asymmetry;
-const auto shaped = std::tanh(driven) - std::tanh(asymmetry);
+const auto shaped = (std::tanh(driven) - std::tanh(asymmetry)) * (1.0f + 0.07f * drive01 + 0.13f * maxPush);
+const auto blend = drive01 * 0.39f + push * 0.16f + maxPush * 0.15f;
 return sample * (1.0f - blend) + shaped * blend;
 ```
 ### grit
@@ -106,11 +107,11 @@ Grit is transformer-inspired. It is a little firmer and more forward, but I stil
 
 - a firmer tanh transfer curve
 - a small bias term
-- low-mid weighting before saturation
-- mild top rounding after saturation
+- low and low-mid weighting before saturation
+- partial low-end restore and mild top rounding after saturation
 - the same low-end guard structure
 
-Those design choices show up more clearly in the harmonic fingerprint graph below, which uses a simple 1 kHz tone. Lower harmonics tend to read as thickness or warmth; stronger upper harmonics can read as edge or bite.
+That pre/post tone path is what makes Grit feel less like a generic clipper. The low and low-mid content pushes into the nonlinear stage a little harder, then some of that tonal tilt is restored afterward, leaving more transformer-like weight without simply EQ-boosting the final signal. Those design choices show up more clearly in the harmonic fingerprint graph below, which uses a simple 1 kHz tone. Lower harmonics tend to read as thickness or warmth; stronger upper harmonics can read as edge or bite.
 
 This one is interactive too. **Turn the Drive knob** to see how the harmonic balance shifts between gentle density and more obvious saturation.
 
@@ -131,10 +132,10 @@ The table shows the result in dB of gain compensation. "Compensation" is the cur
     </tr>
   </thead>
   <tbody>
-    <tr><td>3 dB</td><td>-0.7 dB</td><td>-1.1 dB</td><td>-1.3 dB</td><td>-1.5 dB</td></tr>
-    <tr><td>6 dB</td><td>-2.2 dB</td><td>-2.4 dB</td><td>-3.5 dB</td><td>-3.3 dB</td></tr>
-    <tr><td>12 dB</td><td>-5.8 dB</td><td>-5.5 dB</td><td>-7.9 dB</td><td>-7.8 dB</td></tr>
-    <tr><td>18 dB</td><td>-9.2 dB</td><td>-9.6 dB</td><td>-11.6 dB</td><td>-11.7 dB</td></tr>
+    <tr><td>3 dB</td><td>-0.8 dB</td><td>-1.3 dB</td><td>-1.5 dB</td><td>-1.7 dB</td></tr>
+    <tr><td>6 dB</td><td>-2.4 dB</td><td>-2.5 dB</td><td>-3.7 dB</td><td>-3.5 dB</td></tr>
+    <tr><td>12 dB</td><td>-6.2 dB</td><td>-5.8 dB</td><td>-7.9 dB</td><td>-7.8 dB</td></tr>
+    <tr><td>18 dB</td><td>-9.7 dB</td><td>-10.1 dB</td><td>-11.4 dB</td><td>-11.5 dB</td></tr>
   </tbody>
 </table>
 

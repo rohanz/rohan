@@ -2947,12 +2947,12 @@ function initBqstDspLab(container) {
         if (drive01 <= 0) return sample;
         const push = drive01 * drive01;
         const maxPush = push * drive01;
-        const asymmetry = drive01 * (0.012 + drive01 * 0.048 + push * 0.028);
-        const oddWeight = drive01 * (0.040 + drive01 * 0.135 + push * 0.105 + maxPush * 0.165);
-        const softKnee = 0.82 + drive01 * 0.38 + push * 0.36 + maxPush * 0.50;
+        const asymmetry = drive01 * (0.016 + drive01 * 0.045 + push * 0.040);
+        const oddWeight = drive01 * (0.032 + drive01 * 0.095 + push * 0.115 + maxPush * 0.135);
+        const softKnee = 0.80 + drive01 * 0.42 + push * 0.36 + maxPush * 0.60;
         const driven = sample * softKnee + oddWeight * sample * sample * sample + asymmetry;
-        const shaped = (Math.tanh(driven) - Math.tanh(asymmetry)) * (1 + 0.09 * drive01 + 0.10 * maxPush);
-        const blend = drive01 * 0.38 + push * 0.13 + maxPush * 0.12;
+        const shaped = (Math.tanh(driven) - Math.tanh(asymmetry)) * (1 + 0.07 * drive01 + 0.13 * maxPush);
+        const blend = drive01 * 0.39 + push * 0.16 + maxPush * 0.15;
         return sample * (1 - blend) + shaped * blend;
     }
 
