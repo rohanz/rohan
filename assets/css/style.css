@@ -1714,7 +1714,6 @@ body {
     border: 1px solid var(--border-subtle);
     border-radius: 8px;
     overflow: hidden;
-    contain: paint;
     background:
         linear-gradient(180deg,
             color-mix(in srgb, var(--accent) 8%, transparent),
@@ -1743,10 +1742,9 @@ body {
     pointer-events: none;
     transform: translate3d(-100%, 0, 0);
     background: linear-gradient(90deg,
-        color-mix(in srgb, var(--accent) 26%, transparent) 0%,
-        color-mix(in srgb, var(--accent) 8%, transparent) calc(100% - 3px),
-        var(--accent) 100%);
-    box-shadow: 0 0 6px 0 color-mix(in srgb, var(--accent) 45%, transparent);
+        color-mix(in srgb, var(--accent) 26%, transparent),
+        color-mix(in srgb, var(--accent) 8%, transparent));
+    border-right: 2px solid var(--accent);
     will-change: transform;
     backface-visibility: hidden;
 }
