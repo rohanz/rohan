@@ -2244,14 +2244,20 @@ function initBqstAudioDemo(container) {
         if (isUnlocked) return Promise.resolve();
         if (unlockPromise) return unlockPromise;
         unlockAttempted = true;
-        // iOS Safari only grants tab-wide audio output after an HTMLMediaElement
-        // actually plays samples through to completion in a user gesture. Wait
-        // for the primer's `ended` event (with a timeout fallback) before
-        // considering the unlock complete and starting real audio.
+        // iOS Safari grants tab audio output while an HTMLMediaElement is
+        // actively playing samples. We play a one-shot silent primer, wait for
+        // its `ended` event (confirms iOS unlocked), then restart it as a
+        // continuous silent loop so iOS keeps the audio output open while the
+        // AudioBufferSource path is playing.
         unlockPromise = new Promise((resolve) => {
             const done = () => {
                 if (isUnlocked) return;
                 isUnlocked = true;
+                try {
+                    silentPrimer.loop = true;
+                    silentPrimer.currentTime = 0;
+                    silentPrimer.play().catch(() => {});
+                } catch (e) {}
                 resolve();
             };
             try {
@@ -2261,7 +2267,6 @@ function initBqstAudioDemo(container) {
                 }
                 silentPrimer.addEventListener('ended', done, { once: true });
                 silentPrimer.play().catch(() => setTimeout(done, 60));
-                // Fallback: resolve after 250ms even if `ended` never fires.
                 setTimeout(done, 250);
             } catch (e) {
                 done();
