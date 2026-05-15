@@ -2210,8 +2210,9 @@ function initBqstAudioDemo(container) {
     let isUnlocked = false;
     let unlockPromise = null;
     let silentPrimer = null;
+    let silentLoop = null;
 
-    function buildSilentWavUrl(seconds = 0.1) {
+    function buildSilentWavUrl(seconds = 5) {
         const sampleRate = 22050;
         const samples = Math.floor(sampleRate * seconds);
         const dataSize = samples * 2;
@@ -2245,18 +2246,20 @@ function initBqstAudioDemo(container) {
         if (unlockPromise) return unlockPromise;
         unlockAttempted = true;
         // iOS Safari grants tab audio output while an HTMLMediaElement is
-        // actively playing samples. We play a one-shot silent primer, wait for
-        // its `ended` event (confirms iOS unlocked), then restart it as a
-        // continuous silent loop so iOS keeps the audio output open while the
-        // AudioBufferSource path is playing.
+        // actively playing samples. Two-stage approach:
+        //   1. Play a 100ms primer to confirm iOS unlock via `ended`.
+        //   2. Switch to a long-duration keepalive loop so iOS keeps audio
+        //      output open without main-thread hiccups from frequent looping.
         unlockPromise = new Promise((resolve) => {
             const done = () => {
                 if (isUnlocked) return;
                 isUnlocked = true;
                 try {
-                    silentPrimer.loop = true;
-                    silentPrimer.currentTime = 0;
-                    silentPrimer.play().catch(() => {});
+                    if (!silentLoop) {
+                        silentLoop = new Audio(buildSilentWavUrl(5));
+                        silentLoop.loop = true;
+                    }
+                    silentLoop.play().catch(() => {});
                 } catch (e) {}
                 resolve();
             };
