@@ -1940,7 +1940,7 @@ body {
     display: inline-block;
     padding: 0.7rem 1.8rem;
     background: #FFCC80;
-    color: #1a1a2e !important;
+    color: #1a1a2e;
     font-family: 'Chillax', 'Inter', sans-serif;
     font-size: 1rem;
     font-weight: 600;
@@ -1954,22 +1954,37 @@ body {
 
 [data-theme="light"] .detail-body a.try-it-btn {
     background: #8D6E63;
-    color: #FFF8E1 !important;
+    color: #FFF8E1;
+}
+
+.detail-body a.try-it-btn:link,
+.detail-body a.try-it-btn:visited {
+    color: #1a1a2e;
+}
+
+[data-theme="light"] .detail-body a.try-it-btn:link,
+[data-theme="light"] .detail-body a.try-it-btn:visited {
+    color: #FFF8E1;
 }
 
 @media (hover: hover) {
     .detail-body a.try-it-btn:hover {
         background: #FFD99F;
-        color: #0f0f23 !important;
+        color: #0f0f23;
         text-decoration-color: transparent;
         transform: translateY(-1px);
     }
 
     [data-theme="light"] .detail-body a.try-it-btn:hover {
         background: #6D4C41;
-        color: #FFF8E1 !important;
+        color: #FFF8E1;
         text-decoration-color: transparent;
     }
+}
+
+.detail-body a.try-it-btn:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 3px;
 }
 
 .detail-tags {
