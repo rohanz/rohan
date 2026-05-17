@@ -203,3 +203,7 @@ Designing BQST became a bigger lesson about software in general. A product can b
 **Taste is part of engineering.** The final plugin isn't better only because the algorithms improved. It's better because the interface became clearer, more trustworthy, and more intentional. The useful product was somewhere between analog-inspired familiarity and digital workflow improvements.
 
 **Production readiness is a system problem.** The plugin wasn't "done" when it made sound. It needed automation names, undo behavior, presets, AU/VST3 validation, signing, install paths, latency handling, and DAW testing. I validated the VST3 with `pluginval` at strictness level 10, checked the AU/VST3 builds in Ableton, and tested state recall, automation, bypass behavior, sample-rate changes, buffer-size changes, fixed UI sizes, and offline render settings.
+
+<p>
+  <a href="/downloads/bqst/BQST-1.0.0-macOS.pkg" class="try-it-btn" download>download bqst for macOS</a>
+</p>
