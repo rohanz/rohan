@@ -1959,11 +1959,13 @@ body {
 
 .detail-body a.try-it-btn:link,
 .detail-body a.try-it-btn:visited {
+    background: #FFCC80;
     color: #1a1a2e;
 }
 
 [data-theme="light"] .detail-body a.try-it-btn:link,
 [data-theme="light"] .detail-body a.try-it-btn:visited {
+    background: #8D6E63;
     color: #FFF8E1;
 }
 
