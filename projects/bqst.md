@@ -11,6 +11,10 @@ technologies:
   - Product Design
 ---
 
+<p>
+  <a href="/downloads/bqst/BQST-1.0.0-macOS.pkg" class="try-it-btn" download>download bqst for macOS</a>
+</p>
+
 ## why i built it
 
 BQST is a working <span class="gloss-term" data-gloss="JUCE is a C++ framework for building audio plugins and audio apps. It handles a lot of the host/plugin plumbing, UI framework, parameters, and cross-platform build structure.">JUCE</span> <span class="gloss-term" data-gloss="VST3 and AU are plugin formats used by DAWs. Standalone means the same processor can also run as its own app, outside a DAW.">VST3/AU/Standalone</span> audio plugin with a custom GUI, <span class="gloss-term" data-gloss="Automatable parameters can be recorded, drawn, or controlled by the DAW over time, so plugin controls can move during playback or export.">automatable parameters</span>, presets, <span class="gloss-term" data-gloss="Processing audio at a higher temporary sample rate, then filtering it back down, which helps reduce harsh digital artifacts from nonlinear effects.">oversampling</span>, <span class="gloss-term" data-gloss="pluginval is a validation tool for audio plugins. It stress-tests plugin loading, parameters, state saving, automation, editor behavior, and audio processing stability.">pluginval</span> validation, and a release build installed into Ableton. It sits right at the intersection of practically all the things I'm into: programming, music production, audio engineering, <span class="gloss-term" data-gloss="Digital signal processing: using code and math to shape audio, images, sensors, or any signal that changes over time.">DSP</span>, and product design.
@@ -22,10 +26,6 @@ I've also always wanted to dip my toes into DSP. Not by watching plugin-developm
 ## what is it?
 
 That's how bqst came about, short for **<span class="gloss-term" data-gloss="Peter Baxandall was a British audio engineer known for the Baxandall tone-control circuit, a classic bass/treble EQ design that became common in hi-fi and studio gear.">Baxandall</span> EQ and Saturation**. The idea was simple: a broad tone-shaping equalizer feeding a tasteful harmonic generator.
-
-<p>
-  <a href="/downloads/bqst/BQST-1.0.0-macOS.pkg" class="try-it-btn" download>download bqst for macOS</a>
-</p>
 
 <img src="assets/images/projects/bqst/final-ui.png" alt="Final BQST plugin interface" class="bqst-article-image">
 
