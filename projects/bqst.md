@@ -23,15 +23,15 @@ I've also always wanted to dip my toes into DSP. Not by watching plugin-developm
 
 That's how bqst came about, short for **<span class="gloss-term" data-gloss="Peter Baxandall was a British audio engineer known for the Baxandall tone-control circuit, a classic bass/treble EQ design that became common in hi-fi and studio gear.">Baxandall</span> EQ and Saturation**. The idea was simple: a broad tone-shaping equalizer feeding a tasteful harmonic generator.
 
+<p>
+  <a href="/downloads/bqst/BQST-1.0.0-macOS.pkg" class="try-it-btn" download>download bqst for macOS</a>
+</p>
+
 <img src="assets/images/projects/bqst/final-ui.png" alt="Final BQST plugin interface" class="bqst-article-image">
 
 An equalizer, or an EQ, boosts or cuts parts of the frequency spectrum of a signal. In music, that means adding an airy sheen to a vocal, reducing the harshness of a cymbal, or giving a kick drum more sub bass weight. The EQ module is the left half.
 
 A harmonic generator is a little less straightforward. When you drive analog gear like <span class="gloss-term" data-gloss="Magnetic recording machines that store audio on tape. Pushed tape often sounds compressed, rounded, and slightly softened in the top end.">tape machines</span>, <span class="gloss-term" data-gloss="Vacuum tubes are old-school amplifying components. In audio, they are often associated with smooth compression, warmth, and even-harmonic richness.">tubes</span>, <span class="gloss-term" data-gloss="Operational amplifiers are small amplifier circuits used all over audio electronics. When pushed, they can add thickness, density, or a sharper transistor-like edge depending on the design.">op-amps</span>, or <span class="gloss-term" data-gloss="An electrical transformer passes signal between coils of wire. In audio gear, pushing one can add gentle compression, low-mid weight, and odd-harmonic edge.">transformers</span>, they don't just make the signal louder; they add new frequencies related to the original sound. Those added frequencies are called <span class="gloss-term" data-gloss="Harmonics are frequencies related to a source tone by whole-number multiples. For example, a 1 kHz tone has harmonics at 2 kHz, 3 kHz, 4 kHz, and so on.">harmonics</span>. In the right amount, they can make audio feel thicker, warmer, brighter, or more expensive. Too much of it just becomes distortion. BQST's saturation stage is my attempt at toeing that line, creating two algorithms that make signals sound full and dense, or a little aggressive and edgy. The saturation module is the right half.
-
-<p>
-  <a href="/downloads/bqst/BQST-1.0.0-macOS.pkg" class="try-it-btn" download>download bqst for macOS</a>
-</p>
 
 The signed and notarized macOS installer includes VST3 and Audio Unit formats. The source code is available at <a href="https://github.com/rohanz/bqst" target="_blank" rel="noopener noreferrer">github.com/rohanz/bqst</a>.
 
