@@ -29,7 +29,11 @@ An equalizer, or an EQ, boosts or cuts parts of the frequency spectrum of a sign
 
 A harmonic generator is a little less straightforward. When you drive analog gear like <span class="gloss-term" data-gloss="Magnetic recording machines that store audio on tape. Pushed tape often sounds compressed, rounded, and slightly softened in the top end.">tape machines</span>, <span class="gloss-term" data-gloss="Vacuum tubes are old-school amplifying components. In audio, they are often associated with smooth compression, warmth, and even-harmonic richness.">tubes</span>, <span class="gloss-term" data-gloss="Operational amplifiers are small amplifier circuits used all over audio electronics. When pushed, they can add thickness, density, or a sharper transistor-like edge depending on the design.">op-amps</span>, or <span class="gloss-term" data-gloss="An electrical transformer passes signal between coils of wire. In audio gear, pushing one can add gentle compression, low-mid weight, and odd-harmonic edge.">transformers</span>, they don't just make the signal louder; they add new frequencies related to the original sound. Those added frequencies are called <span class="gloss-term" data-gloss="Harmonics are frequencies related to a source tone by whole-number multiples. For example, a 1 kHz tone has harmonics at 2 kHz, 3 kHz, 4 kHz, and so on.">harmonics</span>. In the right amount, they can make audio feel thicker, warmer, brighter, or more expensive. Too much of it just becomes distortion. BQST's saturation stage is my attempt at toeing that line, creating two algorithms that make signals sound full and dense, or a little aggressive and edgy. The saturation module is the right half.
 
-The source code is available at <a href="https://github.com/rohanz/bqst" target="_blank" rel="noopener noreferrer">github.com/rohanz/bqst</a>.
+<p>
+  <a href="/downloads/bqst/BQST-1.0.0-macOS.pkg" class="try-it-btn" download>download bqst for macOS</a>
+</p>
+
+The signed and notarized macOS installer includes VST3 and Audio Unit formats. The source code is available at <a href="https://github.com/rohanz/bqst" target="_blank" rel="noopener noreferrer">github.com/rohanz/bqst</a>.
 
 Before getting into the sound design, there was one engineering constraint that shaped the whole project: this had to run safely inside a DAW.
 
