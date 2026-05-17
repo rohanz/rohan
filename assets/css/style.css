@@ -1936,24 +1936,39 @@ body {
 }
 
 /* Try-it button in articles */
-.detail-body .try-it-btn {
+.detail-body a.try-it-btn {
     display: inline-block;
     padding: 0.7rem 1.8rem;
-    background: var(--accent);
-    color: var(--bg-primary);
+    background: #FFCC80;
+    color: #1a1a2e !important;
     font-family: 'Chillax', 'Inter', sans-serif;
     font-size: 1rem;
     font-weight: 600;
     text-decoration: none;
+    text-decoration-color: transparent;
     border-radius: 4px;
     letter-spacing: 0.02em;
-    transition: opacity 0.2s ease, transform 0.2s ease;
+    transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+    overflow-wrap: normal;
+}
+
+[data-theme="light"] .detail-body a.try-it-btn {
+    background: #8D6E63;
+    color: #FFF8E1 !important;
 }
 
 @media (hover: hover) {
-    .detail-body .try-it-btn:hover {
-        opacity: 0.85;
+    .detail-body a.try-it-btn:hover {
+        background: #FFD99F;
+        color: #0f0f23 !important;
+        text-decoration-color: transparent;
         transform: translateY(-1px);
+    }
+
+    [data-theme="light"] .detail-body a.try-it-btn:hover {
+        background: #6D4C41;
+        color: #FFF8E1 !important;
+        text-decoration-color: transparent;
     }
 }
 
