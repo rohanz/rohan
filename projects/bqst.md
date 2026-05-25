@@ -13,7 +13,7 @@ technologies:
 
 <p class="bqst-download-actions">
   <a href="/downloads/bqst/BQST-1.0.0-macOS-universal.pkg" class="try-it-btn" download>download bqst for macOS</a>
-  <a href="https://paypal.me/rohanjkxyz/" class="support-btn" target="_blank" rel="noopener noreferrer">buy me a coffee</a>
+  <a href="https://ko-fi.com/rohanjk" class="support-btn" target="_blank" rel="noopener noreferrer">buy me a coffee</a>
 </p>
 
 ## why i built it
@@ -36,7 +36,7 @@ A harmonic generator is a little less straightforward. When you drive analog gea
 
 The signed and notarized universal macOS installer supports Apple Silicon and Intel Macs and includes VST3 and Audio Unit formats. The source code is available at <a href="https://github.com/rohanz/bqst" target="_blank" rel="noopener noreferrer">github.com/rohanz/bqst</a>.
 
-BQST is free to download. If it's useful to you and you want to support future development, you can <a href="https://paypal.me/rohanjkxyz/" target="_blank" rel="noopener noreferrer">buy me a coffee</a>.
+BQST is free to download. If it's useful to you and you want to support future development, you can <a href="https://ko-fi.com/rohanjk" target="_blank" rel="noopener noreferrer">buy me a coffee</a>.
 
 Before getting into the sound design, there was one engineering constraint that shaped the whole project: this had to run safely inside a DAW.
 
@@ -209,5 +209,5 @@ Designing BQST became a bigger lesson about software in general. A product can b
 
 <p class="bqst-download-actions">
   <a href="/downloads/bqst/BQST-1.0.0-macOS-universal.pkg" class="try-it-btn" download>download bqst for macOS</a>
-  <a href="https://paypal.me/rohanjkxyz/" class="support-btn" target="_blank" rel="noopener noreferrer">buy me a coffee</a>
+  <a href="https://ko-fi.com/rohanjk" class="support-btn" target="_blank" rel="noopener noreferrer">buy me a coffee</a>
 </p>
