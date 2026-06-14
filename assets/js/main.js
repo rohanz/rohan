@@ -32,7 +32,17 @@ function updateTitle(section, projectTitle) {
     } else if (sectionTitles[section]) {
         document.title = sectionTitles[section];
     } else {
-        document.title = 'rohan.jk';
+        document.title = 'rohan.jk — music & development';
+    }
+}
+
+// Announce route changes to assistive tech and move keyboard focus into the new view.
+function announceRoute(label, focusEl) {
+    const announcer = document.getElementById('routeAnnouncer');
+    if (announcer) announcer.textContent = label ? `${label} — page loaded` : '';
+    if (focusEl) {
+        if (!focusEl.hasAttribute('tabindex')) focusEl.setAttribute('tabindex', '-1');
+        focusEl.focus({ preventScroll: true });
     }
 }
 
@@ -159,7 +169,7 @@ const musicData = [
         title: "LOOSE ENDS",
         artist: "rohan.jk and kairi",
         summary: "hyperpop/pop rock song with heavy guitars and energetic production",
-        coverUrl: "assets/images/looseends.png",
+        coverUrl: "assets/images/looseends.webp",
         spotifyUrl: "https://open.spotify.com/track/7xy7dlw4npEZ88uxVkFCJa?si=4d997b7d891b4214",
         youtubeUrl: "https://www.youtube.com/watch?v=EJ1uM3mIk7Y",
         appleMusicUrl: "https://music.apple.com/us/song/loose-ends/1874970496",
@@ -169,7 +179,7 @@ const musicData = [
         title: "DON'T WANT ME",
         artist: "rohan.jk and kairi",
         summary: "rnb/house song with a smooth groove, and infectious rhythm",
-        coverUrl: "assets/images/dontwantme.jpg",
+        coverUrl: "assets/images/dontwantme.webp",
         spotifyUrl: "https://open.spotify.com/track/0zYAFsKdFfbGfnMvRrEDgM?si=d8c21fc716e146d0",
         youtubeUrl: "https://www.youtube.com/watch?v=UDpBfwxMZvI",
         appleMusicUrl: "https://music.apple.com/us/song/dont-want-me/1832074479",
@@ -179,21 +189,21 @@ const musicData = [
         title: "call me back",
         artist: "rohan.jk and kairi",
         summary: "feng kai and i tried writing a fun indie pop song with groovy bass and an upbeat tempo",
-        coverUrl: "assets/images/callmeback.jpg",
+        coverUrl: "assets/images/callmeback.webp",
         spotifyUrl: "https://open.spotify.com/track/3m1PQRxlKQh1tzxFP1C0ZY?si=642929c16c284e61",
         youtubeUrl: "https://www.youtube.com/watch?v=iXYprE6T5ec",
         appleMusicUrl: "https://music.apple.com/sg/album/call-me-back/1756849369?i=1756849370",
-        audioSnippetUrl: "assets/audio/snippets/callmeback.wav",
+        audioSnippetUrl: "assets/audio/snippets/callmeback.mp3",
     },
     {
         title: "where have u been?",
         artist: "rohan.jk, tristan and hannah",
         summary: "chill rnb/pop song with a smooth feel",
-        coverUrl: "assets/images/wherehaveubeen.png",
+        coverUrl: "assets/images/wherehaveubeen.webp",
         spotifyUrl: "https://open.spotify.com/track/0CqWJMqXpq2CqtyCfPWigj?si=0ad5ddf4f7c449ee",
         youtubeUrl: "https://www.youtube.com/watch?v=XUDQDO6qpQA",
         appleMusicUrl: "https://music.apple.com/sg/album/where-have-u-been-feat-trxstan-hannah-single/1727956658",
-        audioSnippetUrl: "assets/audio/snippets/wherehaveubeen.wav",
+        audioSnippetUrl: "assets/audio/snippets/wherehaveubeen.mp3",
     }
 ];
 
@@ -352,6 +362,7 @@ function triggerHomepageAnimation() {
     const shadow = document.querySelector('.homepage-name-shadow');
     const menu = document.querySelector('.homepage-menu');
     const logo = document.querySelector('.homepage-logo');
+    if (!name || !shadow || !menu || !logo) return;
 
     resetHomepageElements(name, shadow, menu, logo);
 
@@ -388,6 +399,8 @@ function triggerHomepageAnimation() {
 // ASCII DOT GRID (background)
 // ============================================================
 let asciiRAF = null;
+let asciiGlobeBound = false;
+let asciiMouseX = -1000, asciiMouseY = -1000;
 
 function initAsciiGlobe() {
     if (prefersReducedMotion.matches) return;
@@ -403,24 +416,28 @@ function initAsciiGlobe() {
     const maxSize = isMobile ? 3 : 5;
     const influenceRadius = isMobile ? 120 : 220;
 
-    let gridMouseX = -1000, gridMouseY = -1000;
-
     function resize() {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
     }
     resize();
-    let asciiResizeTimer;
-    window.addEventListener('resize', () => {
-        clearTimeout(asciiResizeTimer);
-        asciiResizeTimer = setTimeout(resize, 150);
-    });
 
-    document.addEventListener('mousemove', e => {
-        const rect = canvas.getBoundingClientRect();
-        gridMouseX = e.clientX - rect.left;
-        gridMouseY = e.clientY - rect.top;
-    });
+    // Bind window/document listeners exactly once. initAsciiGlobe is re-invoked on every
+    // theme toggle and homepage return; without this guard each call leaked a resize +
+    // mousemove listener (and the running draw loop already picks up new theme colors).
+    if (!asciiGlobeBound) {
+        asciiGlobeBound = true;
+        let asciiResizeTimer;
+        window.addEventListener('resize', () => {
+            clearTimeout(asciiResizeTimer);
+            asciiResizeTimer = setTimeout(resize, 150);
+        });
+        document.addEventListener('mousemove', e => {
+            const rect = canvas.getBoundingClientRect();
+            asciiMouseX = e.clientX - rect.left;
+            asciiMouseY = e.clientY - rect.top;
+        });
+    }
 
     function getGridColor() {
         const isLight = isLightTheme();
@@ -441,8 +458,8 @@ function initAsciiGlobe() {
                 const x = offsetX + col * spacing;
                 const y = offsetY + row * spacing;
 
-                const dx = x - gridMouseX;
-                const dy = y - gridMouseY;
+                const dx = x - asciiMouseX;
+                const dy = y - asciiMouseY;
                 const dist = Math.sqrt(dx * dx + dy * dy);
 
                 const t = Math.max(0, 1 - dist / influenceRadius);
@@ -459,6 +476,8 @@ function initAsciiGlobe() {
         }
     }
 
+    // Guarantee a single running loop even if init is called again (theme toggle / re-home).
+    if (asciiRAF) cancelAnimationFrame(asciiRAF);
     draw();
 }
 
@@ -474,7 +493,12 @@ function stopAsciiGlobe() {
 // ============================================================
 // MUSIC SECTION - WAVEFORM PLAYER
 // ============================================================
+let musicSectionRendered = false;
 function initializeMusicSection() {
+    // Render once — musicData is static. Re-rendering on every visit would re-register
+    // per-player resize/theme listeners on window that are never removed (leak).
+    if (musicSectionRendered) return;
+    musicSectionRendered = true;
     displayMusic(musicData);
 }
 
@@ -501,11 +525,11 @@ function displayMusic(tracks) {
         itemEl.innerHTML = `
             <div class="music-content">
                 <div class="music-header">
-                    ${track.coverUrl ? `<img src="${track.coverUrl}" alt="${track.title} cover" class="music-cover img-fade" onload="this.classList.add('loaded')">` : ''}
+                    ${track.coverUrl ? `<img src="${track.coverUrl}" alt="${DOMPurify.sanitize(track.title)} cover" class="music-cover img-fade" onload="this.classList.add('loaded')">` : ''}
                     <div class="music-header-text">
-                        <h3 class="music-title" aria-live="polite" aria-atomic="true">${track.title}</h3>
-                        ${track.artist ? `<p class="music-artist">${track.artist}</p>` : ''}
-                        ${track.summary ? `<p class="music-summary">${track.summary}</p>` : ''}
+                        <h3 class="music-title">${DOMPurify.sanitize(track.title)}</h3>
+                        ${track.artist ? `<p class="music-artist">${DOMPurify.sanitize(track.artist)}</p>` : ''}
+                        ${track.summary ? `<p class="music-summary">${DOMPurify.sanitize(track.summary)}</p>` : ''}
                     </div>
                 </div>
                 ${track.audioSnippetUrl ? `
@@ -988,10 +1012,19 @@ function loadProjects() {
     if (projectsLoaded) return;
     projectsLoaded = true;
     fetch('/projects/index.json')
-        .then(res => res.json())
-        .then(files => Promise.all(files.map(f => fetch(`/projects/${f}`).then(r => r.text()).then(text => ({ text, file: f })))))
+        .then(res => {
+            if (!res.ok) throw new Error(`index.json HTTP ${res.status}`);
+            return res.json();
+        })
+        // Load each project independently — a single missing file is skipped, not fatal.
+        .then(files => Promise.all(files.map(f =>
+            fetch(`/projects/${f}`)
+                .then(r => (r.ok ? r.text() : null))
+                .then(text => (text == null ? null : { text, file: f }))
+                .catch(() => null)
+        )))
         .then(results => {
-            const projects = results.map(({ text, file }) => {
+            const projects = results.filter(Boolean).map(({ text, file }) => {
                 const { data, content } = parseFrontMatter(text);
                 return {
                     title: data.title || '',
@@ -1003,13 +1036,15 @@ function loadProjects() {
                     headers: extractHeaders(content),
                 };
             });
-            displayProjects(projects);
-            notifyProjectsLoaded();
+            if (projects.length) displayProjects(projects);
+            else showErrorMessage();
         })
         .catch(err => {
             console.error('Error loading projects:', err);
             showErrorMessage();
-        });
+        })
+        // Always flush waiters so a deep-link to /projects/<slug> never hangs on failure.
+        .finally(notifyProjectsLoaded);
 }
 
 // ============================================================
@@ -1052,7 +1087,7 @@ function displayProjects(projects) {
         const tagsHTML = techs.map(t => `<span class="project-card-tag">${DOMPurify.sanitize(t)}</span>`).join('');
 
         cardsHTML += `
-            <div class="project-card" data-index="${i}" data-techs="${DOMPurify.sanitize(techs.join(','))}" style="animation-delay: ${i * 0.05}s">
+            <a class="project-card" href="/projects/${encodeURIComponent(project.slug)}" data-index="${i}" data-techs="${DOMPurify.sanitize(techs.join(','))}" style="animation-delay: ${i * 0.05}s">
                 <div class="project-card-image-wrap">
                     <img src="${imgUrl}" alt="${DOMPurify.sanitize(project.title)}" class="project-card-image img-fade" loading="lazy" onload="this.classList.add('loaded')">
                 </div>
@@ -1061,7 +1096,7 @@ function displayProjects(projects) {
                     ${project.summary ? `<p class="project-card-summary">${DOMPurify.sanitize(project.summary)}</p>` : ''}
                     <div class="project-card-tags">${tagsHTML}</div>
                 </div>
-            </div>`;
+            </a>`;
     });
     grid.innerHTML = cardsHTML;
 
@@ -1112,6 +1147,8 @@ function initCardClickHandlers() {
     grid.addEventListener('click', e => {
         const card = e.target.closest('.project-card');
         if (!card) return;
+        if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+        e.preventDefault();
         const index = parseInt(card.dataset.index, 10);
         showProjectDetail(index);
     });
@@ -1151,6 +1188,8 @@ function showProjectDetail(index, slideDirection) {
         <div class="detail-body">${DOMPurify.sanitize(strippedHTML, { ADD_ATTR: ['target'] })}</div>
         <div class="detail-tags">${tagsHTML}</div>
     `;
+
+    announceRoute(project.title, detailContent.querySelector('.detail-title'));
 
     const heroImg = detailContent.querySelector('.detail-hero-image');
     if (heroImg) heroImg.addEventListener('error', function () { this.style.display = 'none'; });
@@ -1385,6 +1424,7 @@ function showProjectGrid(instant) {
     function finishShowGrid() {
         detailView.classList.remove('detail-active');
         gridView.style.display = '';
+        gridView.classList.remove('grid-fade-in'); // clear any prior entrance animation
         gridView.scrollTop = gridScrollTop;
         currentDetailIndex = -1;
     }
@@ -1404,6 +1444,9 @@ function showProjectGrid(instant) {
         if (contentCol) contentCol.classList.remove('slide-fade-out');
         if (headerCol) headerCol.classList.remove('slide-fade-out');
         finishShowGrid();
+        // Fade the grid back in so it doesn't pop after the detail fades out.
+        void gridView.offsetWidth; // reflow so the animation restarts each time
+        gridView.classList.add('grid-fade-in');
     }, 300);
 }
 
@@ -1559,7 +1602,7 @@ function displayTestimonials(testimonials) {
         for (let c = 0; c < copies; c++) {
             for (const t of testimonials) {
                 const author = t.title ? `— ${t.author}, ${t.title}` : `— ${t.author}`;
-                html += `<div class="scroll-testimonial"><div class="scroll-quote">"${t.quote}"</div><div class="scroll-author">${author}</div></div>`;
+                html += `<div class="scroll-testimonial"><div class="scroll-quote">"${DOMPurify.sanitize(t.quote)}"</div><div class="scroll-author">${DOMPurify.sanitize(author)}</div></div>`;
             }
         }
     }
@@ -1631,7 +1674,10 @@ function goToHomepage() {
             [name, shadow, menu, logo].forEach(el => el.style.transition = '');
         }, 50);
 
-        document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+        document.querySelectorAll('.nav-link').forEach(l => {
+            l.classList.remove('active');
+            l.removeAttribute('aria-current');
+        });
         document.querySelectorAll('.section').forEach(s => {
             if (s !== activeSection) s.classList.remove('active', 'fade-out');
         });
@@ -1690,8 +1736,13 @@ function showSection(sectionName, onComplete) {
 
         setTimeout(updateMobileNavHeight, 50);
 
-        document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-        document.querySelector(`[data-section="${sectionName}"]`)?.classList.add('active');
+        document.querySelectorAll('.nav-link').forEach(l => {
+            l.classList.remove('active');
+            l.removeAttribute('aria-current');
+        });
+        document.querySelectorAll(`[data-section="${sectionName}"]`).forEach(l => l.classList.add('active'));
+        const activeNavLink = document.querySelector(`.nav-link[data-section="${sectionName}"]`);
+        if (activeNavLink) activeNavLink.setAttribute('aria-current', 'page');
 
         if (mc) mc.scrollTop = 0;
         window.scrollTo(0, 0);
@@ -1711,6 +1762,7 @@ function showSection(sectionName, onComplete) {
             onComplete();
         } else {
             resetProjectsView();
+            announceRoute(sectionTitles[sectionName] ? sectionName : '', section);
         }
         updateFloatingContactVisibility();
 
@@ -1932,12 +1984,18 @@ function initDemoPlayer(container) {
     // Decode audio into raw buffers — no AudioContext.destination needed, bypasses autoplay
     let audioBuffer = null, demoAnimId = null, vuSmoothed = -40;
     let playbackStart = 0;
+    let disposed = false;
     const CHUNK = 1024; // samples per frame
+
+    // Reuse the shared AudioContext for decoding — creating a fresh one per open leaks
+    // contexts (browsers cap ~6) and eventually breaks the demo.
+    const decodeCtx = audioContext || new (window.AudioContext || window.webkitAudioContext)();
 
     fetch('assets/audio/snippets/dontwantme.mp3')
         .then(r => r.arrayBuffer())
-        .then(buf => new (window.AudioContext || window.webkitAudioContext)().decodeAudioData(buf))
+        .then(buf => decodeCtx.decodeAudioData(buf))
         .then(decoded => {
+            if (disposed) return;
             audioBuffer = decoded;
             playbackStart = performance.now();
             demoAnimId = requestAnimationFrame(drawLive);
@@ -1945,6 +2003,7 @@ function initDemoPlayer(container) {
         .catch(() => {});
 
     function drawLive() {
+        if (disposed) return;
         demoAnimId = requestAnimationFrame(drawLive);
         if (!audioBuffer) return;
 
@@ -2028,9 +2087,9 @@ function initDemoPlayer(container) {
         demoResizeTimer = setTimeout(() => { waveCtx = sizeWave(); }, 150);
     }
     window.addEventListener('resize', onResize);
-    window.addEventListener('theme-changed', () => {});
 
     demoCleanup = () => {
+        disposed = true;
         if (demoAnimId) cancelAnimationFrame(demoAnimId);
         window.removeEventListener('resize', onResize);
         demoAnimId = null;
@@ -2673,7 +2732,7 @@ function initBqstAudioDemo(container) {
                     title: 'BQST A/B demo',
                     artist: 'rohan.jk',
                     album: 'projects',
-                    artwork: [{ src: 'assets/images/projects/bqst/banner.png', sizes: '512x512', type: 'image/png' }]
+                    artwork: [{ src: 'assets/images/projects/bqst/banner.webp', sizes: '512x512', type: 'image/webp' }]
                 });
                 navigator.mediaSession.setActionHandler('play', () => { if (!isPlaying) start(); });
                 navigator.mediaSession.setActionHandler('pause', () => { if (isPlaying) pause(); });
@@ -3470,17 +3529,24 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error('Web Audio API not supported:', e);
     }
 
-    // Navigation
+    // Navigation — links are real anchors (keyboard-operable); intercept for SPA routing.
+    // Allow modifier/middle clicks to open the real URL in a new tab.
     document.querySelectorAll('.homepage-menu-item, .nav-link').forEach(item => {
-        item.addEventListener('click', function () {
+        item.addEventListener('click', function (e) {
             const section = this.getAttribute('data-section');
             if (!section) return;
+            if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+            e.preventDefault();
             showSection(section);
         });
     });
 
     const logoLink = document.querySelector('.logo-link');
-    if (logoLink) logoLink.addEventListener('click', goToHomepage);
+    if (logoLink) logoLink.addEventListener('click', e => {
+        if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+        e.preventDefault();
+        goToHomepage();
+    });
 
     initThemeToggle();
     initGlossaryInteractions();

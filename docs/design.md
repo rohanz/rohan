@@ -62,10 +62,22 @@ CTA buttons should work in both themes:
 
 ## Assets
 
-- Project images live under `assets/images/projects/<project>/`.
-- Project audio lives under `assets/audio/<project>/`.
+- Project images live under `assets/images/projects/<project>/` and are **WebP** (`cwebp -q 82`, oversized sources downscaled before export). Reference the `.webp` path; do not keep the original PNG/JPG alongside it.
+- Icons (`favicon.png`, `apple-touch-icon.png`, `icon-192/512.png`) and the social card (`assets/images/og.png`, 1200×630) stay PNG for compatibility.
+- Project audio lives under `assets/audio/<project>/`. Music snippets are MP3; the BQST A/B demo stays WAV so the fidelity comparison is lossless.
 - Public downloads live under `downloads/`.
 - Keep filenames lowercase and descriptive where practical.
+
+## Accessibility
+
+Treat these as part of the design system, not an afterthought:
+
+- Interactive controls are real `<a>`/`<button>` elements — never click-only `<div>`/`<span>`. The primary nav, logo, and project cards are anchors with real `href`s (SPA intercepts the click).
+- Every focusable element shows a visible `:focus-visible` ring (accent outline). Don't set `outline: none` without a replacement.
+- Icon-only controls carry an `aria-label`; purely decorative icons are `aria-hidden`.
+- Route changes announce via the `#routeAnnouncer` live region and move focus into the new view; the active nav item gets `aria-current="page"`.
+- All animation respects `prefers-reduced-motion`.
+- Maintain readable contrast in both themes (the palette above is tuned for this — don't drop body text below the listed values).
 
 ## Validation Checklist
 
@@ -73,7 +85,9 @@ Before publishing design/content changes:
 
 - Check dark and light themes.
 - Check mobile and desktop widths.
+- Check keyboard navigation (Tab through nav/cards/controls) and that focus is always visible.
 - Verify project links and download links.
 - Confirm article CTAs are readable on hover.
+- Confirm new images are WebP and referenced correctly.
 - Confirm no private/generated folders are staged.
 

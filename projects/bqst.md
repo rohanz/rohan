@@ -1,7 +1,7 @@
 ---
 title: bqst
 summary: "An audio mastering plugin built in C++/JUCE, combining custom DSP, saturation design, oversampling, preset management, DAW validation, and a polished hardware-inspired interface."
-image: assets/images/projects/bqst/banner.png
+image: assets/images/projects/bqst/banner.webp
 technologies:
   - C++
   - JUCE
@@ -28,7 +28,7 @@ I've also always wanted to dip my toes into DSP. Not by watching plugin-developm
 
 That's how bqst came about, short for **<span class="gloss-term" data-gloss="Peter Baxandall was a British audio engineer known for the Baxandall tone-control circuit, a classic bass/treble EQ design that became common in hi-fi and studio gear.">Baxandall</span> EQ and Saturation**. The idea was simple: a broad tone-shaping equalizer feeding a tasteful harmonic generator.
 
-<img src="assets/images/projects/bqst/final-ui.png" alt="Final BQST plugin interface" class="bqst-article-image">
+<img src="assets/images/projects/bqst/final-ui.webp" alt="Final BQST plugin interface" class="bqst-article-image">
 
 An equalizer, or an EQ, boosts or cuts parts of the frequency spectrum of a signal. In music, that means adding an airy sheen to a vocal, reducing the harshness of a cymbal, or giving a kick drum more sub bass weight. The EQ module is the left half.
 
@@ -168,7 +168,7 @@ Finally, let's actually listen to it. The demo below shows the same drum loop: o
 
 The first working version of BQST already had the core idea: EQ, saturation, oversampling controls, meters, and left/right processing. But it looked like a prototype. A lot of the final work wasn't adding more DSP; it was making the thing feel like a real audio tool.
 
-<img src="assets/images/projects/bqst/prototype-ui.png" alt="Early BQST prototype interface" class="bqst-article-image">
+<img src="assets/images/projects/bqst/prototype-ui.webp" alt="Early BQST prototype interface" class="bqst-article-image">
 
 It worked, but visually, it left a lot to be desired.
 
@@ -176,15 +176,15 @@ I started designing all the assets myself. I wanted the plugin to borrow from th
 
 <div class="bqst-asset-strip">
   <div class="bqst-asset-card">
-    <img src="assets/images/projects/bqst/asset-knob-large.png" alt="Large BQST cream gain knob">
+    <img src="assets/images/projects/bqst/asset-knob-large.webp" alt="Large BQST cream gain knob">
     <span>large gain knob</span>
   </div>
   <div class="bqst-asset-card">
-    <img src="assets/images/projects/bqst/asset-knob-small.png" alt="Small BQST cream selector knob">
+    <img src="assets/images/projects/bqst/asset-knob-small.webp" alt="Small BQST cream selector knob">
     <span>selector knob</span>
   </div>
   <div class="bqst-asset-card">
-    <img src="assets/images/projects/bqst/asset-vu-meter.png" alt="BQST VU meter frame asset">
+    <img src="assets/images/projects/bqst/asset-vu-meter.webp" alt="BQST VU meter frame asset">
     <span>vu meter</span>
   </div>
 </div>

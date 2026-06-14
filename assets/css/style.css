@@ -94,6 +94,42 @@
     top: 0;
 }
 
+/* Screen-reader-only utility (visually hidden, still announced) */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* Global keyboard focus indicator */
+a:focus-visible,
+button:focus-visible,
+[tabindex]:focus-visible,
+.nav-link:focus-visible,
+.homepage-menu-item:focus-visible,
+.project-card:focus-visible,
+.filter-tag:focus-visible,
+.detail-nav-link:focus-visible,
+.music-link:focus-visible,
+.contact-link:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+    border-radius: 4px;
+}
+
+/* Focused section target should not show a focus ring (focus moved programmatically) */
+.section:focus,
+.section:focus-visible,
+.main-content:focus {
+    outline: none;
+}
+
 /* Reduced motion: disable all animations for users who prefer it */
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
@@ -211,6 +247,7 @@ body {
 
 .logo-link {
     color: var(--text-primary);
+    text-decoration: none;
     transition: color 0.3s ease;
     cursor: pointer;
 }
@@ -234,6 +271,7 @@ body {
     display: block;
     padding: 2rem;
     color: var(--text-primary);
+    text-decoration: none;
     font-family: 'Chillax', 'Inter', sans-serif;
     font-weight: 700;
     font-size: 2rem;
@@ -416,6 +454,7 @@ body {
     font-size: 2.5rem;
     font-weight: 600;
     color: var(--text-secondary);
+    text-decoration: none;
     padding: 1.8rem 3.5rem;
     border-radius: 30px;
     transition: color 0.3s ease, transform 0.3s ease;
@@ -930,11 +969,14 @@ body {
 
 /* Project card */
 .project-card {
+    display: block;
     background: var(--bg-card);
     border: 1px solid var(--border-subtle);
     border-radius: 12px;
     overflow: hidden;
     cursor: pointer;
+    color: inherit;
+    text-decoration: none;
     transition: transform 0.3s ease,
                 border-color 0.3s ease;
     text-transform: none;
@@ -1821,7 +1863,9 @@ body {
 }
 
 .bqst-knob-stage:focus-visible {
-    outline: none;
+    outline: 2px solid var(--accent);
+    outline-offset: 4px;
+    border-radius: 50%;
 }
 
 .bqst-knob-ticks {
@@ -1866,7 +1910,7 @@ body {
     width: 114px;
     height: 114px;
     border-radius: 999px;
-    background: url('../images/projects/bqst/knob-large-cream.png') center / 128% no-repeat;
+    background: url('../images/projects/bqst/knob-large-cream.webp') center / 128% no-repeat;
     position: relative;
     transform: rotate(var(--bqst-knob-angle));
     transform-origin: center;
@@ -2098,6 +2142,11 @@ body {
 .detail-header-column.slide-fade-out,
 .detail-content-column.slide-fade-out {
     animation: detailFadeOut 0.3s ease forwards;
+}
+
+/* Grid fades back in when returning from a detail view (mirrors the detail fade-out) */
+.projects-grid-view.grid-fade-in {
+    animation: detailFadeIn 0.35s ease forwards;
 }
 
 @keyframes detailFadeIn {

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://www.rohanjk.xyz/</loc><changefreq>monthly</changefreq><priority>1.0</priority></url>
+  <url><loc>https://www.rohanjk.xyz/music</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://www.rohanjk.xyz/projects</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://www.rohanjk.xyz/about</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://www.rohanjk.xyz/projects/bqst</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://www.rohanjk.xyz/projects/yourcast</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://www.rohanjk.xyz/projects/patentease</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://www.rohanjk.xyz/projects/datacenter-atlas</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://www.rohanjk.xyz/projects/tesla-feed</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://www.rohanjk.xyz/projects/this-website</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+</urlset>

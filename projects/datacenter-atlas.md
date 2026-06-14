@@ -1,7 +1,7 @@
 ---
 title: Data Center Atlas
 summary: An automated pipeline that discovers, extracts, and consolidates 11,000+ data center facilities worldwide using AI agents, vision-based PDF extraction, and geospatial deduplication.
-image: assets/images/projects/datacenter/banner.png
+image: assets/images/projects/datacenter/banner.webp
 technologies:
   - Python
   - AI Agents
@@ -22,13 +22,13 @@ The pipeline runs in three stages, each targeting a different source category.
 
 The first stage pulls structured records from Wikidata (via SPARQL), OpenStreetMap (via the Overpass API), and PeeringDB (via its REST API). PeeringDB enforces strict rate limits, so requests are batched with randomized jitter between them to stay within their acceptable usage policy.
 
-![Stage 1: public source extraction](assets/images/projects/datacenter/screenshot-sources.png)
+![Stage 1: public source extraction](assets/images/projects/datacenter/screenshot-sources.webp)
 
 ### RSS Feeds
 
 Next, six industry news feeds are polled for articles mentioning data center construction, expansions, or acquisitions. Relevant articles are scraped asynchronously (15 concurrent workers with per-host connection limits) and sent to Gemini for structured extraction - pulling out facility names, locations, capacities, and status.
 
-![Stage 2: RSS feed processing](assets/images/projects/datacenter/screenshot-news.png)
+![Stage 2: RSS feed processing](assets/images/projects/datacenter/screenshot-news.webp)
 
 ### The AI Agent
 
@@ -41,7 +41,7 @@ The most technically interesting piece. A LangGraph state machine autonomously l
 
 The screenshot below shows the agent evaluating candidates and selecting the Americas report with a confidence score of 1.00:
 
-![Stage 3: AI agent discovering Cushman & Wakefield reports](assets/images/projects/datacenter/screenshot-agent.png)
+![Stage 3: AI agent discovering Cushman & Wakefield reports](assets/images/projects/datacenter/screenshot-agent.webp)
 
 ### Vision-Based PDF Extraction
 
@@ -65,13 +65,13 @@ With data coming from 6+ sources, overlap is inevitable. The merge pipeline uses
 
 After all three stages complete, the pipeline standardizes status values and reports the final database statistics:
 
-![Pipeline complete: 10,578 facilities across four status categories](assets/images/projects/datacenter/screenshot-complete.png)
+![Pipeline complete: 10,578 facilities across four status categories](assets/images/projects/datacenter/screenshot-complete.webp)
 
 ## Architecture
 
 The high-level flow follows the diagram below - public sources, news feeds, and Cushman & Wakefield reports are processed in sequence, then deduplicated and stored in SQLite.
 
-![Pipeline architecture](assets/images/projects/datacenter/architecture.png)
+![Pipeline architecture](assets/images/projects/datacenter/architecture.webp)
 
 Under the hood, the codebase follows a clean ETL separation: `scrape/` (acquisition), `extract/` (parsing + AI), `transform/` (merge + dedup), `load/` (persistence to SQLite via SQLAlchemy). All tunable parameters - concurrency limits, DPI, AI prompts, keyword filters, feed URLs - live in a single `config.yaml`.
 

@@ -10,15 +10,19 @@ This repo is the static portfolio site for `rohanjk.xyz`.
 
 ## Site Structure
 
-- `index.html`: shell for the single-page site.
+- `index.html`: shell for the single-page site. Holds `<head>` SEO/OG/Twitter meta, the CSP + referrer-policy meta, preconnects, and SRI-pinned CDN tags.
 - `assets/css/style.css`: global styling, theme variables, article components, and responsive rules.
 - `assets/js/main.js`: routing, markdown loading, project rendering, interactive visualizations, audio demos, and theme behavior.
 - `projects/*.md`: project articles. Each file starts with YAML frontmatter.
 - `projects/index.json`: ordered list of project markdown files shown by the site.
-- `assets/images/projects/...`: project images.
+- `assets/images/projects/...`: project images (WebP — see Assets below).
 - `assets/audio/...`: audio demos and snippets.
 - `downloads/...`: public downloadable files such as installers.
 - `docs/resume.pdf`: resume download target.
+- `robots.txt`, `sitemap.xml`: crawler directives + route list. Add new project routes to `sitemap.xml` when adding a project.
+- `site.webmanifest`, `apple-touch-icon.png`, `icon-192.png`, `icon-512.png`, `favicon.png`: PWA/icon set.
+- `assets/images/og.png`: 1200×630 social share image referenced by the OG/Twitter meta tags.
+- `404.html` + `projects/index.html`: GitHub Pages SPA redirect stubs (store path in `sessionStorage`, bounce to `/`).
 
 ## Project Articles
 
@@ -28,16 +32,35 @@ Project articles are markdown files with frontmatter:
 ---
 title: project title
 summary: One sentence summary.
-image: assets/images/projects/example/banner.png
+image: assets/images/projects/example/banner.webp
 technologies:
   - JavaScript
   - Design
 ---
 ```
 
-Use relative asset paths from the site root, for example `assets/images/projects/bqst/final-ui.png`.
+Use relative asset paths from the site root, for example `assets/images/projects/bqst/final-ui.webp`.
 
-Use normal markdown for body copy. Inline HTML is supported and used for custom components, glossary terms, tables, and CTAs.
+Use normal markdown for body copy. Inline HTML is supported and used for custom components, glossary terms, tables, and CTAs. All title/summary/tag/markdown content is sanitized through DOMPurify before injection — keep new dynamic sinks sanitized too.
+
+## Assets
+
+- Project/site raster images are **WebP** (`cwebp -q 82`, oversized sources downscaled). Icons (`favicon.png`, `apple-touch-icon.png`, `icon-*.png`) and the social card (`og.png`) stay PNG for compatibility.
+- When adding an image, convert it to `.webp` and reference the `.webp` path. Don't commit the original PNG/JPG alongside it.
+- Music snippets are MP3; the BQST A/B demo keeps WAV (`assets/audio/bqst/`) so the fidelity comparison is lossless.
+- Keep filenames lowercase and descriptive.
+
+## Accessibility (don't regress)
+
+- Primary nav, the logo, and project cards are real `<a>`/`<button>` elements — keep interactive controls keyboard-operable, never click-only `<div>`/`<span>`.
+- Icon-only links need an `aria-label`; decorative `<i>`/SVG get `aria-hidden="true"`.
+- Route changes update `#routeAnnouncer` (aria-live) and move focus into the new view via `announceRoute()`; the active nav link gets `aria-current="page"`.
+- Honor `prefers-reduced-motion` (already gated in CSS and JS); keep a visible `:focus-visible` ring.
+
+## Third-party Scripts
+
+CDN libraries (`js-yaml`, `marked`, `dompurify`, Font Awesome) are version-pinned with Subresource Integrity (`integrity=` + `crossorigin`). If you bump a version, regenerate the SRI hash:
+`curl -fsSL <url> | openssl dgst -sha384 -binary | openssl base64 -A`
 
 ## CTAs And Downloads
 
@@ -68,13 +91,11 @@ Run a static server from the repo root:
 python3 -m http.server 8080
 ```
 
-Then open:
+Then open `http://127.0.0.1:8080/`.
 
-```text
-http://127.0.0.1:8080/
-```
+Note: plain `http.server` has no SPA fallback, so in-app navigation works but **directly loading or refreshing a route** (e.g. `/music`, `/projects/bqst`) 404s locally. In production GitHub Pages handles this via `404.html`. To mirror production locally (deep-links + refresh), serve with a fallback handler that returns `index.html` for extensionless paths.
 
-For project article changes, check both dark and light themes, desktop and mobile widths, and any affected links/downloads.
+For project article changes, check both dark and light themes, desktop and mobile widths, keyboard navigation + visible focus, and any affected links/downloads.
 
 ## Ignore Private Or Generated Files
 
@@ -85,4 +106,5 @@ Do not commit local tooling or private content unless explicitly requested:
 - `firebase-debug.log`
 - `private-content/`
 - `.DS_Store`
+- `TODO.md` (kept local; not published)
 

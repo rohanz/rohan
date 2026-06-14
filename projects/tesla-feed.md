@@ -1,7 +1,7 @@
 ---
 title: Tesla Supercharger Tracker
 summary: A data pipeline that tracks the entire global Tesla Supercharger network, performing schema-driven field-level change detection to maintain a complete audit trail of infrastructure evolution.
-image: assets/images/projects/tesla/banner.png
+image: assets/images/projects/tesla/banner.webp
 technologies:
   - Python
   - SQL
@@ -41,7 +41,7 @@ The `normalize()` function handles the subtle cases that cause false-positive di
 
 Here's a sample of the changelog showing real mutations - stations opening, power upgrades, GPS coordinate corrections, and new cross-reference IDs being added:
 
-![Field-level change detection log showing station mutations](assets/images/projects/tesla/changelog.png)
+![Field-level change detection log showing station mutations](assets/images/projects/tesla/changelog.webp)
 
 ## Key Learnings
 
