@@ -32,7 +32,7 @@ function updateTitle(section, projectTitle) {
     } else if (sectionTitles[section]) {
         document.title = sectionTitles[section];
     } else {
-        document.title = 'rohan.jk — music & development';
+        document.title = 'rohan.jk — software & ai';
     }
 }
 

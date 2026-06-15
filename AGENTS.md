@@ -23,6 +23,9 @@ This repo is the static portfolio site for `rohanjk.xyz`.
 - `site.webmanifest`, `apple-touch-icon.png`, `icon-192.png`, `icon-512.png`, `favicon.png`: PWA/icon set.
 - `assets/images/og.png`: 1200×630 social share image referenced by the OG/Twitter meta tags.
 - `404.html` + `projects/index.html`: GitHub Pages SPA redirect stubs (store path in `sessionStorage`, bounce to `/`).
+- `projects/<slug>/index.html`: per-project social-preview stubs (generated — see Social Share Previews).
+- `assets/images/og/<slug>.png`: per-project 1200×630 share cards (generated).
+- `tools/generate_og.py`: generator for the two items above.
 
 ## Project Articles
 
@@ -56,6 +59,29 @@ Use normal markdown for body copy. Inline HTML is supported and used for custom 
 - Icon-only links need an `aria-label`; decorative `<i>`/SVG get `aria-hidden="true"`.
 - Route changes update `#routeAnnouncer` (aria-live) and move focus into the new view via `announceRoute()`; the active nav link gets `aria-current="page"`.
 - Honor `prefers-reduced-motion` (already gated in CSS and JS); keep a visible `:focus-visible` ring.
+
+## Social Share Previews
+
+The site is a client-rendered SPA, so social scrapers (Facebook, iMessage, Slack, LinkedIn, X) can't see JS-set per-route meta. `tools/generate_og.py` prerenders share assets from `projects/index.json` + each project's frontmatter:
+
+- `assets/images/og.png` — homepage share card.
+- `assets/images/og/<slug>.png` — per-project 1200×630 share cards.
+- `projects/<slug>/index.html` — stub with that project's baked `og:`/`twitter:`/canonical meta plus the same `spa-redirect` script `404.html` uses (humans bounce into the SPA; scrapers read the meta).
+
+**Generate (after editing the homepage tagline or any project's title/summary/banner):**
+
+```sh
+uv run --with pillow,pyyaml python tools/generate_og.py
+```
+
+Then commit the updated `assets/images/og.png`, `assets/images/og/*`, and `projects/*/index.html`.
+
+How it works / gotchas:
+- **Fonts are vendored in `tools/fonts/`** and used only at generate time (the live site loads Chillax/Inter from CDN; the committed PNGs have no runtime font dependency). Mapping mirrors the site: **title → Chillax-Bold** (700, like `.detail-title`/`.homepage-name`), **summary → Inter-Medium** (500, like `.detail-summary`), **tags → Inter-SemiBold**. To change a card font, swap the TTF in `tools/fonts/` and update the constant in the script.
+- Titles render **as-is from frontmatter** — preserving the lowercase voice with proper-noun exceptions (`bqst`/`yourcast!` stay lowercase; `PatentEase`/`Data Center Atlas` keep their caps). Don't force-lowercase.
+- The homepage card's emblem is rasterized from `assets/images/logo.svg` via macOS **`qlmanage`** (so the generator is macOS-only).
+- Long titles auto-shrink to fit; summaries wrap to 3 lines with an ellipsis.
+- Scope: only `/projects/*` get per-project cards/stubs. `/`, `/music`, `/about` use the homepage card.
 
 ## Third-party Scripts
 
