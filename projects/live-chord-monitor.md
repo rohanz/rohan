@@ -11,6 +11,11 @@ technologies:
   - Music Theory
 ---
 
+<p class="download-actions">
+  <a href="https://github.com/rohanz/live-chord-monitor/releases/download/v0.1.0/Live-Chord-Monitor-0.1.0-universal.dmg" class="try-it-btn">download for macOS</a>
+  <a href="https://ko-fi.com/rohanjk" class="support-btn" target="_blank" rel="noopener noreferrer">buy me a coffee</a>
+</p>
+
 ## why i built it
 
 Alongside making music, I teach music theory and production lessons online. A lot of that happens at the keyboard: I play a voicing and explain why it works. But a screen-share doesn't show what my hands are doing, and stopping to name every chord out loud breaks the flow of a lesson.
@@ -92,6 +97,8 @@ Because it is an <span class="gloss-term" data-gloss="Electron packages a web ap
 
 Distribution is the stage where a lot of side projects stop. This one ships as a signed and <span class="gloss-term" data-gloss="Apple's process of scanning and approving a Mac app so Gatekeeper will run it without scary warnings. Stapling attaches the approval ticket to the app so it works offline.">notarized</span> universal binary: a single download that runs natively on Apple Silicon and Intel Macs, built with a hardened runtime, notarized and stapled by Apple, with every signing credential kept in the macOS keychain and out of the repo. Getting `spctl` to report "Notarized Developer ID" and `stapler` to pass is a real piece of engineering on its own, with nothing to do with music.
 
+Live Chord Monitor is free to download. If it's useful to you and you'd like to support future work, you can <a href="https://ko-fi.com/rohanjk" target="_blank" rel="noopener noreferrer">buy me a coffee</a>.
+
 Underneath all of it sits a suite of about 50 tests. The chord engine is the most heavily covered: triads, sevenths, extensions, every naming and inversion mode, the fifth-omission cases, the ambiguous voicings, and spelling edge cases like `C7`→Bb and `Cdim7`→B𝄫. Plain functions with no UI are easy to test, which is part of why the chord logic lives completely apart from React.
 
 ## what stuck with me
@@ -103,3 +110,8 @@ Underneath all of it sits a suite of about 50 tests. The chord engine is the mos
 **Correctness belongs in pure functions.** All the chord theory is plain functions with no React, no audio, no DOM, which is exactly why I could nail down dozens of edge cases in fast unit tests and rework the scoring without worrying about breaking something. The messy, mockable parts (MIDI, audio, rendering) stay at the edges. I let the question "what do I want to be able to test?" shape the architecture.
 
 **A desktop app has a security surface a web page doesn't.** Wrapping web code in Electron gives it a path to the operating system, so "finished" had to include sandboxing the renderer, serving the UI over a locked-down scheme, enforcing a CSP, and handing the renderer only the MIDI permission. None of it shows up in a screenshot, but once people install software instead of visiting a page, that surface is yours to defend.
+
+<p class="download-actions">
+  <a href="https://github.com/rohanz/live-chord-monitor/releases/download/v0.1.0/Live-Chord-Monitor-0.1.0-universal.dmg" class="try-it-btn">download for macOS</a>
+  <a href="https://ko-fi.com/rohanjk" class="support-btn" target="_blank" rel="noopener noreferrer">buy me a coffee</a>
+</p>

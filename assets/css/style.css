@@ -2033,7 +2033,8 @@ body {
     outline-offset: 3px;
 }
 
-.detail-body .bqst-download-actions {
+.detail-body .bqst-download-actions,
+.detail-body .download-actions {
     display: flex;
     flex-wrap: wrap;
     align-items: center;

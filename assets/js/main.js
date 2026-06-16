@@ -3716,7 +3716,7 @@ function initLcmDemo(container) {
                 <div class="lcm-alts"></div>
             </div>
             <div class="lcm-piano" role="group" aria-label="Playable piano"></div>
-            <p class="lcm-hint">Play with your computer keyboard — the letters are printed on the keys. Hold a few at once to build a chord (or use multi-touch on the keys).</p>
+            <p class="lcm-hint">Play with your computer keyboard - the letters are printed on the keys. Hold a few at once to build a chord (or use multi-touch on the keys).</p>
         </div>`;
 
     const piano = placeholder.querySelector('.lcm-piano');
