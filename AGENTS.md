@@ -77,7 +77,7 @@ uv run --with pillow,pyyaml python tools/generate_og.py
 Then commit the updated `assets/images/og.png`, `assets/images/og/*`, and `projects/*/index.html`.
 
 How it works / gotchas:
-- **Fonts are vendored in `tools/fonts/`** and used only at generate time (the live site loads Chillax/Inter from CDN; the committed PNGs have no runtime font dependency). Mapping mirrors the site: **title → Chillax-Bold** (700, like `.detail-title`/`.homepage-name`), **summary → Inter-Medium** (500, like `.detail-summary`), **tags → Inter-SemiBold**. To change a card font, swap the TTF in `tools/fonts/` and update the constant in the script.
+- **Fonts are vendored in `tools/fonts/`** and used only at generate time (the live site loads Chillax/Inter from CDN; the committed PNGs have no runtime font dependency). Mapping mirrors the site: **title → Chillax-Bold** (700, like `.detail-title`/`.homepage-name`), **summary → Inter-Medium** (500, like `.detail-summary`), **tags → Inter-SemiBold**. To change a card font, swap the TTF in `tools/fonts/` and update the constant in the script. Each vendored font ships with its upstream license (`Inter-LICENSE.txt` = OFL, `Chillax-LICENSE.txt` = Fontshare FFL); keep the license alongside any font you add.
 - Titles render **as-is from frontmatter** — preserving the lowercase voice with proper-noun exceptions (`bqst`/`yourcast!` stay lowercase; `PatentEase`/`Data Center Atlas` keep their caps). Don't force-lowercase.
 - The homepage card's emblem is rasterized from `assets/images/logo.svg` via macOS **`qlmanage`** (so the generator is macOS-only).
 - Long titles auto-shrink to fit; summaries wrap to 3 lines with an ellipsis.

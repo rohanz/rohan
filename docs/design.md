@@ -51,6 +51,7 @@ Common article components:
 - CTA buttons: `<a class="try-it-btn" ...>label</a>`
 - BQST visualizations: `#bqst-eq-visual`, `#bqst-transfer-visual`, `#bqst-harmonics-visual`, `#bqst-oversampling-visual`
 - Audio demo: `#bqst-audio-demo`
+- Live chord-monitor demo: `#lcm-demo` (playable piano + chord readout, in live-chord-monitor)
 - Data table: `.bqst-data-table`
 - Asset strip: `.bqst-asset-strip`
 
