@@ -12,7 +12,7 @@ technologies:
 ---
 
 <p class="bqst-download-actions">
-  <a href="/downloads/bqst/BQST-1.0.0-macOS-universal.pkg" class="try-it-btn" download>download bqst for macOS</a>
+  <a href="/downloads/bqst/BQST-1.0.2-macOS-universal.pkg" class="try-it-btn" download>download bqst for macOS</a>
   <a href="https://ko-fi.com/rohanjk" class="support-btn" target="_blank" rel="noopener noreferrer">buy me a coffee</a>
 </p>
 
@@ -208,6 +208,6 @@ Designing BQST became a bigger lesson about software in general. A product can b
 **Production readiness is a system problem.** The plugin wasn't "done" when it made sound. It needed automation names, undo behavior, presets, AU/VST3 validation, signing, install paths, latency handling, and DAW testing. I validated the VST3 with `pluginval` at strictness level 10, checked the AU/VST3 builds in Ableton, and tested state recall, automation, bypass behavior, sample-rate changes, buffer-size changes, fixed UI sizes, and offline render settings.
 
 <p class="bqst-download-actions">
-  <a href="/downloads/bqst/BQST-1.0.0-macOS-universal.pkg" class="try-it-btn" download>download bqst for macOS</a>
+  <a href="/downloads/bqst/BQST-1.0.2-macOS-universal.pkg" class="try-it-btn" download>download bqst for macOS</a>
   <a href="https://ko-fi.com/rohanjk" class="support-btn" target="_blank" rel="noopener noreferrer">buy me a coffee</a>
 </p>
