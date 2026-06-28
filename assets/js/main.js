@@ -951,8 +951,8 @@ function initWaveformPlayer(playerEl) {
 
         const points = smoothLevels.map((value, index) => ({ x: xFor(index), y: yFor(value) }));
 
-        function traceCurve() {
-            freqCtx.moveTo(points[0].x, points[0].y);
+        function traceCurve(startWithMove = true) {
+            if (startWithMove) freqCtx.moveTo(points[0].x, points[0].y);
             for (let i = 0; i < points.length - 1; i++) {
                 const p0 = points[Math.max(0, i - 1)];
                 const p1 = points[i];
@@ -969,7 +969,7 @@ function initWaveformPlayer(playerEl) {
         freqCtx.beginPath();
         freqCtx.moveTo(0, baseline);
         freqCtx.lineTo(points[0].x, points[0].y);
-        traceCurve();
+        traceCurve(false);
         freqCtx.lineTo(freqW, baseline);
         freqCtx.closePath();
         freqCtx.fillStyle = getAccentRgba((isLight ? 0.12 + intensity * 0.16 : 0.14 + intensity * 0.2) * alpha);
