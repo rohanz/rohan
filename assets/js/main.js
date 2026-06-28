@@ -404,6 +404,100 @@ function initGlossaryInteractions() {
     window.addEventListener('resize', () => hideTooltip(), { passive: true });
 }
 
+function initArticleImageLightbox() {
+    if (document._articleImageLightboxInit) return;
+    document._articleImageLightboxInit = true;
+
+    const overlay = document.createElement('div');
+    overlay.className = 'image-lightbox';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.setAttribute('aria-hidden', 'true');
+    overlay.setAttribute('tabindex', '-1');
+    overlay.innerHTML = `
+        <img class="image-lightbox-img" alt="">
+        <div class="image-lightbox-hint">Press any key or click to collapse image</div>
+    `;
+    document.body.appendChild(overlay);
+
+    const expandedImg = overlay.querySelector('.image-lightbox-img');
+    let lastTrigger = null;
+
+    function closeLightbox() {
+        if (!overlay.classList.contains('is-visible')) return;
+        overlay.classList.remove('is-visible');
+        overlay.setAttribute('aria-hidden', 'true');
+        document.body.classList.remove('image-lightbox-open');
+        expandedImg.removeAttribute('src');
+        expandedImg.alt = '';
+        const trigger = lastTrigger;
+        lastTrigger = null;
+        if (trigger && document.contains(trigger)) trigger.focus({ preventScroll: true });
+    }
+
+    function openLightbox(img, trigger) {
+        const src = img.currentSrc || img.src;
+        if (!src) return;
+        lastTrigger = trigger || img;
+        expandedImg.src = src;
+        expandedImg.alt = img.alt || '';
+        overlay.classList.add('is-visible');
+        overlay.setAttribute('aria-hidden', 'false');
+        document.body.classList.add('image-lightbox-open');
+        overlay.focus({ preventScroll: true });
+    }
+    window.openArticleImageLightbox = openLightbox;
+
+    overlay.addEventListener('click', event => {
+        if (event.target === overlay || event.target === expandedImg) {
+            closeLightbox();
+        }
+    });
+
+    document.addEventListener('keydown', event => {
+        if (!overlay.classList.contains('is-visible')) return;
+        event.preventDefault();
+        closeLightbox();
+    });
+
+    document.addEventListener('click', event => {
+        const trigger = event.target.closest?.('.article-image-button');
+        if (!trigger) return;
+        const img = trigger.querySelector('img');
+        if (!img) return;
+        event.preventDefault();
+        openLightbox(img, trigger);
+    });
+}
+
+function prepareExpandableArticleImages(container) {
+    if (!container) return;
+    container.querySelectorAll('.detail-hero-image, .detail-body img').forEach(img => {
+        let trigger = img.closest('.article-image-button');
+        if (!trigger) {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'article-image-button';
+            button.setAttribute('aria-label', img.alt ? `Expand image: ${img.alt}` : 'Expand image');
+            img.parentNode.insertBefore(button, img);
+            button.appendChild(img);
+            trigger = button;
+        }
+        if (trigger.dataset.lightboxReady) return;
+        trigger.dataset.lightboxReady = 'true';
+        trigger.addEventListener('click', event => {
+            event.preventDefault();
+            event.stopPropagation();
+            if (window.openArticleImageLightbox) window.openArticleImageLightbox(img, trigger);
+        });
+        trigger.addEventListener('keydown', event => {
+            if (event.key !== 'Enter' && event.key !== ' ') return;
+            event.preventDefault();
+            if (window.openArticleImageLightbox) window.openArticleImageLightbox(img, trigger);
+        });
+    });
+}
+
 // ============================================================
 // HOMEPAGE ANIMATION
 // ============================================================
@@ -590,6 +684,10 @@ function displayMusic(tracks) {
                     <canvas class="waveform-canvas" height="56" aria-hidden="true"></canvas>
                     <div class="audio-meters">
                         <div class="meter-group">
+                            <canvas class="frequency-canvas" width="280" height="110"></canvas>
+                            <span class="meter-label">freq</span>
+                        </div>
+                        <div class="meter-group">
                             <canvas class="vectorscope-canvas" width="110" height="110"></canvas>
                             <span class="meter-label">stereo</span>
                         </div>
@@ -621,7 +719,8 @@ function ensureAudioGraph() {
     try {
         audioSource = audioContext.createMediaElementSource(audioPlayer);
         analyser = audioContext.createAnalyser();
-        analyser.fftSize = 2048;
+        analyser.fftSize = 4096;
+        analyser.smoothingTimeConstant = 0.78;
 
         // Stereo split for vectorscope + LUFS
         const splitter = audioContext.createChannelSplitter(2);
@@ -650,10 +749,17 @@ function initWaveformPlayer(playerEl) {
     if (!btn || !waveCanvas || !audioUrl) return;
 
     const waveCtx = waveCanvas.getContext('2d');
+    let isPlaying = false;
+    let animationId = null;
+    let vuReturnId = null;
+    let vecFadeId = null;
+    let waveFadeId = null;
+    let freqReturnId = null;
 
     function resizeWaveCanvas() {
         const rect = waveCanvas.getBoundingClientRect();
         sizeCanvas(waveCanvas, rect.width, rect.height);
+        if (!isPlaying) drawIdle();
     }
     resizeWaveCanvas();
     let waveResizeTimer;
@@ -665,6 +771,9 @@ function initWaveformPlayer(playerEl) {
     // Meter elements — scale for retina
     const vecCanvas = playerEl.querySelector('.vectorscope-canvas');
     const vecCtx = vecCanvas ? sizeCanvas(vecCanvas, 110, 110) : null;
+
+    const freqCanvas = playerEl.querySelector('.frequency-canvas');
+    const freqCtx = freqCanvas ? sizeCanvas(freqCanvas, 280, 110) : null;
 
     const vuCanvas = playerEl.querySelector('.vu-meter-canvas');
     const vuCtx = vuCanvas ? sizeCanvas(vuCanvas, 150, 100) : null;
@@ -682,6 +791,10 @@ function initWaveformPlayer(playerEl) {
 
     const vuW = 150, vuH = 100;
     const vecW = 110, vecH = 110;
+    const freqW = 280, freqH = 110;
+    const freqBands = 128;
+    const freqSmoothed = new Float32Array(freqBands);
+    const freqHighlights = new Float32Array(freqBands);
     const redThresholdDb = -10; // red zone starts at -10 dB
 
     // Non-linear dB-to-fraction mapping: piecewise to spread upper range
@@ -790,7 +903,7 @@ function initWaveformPlayer(playerEl) {
         if (!vecCtx) return;
         const w = vecW, h = vecH;
         vecCtx.clearRect(0, 0, w, h);
-        vecCtx.strokeStyle = getAccentRgba(0.08);
+        vecCtx.strokeStyle = getAccentRgba(isLightTheme() ? 0.18 : 0.1);
         vecCtx.lineWidth = 1;
         vecCtx.beginPath();
         vecCtx.moveTo(w / 2, 0); vecCtx.lineTo(w / 2, h);
@@ -801,12 +914,241 @@ function initWaveformPlayer(playerEl) {
         vecCtx.stroke();
     }
 
+    function drawFrequencyGrid() {
+        if (!freqCtx) return;
+        const isLight = isLightTheme();
+        freqCtx.strokeStyle = getAccentRgba(isLight ? 0.1 : 0.065);
+        freqCtx.lineWidth = 1;
+        for (let i = 1; i < 4; i++) {
+            const y = Math.round((freqH / 4) * i) + 0.5;
+            freqCtx.beginPath();
+            freqCtx.moveTo(0, y);
+            freqCtx.lineTo(freqW, y);
+            freqCtx.stroke();
+        }
+    }
+
+    function drawFrequencyCurve(levels, alpha = 1) {
+        if (!freqCtx) return;
+        const isLight = isLightTheme();
+        const baseline = freqH;
+        const topPad = 6;
+        const boostedLevels = levels.map(value => Math.min(1, value * 1.75));
+        const smoothLevels = boostedLevels.map((value, index) => {
+            const a = boostedLevels[Math.max(0, index - 2)];
+            const b = boostedLevels[Math.max(0, index - 1)];
+            const d = boostedLevels[Math.min(boostedLevels.length - 1, index + 1)];
+            const e = boostedLevels[Math.min(boostedLevels.length - 1, index + 2)];
+            return (a + b * 2 + value * 3 + d * 2 + e) / 9;
+        });
+        const peak = smoothLevels.reduce((max, value) => Math.max(max, value), 0);
+        const intensity = Math.min(1, peak * 1.25);
+        const xFor = i => (i / (smoothLevels.length - 1)) * freqW;
+        const yFor = value => baseline - Math.max(0, Math.min(1, value)) * (freqH - topPad);
+
+        freqCtx.clearRect(0, 0, freqW, freqH);
+        drawFrequencyGrid();
+
+        const points = smoothLevels.map((value, index) => ({ x: xFor(index), y: yFor(value) }));
+        const curvePath = new Path2D();
+        curvePath.moveTo(points[0].x, points[0].y);
+        const fillPath = new Path2D();
+        fillPath.moveTo(0, baseline);
+        fillPath.lineTo(points[0].x, points[0].y);
+        for (let i = 0; i < points.length - 1; i++) {
+            const p0 = points[Math.max(0, i - 1)];
+            const p1 = points[i];
+            const p2 = points[i + 1];
+            const p3 = points[Math.min(points.length - 1, i + 2)];
+            const cp1x = p1.x + (p2.x - p0.x) / 6;
+            const cp1y = p1.y + (p2.y - p0.y) / 6;
+            const cp2x = p2.x - (p3.x - p1.x) / 6;
+            const cp2y = p2.y - (p3.y - p1.y) / 6;
+            curvePath.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, p2.x, p2.y);
+            fillPath.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, p2.x, p2.y);
+        }
+
+        fillPath.lineTo(freqW, baseline);
+        fillPath.closePath();
+
+        const strokeGradient = freqCtx.createLinearGradient(0, 0, freqW, 0);
+        for (let i = 0; i < smoothLevels.length; i++) {
+            const local = Math.min(1, Math.pow(smoothLevels[i], 0.82) * 1.2);
+            const stop = i / Math.max(1, smoothLevels.length - 1);
+            const strokeAlpha = (isLight ? 0.42 + local * 0.38 : 0.5 + local * 0.42) * alpha;
+            strokeGradient.addColorStop(stop, getAccentRgba(strokeAlpha));
+        }
+
+        freqCtx.fillStyle = getAccentRgba((isLight ? 0.08 + intensity * 0.12 : 0.1 + intensity * 0.16) * alpha);
+        freqCtx.fill(fillPath);
+
+        freqCtx.save();
+        freqCtx.clip(fillPath);
+        const peaks = [];
+        for (let i = 2; i < smoothLevels.length - 2; i++) {
+            const current = smoothLevels[i];
+            const shoulder = Math.max(smoothLevels[i - 2], smoothLevels[i - 1], smoothLevels[i + 1], smoothLevels[i + 2]);
+            if (current < 0.055 || current < shoulder * 1.02) continue;
+            peaks.push({ index: i, value: current });
+        }
+        const selectedPeaks = [];
+        peaks.sort((a, b) => b.value - a.value).forEach(peakPoint => {
+            if (selectedPeaks.length >= 5) return;
+            if (selectedPeaks.some(existing => Math.abs(existing.index - peakPoint.index) < 12)) return;
+            selectedPeaks.push(peakPoint);
+        });
+
+        const targetHighlights = new Float32Array(freqBands);
+        selectedPeaks.forEach(({ index, value }) => {
+            targetHighlights[index] = Math.min(1, Math.pow(value, 0.72) * 1.45);
+        });
+        for (let i = 0; i < freqHighlights.length; i++) {
+            const target = targetHighlights[i] || 0;
+            const speed = target > freqHighlights[i] ? 0.2 : 0.075;
+            freqHighlights[i] += (target - freqHighlights[i]) * speed;
+        }
+
+        for (let index = 0; index < freqHighlights.length; index++) {
+            const local = freqHighlights[index];
+            if (local < 0.025) continue;
+            const x = xFor(index);
+            const halfWidth = 8 + local * 10;
+            const glow = freqCtx.createLinearGradient(x - halfWidth, 0, x + halfWidth, 0);
+            const peakAlpha = (isLight ? 0.08 + local * 0.2 : 0.1 + local * 0.28) * alpha;
+            glow.addColorStop(0, getAccentRgba(0));
+            glow.addColorStop(0.5, getAccentRgba(peakAlpha));
+            glow.addColorStop(1, getAccentRgba(0));
+            freqCtx.fillStyle = glow;
+            freqCtx.fillRect(x - halfWidth, 0, halfWidth * 2, baseline);
+        }
+        freqCtx.restore();
+
+        freqCtx.strokeStyle = strokeGradient;
+        freqCtx.lineWidth = 1.7 + intensity * 0.35;
+        freqCtx.lineCap = 'round';
+        freqCtx.lineJoin = 'round';
+        freqCtx.stroke(curvePath);
+    }
+
+    function drawFreqIdle() {
+        if (!freqCtx) return;
+        freqCtx.clearRect(0, 0, freqW, freqH);
+        drawFrequencyGrid();
+        freqSmoothed.fill(0);
+        freqHighlights.fill(0);
+    }
+
+    function fadeVecToIdle() {
+        if (!vecCtx || !vecCanvas) return;
+        if (vecFadeId) { cancelAnimationFrame(vecFadeId); vecFadeId = null; }
+        if (prefersReducedMotion.matches) {
+            drawVecIdle();
+            return;
+        }
+
+        const snapshot = document.createElement('canvas');
+        snapshot.width = vecCanvas.width;
+        snapshot.height = vecCanvas.height;
+        snapshot.getContext('2d').drawImage(vecCanvas, 0, 0);
+
+        const duration = 520;
+        let startedAt = null;
+        function fadeFrame(ts) {
+            if (!startedAt) startedAt = ts;
+            const elapsed = ts - startedAt;
+            const t = Math.min(elapsed / duration, 1);
+            const eased = 1 - Math.pow(1 - t, 3);
+
+            drawVecIdle();
+            vecCtx.save();
+            vecCtx.globalAlpha = 1 - eased;
+            vecCtx.drawImage(snapshot, 0, 0, vecW, vecH);
+            vecCtx.restore();
+
+            if (t >= 1) {
+                vecFadeId = null;
+                drawVecIdle();
+                return;
+            }
+            vecFadeId = requestAnimationFrame(fadeFrame);
+        }
+        vecFadeId = requestAnimationFrame(fadeFrame);
+    }
+
+    function fadeWaveToIdle() {
+        if (waveFadeId) { cancelAnimationFrame(waveFadeId); waveFadeId = null; }
+        if (prefersReducedMotion.matches) {
+            drawIdle();
+            return;
+        }
+
+        const rect = waveCanvas.getBoundingClientRect();
+        const w = rect.width, h = rect.height;
+        const snapshot = document.createElement('canvas');
+        snapshot.width = waveCanvas.width;
+        snapshot.height = waveCanvas.height;
+        snapshot.getContext('2d').drawImage(waveCanvas, 0, 0);
+
+        const duration = 420;
+        let startedAt = null;
+        function fadeFrame(ts) {
+            if (!startedAt) startedAt = ts;
+            const elapsed = ts - startedAt;
+            const t = Math.min(elapsed / duration, 1);
+            const eased = 1 - Math.pow(1 - t, 3);
+
+            drawIdle();
+            waveCtx.save();
+            waveCtx.globalAlpha = 1 - eased;
+            waveCtx.drawImage(snapshot, 0, 0, w, h);
+            waveCtx.restore();
+
+            if (t >= 1) {
+                waveFadeId = null;
+                drawIdle();
+                return;
+            }
+            waveFadeId = requestAnimationFrame(fadeFrame);
+        }
+        waveFadeId = requestAnimationFrame(fadeFrame);
+    }
+
+    function fadeFreqToIdle() {
+        if (!freqCtx) return;
+        if (freqReturnId) { cancelAnimationFrame(freqReturnId); freqReturnId = null; }
+        if (prefersReducedMotion.matches) {
+            drawFreqIdle();
+            return;
+        }
+
+        const startLevels = Array.from(freqSmoothed);
+        const duration = 560;
+        let startedAt = null;
+        function fadeFrame(ts) {
+            if (!startedAt) startedAt = ts;
+            const elapsed = ts - startedAt;
+            const t = Math.min(elapsed / duration, 1);
+            const eased = 1 - Math.pow(1 - t, 3);
+            const remaining = 1 - eased;
+            const levels = startLevels.map(level => level * remaining);
+            drawFrequencyCurve(levels, Math.max(0.1, remaining));
+
+            if (t >= 1) {
+                freqReturnId = null;
+                drawFreqIdle();
+                return;
+            }
+            freqReturnId = requestAnimationFrame(fadeFrame);
+        }
+        freqReturnId = requestAnimationFrame(fadeFrame);
+    }
+
     function drawMetersIdle() {
         drawVuIdle();
         drawVecIdle();
+        drawFreqIdle();
     }
     drawMetersIdle();
-    window.addEventListener('theme-changed', drawMetersIdle);
 
     function drawMetersLive() {
         if (!analyserL || !analyserR) return;
@@ -841,8 +1183,7 @@ function initWaveformPlayer(playerEl) {
             const radius = Math.min(w, h) / 2 - 4;
 
             const isLight = isLightTheme();
-            vecCtx.fillStyle = isLight ? 'rgba(255,248,225,0.3)' : 'rgba(26,26,46,0.3)';
-            vecCtx.fillRect(0, 0, w, h);
+            vecCtx.clearRect(0, 0, w, h);
 
             vecCtx.strokeStyle = getAccentRgba(0.08);
             vecCtx.lineWidth = 1;
@@ -855,7 +1196,7 @@ function initWaveformPlayer(playerEl) {
             vecCtx.stroke();
 
             // Particles: brown in light mode, amber in dark mode
-            vecCtx.fillStyle = isLight ? 'rgba(141,110,99,0.7)' : 'rgba(255,204,128,0.7)';
+            vecCtx.fillStyle = isLight ? 'rgba(141,110,99,0.58)' : 'rgba(255,204,128,0.58)';
             const step = Math.max(1, Math.floor(bufLen / 256));
             for (let i = 0; i < bufLen; i += step) {
                 const mid = (dataL[i] + dataR[i]) * 0.5;
@@ -865,11 +1206,33 @@ function initWaveformPlayer(playerEl) {
                 vecCtx.fillRect(px, py, 1.5, 1.5);
             }
         }
-    }
 
-    let isPlaying = false;
-    let animationId = null;
-    let vuReturnId = null;
+        // --- Frequency analyzer ---
+        if (freqCtx && analyser) {
+            const freqBins = analyser.frequencyBinCount;
+            const freqData = new Uint8Array(freqBins);
+            analyser.getByteFrequencyData(freqData);
+
+            const minBin = 2;
+            const maxBin = Math.min(freqBins - 1, Math.floor(freqBins * 0.62));
+            for (let i = 0; i < freqBands; i++) {
+                const startT = i / freqBands;
+                const endT = (i + 1) / freqBands;
+                const start = Math.max(minBin, Math.floor(minBin * Math.pow(maxBin / minBin, startT)));
+                const end = Math.max(start + 1, Math.floor(minBin * Math.pow(maxBin / minBin, endT)));
+                let total = 0;
+                let count = 0;
+                for (let bin = start; bin < end; bin++) {
+                    total += freqData[bin] || 0;
+                    count++;
+                }
+                const level = count ? total / count / 255 : 0;
+                const shaped = Math.min(1, Math.pow(level, 0.48) * 1.25);
+                freqSmoothed[i] += (shaped - freqSmoothed[i]) * 0.34;
+            }
+            drawFrequencyCurve(freqSmoothed, 1);
+        }
+    }
 
     function getWaveColor(alpha) {
         const isLight = isLightTheme();
@@ -890,6 +1253,13 @@ function initWaveformPlayer(playerEl) {
         waveCtx.stroke();
     }
     drawIdle();
+
+    function handleThemeChanged() {
+        if (isPlaying) return;
+        drawIdle();
+        drawMetersIdle();
+    }
+    window.addEventListener('theme-changed', handleThemeChanged);
 
     function drawLive() {
         if (!analyser) { drawIdle(); return; }
@@ -945,9 +1315,9 @@ function initWaveformPlayer(playerEl) {
         btn.setAttribute('aria-pressed', 'false');
         btn.innerHTML = '<i class="fas fa-play"></i>';
         if (animationId) { cancelAnimationFrame(animationId); animationId = null; }
-        drawIdle();
-        // Clear stereoscope particles immediately
-        drawVecIdle();
+        fadeWaveToIdle();
+        fadeVecToIdle();
+        fadeFreqToIdle();
         // Animate needle back with ease-out cubic
         if (vuReturnId) { cancelAnimationFrame(vuReturnId); vuReturnId = null; }
         const vuReturnStart = vuSmoothed;
@@ -984,6 +1354,9 @@ function initWaveformPlayer(playerEl) {
 
         // Cancel any in-progress animations
         if (vuReturnId) { cancelAnimationFrame(vuReturnId); vuReturnId = null; }
+        if (vecFadeId) { cancelAnimationFrame(vecFadeId); vecFadeId = null; }
+        if (waveFadeId) { cancelAnimationFrame(waveFadeId); waveFadeId = null; }
+        if (freqReturnId) { cancelAnimationFrame(freqReturnId); freqReturnId = null; }
         if (animationId) { cancelAnimationFrame(animationId); animationId = null; }
 
         document.querySelectorAll('.waveform-play-btn.playing').forEach(b => {
@@ -1257,6 +1630,7 @@ function showProjectDetail(index, slideDirection) {
         if (img.complete) classify();
         else img.addEventListener('load', classify);
     });
+    prepareExpandableArticleImages(detailContent);
 
     // Inject live demo player if this is the website project
     initDemoPlayer(detailContent);
@@ -3873,6 +4247,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initThemeToggle();
     initGlossaryInteractions();
+    initArticleImageLightbox();
     loadProjects();
     initSectionSwipeGestures();
     initTapFlash();
