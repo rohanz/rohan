@@ -933,7 +933,7 @@ function initWaveformPlayer(playerEl) {
         const isLight = isLightTheme();
         const baseline = freqH;
         const topPad = 6;
-        const boostedLevels = levels.map(value => Math.min(1, value * 1.75));
+        const boostedLevels = Array.from(levels, value => Math.min(1, value * 2.1));
         const smoothLevels = boostedLevels.map((value, index) => {
             const a = boostedLevels[Math.max(0, index - 2)];
             const b = boostedLevels[Math.max(0, index - 1)];
@@ -942,7 +942,7 @@ function initWaveformPlayer(playerEl) {
             return (a + b * 2 + value * 3 + d * 2 + e) / 9;
         });
         const peak = smoothLevels.reduce((max, value) => Math.max(max, value), 0);
-        const intensity = Math.min(1, peak * 1.25);
+        const intensity = Math.min(1, peak * 1.35);
         const xFor = i => (i / (smoothLevels.length - 1)) * freqW;
         const yFor = value => baseline - Math.max(0, Math.min(1, value)) * (freqH - topPad);
 
@@ -950,40 +950,31 @@ function initWaveformPlayer(playerEl) {
         drawFrequencyGrid();
 
         const points = smoothLevels.map((value, index) => ({ x: xFor(index), y: yFor(value) }));
-        const curvePath = new Path2D();
-        curvePath.moveTo(points[0].x, points[0].y);
-        const fillPath = new Path2D();
-        fillPath.moveTo(0, baseline);
-        fillPath.lineTo(points[0].x, points[0].y);
-        for (let i = 0; i < points.length - 1; i++) {
-            const p0 = points[Math.max(0, i - 1)];
-            const p1 = points[i];
-            const p2 = points[i + 1];
-            const p3 = points[Math.min(points.length - 1, i + 2)];
-            const cp1x = p1.x + (p2.x - p0.x) / 6;
-            const cp1y = p1.y + (p2.y - p0.y) / 6;
-            const cp2x = p2.x - (p3.x - p1.x) / 6;
-            const cp2y = p2.y - (p3.y - p1.y) / 6;
-            curvePath.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, p2.x, p2.y);
-            fillPath.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, p2.x, p2.y);
+
+        function traceCurve() {
+            freqCtx.moveTo(points[0].x, points[0].y);
+            for (let i = 0; i < points.length - 1; i++) {
+                const p0 = points[Math.max(0, i - 1)];
+                const p1 = points[i];
+                const p2 = points[i + 1];
+                const p3 = points[Math.min(points.length - 1, i + 2)];
+                const cp1x = p1.x + (p2.x - p0.x) / 6;
+                const cp1y = p1.y + (p2.y - p0.y) / 6;
+                const cp2x = p2.x - (p3.x - p1.x) / 6;
+                const cp2y = p2.y - (p3.y - p1.y) / 6;
+                freqCtx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, p2.x, p2.y);
+            }
         }
 
-        fillPath.lineTo(freqW, baseline);
-        fillPath.closePath();
+        freqCtx.beginPath();
+        freqCtx.moveTo(0, baseline);
+        freqCtx.lineTo(points[0].x, points[0].y);
+        traceCurve();
+        freqCtx.lineTo(freqW, baseline);
+        freqCtx.closePath();
+        freqCtx.fillStyle = getAccentRgba((isLight ? 0.12 + intensity * 0.16 : 0.14 + intensity * 0.2) * alpha);
+        freqCtx.fill();
 
-        const strokeGradient = freqCtx.createLinearGradient(0, 0, freqW, 0);
-        for (let i = 0; i < smoothLevels.length; i++) {
-            const local = Math.min(1, Math.pow(smoothLevels[i], 0.82) * 1.2);
-            const stop = i / Math.max(1, smoothLevels.length - 1);
-            const strokeAlpha = (isLight ? 0.42 + local * 0.38 : 0.5 + local * 0.42) * alpha;
-            strokeGradient.addColorStop(stop, getAccentRgba(strokeAlpha));
-        }
-
-        freqCtx.fillStyle = getAccentRgba((isLight ? 0.08 + intensity * 0.12 : 0.1 + intensity * 0.16) * alpha);
-        freqCtx.fill(fillPath);
-
-        freqCtx.save();
-        freqCtx.clip(fillPath);
         const peaks = [];
         for (let i = 2; i < smoothLevels.length - 2; i++) {
             const current = smoothLevels[i];
@@ -1012,22 +1003,25 @@ function initWaveformPlayer(playerEl) {
             const local = freqHighlights[index];
             if (local < 0.025) continue;
             const x = xFor(index);
-            const halfWidth = 8 + local * 10;
-            const glow = freqCtx.createLinearGradient(x - halfWidth, 0, x + halfWidth, 0);
+            const y = yFor(smoothLevels[index]);
+            const radius = 8 + local * 12;
+            const glow = freqCtx.createRadialGradient(x, y, 0, x, y, radius);
             const peakAlpha = (isLight ? 0.08 + local * 0.2 : 0.1 + local * 0.28) * alpha;
-            glow.addColorStop(0, getAccentRgba(0));
-            glow.addColorStop(0.5, getAccentRgba(peakAlpha));
+            glow.addColorStop(0, getAccentRgba(peakAlpha));
             glow.addColorStop(1, getAccentRgba(0));
             freqCtx.fillStyle = glow;
-            freqCtx.fillRect(x - halfWidth, 0, halfWidth * 2, baseline);
+            freqCtx.beginPath();
+            freqCtx.arc(x, y, radius, 0, Math.PI * 2);
+            freqCtx.fill();
         }
-        freqCtx.restore();
 
-        freqCtx.strokeStyle = strokeGradient;
-        freqCtx.lineWidth = 1.7 + intensity * 0.35;
+        freqCtx.beginPath();
+        traceCurve();
+        freqCtx.strokeStyle = getAccentRgba((isLight ? 0.62 + intensity * 0.24 : 0.72 + intensity * 0.22) * alpha);
+        freqCtx.lineWidth = 1.85 + intensity * 0.45;
         freqCtx.lineCap = 'round';
         freqCtx.lineJoin = 'round';
-        freqCtx.stroke(curvePath);
+        freqCtx.stroke();
     }
 
     function drawFreqIdle() {
@@ -1151,59 +1145,59 @@ function initWaveformPlayer(playerEl) {
     drawMetersIdle();
 
     function drawMetersLive() {
-        if (!analyserL || !analyserR) return;
+        if (analyserL && analyserR) {
+            const bufLen = analyserL.frequencyBinCount;
+            const dataL = new Float32Array(bufLen);
+            const dataR = new Float32Array(bufLen);
+            analyserL.getFloatTimeDomainData(dataL);
+            analyserR.getFloatTimeDomainData(dataR);
 
-        const bufLen = analyserL.frequencyBinCount;
-        const dataL = new Float32Array(bufLen);
-        const dataR = new Float32Array(bufLen);
-        analyserL.getFloatTimeDomainData(dataL);
-        analyserR.getFloatTimeDomainData(dataR);
+            // --- VU Meter (analog needle) ---
+            if (vuCtx) {
+                let sumSq = 0;
+                for (let i = 0; i < bufLen; i++) {
+                    const mid = (dataL[i] + dataR[i]) * 0.5;
+                    sumSq += mid * mid;
+                }
+                const rms = Math.sqrt(sumSq / bufLen);
+                const dbFS = rms > 0 ? 20 * Math.log10(rms) : -40;
+                const vuNow = Math.max(-40, Math.min(0, dbFS));
+                vuSmoothed += (vuNow - vuSmoothed) * 0.18;
 
-        // --- VU Meter (analog needle) ---
-        if (vuCtx) {
-            let sumSq = 0;
-            for (let i = 0; i < bufLen; i++) {
-                const mid = (dataL[i] + dataR[i]) * 0.5;
-                sumSq += mid * mid;
+                vuCtx.clearRect(0, 0, vuW, vuH);
+                const needleFrac = dbToFrac(vuSmoothed);
+                drawAnalogArc(vuCtx, vuW, vuH, needleFrac);
             }
-            const rms = Math.sqrt(sumSq / bufLen);
-            const dbFS = rms > 0 ? 20 * Math.log10(rms) : -40;
-            const vuNow = Math.max(-40, Math.min(0, dbFS));
-            vuSmoothed += (vuNow - vuSmoothed) * 0.18;
 
-            vuCtx.clearRect(0, 0, vuW, vuH);
-            const needleFrac = dbToFrac(vuSmoothed);
-            drawAnalogArc(vuCtx, vuW, vuH, needleFrac);
-        }
+            // --- Vectorscope (Lissajous) ---
+            if (vecCtx) {
+                const w = vecW, h = vecH;
+                const cx = w / 2, cy = h / 2;
+                const radius = Math.min(w, h) / 2 - 4;
 
-        // --- Vectorscope (Lissajous) ---
-        if (vecCtx) {
-            const w = vecW, h = vecH;
-            const cx = w / 2, cy = h / 2;
-            const radius = Math.min(w, h) / 2 - 4;
+                const isLight = isLightTheme();
+                vecCtx.clearRect(0, 0, w, h);
 
-            const isLight = isLightTheme();
-            vecCtx.clearRect(0, 0, w, h);
+                vecCtx.strokeStyle = getAccentRgba(0.08);
+                vecCtx.lineWidth = 1;
+                vecCtx.beginPath();
+                vecCtx.moveTo(cx, 0); vecCtx.lineTo(cx, h);
+                vecCtx.moveTo(0, cy); vecCtx.lineTo(w, cy);
+                vecCtx.stroke();
+                vecCtx.beginPath();
+                vecCtx.arc(cx, cy, radius, 0, Math.PI * 2);
+                vecCtx.stroke();
 
-            vecCtx.strokeStyle = getAccentRgba(0.08);
-            vecCtx.lineWidth = 1;
-            vecCtx.beginPath();
-            vecCtx.moveTo(cx, 0); vecCtx.lineTo(cx, h);
-            vecCtx.moveTo(0, cy); vecCtx.lineTo(w, cy);
-            vecCtx.stroke();
-            vecCtx.beginPath();
-            vecCtx.arc(cx, cy, radius, 0, Math.PI * 2);
-            vecCtx.stroke();
-
-            // Particles: brown in light mode, amber in dark mode
-            vecCtx.fillStyle = isLight ? 'rgba(141,110,99,0.58)' : 'rgba(255,204,128,0.58)';
-            const step = Math.max(1, Math.floor(bufLen / 256));
-            for (let i = 0; i < bufLen; i += step) {
-                const mid = (dataL[i] + dataR[i]) * 0.5;
-                const side = (dataL[i] - dataR[i]) * 0.5;
-                const px = cx + side * radius * 2;
-                const py = cy - mid * radius * 2;
-                vecCtx.fillRect(px, py, 1.5, 1.5);
+                // Particles: brown in light mode, amber in dark mode
+                vecCtx.fillStyle = isLight ? 'rgba(141,110,99,0.58)' : 'rgba(255,204,128,0.58)';
+                const step = Math.max(1, Math.floor(bufLen / 256));
+                for (let i = 0; i < bufLen; i += step) {
+                    const mid = (dataL[i] + dataR[i]) * 0.5;
+                    const side = (dataL[i] - dataR[i]) * 0.5;
+                    const px = cx + side * radius * 2;
+                    const py = cy - mid * radius * 2;
+                    vecCtx.fillRect(px, py, 1.5, 1.5);
+                }
             }
         }
 
@@ -1221,13 +1215,17 @@ function initWaveformPlayer(playerEl) {
                 const start = Math.max(minBin, Math.floor(minBin * Math.pow(maxBin / minBin, startT)));
                 const end = Math.max(start + 1, Math.floor(minBin * Math.pow(maxBin / minBin, endT)));
                 let total = 0;
+                let bandPeak = 0;
                 let count = 0;
                 for (let bin = start; bin < end; bin++) {
-                    total += freqData[bin] || 0;
+                    const value = freqData[bin] || 0;
+                    total += value;
+                    bandPeak = Math.max(bandPeak, value);
                     count++;
                 }
-                const level = count ? total / count / 255 : 0;
-                const shaped = Math.min(1, Math.pow(level, 0.48) * 1.25);
+                const average = count ? total / count : 0;
+                const level = ((average * 0.62) + (bandPeak * 0.38)) / 255;
+                const shaped = Math.min(1, Math.pow(level, 0.42) * 1.35);
                 freqSmoothed[i] += (shaped - freqSmoothed[i]) * 0.34;
             }
             drawFrequencyCurve(freqSmoothed, 1);
