@@ -969,12 +969,16 @@ function initWaveformPlayer(playerEl) {
             }
         }
 
+        function traceSpectrumBody() {
+            freqCtx.moveTo(0, baseline);
+            freqCtx.lineTo(points[0].x, points[0].y);
+            traceCurve(false);
+            freqCtx.lineTo(freqW, baseline);
+            freqCtx.closePath();
+        }
+
         freqCtx.beginPath();
-        freqCtx.moveTo(0, baseline);
-        freqCtx.lineTo(points[0].x, points[0].y);
-        traceCurve(false);
-        freqCtx.lineTo(freqW, baseline);
-        freqCtx.closePath();
+        traceSpectrumBody();
         freqCtx.fillStyle = getAccentRgba((isLight ? 0.09 + intensity * 0.1 : 0.1 + intensity * 0.13) * alpha);
         freqCtx.fill();
 
@@ -1003,21 +1007,24 @@ function initWaveformPlayer(playerEl) {
             freqHighlights[i] += (target - freqHighlights[i]) * speed;
         }
 
+        freqCtx.save();
+        freqCtx.beginPath();
+        traceSpectrumBody();
+        freqCtx.clip();
         for (let index = 0; index < freqHighlights.length; index++) {
             const local = freqHighlights[index];
             if (local < 0.025) continue;
             const x = xFor(index);
-            const y = yFor(smoothLevels[index]);
-            const radius = 8 + local * 12;
-            const glow = freqCtx.createRadialGradient(x, y, 0, x, y, radius);
-            const peakAlpha = (isLight ? 0.08 + local * 0.2 : 0.1 + local * 0.28) * alpha;
-            glow.addColorStop(0, getAccentRgba(peakAlpha));
+            const halfWidth = 8 + local * 18;
+            const glow = freqCtx.createLinearGradient(x - halfWidth, 0, x + halfWidth, 0);
+            const peakAlpha = (isLight ? 0.08 + local * 0.24 : 0.1 + local * 0.32) * alpha;
+            glow.addColorStop(0, getAccentRgba(0));
+            glow.addColorStop(0.5, getAccentRgba(peakAlpha));
             glow.addColorStop(1, getAccentRgba(0));
             freqCtx.fillStyle = glow;
-            freqCtx.beginPath();
-            freqCtx.arc(x, y, radius, 0, Math.PI * 2);
-            freqCtx.fill();
+            freqCtx.fillRect(x - halfWidth, 0, halfWidth * 2, baseline);
         }
+        freqCtx.restore();
 
         freqCtx.beginPath();
         traceCurve();
