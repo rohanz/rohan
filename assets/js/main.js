@@ -795,6 +795,7 @@ function initWaveformPlayer(playerEl) {
     const freqBands = 128;
     const freqSmoothed = new Float32Array(freqBands);
     const freqHighlights = new Float32Array(freqBands);
+    const freqHighlightTargets = new Float32Array(freqBands);
     const redThresholdDb = -10; // red zone starts at -10 dB
 
     // Non-linear dB-to-fraction mapping: piecewise to spread upper range
@@ -928,7 +929,7 @@ function initWaveformPlayer(playerEl) {
         }
     }
 
-    function drawFrequencyCurve(levels, alpha = 1) {
+    function drawFrequencyCurve(levels, alpha = 1, highlightLevels = null) {
         if (!freqCtx) return;
         const isLight = isLightTheme();
         const baseline = freqH;
@@ -982,28 +983,15 @@ function initWaveformPlayer(playerEl) {
         freqCtx.fillStyle = getAccentRgba((isLight ? 0.09 + intensity * 0.1 : 0.1 + intensity * 0.13) * alpha);
         freqCtx.fill();
 
-        const peaks = [];
-        for (let i = 2; i < smoothLevels.length - 2; i++) {
-            const current = smoothLevels[i];
-            const colorCurrent = colorLevels[i];
-            const shoulder = Math.max(smoothLevels[i - 2], smoothLevels[i - 1], smoothLevels[i + 1], smoothLevels[i + 2]);
-            if (colorCurrent < 0.08 || current < shoulder * 1.02) continue;
-            peaks.push({ index: i, value: colorCurrent });
-        }
-        const selectedPeaks = [];
-        peaks.sort((a, b) => b.value - a.value).forEach(peakPoint => {
-            if (selectedPeaks.length >= 5) return;
-            if (selectedPeaks.some(existing => Math.abs(existing.index - peakPoint.index) < 12)) return;
-            selectedPeaks.push(peakPoint);
-        });
-
         const targetHighlights = new Float32Array(freqBands);
-        selectedPeaks.forEach(({ index, value }) => {
-            targetHighlights[index] = Math.min(1, Math.pow(value, 0.72) * 1.45);
-        });
+        if (highlightLevels) {
+            for (let i = 0; i < targetHighlights.length; i++) {
+                targetHighlights[i] = Math.max(0, Math.min(1, highlightLevels[i] || 0));
+            }
+        }
         for (let i = 0; i < freqHighlights.length; i++) {
             const target = targetHighlights[i] || 0;
-            const speed = target > freqHighlights[i] ? 0.2 : 0.075;
+            const speed = target > freqHighlights[i] ? 0.32 : 0.09;
             freqHighlights[i] += (target - freqHighlights[i]) * speed;
         }
 
@@ -1041,6 +1029,7 @@ function initWaveformPlayer(playerEl) {
         drawFrequencyGrid();
         freqSmoothed.fill(0);
         freqHighlights.fill(0);
+        freqHighlightTargets.fill(0);
     }
 
     function fadeVecToIdle() {
@@ -1237,9 +1226,15 @@ function initWaveformPlayer(playerEl) {
                 const average = count ? total / count : 0;
                 const level = ((average * 0.62) + (bandPeak * 0.38)) / 255;
                 const shaped = Math.min(0.7, Math.pow(level, 0.68) * 0.74);
+                const rise = Math.max(0, shaped - freqSmoothed[i]);
+                const bandT = i / Math.max(1, freqBands - 1);
+                const lowKickBias = bandT < 0.28 ? 1.55 - bandT * 1.2 : 1;
+                const transient = Math.max(0, (rise - 0.012) / 0.12);
+                const body = Math.max(0, (shaped - 0.2) / 0.44);
+                freqHighlightTargets[i] = Math.min(1, Math.pow(transient, 0.72) * Math.pow(body, 0.42) * lowKickBias);
                 freqSmoothed[i] += (shaped - freqSmoothed[i]) * 0.34;
             }
-            drawFrequencyCurve(freqSmoothed, 1);
+            drawFrequencyCurve(freqSmoothed, 1, freqHighlightTargets);
         }
     }
 
