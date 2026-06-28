@@ -992,7 +992,7 @@ function initWaveformPlayer(playerEl) {
         }
         for (let i = 0; i < freqHighlights.length; i++) {
             const target = targetHighlights[i] || 0;
-            const speed = target > freqHighlights[i] ? 0.22 : 0.045;
+            const speed = target > freqHighlights[i] ? 0.18 : 0.026;
             freqHighlights[i] += (target - freqHighlights[i]) * speed;
         }
 
@@ -1002,11 +1002,12 @@ function initWaveformPlayer(playerEl) {
         freqCtx.clip();
         for (let index = 0; index < freqHighlights.length; index++) {
             const local = freqHighlights[index];
-            if (local < 0.025) continue;
+            if (local < 0.006) continue;
+            const visible = Math.pow(local, 0.86);
             const x = xFor(index);
-            const halfWidth = 8 + local * 18;
+            const halfWidth = 7 + visible * 20;
             const glow = freqCtx.createLinearGradient(x - halfWidth, 0, x + halfWidth, 0);
-            const peakAlpha = (isLight ? 0.08 + local * 0.24 : 0.1 + local * 0.32) * alpha;
+            const peakAlpha = (isLight ? 0.045 + visible * 0.25 : 0.055 + visible * 0.34) * alpha;
             glow.addColorStop(0, getAccentRgba(0));
             glow.addColorStop(0.5, getAccentRgba(peakAlpha));
             glow.addColorStop(1, getAccentRgba(0));
@@ -1234,7 +1235,7 @@ function initWaveformPlayer(playerEl) {
                 const transient = Math.max(0, (rise - 0.012) / 0.12);
                 const body = Math.max(0, (shaped - 0.2) / 0.44);
                 const rawHighlight = Math.min(1, Math.pow(transient, 0.72) * Math.pow(body, 0.42) * lowKickBias);
-                const targetSpeed = rawHighlight > freqHighlightTargets[i] ? 0.24 : 0.045;
+                const targetSpeed = rawHighlight > freqHighlightTargets[i] ? 0.2 : 0.026;
                 freqHighlightTargets[i] += (rawHighlight - freqHighlightTargets[i]) * targetSpeed;
                 freqSmoothed[i] += (shaped - freqSmoothed[i]) * 0.34;
             }
