@@ -933,16 +933,19 @@ function initWaveformPlayer(playerEl) {
         const isLight = isLightTheme();
         const baseline = freqH;
         const topPad = 6;
-        const boostedLevels = Array.from(levels, value => Math.min(1, value * 2.1));
-        const smoothLevels = boostedLevels.map((value, index) => {
-            const a = boostedLevels[Math.max(0, index - 2)];
-            const b = boostedLevels[Math.max(0, index - 1)];
-            const d = boostedLevels[Math.min(boostedLevels.length - 1, index + 1)];
-            const e = boostedLevels[Math.min(boostedLevels.length - 1, index + 2)];
+        const heightLevels = Array.from(levels, value => Math.max(0, Math.min(0.72, value)));
+        const smoothLevels = heightLevels.map((value, index) => {
+            const a = heightLevels[Math.max(0, index - 2)];
+            const b = heightLevels[Math.max(0, index - 1)];
+            const d = heightLevels[Math.min(heightLevels.length - 1, index + 1)];
+            const e = heightLevels[Math.min(heightLevels.length - 1, index + 2)];
             return (a + b * 2 + value * 3 + d * 2 + e) / 9;
         });
-        const peak = smoothLevels.reduce((max, value) => Math.max(max, value), 0);
-        const intensity = Math.min(1, peak * 1.35);
+        const colorLevels = smoothLevels.map(value => {
+            const t = Math.max(0, Math.min(1, (value - 0.3) / 0.34));
+            return t * t * (3 - 2 * t);
+        });
+        const intensity = colorLevels.reduce((max, value) => Math.max(max, value), 0);
         const xFor = i => (i / (smoothLevels.length - 1)) * freqW;
         const yFor = value => baseline - Math.max(0, Math.min(1, value)) * (freqH - topPad);
 
@@ -972,15 +975,16 @@ function initWaveformPlayer(playerEl) {
         traceCurve(false);
         freqCtx.lineTo(freqW, baseline);
         freqCtx.closePath();
-        freqCtx.fillStyle = getAccentRgba((isLight ? 0.12 + intensity * 0.16 : 0.14 + intensity * 0.2) * alpha);
+        freqCtx.fillStyle = getAccentRgba((isLight ? 0.09 + intensity * 0.1 : 0.1 + intensity * 0.13) * alpha);
         freqCtx.fill();
 
         const peaks = [];
         for (let i = 2; i < smoothLevels.length - 2; i++) {
             const current = smoothLevels[i];
+            const colorCurrent = colorLevels[i];
             const shoulder = Math.max(smoothLevels[i - 2], smoothLevels[i - 1], smoothLevels[i + 1], smoothLevels[i + 2]);
-            if (current < 0.055 || current < shoulder * 1.02) continue;
-            peaks.push({ index: i, value: current });
+            if (colorCurrent < 0.08 || current < shoulder * 1.02) continue;
+            peaks.push({ index: i, value: colorCurrent });
         }
         const selectedPeaks = [];
         peaks.sort((a, b) => b.value - a.value).forEach(peakPoint => {
@@ -1017,8 +1021,8 @@ function initWaveformPlayer(playerEl) {
 
         freqCtx.beginPath();
         traceCurve();
-        freqCtx.strokeStyle = getAccentRgba((isLight ? 0.62 + intensity * 0.24 : 0.72 + intensity * 0.22) * alpha);
-        freqCtx.lineWidth = 1.85 + intensity * 0.45;
+        freqCtx.strokeStyle = getAccentRgba((isLight ? 0.58 + intensity * 0.24 : 0.66 + intensity * 0.25) * alpha);
+        freqCtx.lineWidth = 1.65 + intensity * 0.45;
         freqCtx.lineCap = 'round';
         freqCtx.lineJoin = 'round';
         freqCtx.stroke();
@@ -1225,7 +1229,7 @@ function initWaveformPlayer(playerEl) {
                 }
                 const average = count ? total / count : 0;
                 const level = ((average * 0.62) + (bandPeak * 0.38)) / 255;
-                const shaped = Math.min(1, Math.pow(level, 0.42) * 1.35);
+                const shaped = Math.min(0.7, Math.pow(level, 0.68) * 0.74);
                 freqSmoothed[i] += (shaped - freqSmoothed[i]) * 0.34;
             }
             drawFrequencyCurve(freqSmoothed, 1);
