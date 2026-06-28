@@ -796,6 +796,7 @@ function initWaveformPlayer(playerEl) {
     const freqSmoothed = new Float32Array(freqBands);
     const freqHighlights = new Float32Array(freqBands);
     const freqHighlightTargets = new Float32Array(freqBands);
+    const freqHighlightBlurred = new Float32Array(freqBands);
     const redThresholdDb = -10; // red zone starts at -10 dB
 
     // Non-linear dB-to-fraction mapping: piecewise to spread upper range
@@ -991,7 +992,7 @@ function initWaveformPlayer(playerEl) {
         }
         for (let i = 0; i < freqHighlights.length; i++) {
             const target = targetHighlights[i] || 0;
-            const speed = target > freqHighlights[i] ? 0.32 : 0.09;
+            const speed = target > freqHighlights[i] ? 0.22 : 0.045;
             freqHighlights[i] += (target - freqHighlights[i]) * speed;
         }
 
@@ -1030,6 +1031,7 @@ function initWaveformPlayer(playerEl) {
         freqSmoothed.fill(0);
         freqHighlights.fill(0);
         freqHighlightTargets.fill(0);
+        freqHighlightBlurred.fill(0);
     }
 
     function fadeVecToIdle() {
@@ -1231,10 +1233,18 @@ function initWaveformPlayer(playerEl) {
                 const lowKickBias = bandT < 0.28 ? 1.55 - bandT * 1.2 : 1;
                 const transient = Math.max(0, (rise - 0.012) / 0.12);
                 const body = Math.max(0, (shaped - 0.2) / 0.44);
-                freqHighlightTargets[i] = Math.min(1, Math.pow(transient, 0.72) * Math.pow(body, 0.42) * lowKickBias);
+                const rawHighlight = Math.min(1, Math.pow(transient, 0.72) * Math.pow(body, 0.42) * lowKickBias);
+                const targetSpeed = rawHighlight > freqHighlightTargets[i] ? 0.24 : 0.045;
+                freqHighlightTargets[i] += (rawHighlight - freqHighlightTargets[i]) * targetSpeed;
                 freqSmoothed[i] += (shaped - freqSmoothed[i]) * 0.34;
             }
-            drawFrequencyCurve(freqSmoothed, 1, freqHighlightTargets);
+            for (let i = 0; i < freqBands; i++) {
+                const left = freqHighlightTargets[Math.max(0, i - 1)];
+                const center = freqHighlightTargets[i];
+                const right = freqHighlightTargets[Math.min(freqBands - 1, i + 1)];
+                freqHighlightBlurred[i] = (left + center * 2 + right) / 4;
+            }
+            drawFrequencyCurve(freqSmoothed, 1, freqHighlightBlurred);
         }
     }
 
