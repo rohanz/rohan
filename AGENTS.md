@@ -2,6 +2,11 @@
 
 This repo is the static portfolio site for `rohanjk.xyz`.
 
+> **Generating LinkedIn / social posts from a project here?** The post-generation
+> system lives in `~/Documents/career/linkedin/` - read its `AGENTS.md` and
+> `post-generator.md` first. It uses the `projects/<slug>.md` files in THIS repo as
+> source material. Only READ from this repo for that; do not edit or publish from it.
+
 ## Deployment
 
 - The live GitHub Pages branch is `master`.

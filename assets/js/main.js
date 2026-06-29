@@ -773,7 +773,7 @@ function initWaveformPlayer(playerEl) {
     const vecCtx = vecCanvas ? sizeCanvas(vecCanvas, 110, 110) : null;
 
     const freqCanvas = playerEl.querySelector('.frequency-canvas');
-    const freqCtx = freqCanvas ? sizeCanvas(freqCanvas, 280, 110) : null;
+    const freqCtx = freqCanvas ? sizeCanvas(freqCanvas, 300, 110) : null;
 
     const vuCanvas = playerEl.querySelector('.vu-meter-canvas');
     const vuCtx = vuCanvas ? sizeCanvas(vuCanvas, 150, 100) : null;
@@ -791,7 +791,7 @@ function initWaveformPlayer(playerEl) {
 
     const vuW = 150, vuH = 100;
     const vecW = 110, vecH = 110;
-    const freqW = 280, freqH = 110;
+    const freqW = 300, freqH = 110;
     const freqBands = 128;
     const freqSmoothed = new Float32Array(freqBands);
     const freqHighlights = new Float32Array(freqBands);
@@ -901,10 +901,12 @@ function initWaveformPlayer(playerEl) {
         drawAnalogArc(vuCtx, vuW, vuH, 0); // needle at -40dB (leftmost)
     }
 
-    function drawVecIdle() {
+    function drawVecIdle(alpha = 1, clear = true) {
         if (!vecCtx) return;
         const w = vecW, h = vecH;
-        vecCtx.clearRect(0, 0, w, h);
+        if (clear) vecCtx.clearRect(0, 0, w, h);
+        vecCtx.save();
+        vecCtx.globalAlpha = alpha;
         vecCtx.strokeStyle = getAccentRgba(isLightTheme() ? 0.18 : 0.1);
         vecCtx.lineWidth = 1;
         vecCtx.beginPath();
@@ -914,6 +916,7 @@ function initWaveformPlayer(playerEl) {
         vecCtx.beginPath();
         vecCtx.arc(w / 2, h / 2, Math.min(w, h) / 2 - 4, 0, Math.PI * 2);
         vecCtx.stroke();
+        vecCtx.restore();
     }
 
     function drawFrequencyGrid() {
@@ -1002,12 +1005,12 @@ function initWaveformPlayer(playerEl) {
         freqCtx.clip();
         for (let index = 0; index < freqHighlights.length; index++) {
             const local = freqHighlights[index];
-            if (local < 0.006) continue;
-            const visible = Math.pow(local, 0.86);
+            if (local < 0.012) continue;
+            const visible = Math.pow((local - 0.012) / 0.988, 0.9);
             const x = xFor(index);
             const halfWidth = 7 + visible * 20;
             const glow = freqCtx.createLinearGradient(x - halfWidth, 0, x + halfWidth, 0);
-            const peakAlpha = (isLight ? 0.045 + visible * 0.25 : 0.055 + visible * 0.34) * alpha;
+            const peakAlpha = (isLight ? 0.03 + visible * 0.25 : 0.04 + visible * 0.34) * alpha;
             glow.addColorStop(0, getAccentRgba(0));
             glow.addColorStop(0.5, getAccentRgba(peakAlpha));
             glow.addColorStop(1, getAccentRgba(0));
@@ -1056,11 +1059,12 @@ function initWaveformPlayer(playerEl) {
             const t = Math.min(elapsed / duration, 1);
             const eased = 1 - Math.pow(1 - t, 3);
 
-            drawVecIdle();
+            vecCtx.clearRect(0, 0, vecW, vecH);
             vecCtx.save();
             vecCtx.globalAlpha = 1 - eased;
             vecCtx.drawImage(snapshot, 0, 0, vecW, vecH);
             vecCtx.restore();
+            drawVecIdle(eased, false);
 
             if (t >= 1) {
                 vecFadeId = null;
@@ -1492,6 +1496,8 @@ let projectsData = [];
 let activeFilter = 'all';
 let gridScrollTop = 0;
 let currentDetailIndex = -1;
+let tocClickScrollTarget = null;
+let tocClickScrollTimer = null;
 
 function displayProjects(projects) {
     const grid = document.getElementById('projectsGrid');
@@ -1592,15 +1598,17 @@ function initCardClickHandlers() {
     });
 }
 
-let isClickScrolling = false;
-let scrollEndTimer = null;
-
 function showProjectDetail(index, slideDirection) {
     const project = projectsData[index];
     if (!project) return;
 
     // Tear down the previous project's chord-demo keyboard listeners before re-rendering.
     if (lcmDemoCleanup) lcmDemoCleanup();
+    tocClickScrollTarget = null;
+    if (tocClickScrollTimer) {
+        clearTimeout(tocClickScrollTimer);
+        tocClickScrollTimer = null;
+    }
 
     currentDetailIndex = index;
     pushRoute(`/projects/${project.slug}`);
@@ -1714,10 +1722,10 @@ function buildToc(headers) {
             }
         }
 
-        html += `<li class="toc-item ${levelClass}${hasChildren ? ' has-children' : ''}${i === 0 ? ' active' : ''}"
+        html += `<li><button type="button" class="toc-item ${levelClass}${hasChildren ? ' has-children' : ''}${i === 0 ? ' active' : ''}"
             data-target="${h.id}"
             data-index="${i}"
-            ${parentIndex !== undefined ? `data-parent-index="${parentIndex}"` : ''}>${DOMPurify.sanitize(h.text)}</li>`;
+            ${parentIndex !== undefined ? `data-parent-index="${parentIndex}"` : ''}>${DOMPurify.sanitize(h.text)}</button></li>`;
     });
     html += '</ul>';
     tocContainer.innerHTML = html;
@@ -1726,28 +1734,16 @@ function buildToc(headers) {
     tocContainer.querySelectorAll('.toc-item').forEach(item => {
         item.addEventListener('click', () => {
             const allItems = tocContainer.querySelectorAll('.toc-item');
-            let targetItem = item;
-            let targetId = item.dataset.target;
-
-            // If h2 with children, jump to first child
-            if (item.classList.contains('has-children')) {
-                const myIdx = parseInt(item.dataset.index, 10);
-                for (const other of allItems) {
-                    if (parseInt(other.dataset.parentIndex, 10) === myIdx) {
-                        targetItem = other;
-                        targetId = other.dataset.target;
-                        break;
-                    }
-                }
-            }
+            const targetItem = item;
+            const targetId = item.dataset.target;
 
             const anchor = document.querySelector(`#${targetId}`);
             if (!anchor) return;
 
-            isClickScrolling = true;
-
             // Update active states
             setTocItemActive(allItems, targetItem);
+            tocClickScrollTarget = targetId;
+            if (tocClickScrollTimer) clearTimeout(tocClickScrollTimer);
 
             // Scroll to anchor
             const mc = cachedMainContent || document.getElementById('mainContent');
@@ -1772,24 +1768,34 @@ function setupScrollTracking() {
     let rafId = null;
 
     function updateActiveTocFromScroll() {
-        if (isClickScrolling) return;
+        if (tocClickScrollTarget) return;
 
         const tocItems = document.querySelectorAll('.toc-item');
         const anchors = document.querySelectorAll('.project-detail-view .toc-anchor');
         if (!tocItems.length || !anchors.length) return;
 
-        const triggerPoint = window.innerHeight * 0.5;
+        const h2TriggerPoint = window.innerHeight * 0.5;
+        const h3TriggerPoint = window.innerHeight * 0.38;
         let activeIndex = 0;
+        const isNearBottom = mc.scrollTop + mc.clientHeight >= mc.scrollHeight - 12;
 
-        for (let i = 0; i < anchors.length; i++) {
-            const rect = anchors[i].getBoundingClientRect();
-            if (rect.top <= triggerPoint) {
-                activeIndex = i;
-                if (i === anchors.length - 1) break;
-                const nextRect = anchors[i + 1].getBoundingClientRect();
-                if (nextRect.top > triggerPoint) break;
-            } else {
-                break;
+        if (isNearBottom) {
+            activeIndex = anchors.length - 1;
+        } else {
+            for (let i = 0; i < anchors.length; i++) {
+                const rect = anchors[i].getBoundingClientRect();
+                const item = tocItems[i];
+                const triggerPoint = item && item.classList.contains('toc-h3') ? h3TriggerPoint : h2TriggerPoint;
+                if (rect.top <= triggerPoint) {
+                    activeIndex = i;
+                    if (i === anchors.length - 1) break;
+                    const nextRect = anchors[i + 1].getBoundingClientRect();
+                    const nextItem = tocItems[i + 1];
+                    const nextTriggerPoint = nextItem && nextItem.classList.contains('toc-h3') ? h3TriggerPoint : h2TriggerPoint;
+                    if (nextRect.top > nextTriggerPoint) break;
+                } else {
+                    break;
+                }
             }
         }
 
@@ -1811,10 +1817,14 @@ function setupScrollTracking() {
             });
         }
 
-        // Scroll-end detection for click scrolling
-        if (isClickScrolling) {
-            clearTimeout(scrollEndTimer);
-            scrollEndTimer = setTimeout(() => { isClickScrolling = false; }, 150);
+        if (tocClickScrollTarget) {
+            clearTimeout(tocClickScrollTimer);
+            tocClickScrollTimer = setTimeout(() => {
+                const tocItems = document.querySelectorAll('.toc-item');
+                const landedItem = document.querySelector(`.toc-item[data-target="${tocClickScrollTarget}"]`);
+                if (landedItem) setTocItemActive(tocItems, landedItem);
+                tocClickScrollTarget = null;
+            }, 180);
         }
     };
 
@@ -1858,6 +1868,11 @@ function showProjectGrid(instant) {
     if (bqstAudioDemoCleanup) { bqstAudioDemoCleanup(); bqstAudioDemoCleanup = null; }
     if (bqstCleanup) { bqstCleanup(); bqstCleanup = null; }
     if (lcmDemoCleanup) lcmDemoCleanup();
+    tocClickScrollTarget = null;
+    if (tocClickScrollTimer) {
+        clearTimeout(tocClickScrollTimer);
+        tocClickScrollTimer = null;
+    }
 
     // Clean up scroll tracking
     const mc = cachedMainContent || document.getElementById('mainContent');
