@@ -489,42 +489,35 @@ const socials: [string, string][] = [
   .card-project .tags li { font-size: clamp(0.5rem, 0.56vw, 0.58rem); font-weight: 700; color: #d13d59; border: 1.1px solid #d13d59; border-radius: 999px; padding: 0.08rem 0.4rem; }
 
   /* Filter bar: pinned in the band between the top bar and the platform
-     track, projects view only (toggled in showUI/hideUI). The full tag set
-     (~25 pills) cannot be guaranteed to fit in two wrapped rows at every
-     viewport, so this is a single dense row that scrolls horizontally
-     rather than wrapping — wrapping risked pills sliding down far enough to
-     cross the track/cards. Bounded left/right so it can never overlap the
-     persistent left rail (28px + up to 230px wide) or the viewport edge. */
+     track, projects view only (toggled in showUI/hideUI). Wraps into
+     multiple centered rows (like the original's .projects-filter-bar:
+     display:flex; flex-wrap:wrap) rather than one horizontally-scrolling
+     line. Bounded left/right so it can never overlap the persistent left
+     rail (28px + up to 230px wide) or the viewport edge; the projects
+     park pose (ride.ts parkPose 'h') anchors the track low enough that the
+     wrapped rows never reach the stops/cards/ticks. Below the breakpoint
+     the band can't hold the full tag set without crowding the track, so it
+     degrades gracefully to hidden — exactly as the original does. */
   #filter-bar {
     position: absolute;
-    top: 84px;
+    top: 78px;
     left: 270px;
     right: 20px;
     display: flex;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    overflow-y: hidden;
-    gap: 0.35rem;
-    padding: 0.15rem 0.3rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-content: flex-start;
+    gap: 0.4rem 0.45rem;
+    padding: 0.1rem 0.3rem;
     pointer-events: auto;
-    scrollbar-width: thin;
-    /* Subtle edge fade so the scrollable overflow reads as intentional. */
-    -webkit-mask-image: linear-gradient(
-      to right,
-      transparent 0,
-      #000 20px,
-      #000 calc(100% - 20px),
-      transparent 100%
-    );
-    mask-image: linear-gradient(
-      to right,
-      transparent 0,
-      #000 20px,
-      #000 calc(100% - 20px),
-      transparent 100%
-    );
   }
   #filter-bar[hidden] { display: none; }
+  /* Narrow viewports: the full 31-pill set would wrap into too many rows to
+     clear the track, so hide the filter UI rather than crowd it (graceful
+     fallback, matching the original site's own filter-bar breakpoint). */
+  @media (max-width: 1000px) {
+    #filter-bar { display: none; }
+  }
   .filter-tag {
     flex: none;
     white-space: nowrap;

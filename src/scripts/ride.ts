@@ -131,8 +131,10 @@ class MapView {
       // Anchor the page's leftmost stop at 30% across the viewport (rather
       // than centering the page) so its cards — which start right at the
       // stop's screen x — clear the persistent left rail (~28px + 230px +
-      // margin) instead of sliding underneath it.
-      return { s, x: slice[0][0] - (toWorldX(0.3, s) - CX) / s, y: slice[0][1] - (toWorldY(0.3, s) - CY) / s };
+      // margin) instead of sliding underneath it. The vertical anchor sits
+      // the track at 42% down (was 30%) so the multi-row wrapped filter bar
+      // in the band above never reaches the stops, ticks, or cards below.
+      return { s, x: slice[0][0] - (toWorldX(0.3, s) - CX) / s, y: slice[0][1] - (toWorldY(0.42, s) - CY) / s };
     }
     const s = Math.min(rect.width, rect.height * 1.35) / k / 780;
     return {
