@@ -488,38 +488,57 @@ const socials: [string, string][] = [
   .card-project .tags { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.22rem; }
   .card-project .tags li { font-size: clamp(0.5rem, 0.56vw, 0.58rem); font-weight: 700; color: #d13d59; border: 1.1px solid #d13d59; border-radius: 999px; padding: 0.08rem 0.4rem; }
 
-  /* Filter bar: horizontally centered above the platform line, projects
-     view only (toggled in showUI/hideUI). Styling mirrors the original
-     site's .projects-filter-bar / .filter-tag (small rectangular pills,
-     subtle border, solid fill only when active) rather than a pill-cloud,
-     adapted to the projects line's red. */
+  /* Filter bar: pinned in the band between the top bar and the platform
+     track, projects view only (toggled in showUI/hideUI). The full tag set
+     (~25 pills) cannot be guaranteed to fit in two wrapped rows at every
+     viewport, so this is a single dense row that scrolls horizontally
+     rather than wrapping — wrapping risked pills sliding down far enough to
+     cross the track/cards. Bounded left/right so it can never overlap the
+     persistent left rail (28px + up to 230px wide) or the viewport edge. */
   #filter-bar {
     position: absolute;
-    top: 92px;
-    /* Centered on the area right of the persistent left rail (not the full
-       viewport), so it never overlaps it. */
-    left: calc(50% + 100px);
-    transform: translateX(-50%);
+    top: 84px;
+    left: 270px;
+    right: 20px;
     display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 0.5rem;
-    width: min(72vw, 780px);
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    gap: 0.35rem;
+    padding: 0.15rem 0.3rem;
     pointer-events: auto;
+    scrollbar-width: thin;
+    /* Subtle edge fade so the scrollable overflow reads as intentional. */
+    -webkit-mask-image: linear-gradient(
+      to right,
+      transparent 0,
+      #000 20px,
+      #000 calc(100% - 20px),
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      to right,
+      transparent 0,
+      #000 20px,
+      #000 calc(100% - 20px),
+      transparent 100%
+    );
   }
   #filter-bar[hidden] { display: none; }
   .filter-tag {
+    flex: none;
+    white-space: nowrap;
     font: inherit;
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
     font-weight: 500;
-    font-size: 0.8rem;
+    font-size: 0.7rem;
     text-align: center;
     text-transform: lowercase;
     color: #4a453c;
     background: rgba(255, 255, 255, 0.92);
     border: 1px solid rgba(26, 26, 26, 0.2);
     border-radius: 3px;
-    padding: 0.4rem 1rem;
+    padding: 0.32rem 0.7rem;
     cursor: pointer;
     transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
   }
@@ -539,7 +558,12 @@ const socials: [string, string][] = [
      is set purely by content — no fixed heights left over as a phantom
      white strip below the shorter of the two. */
   .card-about-bio {
-    width: 380px;
+    /* Wider, with a smaller photo, than the original design so the bio
+       text needs fewer wrapped lines — the diagonal platform's stops sit
+       closer together than this card is tall, so a shorter card leaves
+       more headroom before the vertical stacking in placeCards() (ride.ts)
+       has to push neighboring cards down to avoid it. */
+    width: 430px;
     display: flex;
     align-items: stretch;
     gap: 0;
@@ -548,7 +572,7 @@ const socials: [string, string][] = [
   }
   .about-label { margin: 0 0 0.4rem; font-size: 0.66rem; letter-spacing: 0.16em; text-transform: uppercase; color: #6f6a60; }
   .card-about-bio .photo {
-    width: 180px;
+    width: 130px;
     /* No fixed height: stretches to match the text column via the flex
        row's align-items: stretch, so object-fit: cover always fills the
        card's full (content-driven) height with no leftover gap. */
@@ -558,9 +582,9 @@ const socials: [string, string][] = [
   }
   .card-about-bio .bio {
     margin: 0;
-    padding: 0.75rem 0.95rem;
-    font-size: 0.86rem;
-    line-height: 1.42;
+    padding: 0.6rem 0.8rem;
+    font-size: 0.78rem;
+    line-height: 1.32;
     flex: 1 1 auto;
   }
   .stat-row { display: flex; gap: 0.5rem; }

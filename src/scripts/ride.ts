@@ -216,6 +216,13 @@ class MapView {
       cardWidth = Math.max(140, Math.abs(bx - ax) * 0.62);
     }
 
+    // Diagonal platform (about) only: running bottom edge of the
+    // previously placed card, so a card that's taller than the stop
+    // pitch (the bio card, with its photo, is much taller than the
+    // ~125px spacing between diagonal stops) pushes the next one down
+    // instead of the two overlapping — see the 'd' branch below.
+    let dCursorBottom = -Infinity;
+
     for (let j = 0; j < p.perPage; j++) {
       const idx = order[from + j];
       if (idx === undefined) continue;
@@ -231,6 +238,38 @@ class MapView {
       if (p.axis === 'h') {
         card.style.left = `${sx}px`;
         card.style.top = `${sy + 0.055 * rect.height}px`;
+      } else if (p.axis === 'd') {
+        // Alternate sides per slot so consecutive cards (close together
+        // along the 45° run) don't cascade horizontally into one another.
+        // Even slots (0, 2, 4 — bio, tech, cv) sit right of their stop, as
+        // every axis does by default; odd slots (1, 3 — stats, socials)
+        // mirror to the left, using the same gap magnitude. `left` records
+        // the anchor edge in both cases — the left edge for right-side
+        // cards, the right edge for left-side ones — and cardsIn() flips
+        // xPercent accordingly.
+        const onLeft = j % 2 === 1;
+        card.dataset.side = onLeft ? 'left' : 'right';
+        const width = card.offsetWidth || 300;
+        const height = card.offsetHeight || 100;
+        const margin = 16;
+        // Vertical: center on the stop as usual, but never start above the
+        // previous card's bottom edge (+ margin) — side-alternation alone
+        // doesn't stop a tall card (bio) from overlapping its vertical
+        // neighbor when stops sit closer together than the cards are tall.
+        const top = Math.max(sy - height / 2, dCursorBottom + margin);
+        dCursorBottom = top + height;
+        card.style.top = `${top + height / 2}px`;
+        if (onLeft) {
+          const gap = 0.04 * rect.width;
+          // Clamp so the mirrored left-side card's left edge stays clear
+          // of the persistent left rail (28px + up to 230px + margin) —
+          // early diagonal stops sit close enough to it that the plain
+          // mirrored gap isn't always enough room.
+          const railClear = 290;
+          card.style.left = `${Math.max(sx - gap, railClear + width)}px`;
+        } else {
+          card.style.left = `${sx + 0.04 * rect.width}px`;
+        }
       } else {
         card.style.left = `${sx + 0.04 * rect.width}px`;
         card.style.top = `${sy}px`;
@@ -368,7 +407,18 @@ class MapView {
       { autoAlpha: 0 },
       { autoAlpha: 1, duration: 0.5, stagger: 0.06, ease: 'power1.out', overwrite: 'auto' },
     );
-    gsap.set(onPage, axis === 'h' ? { xPercent: -50, yPercent: 0 } : { yPercent: -50, xPercent: 0 });
+    if (axis === 'h') {
+      gsap.set(onPage, { xPercent: -50, yPercent: 0 });
+    } else if (axis === 'd') {
+      // Per-card xPercent: right-side cards (0 = left-anchored) vs
+      // left-side cards (-100 = right-anchored, per the mirrored `left`
+      // anchor placeCards() records for them).
+      onPage.forEach((card) => {
+        gsap.set(card, { yPercent: -50, xPercent: card.dataset.side === 'left' ? -100 : 0 });
+      });
+    } else {
+      gsap.set(onPage, { yPercent: -50, xPercent: 0 });
+    }
     gsap.fromTo(
       onPage,
       axis === 'h' ? { autoAlpha: 0, y: 22 } : { autoAlpha: 0, x: 26 },
@@ -825,6 +875,30 @@ function init() {
       mv.apply();
     }
   });
+
+  // A direct-entry parked view (see below) lays out its cards synchronously
+  // at page-load time, which can race ahead of web-font loading — re-run
+  // placement once fonts settle so any font-driven reflow (line count,
+  // card height) is reflected.
+  document.fonts?.ready.then(() => {
+    if (mv && mv.view !== 'map' && !mv.busy) mv.placeCards();
+  });
+
+  // The about platform's vertical card-stacking (placeCards()'s 'd' branch,
+  // see ride.ts) measures each card's rendered height to keep cards from
+  // overlapping — but the bio card's lazy-loaded photo can finish loading
+  // (and change the row's stretched height) after that measurement runs,
+  // leaving stale, now-overlapping positions. Re-run placement once it's in.
+  const bioPhoto = document.querySelector<HTMLImageElement>('.card-about-bio .photo');
+  if (bioPhoto && !bioPhoto.complete) {
+    bioPhoto.addEventListener(
+      'load',
+      () => {
+        if (mv && mv.view !== 'map' && !mv.busy) mv.placeCards();
+      },
+      { once: true },
+    );
+  }
 
   const initial = (document.body.dataset.initialView ?? 'map') as ViewId;
   if (initial !== 'map') {

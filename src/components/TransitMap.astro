@@ -59,7 +59,7 @@ const LAKE = 'M880,-1600 L2600,-1600 L2600,2000 L880,2000 L880,1310 L1030,1160 L
     aria-hidden="true"
   >
     <g data-camera-land>
-      <rect x="-1600" y="-1600" width="4200" height="3600" fill={LAND} />
+      <rect x="-2600" y="-1600" width="5200" height="3800" fill={LAND} />
       <g data-land-zones>
         <rect x="150" y="90" width="700" height="580" rx="26" fill={CITY} />
         {PARKS.map(([x, y, w, h]) => (
@@ -67,7 +67,7 @@ const LAKE = 'M880,-1600 L2600,-1600 L2600,2000 L880,2000 L880,1310 L1030,1160 L
         ))}
       </g>
       <!-- faint graph grid: map-paper feel; water covers it -->
-      <rect x="-1600" y="-1600" width="4200" height="3600" fill="url(#grid)" opacity="0.05" />
+      <rect x="-2600" y="-1600" width="5200" height="3800" fill="url(#grid)" opacity="0.05" />
       <g data-land-water>
         <polyline points={polyPoints(RIVER)} fill="none" stroke={WATER} stroke-width="24" stroke-linejoin="round" />
         <path d={LAKE} fill={WATER} />
