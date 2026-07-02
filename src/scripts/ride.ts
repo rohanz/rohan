@@ -65,6 +65,12 @@ class MapView {
   view: ViewId = 'map';
   page = 0;
   busy = false;
+  /** Projects filter: indices (into cardsFor('projects')) of cards that
+   *  match the active filter pill, in original order. Display slot j on
+   *  the current page maps to card `order[page * perPage + j]`. Other
+   *  views keep the identity order (no filtering UI). */
+  order: number[] = [];
+  filter = 'all';
 
   apply = () => {
     const tx = CX - this.state.s * this.state.x;
@@ -122,7 +128,7 @@ class MapView {
     return {
       s,
       x: cx0 - (toWorldX(0.4, s) - CX) / s,
-      y: cy0 - (toWorldY(0.48, s) - CY) / s,
+      y: cy0 - (toWorldY(0.6, s) - CY) / s,
     };
   }
 
@@ -157,17 +163,37 @@ class MapView {
     return Array.from(document.querySelectorAll<HTMLElement>(`#platform-ui [data-card="${id}"]`));
   }
 
+  /** Display order for a view: for 'projects' this is the (possibly
+   *  filtered) `this.order`; every other view shows all its cards in
+   *  source order. */
+  orderFor(id: LineId): number[] {
+    if (id === 'projects' && this.order.length) return this.order;
+    return this.cardsFor(id).map((_, i) => i);
+  }
+
+  pagesFor(id: LineId): number {
+    const line = lineById(id);
+    return Math.max(1, Math.ceil(this.orderFor(id).length / line.platform!.perPage));
+  }
+
   placeCards() {
     if (this.view === 'map') return;
     const line = lineById(this.view);
     const p = line.platform!;
     const { rect } = this.metrics();
+    const cards = this.cardsFor(this.view);
+    const order = this.orderFor(this.view);
     const from = this.page * p.perPage;
-    this.cardsFor(this.view).forEach((card, i) => {
-      const onPage = i >= from && i < from + p.perPage;
-      card.style.display = onPage ? '' : 'none';
-      if (!onPage) return;
-      const [sx, sy] = this.worldToScreen(p.stops[i]);
+    cards.forEach((card) => {
+      card.style.display = 'none';
+    });
+    for (let j = 0; j < p.perPage; j++) {
+      const idx = order[from + j];
+      if (idx === undefined) continue;
+      const card = cards[idx];
+      if (!card) continue;
+      card.style.display = '';
+      const [sx, sy] = this.worldToScreen(p.stops[from + j]);
       if (p.axis === 'h') {
         card.style.left = `${sx}px`;
         card.style.top = `${sy + 0.055 * rect.height}px`;
@@ -175,7 +201,17 @@ class MapView {
         card.style.left = `${sx + 0.04 * rect.width}px`;
         card.style.top = `${sy}px`;
       }
-    });
+    }
+  }
+
+  /** Show/hide the edge paging buttons for the current view + page. */
+  updateMoreButtons() {
+    if (!this.ui || this.view === 'map') return;
+    const pages = this.pagesFor(this.view);
+    const more = this.ui.querySelector<HTMLButtonElement>('#more-next');
+    const back = this.ui.querySelector<HTMLButtonElement>('#more-prev');
+    if (more) more.hidden = pages <= 1 || this.page >= pages - 1;
+    if (back) back.hidden = pages <= 1 || this.page === 0;
   }
 
   showUI(id: LineId) {
@@ -187,17 +223,35 @@ class MapView {
     const section = document.getElementById('bar-section');
     if (bar) gsap.to(bar, { backgroundColor: line.hex, duration: 0.4, ease: 'power1.out', overwrite: 'auto' });
     if (section) section.textContent = line.nav!.name;
-    const pages = Math.ceil(line.platform!.stops.length / line.platform!.perPage);
-    const pager = this.ui.querySelector<HTMLElement>('#pager');
-    if (pager) pager.hidden = pages <= 1;
-    this.updatePager();
+
+    // Reset the projects filter whenever the view is (re)entered.
+    const filterBar = this.ui.querySelector<HTMLElement>('#filter-bar');
+    if (id === 'projects') {
+      this.filter = 'all';
+      this.order = this.cardsFor('projects').map((_, i) => i);
+      filterBar?.querySelectorAll<HTMLButtonElement>('.filter-tag').forEach((btn) => {
+        const active = btn.dataset.filter === 'all';
+        btn.classList.toggle('active', active);
+        btn.setAttribute('aria-pressed', String(active));
+      });
+      if (filterBar) filterBar.hidden = false;
+    } else if (filterBar) {
+      filterBar.hidden = true;
+    }
+
+    const more = this.ui.querySelector<HTMLButtonElement>('#more-next');
+    const back = this.ui.querySelector<HTMLButtonElement>('#more-prev');
+    if (more) more.style.background = line.hex;
+    if (back) back.style.background = line.hex;
+    this.updateMoreButtons();
+
     document.querySelectorAll<HTMLElement>('#platform-ui [data-content]').forEach((sec) => {
       sec.hidden = sec.getAttribute('data-content') !== id;
     });
     this.placeCards();
     this.cardsIn(id);
     gsap.fromTo(
-      ['#back-map', '#pager'],
+      ['#back-map', '#more-next', '#more-prev', '#filter-bar'],
       { autoAlpha: 0 },
       { autoAlpha: 1, duration: 0.4, ease: 'power1.out', overwrite: 'auto' },
     );
@@ -226,7 +280,7 @@ class MapView {
   hideUI(fast = false) {
     if (!this.ui) return;
     const ui = this.ui;
-    gsap.to(['#platform-ui [data-card]', '#back-map', '#pager'], {
+    gsap.to(['#platform-ui [data-card]', '#back-map', '#more-next', '#more-prev', '#filter-bar'], {
       autoAlpha: 0,
       duration: fast ? 0.15 : 0.3,
       ease: 'power1.in',
@@ -235,18 +289,6 @@ class MapView {
         ui.hidden = true;
       },
     });
-  }
-
-  updatePager() {
-    if (this.view === 'map' || !this.ui) return;
-    const line = lineById(this.view);
-    const pages = Math.ceil(line.platform!.stops.length / line.platform!.perPage);
-    const label = this.ui.querySelector('#pager-label');
-    if (label) label.textContent = `${this.page + 1} / ${pages}`;
-    const prev = this.ui.querySelector<HTMLButtonElement>('#pager-prev');
-    const next = this.ui.querySelector<HTMLButtonElement>('#pager-next');
-    if (prev) prev.disabled = this.page === 0;
-    if (next) next.disabled = this.page >= pages - 1;
   }
 
   light(el: Element | null, keep = false) {
@@ -282,10 +324,7 @@ class MapView {
     return forward ? clipped : clipped.slice().reverse();
   }
 
-  pulseStops(
-    line: Line,
-    sampler: ReturnType<typeof pathSampler>,
-  ): { d: number; el: Element | null; keep?: boolean }[] {
+  pulseStops(line: Line, sampler: ReturnType<typeof pathSampler>): { d: number; el: Element | null }[] {
     const pts = sampler.pts;
     const cum = sampler.cum;
     const arc = (q: Point) => {
@@ -302,7 +341,7 @@ class MapView {
       }
       return best;
     };
-    const sorted = [...line.ticks, ...(line.platform?.stops ?? [])]
+    return [...line.ticks, ...(line.platform?.stops ?? [])]
       .map((t) => ({ p: arc(t), at: t }))
       .filter(({ p }) => p.off < 8 && p.d > 20)
       .sort((a, b) => a.p.d - b.p.d)
@@ -310,11 +349,6 @@ class MapView {
         d: p.d,
         el: document.querySelector(`circle[data-at="${at[0]},${at[1]}"]`),
       }));
-    // The stop nearest the destination (the last platform stop the ride
-    // passes) stays amber rather than fading, echoing the terminal capsule.
-    const last = sorted[sorted.length - 1];
-    if (last) (last as { keep?: boolean }).keep = true;
-    return sorted;
   }
 
   toPlatform(id: LineId, animate = true) {
@@ -345,7 +379,6 @@ class MapView {
     stops.push({
       d: sampler.total,
       el: document.querySelector(`[data-destination="${line.id}"] circle`),
-      keep: true,
     });
     let nextStop = 0;
     let lastAt: Point = start;
@@ -360,7 +393,7 @@ class MapView {
       this.state.y = at[1];
       const dNow = prog.p * sampler.total;
       while (nextStop < stops.length && stops[nextStop].d <= dNow) {
-        this.light(stops[nextStop].el, stops[nextStop].keep);
+        this.light(stops[nextStop].el);
         nextStop++;
       }
       const speedPx = Math.hypot(at[0] - lastAt[0], at[1] - lastAt[1]) * this.state.s;
@@ -379,7 +412,7 @@ class MapView {
         // Flush any remaining stops as if we'd reached the very end.
         const dNow = sampler.total + 1;
         while (nextStop < stops.length && stops[nextStop].d <= dNow) {
-          this.light(stops[nextStop].el, stops[nextStop].keep);
+          this.light(stops[nextStop].el);
           nextStop++;
         }
         this.echo.k = 0;
@@ -485,7 +518,7 @@ class MapView {
     if (this.busy || this.view === 'map') return;
     const id = this.view;
     const line = lineById(id);
-    const pages = Math.ceil(line.platform!.stops.length / line.platform!.perPage);
+    const pages = this.pagesFor(id);
     if (page < 0 || page >= pages) return;
     this.busy = true;
     const visible = this.cardsFor(id).filter((c) => c.style.display !== 'none');
@@ -498,10 +531,57 @@ class MapView {
       onUpdate: this.apply,
       onComplete: () => {
         this.page = page;
-        this.updatePager();
         this.placeCards();
         this.cardsIn(id);
+        this.updateMoreButtons();
         this.busy = false;
+      },
+    });
+  }
+
+  /** Projects-only: filter which cards occupy the platform's stop slots by
+   *  technology, resetting to page 0. Camera stays put unless we were on a
+   *  later page, in which case it eases back to page 0's pose. */
+  applyFilter(tag: string) {
+    if (this.busy || this.view !== 'projects' || !this.ui) return;
+    const cards = this.cardsFor('projects');
+    this.filter = tag;
+    this.order =
+      tag === 'all'
+        ? cards.map((_, i) => i)
+        : cards.reduce<number[]>((acc, c, i) => {
+            if ((c.getAttribute('data-tech') ?? '').split('|').includes(tag)) acc.push(i);
+            return acc;
+          }, []);
+
+    this.ui.querySelectorAll<HTMLButtonElement>('#filter-bar .filter-tag').forEach((btn) => {
+      const active = btn.dataset.filter === tag;
+      btn.classList.toggle('active', active);
+      btn.setAttribute('aria-pressed', String(active));
+    });
+
+    const line = lineById('projects');
+    const returningToTop = this.page !== 0;
+    this.busy = true;
+    const visible = cards.filter((c) => c.style.display !== 'none');
+    gsap.to(visible, {
+      autoAlpha: 0,
+      duration: 0.2,
+      ease: 'power1.in',
+      onComplete: () => {
+        const finish = () => {
+          this.page = 0;
+          this.placeCards();
+          this.cardsIn('projects');
+          this.updateMoreButtons();
+          this.busy = false;
+        };
+        if (returningToTop) {
+          const park = this.parkPose(line, 0);
+          gsap.to(this.state, { ...park, duration: 0.5, ease: 'power2.inOut', onUpdate: this.apply, onComplete: finish });
+        } else {
+          finish();
+        }
       },
     });
   }
@@ -596,8 +676,12 @@ function init() {
     .forEach((el) => bind(el, el.getAttribute('data-ride-line')));
 
   document.getElementById('back-map')?.addEventListener('click', () => go('map'));
-  document.getElementById('pager-prev')?.addEventListener('click', () => mv?.toPage(mv.page - 1));
-  document.getElementById('pager-next')?.addEventListener('click', () => mv?.toPage(mv.page + 1));
+  document.getElementById('more-prev')?.addEventListener('click', () => mv?.toPage(mv.page - 1));
+  document.getElementById('more-next')?.addEventListener('click', () => mv?.toPage(mv.page + 1));
+  document.getElementById('filter-bar')?.addEventListener('click', (e) => {
+    const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('.filter-tag');
+    if (btn) mv?.applyFilter(btn.dataset.filter ?? 'all');
+  });
 
   window.addEventListener('popstate', () => {
     if (!mv) return;

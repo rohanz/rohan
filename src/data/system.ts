@@ -90,7 +90,7 @@ export const LINES: Line[] = [
     hex: CTA.red,
     nav: { href: '/projects', name: 'Projects' },
     points: [
-      [-1500, 500],
+      [-1450, 500],
       [120, 500],
       [240, 380],
       [840, 380],

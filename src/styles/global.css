@@ -74,7 +74,8 @@ img { max-width: 100%; display: block; }
 body.home #station-board {
   position: absolute;
   right: 28px;
-  top: 28px;
+  top: 50%;
+  transform: translateY(-50%);
   width: min(380px, 82vw);
   z-index: 10;
 }
