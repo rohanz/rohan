@@ -2,6 +2,7 @@
 // Faint continuation of the transit mesh behind inner-page content, so every
 // page reads as another place on the same map the ride just crossed.
 import { LINES, VIEWBOX, type Point } from '../data/system';
+import { filletPath } from '../lib/fillet';
 
 interface Props {
   /** The page's own line is drawn slightly stronger. */
@@ -20,8 +21,8 @@ function polyPoints(pts: Point[]) {
   aria-hidden="true"
 >
   {LINES.map((line) => (
-    <polyline
-      points={polyPoints(line.points)}
+    <path
+      d={filletPath(line.points)}
       fill="none"
       stroke={line.hex}
       stroke-width={line.id === lineId ? 8 : 6}

@@ -1,5 +1,6 @@
 ---
 import { LINES, NAV_LINES, HOME, VIEWBOX, type Point } from '../data/system';
+import { filletPath } from '../lib/fillet';
 
 function polyPoints(pts: Point[]) {
   return pts.map(([x, y]) => `${x},${y}`).join(' ');
@@ -79,9 +80,9 @@ const LAKE = 'M880,-1600 L2600,-1600 L2600,2000 L880,2000 L880,1160 L930,1110 L9
     <g data-camera>
       {LINES.map((line) => (
         <g data-line={line.id} class:list={['line-group', { nav: !!line.nav }]}>
-          <polyline
+          <path
             class="line-path"
-            points={polyPoints(line.points)}
+            d={filletPath(line.points)}
             fill="none"
             stroke={line.hex}
             stroke-width={line.nav ? 9 : 7}
@@ -89,11 +90,11 @@ const LAKE = 'M880,-1600 L2600,-1600 L2600,2000 L880,2000 L880,1160 L930,1110 L9
             stroke-linejoin="round"
           />
           {line.nav && (
-            <polyline
+            <path
               class="hit-path"
               data-ride-line={line.id}
               data-href={line.nav.href}
-              points={polyPoints(line.points)}
+              d={filletPath(line.points)}
               fill="none"
               stroke="transparent"
               stroke-width="26"

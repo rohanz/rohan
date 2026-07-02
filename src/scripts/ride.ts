@@ -1,6 +1,7 @@
 import gsap from 'gsap';
 import { navigate } from 'astro:transitions/client';
 import { HOME, VIEWBOX, lineById, type LineId, type Point } from '../data/system';
+import { filletPoints } from '../lib/fillet';
 
 const DIVE_SCALE = 2.6; // zoom after gliding onto HOME
 const RIDE_SCALE = 5.0; // zoom while riding
@@ -50,7 +51,9 @@ function ride(lineId: LineId, href: string) {
   }
 
   stage.classList.add('ride-active');
-  const sample = pathSampler(path);
+  // Camera follows the same filleted geometry the tracks are drawn with,
+  // so every turn is a sweep rather than a snap.
+  const sample = pathSampler(filletPoints(path));
 
   // Flat camera: pan + zoom only, in SVG vector space (crisp at any zoom).
   const state = { x: CX, y: CY, s: 1, p: 0 };
@@ -106,12 +109,12 @@ function ride(lineId: LineId, href: string) {
 
   // (a) glide onto HOME and zoom in — no travel yet
   tl.to(board, { autoAlpha: 0, duration: 0.3, ease: 'power1.out' }, 0);
-  tl.to(state, { x: HOME[0], y: HOME[1], s: DIVE_SCALE, duration: 1.0, ease: 'power2.inOut', onUpdate: apply }, 0.05);
+  tl.to(state, { x: HOME[0], y: HOME[1], s: DIVE_SCALE, duration: 0.75, ease: 'power2.inOut', onUpdate: apply }, 0.05);
 
   // (b) accelerate along the line, blur building with speed
-  const RUN_START = 1.2;
-  const ACCEL = 2.2;
-  const BRAKE = 1.15;
+  const RUN_START = 0.9;
+  const ACCEL = 1.5;
+  const BRAKE = 1.0;
   tl.to(state, { p: 0.78, duration: ACCEL, ease: 'power2.in', onUpdate: moveSample }, RUN_START);
   tl.to(state, { s: RIDE_SCALE, duration: ACCEL, ease: 'power1.in', onUpdate: apply }, RUN_START);
 
