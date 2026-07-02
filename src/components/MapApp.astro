@@ -66,7 +66,7 @@ const socials: [string, string][] = [
 
     <div id="platform-ui" hidden>
       <button id="more-prev" class="edge-btn edge-btn-left" type="button" hidden>← Back</button>
-      <button id="more-next" class="edge-btn edge-btn-right" type="button" hidden>More projects →</button>
+      <button id="more-next" class="edge-btn edge-btn-right" type="button" hidden>More →</button>
       <div id="filter-bar" hidden>
         <button type="button" class="filter-tag active" data-filter="all" aria-pressed="true">all</button>
         {filterTags.map((t) => (
@@ -241,10 +241,6 @@ const socials: [string, string][] = [
     .logo-name { font-size: 1.3rem; }
     .logo-sub { font-size: 1.05rem; }
     .map-stage { height: calc(100dvh - 60px); padding: 0; }
-    :global(#station-board) { left: auto; right: 20px; top: auto; bottom: 20px; transform: none; width: min(230px, 82vw); }
-    /* Rail docks to the bottom on mobile, not the left edge, so the paging
-       button doesn't need the desktop rail clearance. */
-    .edge-btn-left { left: 20px; }
   }
 
   /* ------------------------------------------------------------------ */
@@ -286,9 +282,20 @@ const socials: [string, string][] = [
   .edge-btn:hover { filter: brightness(1.12); }
   .edge-btn[hidden] { display: none; }
   .edge-btn-right { right: 20px; }
-  /* Clears the persistent left rail (28px + ~230px wide) instead of
-     sitting under/beside it. */
-  .edge-btn-left { left: 270px; }
+  /* Clears the persistent left rail. The rail narrows on small screens
+     (clamp(160px,16vw,230px)), so the button follows with a matching clamp
+     rather than a fixed 270px that would float far from a narrow rail. */
+  .edge-btn-left { left: clamp(200px, calc(28px + 16vw + 16px), 274px); }
+
+  /* On narrow viewports the right-edge paging button competes with the
+     rightmost card for horizontal space, so drop the pair to the bottom
+     corners (music never paginates, so only projects/about are affected,
+     and their cards sit clear of the bottom band). */
+  @media (max-width: 1000px) {
+    .edge-btn { top: auto; bottom: 22px; transform: none; }
+    .edge-btn-left { left: 24px; }
+    .edge-btn-right { right: 24px; }
+  }
 
   /* Cards: absolutely positioned by the engine (left/top + GSAP transforms).
      No transform set here — GSAP owns it. */
@@ -543,62 +550,61 @@ const socials: [string, string][] = [
   }
   .filter-tag:hover:not(.active) { border-color: #d13d59; color: #1a1a1a; }
 
+  /* About platform: UNIFORM station cards. Every card is the same width and
+     shares a min-height (both set inline by placeCards()/aboutGeom() in
+     ride.ts, scaled to the viewport with clamp-like bounds), so the diagonal
+     run reads as evenly-spaced identical cards rather than a jumble of sizes.
+     Content is vertically centered in the box; the bio card keeps its
+     photo-beside-text row. overflow:hidden is a safety net against rare
+     content overrun so a card can never grow past the shared height and
+     collide with its neighbour. */
   .card-about {
-    width: 300px;
-  }
-  /* The bio card carries a portrait photo beside the text. Both children are
-     stretched (align-items: stretch, the flex default) so the card's height
-     is set purely by content — no fixed heights left over as a phantom
-     white strip below the shorter of the two. */
-  .card-about-bio {
-    /* Wider, with a smaller photo, than the original design so the bio
-       text needs fewer wrapped lines — the diagonal platform's stops sit
-       closer together than this card is tall, so a shorter card leaves
-       more headroom before the vertical stacking in placeCards() (ride.ts)
-       has to push neighboring cards down to avoid it. */
-    width: 430px;
+    width: 300px; /* pre-JS fallback; real width set inline */
     display: flex;
-    align-items: stretch;
-    gap: 0;
-    padding: 0;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.35rem;
     overflow: hidden;
   }
   .about-label { margin: 0 0 0.4rem; font-size: 0.66rem; letter-spacing: 0.16em; text-transform: uppercase; color: #6f6a60; }
+  .card-about-bio {
+    flex-direction: row;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 0;
+    padding: 0;
+  }
   .card-about-bio .photo {
-    width: 130px;
-    /* No fixed height: stretches to match the text column via the flex
-       row's align-items: stretch, so object-fit: cover always fills the
-       card's full (content-driven) height with no leftover gap. */
+    width: 38%;
+    max-width: 130px;
+    min-width: 72px;
     flex: none;
     object-fit: cover;
     display: block;
   }
   .card-about-bio .bio {
     margin: 0;
-    padding: 0.6rem 0.8rem;
-    font-size: 0.78rem;
-    line-height: 1.32;
+    padding: 0.55rem 0.7rem;
+    font-size: clamp(0.6rem, 0.82vw, 0.76rem);
+    line-height: 1.28;
     flex: 1 1 auto;
+    align-self: center;
   }
   .stat-row { display: flex; gap: 0.5rem; }
   .stat-tile { flex: 1; background: #815e49; color: #fff; border-radius: 8px; padding: 0.5rem 0.6rem; display: flex; flex-direction: column; }
   .stat-value { font-size: 1.2rem; font-weight: 800; line-height: 1; }
   .stat-label { margin-top: 0.2rem; font-size: 0.68rem; opacity: 0.9; }
   .chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.3rem; }
-  .chip { font-size: 0.64rem; font-weight: 700; border-radius: 999px; padding: 0.16rem 0.55rem; background: #eee7db; color: #3a352b; }
-  /* Sized to its content (not the shared card width) so there's no dead
-     space to the right of the button row — and wide enough that all four
-     buttons sit on one line instead of wrapping. */
-  .card-about-socials { width: fit-content; max-width: none; }
-  .social-buttons { display: flex; flex-wrap: nowrap; gap: 0.4rem; }
-  .social-btn { text-decoration: none; font-weight: 700; font-size: 0.78rem; color: #fff; background: #815e49; border-radius: 8px; padding: 0.4rem 0.75rem; }
+  .chip { font-size: clamp(0.56rem, 0.8vw, 0.64rem); font-weight: 700; border-radius: 999px; padding: 0.16rem 0.5rem; background: #eee7db; color: #3a352b; }
+  .social-buttons { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+  .social-btn { text-decoration: none; font-weight: 700; font-size: clamp(0.68rem, 0.9vw, 0.78rem); color: #fff; background: #815e49; border-radius: 8px; padding: 0.4rem 0.72rem; }
   .social-btn:hover { filter: brightness(1.12); }
   .cv-btn {
     display: block;
     text-align: center;
     text-decoration: none;
     font-weight: 800;
-    font-size: 0.95rem;
+    font-size: clamp(0.82rem, 1vw, 0.95rem);
     color: #fff;
     background: #815e49;
     border-radius: 8px;
