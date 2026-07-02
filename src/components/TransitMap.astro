@@ -1,0 +1,85 @@
+---
+import { LINES, VIEWBOX } from '../data/system';
+
+function polyPoints(pts: [number, number][]) {
+  return pts.map(([x, y]) => `${x},${y}`).join(' ');
+}
+---
+<svg
+  id="transit-map"
+  class="transit-map"
+  viewBox={`0 0 ${VIEWBOX.w} ${VIEWBOX.h}`}
+  preserveAspectRatio="xMidYMid meet"
+  role="img"
+  aria-hidden="true"
+>
+  <g data-camera>
+    {LINES.map((line) => (
+      <g data-line={line.id} class="line-group">
+        <polyline
+          class="line-path"
+          points={polyPoints(line.points)}
+          fill="none"
+          stroke={line.hex}
+          stroke-width="7"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+        {line.stations.filter((s) => s.kind === 'dud').map((s) => (
+          <g class="dud">
+            <circle cx={s.at[0]} cy={s.at[1]} r="5" fill="var(--bg)" stroke={line.hex} stroke-width="2.5" />
+            <text x={s.at[0] + 9} y={s.at[1] + 4} class="dud-label" fill="var(--muted)">{s.name}</text>
+          </g>
+        ))}
+      </g>
+    ))}
+
+    <!-- HOME interchange (shared point, drawn once on top) -->
+    <g class="home">
+      <circle cx={LINES[0].stations[0].at[0]} cy={LINES[0].stations[0].at[1]} r="15" fill="var(--bg)" stroke="var(--ink)" stroke-width="4" />
+      <text x={LINES[0].stations[0].at[0]} y={LINES[0].stations[0].at[1] - 24} class="home-label" fill="var(--ink)" text-anchor="middle">HOME</text>
+    </g>
+
+    <!-- Terminal signs: clickable for mouse/touch, but tabindex="-1" — the whole
+         SVG is aria-hidden decoration; the StationBoard nav is the keyboard/SR path. -->
+    {LINES.map((line) => {
+      const t = line.stations.find((s) => s.kind === 'terminal')!;
+      const w = Math.max(120, t.name.length * 18 + 40);
+      const x = Math.min(Math.max(t.at[0] - w / 2, 8), VIEWBOX.w - w - 8);
+      const y = t.at[1] - 58;
+      return (
+        <a
+          href={t.href}
+          data-terminal
+          data-line={line.id}
+          class="terminal"
+          tabindex="-1"
+          style={`view-transition-name: sign-${line.id};`}
+        >
+          <circle cx={t.at[0]} cy={t.at[1]} r="11" fill="var(--bg)" stroke={line.hex} stroke-width="4" />
+          <rect x={x} y={y} width={w} height="44" rx="6" fill={line.hex} class="terminal-sign" />
+          <text x={x + w / 2} y={y + 29} class="terminal-text" fill="#fff" text-anchor="middle">{t.name}</text>
+        </a>
+      );
+    })}
+  </g>
+  <g id="streaks" aria-hidden="true"></g>
+</svg>
+
+<style>
+  .transit-map { width: 100%; height: 100%; display: block; }
+  .dud-label { font-size: 14px; font-weight: 500; }
+  .home-label { font-size: 17px; font-weight: 800; letter-spacing: 0.04em; }
+  .terminal { cursor: pointer; }
+  .terminal-text { font-size: 22px; font-weight: 800; letter-spacing: 0.01em; pointer-events: none; }
+  .terminal-sign { transition: transform 0.18s ease, filter 0.18s ease; transform-box: fill-box; transform-origin: center; }
+  .terminal:hover .terminal-sign,
+  .terminal:focus-visible .terminal-sign { transform: translateY(-3px) scale(1.03); filter: brightness(1.12); }
+  .terminal:focus-visible { outline: none; }
+  .terminal:focus-visible .terminal-sign { outline: 3px solid var(--ink); }
+  /* Ride state hooks (used by Task 9) */
+  #transit-map.ride-active .line-group:not(.ridden) { filter: blur(4px); opacity: 0.35; transition: filter 0.35s ease, opacity 0.35s ease; }
+  @media (prefers-reduced-motion: reduce) {
+    .terminal-sign { transition: none; }
+  }
+</style>

@@ -1,0 +1,32 @@
+---
+import { LINES } from '../data/system';
+const dests = LINES.map((l) => ({
+  id: l.id,
+  hex: l.hex,
+  name: l.stations.find((s) => s.kind === 'terminal')!.name,
+  href: l.stations.find((s) => s.kind === 'terminal')!.href!,
+}));
+---
+<nav id="station-board" class="station-board" aria-label="destinations">
+  <p class="board-title">stops</p>
+  <ul>
+    {dests.map((d) => (
+      <li>
+        <a href={d.href} data-terminal data-line={d.id} data-astro-prefetch="hover" class="board-link">
+          <span class="dot" style={`background:${d.hex}`} aria-hidden="true"></span>
+          <span class="board-name">{d.name}</span>
+        </a>
+      </li>
+    ))}
+  </ul>
+</nav>
+
+<style>
+  .station-board { background: var(--board); color: #fff; border-radius: var(--radius); padding: 1.25rem 1.4rem; box-shadow: 0 12px 40px rgba(0,0,0,0.22); }
+  .board-title { margin: 0 0 0.85rem; font-size: 0.7rem; letter-spacing: 0.22em; text-transform: uppercase; color: #9a958c; }
+  .station-board ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.35rem; }
+  .board-link { display: flex; align-items: center; gap: 0.85rem; padding: 0.7rem 0.6rem; border-radius: 8px; text-decoration: none; color: #fff; font-weight: 700; font-size: 1.15rem; transition: background 0.15s ease; }
+  .board-link:hover, .board-link:focus-visible { background: rgba(255,255,255,0.09); }
+  .dot { width: 14px; height: 14px; border-radius: 50%; flex: none; transition: transform 0.15s ease; }
+  .board-link:hover .dot, .board-link:focus-visible .dot { transform: scale(1.35); }
+</style>
