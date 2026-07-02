@@ -79,11 +79,18 @@ body.home #station-board {
   left: 28px;
   top: 50%;
   transform: translateY(-50%);
-  width: min(230px, 60vw);
+  /* Narrows on smaller viewports but stays docked to the LEFT at every width
+     (rather than jumping to the bottom-right, where it used to overlap the
+     rightmost/lowest platform content). The per-page camera framing keeps
+     cards clear of this left band, leaving the right side free. */
+  width: clamp(160px, 16vw, 230px);
   z-index: 10;
 }
-@media (max-width: 768px) {
-  body.home #station-board { left: auto; right: 20px; top: auto; bottom: 20px; transform: none; width: min(230px, 82vw); }
+/* When the rail narrows on smaller viewports, trim the label type a touch so
+   destination names ("About Me") stay on a single line. */
+@media (max-width: 1024px) {
+  body.home #station-board .board-name { font-size: 0.98rem; }
+  body.home #station-board .board-title { font-size: 1rem; }
 }
 
 /* Inner pages sit on the same map land as the homepage world. */

@@ -111,37 +111,36 @@ class MapView {
   /** Camera pose for a line's platform page, per axis. */
   parkPose(line: Line, page: number) {
     const p = line.platform!;
-    const slice = p.stops.slice(page * p.perPage, (page + 1) * p.perPage);
-    const cx0 = slice.reduce((a, s2) => a + s2[0], 0) / slice.length;
+    if (p.axis === 'd') {
+      const g = this.aboutGeom(page);
+      return { s: g.s, x: g.x, y: g.y };
+    }
+    const per = this.perPageFor(line.id as LineId);
+    const slice = p.stops.slice(page * per, (page + 1) * per);
     const cy0 = slice.reduce((a, s2) => a + s2[1], 0) / slice.length;
     const { rect, k, cropX, cropY } = this.metrics();
-    const toWorldX = (fx: number, s: number) => (fx * rect.width + cropX) / k;
-    const toWorldY = (fy: number, s: number) => (fy * rect.height + cropY) / k;
+    const toWorldX = (fx: number) => (fx * rect.width + cropX) / k;
+    const toWorldY = (fy: number) => (fy * rect.height + cropY) / k;
     if (p.axis === 'v') {
       const s = rect.height / k / 560;
       // Nudge the vertical center down slightly so the destination roundel
       // just above the topmost stop clears the top bar with margin instead
       // of getting clipped by the map stage's overflow boundary. The
-      // horizontal anchor (0.30, up from 0.24) keeps the platform clear of
-      // the persistent left nav rail (~230px + margin).
-      return { s, x: slice[0][0] - (toWorldX(0.3, s) - CX) / s, y: cy0 - 20 };
+      // horizontal anchor (0.30) keeps the platform clear of the persistent
+      // left nav rail.
+      return { s, x: slice[0][0] - (toWorldX(0.3) - CX) / s, y: cy0 - 20 };
     }
-    if (p.axis === 'h') {
-      const s = rect.width / k / 900;
-      // Anchor the page's leftmost stop at 30% across the viewport (rather
-      // than centering the page) so its cards — which start right at the
-      // stop's screen x — clear the persistent left rail (~28px + 230px +
-      // margin) instead of sliding underneath it.
-      return { s, x: slice[0][0] - (toWorldX(0.3, s) - CX) / s, y: slice[0][1] - (toWorldY(0.3, s) - CY) / s };
-    }
-    const s = Math.min(rect.width, rect.height * 1.35) / k / 780;
-    return {
-      s,
-      // 0.46 (up from 0.4): shifted right of center so the diagonal's cards
-      // — which sit right of each stop — clear the rail too.
-      x: cx0 - (toWorldX(0.46, s) - CX) / s,
-      y: cy0 - (toWorldY(0.54, s) - CY) / s,
-    };
+    // axis 'h' (projects): anchor the leftmost stop so its card — centered on
+    // the stop (xPercent -50) — clears the left rail even when the rail is
+    // narrow and the cards are small; on wide screens this floors at 30%.
+    // The track sits at 42% down so the wrapped filter bar above never
+    // reaches the stops, ticks, or cards.
+    const s = rect.width / k / 900;
+    const pitchPx = rect.width * 0.2222;
+    const cardHalf = Math.max(150, pitchPx * 0.62) / 2;
+    const railRight = 28 + Math.min(230, Math.max(160, rect.width * 0.16));
+    const frac = Math.max(0.3, (railRight + 24 + cardHalf) / rect.width);
+    return { s, x: slice[0][0] - (toWorldX(frac) - CX) / s, y: slice[0][1] - (toWorldY(0.42) - CY) / s };
   }
 
   /** Everything that isn't `line`, its stops, or the grid. */
@@ -187,9 +186,74 @@ class MapView {
     return this.cardsFor(id).map((_, i) => i);
   }
 
+  /** Cards shown per platform page. Fixed per line, except the about
+   *  diagonal, which shows fewer cards on narrower viewports so the
+   *  uniform alternating cards always fit on-screen and stay legible. */
+  perPageFor(id: ViewId): number {
+    if (id === 'map') return 1;
+    if (id !== 'about') return lineById(id).platform!.perPage;
+    const { rect } = this.metrics();
+    const w = rect.width;
+    const widthPer = w >= 1760 ? 5 : w >= 1240 ? 3 : w >= 900 ? 2 : 1;
+    // Cards need enough vertical pitch for the (tall) bio, so the count is
+    // also capped by viewport height: on a short viewport even a very wide
+    // screen shows fewer cards rather than squashing them.
+    const heightPer = Math.max(1, Math.floor((rect.height - 120) / 210));
+    return Math.min(widthPer, heightPer);
+  }
+
   pagesFor(id: LineId): number {
-    const line = lineById(id);
-    return Math.max(1, Math.ceil(this.orderFor(id).length / line.platform!.perPage));
+    return Math.max(1, Math.ceil(this.orderFor(id).length / this.perPageFor(id)));
+  }
+
+  /** About (diagonal) layout: camera zoom/pan + a single uniform card size
+   *  for the current page, derived together so cards are the SAME width and
+   *  share a min-height, are evenly pitched along the 45° run, and the whole
+   *  page fits on-screen clear of the persistent left rail. */
+  aboutGeom(page: number) {
+    const stops = lineById('about').platform!.stops;
+    const per = this.perPageFor('about');
+    const { rect, k, cropX, cropY } = this.metrics();
+    const from = page * per;
+    const slice = stops.slice(from, from + per);
+    const n = Math.max(1, slice.length);
+    const railW = Math.min(230, Math.max(160, rect.width * 0.16));
+    const railLeft = 28 + railW + 16; // clear the persistent left nav rail
+    const gap = 16;
+    const marginR = 24;
+    const marginV = 130;
+    let cardW: number;
+    let cardH: number;
+    let s: number;
+    let X: number;
+    let Y: number;
+    if (n === 1) {
+      // Single card per page (narrow screens): left-anchored just past the
+      // rail and width-capped so it clears the right-edge paging button; the
+      // bio's long text still gets a comfortable, legible column here.
+      const rightBtnClear = 200;
+      cardW = Math.min(340, Math.max(240, rect.width - railLeft - gap - rightBtnClear));
+      cardH = Math.min(280, Math.max(190, rect.height * 0.34));
+      s = 200 / (k * 100);
+      const stopX = railLeft; // card left edge = railLeft + gap
+      X = slice[0][0] - (((stopX + cropX) / k - CX) / s);
+      Y = slice[0][1] - (((rect.height * 0.5 + cropY) / k - CY) / s);
+    } else {
+      cardW = Math.min(300, Math.max(200, rect.width * 0.22));
+      // Anchor the page's first (top-left, right-side) stop so a card fits
+      // between the rail and it; solve the pitch P so the last stop's card's
+      // right edge lands exactly on the right margin.
+      const anchorX = railLeft + gap + cardW;
+      let P = (rect.width - anchorX - (marginR + gap + cardW)) / (n - 1);
+      P = Math.min(P, (rect.height - 2 * marginV) / (n - 1));
+      P = Math.max(60, Math.min(P, 300));
+      s = P / (k * 100);
+      cardH = Math.max(120, Math.min(P - 14, 260));
+      X = slice[0][0] - (((anchorX + cropX) / k - CX) / s);
+      const midY = slice[0][1] + ((n - 1) / 2) * 100;
+      Y = midY - (((rect.height * 0.5 + cropY) / k - CY) / s);
+    }
+    return { s, x: X, y: Y, cardW, cardH, per, from };
   }
 
   placeCards() {
@@ -199,7 +263,9 @@ class MapView {
     const { rect } = this.metrics();
     const cards = this.cardsFor(this.view);
     const order = this.orderFor(this.view);
-    const from = this.page * p.perPage;
+    const per = this.perPageFor(this.view);
+    const from = this.page * per;
+    const about = p.axis === 'd' ? this.aboutGeom(this.page) : null;
     cards.forEach((card) => {
       card.style.display = 'none';
     });
@@ -213,17 +279,10 @@ class MapView {
     if (this.view === 'projects' && p.stops.length > 1) {
       const [ax] = this.worldToScreen(p.stops[0]);
       const [bx] = this.worldToScreen(p.stops[1]);
-      cardWidth = Math.max(140, Math.abs(bx - ax) * 0.62);
+      cardWidth = Math.max(150, Math.abs(bx - ax) * 0.62);
     }
 
-    // Diagonal platform (about) only: running bottom edge of the
-    // previously placed card, so a card that's taller than the stop
-    // pitch (the bio card, with its photo, is much taller than the
-    // ~125px spacing between diagonal stops) pushes the next one down
-    // instead of the two overlapping — see the 'd' branch below.
-    let dCursorBottom = -Infinity;
-
-    for (let j = 0; j < p.perPage; j++) {
+    for (let j = 0; j < per; j++) {
       const idx = order[from + j];
       if (idx === undefined) continue;
       const card = cards[idx];
@@ -238,38 +297,20 @@ class MapView {
       if (p.axis === 'h') {
         card.style.left = `${sx}px`;
         card.style.top = `${sy + 0.055 * rect.height}px`;
-      } else if (p.axis === 'd') {
-        // Alternate sides per slot so consecutive cards (close together
-        // along the 45° run) don't cascade horizontally into one another.
-        // Even slots (0, 2, 4 — bio, tech, cv) sit right of their stop, as
-        // every axis does by default; odd slots (1, 3 — stats, socials)
-        // mirror to the left, using the same gap magnitude. `left` records
-        // the anchor edge in both cases — the left edge for right-side
-        // cards, the right edge for left-side ones — and cardsIn() flips
-        // xPercent accordingly.
+      } else if (p.axis === 'd' && about) {
+        // About: uniform, evenly-pitched diagonal cards. Every card gets the
+        // same width and min-height (from aboutGeom, scaled to the viewport)
+        // and is centered on its stop; even slots sit right of the line, odd
+        // slots mirror to the left. aboutGeom frames the camera so the run
+        // always fits clear of the rail, and the pitch exceeds the card
+        // height, so no anti-overlap cursor is needed.
         const onLeft = j % 2 === 1;
         card.dataset.side = onLeft ? 'left' : 'right';
-        const width = card.offsetWidth || 300;
-        const height = card.offsetHeight || 100;
-        const margin = 16;
-        // Vertical: center on the stop as usual, but never start above the
-        // previous card's bottom edge (+ margin) — side-alternation alone
-        // doesn't stop a tall card (bio) from overlapping its vertical
-        // neighbor when stops sit closer together than the cards are tall.
-        const top = Math.max(sy - height / 2, dCursorBottom + margin);
-        dCursorBottom = top + height;
-        card.style.top = `${top + height / 2}px`;
-        if (onLeft) {
-          const gap = 0.04 * rect.width;
-          // Clamp so the mirrored left-side card's left edge stays clear
-          // of the persistent left rail (28px + up to 230px + margin) —
-          // early diagonal stops sit close enough to it that the plain
-          // mirrored gap isn't always enough room.
-          const railClear = 290;
-          card.style.left = `${Math.max(sx - gap, railClear + width)}px`;
-        } else {
-          card.style.left = `${sx + 0.04 * rect.width}px`;
-        }
+        const gap = 16;
+        card.style.width = `${about.cardW}px`;
+        card.style.height = `${about.cardH}px`;
+        card.style.left = `${onLeft ? sx - gap : sx + gap}px`;
+        card.style.top = `${sy}px`;
       } else {
         card.style.left = `${sx + 0.04 * rect.width}px`;
         card.style.top = `${sy}px`;
@@ -288,10 +329,11 @@ class MapView {
     );
     if (!dividers.length) return;
     const p = line.platform!;
+    const per = this.perPageFor(this.view);
     const { rect } = this.metrics();
-    const from = this.page * p.perPage;
+    const from = this.page * per;
     const stops: Point[] = [];
-    for (let j = 0; j < p.perPage; j++) {
+    for (let j = 0; j < per; j++) {
       const s = p.stops[from + j];
       if (s) stops.push(s);
     }
@@ -379,7 +421,10 @@ class MapView {
 
     const more = this.ui.querySelector<HTMLButtonElement>('#more-next');
     const back = this.ui.querySelector<HTMLButtonElement>('#more-prev');
-    if (more) more.style.background = line.hex;
+    if (more) {
+      more.style.background = line.hex;
+      more.textContent = id === 'projects' ? 'More projects →' : 'More →';
+    }
     if (back) back.style.background = line.hex;
     this.updateMoreButtons();
 
