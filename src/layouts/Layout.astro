@@ -46,5 +46,9 @@ const ogAbs = new URL(ogImage, Astro.site).href;
     <a href="#main" class="sr-only">Skip to content</a>
     <div id="routeAnnouncer" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
     <slot />
+    <div id="wipe" aria-hidden="true"></div>
+    <script>
+      import '../scripts/wipe.ts';
+    </script>
   </body>
 </html>
