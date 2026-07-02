@@ -135,7 +135,11 @@ function ride(lineId: LineId, href: string) {
 
   // Flat camera: pan + zoom only, in SVG vector space (crisp at any zoom).
   const state = { x: CX, y: CY, s: 1, p: 0 };
-  let lastAt: Point = [CX, CY];
+  // lastAt must start ON the ride path — seeding it at the viewport center
+  // made the first motion frame compute a phantom ~240px/frame speed, which
+  // flashed the motion blur at full strength for one frame (the "tracks
+  // jump for a split second" glitch, across every blur implementation).
+  let lastAt: Point = start;
   const echo = { dx: 0, dy: 0, k: 0 }; // screen-px offset direction + strength
   const apply = () => {
     const tx = CX - state.s * state.x;
