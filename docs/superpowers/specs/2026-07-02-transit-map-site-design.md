@@ -98,6 +98,31 @@ Theme switcher between stylizations; dark variant (CSS is structured for it); de
 - Mobile viewport pass (responsive mode): map legibility, board docking, horizontal→vertical projects flip.
 - `npm run build` produces a static folder servable with any static server.
 
+## In-map pages (final architecture, evening 2026-07-02)
+
+The pages live INSIDE the map — one continuous world, no page swap for the
+three main sections:
+
+- Riding a line ends PARKED at that line's "platform": a straight vertical
+  stretch with the line ~22% from the left edge, one content stop per item.
+  Everything except the ridden line, its stops, and the graph grid fades
+  out; content cards (song / project / about-section) fade in beside their
+  stops on the right. All three nav lines get a vertical platform stretch
+  (red and brown geometry rerouted accordingly).
+- Content per stop: music = 4 releases (artwork, title, artist, preview,
+  links); projects = 8 projects (image, title, summary, tech) paged 4 per
+  view with next/previous shifting the camera one platform down the line;
+  about = 4 stops (bio, stats, tech stack, socials).
+- "Back to map" plays the ride IN REVERSE back to Home; browser back/
+  forward mirror the same moves (pushState per view, popstate animated).
+- /music, /projects, /about remain real URLs: they render the same map
+  shell with the camera already parked at their platform (no ride) — SEO,
+  sharing, and reduced-motion entry all land instantly.
+- Clicking a project card sweeps left-to-right (existing wipe) into the
+  full markdown detail page, which keeps its classic page layout.
+- Deprecated by this: the standalone music/projects/about page layouts,
+  the circle-reveal arrival, and MapBackdrop on those three routes.
+
 Final ride direction (user decision, end of day 2026-07-02): the WebGL
 diorama and all 3D/perspective treatments were scrapped as unnecessary
 complexity. The shipping ride is flat and top-down, matching the poster:
