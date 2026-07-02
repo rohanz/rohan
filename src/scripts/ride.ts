@@ -56,21 +56,31 @@ function ride(lineId: LineId, href: string) {
   // HOME, where a line with a corner there (purple) is drawn sweeping a few
   // units off the vertex; riding the ideal polyline instead reads as a snap.
   const dense = filletPoints(line.points);
-  const nearest = (q: Point) => {
-    let best = 0;
-    let bd = Infinity;
-    for (let i = 0; i < dense.length; i++) {
-      const d = (dense[i][0] - q[0]) ** 2 + (dense[i][1] - q[1]) ** 2;
-      if (d < bd) {
-        bd = d;
-        best = i;
-      }
+  // True perpendicular projection onto the polyline — vertex-snapping is
+  // wrong on long straight runs (no intermediate vertices), which made the
+  // red ride start 170 units east of Home.
+  const project = (q: Point): { seg: number; t: number; at: Point; d: number } => {
+    let best = { seg: 0, t: 0, at: dense[0], d: Infinity };
+    for (let i = 0; i < dense.length - 1; i++) {
+      const [x1, y1] = dense[i];
+      const [x2, y2] = dense[i + 1];
+      const dx = x2 - x1;
+      const dy = y2 - y1;
+      const len2 = dx * dx + dy * dy || 1;
+      const t = Math.min(1, Math.max(0, ((q[0] - x1) * dx + (q[1] - y1) * dy) / len2));
+      const px = x1 + dx * t;
+      const py = y1 + dy * t;
+      const d = (px - q[0]) ** 2 + (py - q[1]) ** 2;
+      if (d < best.d) best = { seg: i, t, at: [px, py] as Point, d };
     }
     return best;
   };
-  const iH = nearest(HOME);
-  const iD = nearest(path[path.length - 1]);
-  const ridePts = iH <= iD ? dense.slice(iH, iD + 1) : dense.slice(iD, iH + 1).reverse();
+  const pH = project(HOME);
+  const pD = project(path[path.length - 1]);
+  const forward = pH.seg + pH.t <= pD.seg + pD.t;
+  const [a, b] = forward ? [pH, pD] : [pD, pH];
+  const clipped: Point[] = [a.at, ...dense.slice(a.seg + 1, b.seg + 1), b.at];
+  const ridePts = forward ? clipped : clipped.slice().reverse();
   const start = ridePts[0];
   const sample = pathSampler(ridePts);
 
