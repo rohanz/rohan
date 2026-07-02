@@ -52,6 +52,7 @@ function ride(lineId: LineId, href: string) {
 
   stage.classList.add('ride-active');
   const sample = pathSampler(path);
+  const dir0 = sample(0.001).dir;
 
   // Hybrid 3D camera: pan/zoom run in SVG vector space (crisp at any zoom),
   // one camera per depth layer with a slightly different zoom factor — which
@@ -144,19 +145,19 @@ function ride(lineId: LineId, href: string) {
 
   const tl = gsap.timeline({ defaults: { overwrite: 'auto' } });
 
-  // (a) settle down onto HOME: zoom in as the map tilts away like a surface
-  tl.to(board, { autoAlpha: 0, duration: 0.2, ease: 'power1.out' }, 0);
-  tl.to(state, { a: 12, duration: 0.5, ease: 'power2.inOut', onUpdate: apply }, 0);
-  tl.to(state, { x: HOME[0], y: HOME[1], s: DIVE_SCALE, duration: 0.38, ease: 'power2.inOut', onUpdate: apply }, 0.02);
+  // (a) GET INTO POSITION first, stationary at HOME: drop onto the station,
+  // tilt down to track level, and swing the world to face the departure
+  // direction (rotCur pre-set; the blend eases it in with the tilt). No
+  // travel happens until the camera is fully seated.
+  rotCur = -90 - (Math.atan2(dir0[1], dir0[0]) * 180) / Math.PI;
+  tl.to(board, { autoAlpha: 0, duration: 0.3, ease: 'power1.out' }, 0);
+  tl.to(state, { x: HOME[0], y: HOME[1], s: DIVE_SCALE, duration: 1.0, ease: 'power2.inOut', onUpdate: apply }, 0.05);
+  tl.to(state, { a: 45, duration: 1.15, ease: 'power2.inOut', onUpdate: apply }, 0.15);
 
-  // (b) accelerate through the stops…
-  const RUN_START = 0.34;
-  const ACCEL = 0.9;
-  const BRAKE = 0.55;
-  // …settling all the way down to track level FIRST (while speed is still
-  // low), then holding that angle through the whole fast section, so the
-  // track thickness reads constant while moving.
-  tl.to(state, { a: 45, duration: 0.35, ease: 'power2.inOut', onUpdate: apply }, RUN_START);
+  // (b) then the movement starts: pull away and accelerate through the stops
+  const RUN_START = 1.45;
+  const ACCEL = 2.2;
+  const BRAKE = 1.15;
   tl.to(state, { p: 0.78, duration: ACCEL, ease: 'power2.in', onUpdate: moveSample }, RUN_START);
   tl.to(state, { s: RIDE_SCALE, duration: ACCEL, ease: 'power1.in', onUpdate: apply }, RUN_START);
 
@@ -167,7 +168,7 @@ function ride(lineId: LineId, href: string) {
   // (d) a breath at the platform, then dive INTO the station's circle — the
   // destination page picks up mid-dive as a growing circle with the content
   // already inside it (see wipe.ts), so it reads as one continuous move.
-  tl.to(state, { s: 22, duration: 0.4, ease: 'power2.in', onUpdate: apply }, `>+0.1`);
+  tl.to(state, { s: 22, duration: 0.7, ease: 'power2.in', onUpdate: apply }, `>+0.25`);
   tl.eventCallback('onComplete', () => {
     window.removeEventListener('pointerdown', skip);
     window.removeEventListener('keydown', skip);

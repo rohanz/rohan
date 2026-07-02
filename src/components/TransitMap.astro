@@ -8,7 +8,7 @@ function polyPoints(pts: Point[]) {
 // Darken a #rrggbb color — used for the extruded side faces of tracks/stops.
 function shade(hex: string, f: number): string {
   const n = parseInt(hex.slice(1), 16);
-  const c = (v: number) => Math.round(v * f);
+  const c = (v: number) => Math.min(255, Math.round(v * f));
   return `#${((c(n >> 16 & 255) << 16) | (c(n >> 8 & 255) << 8) | c(n & 255)).toString(16).padStart(6, '0')}`;
 }
 
@@ -135,6 +135,17 @@ const LAKE = 'M880,-1600 L2600,-1600 L2600,2000 L880,2000 L880,1160 L930,1110 L9
             stroke-linecap="round"
             stroke-linejoin="round"
           />
+          <!-- crown highlight: sells the rounded pipe profile from any angle -->
+          <polyline
+            points={polyPoints(line.points)}
+            fill="none"
+            stroke={shade(line.hex, 1.45)}
+            stroke-width={line.nav ? 3 : 2.5}
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            transform="translate(0 -1.5)"
+            opacity="0.75"
+          />
           {line.nav && (
             <polyline
               class="hit-path"
@@ -153,11 +164,9 @@ const LAKE = 'M880,-1600 L2600,-1600 L2600,2000 L880,2000 L880,1160 L930,1110 L9
 
       <!-- All stops drawn AFTER every line: a stop on an intersection can
            never hide behind another line. Each dot is extruded too. -->
+      <!-- Stop dots are flat paint on the track surface (no extrusion) — only
+           the station capsules are physical objects with sides. -->
       <g class="stops">
-        <g data-lift={EXTRUDE - 1}>
-          {LINES.flatMap((line) => line.ticks.map((t) => <circle cx={t[0]} cy={t[1]} r="5" fill={shade('#e8e4da', 0.62)} />))}
-          {LINES.flatMap((line) => (line.terminals ?? []).map((t) => <circle cx={t[0]} cy={t[1]} r="9" fill={shade('#e8e4da', 0.55)} />))}
-        </g>
         {LINES.flatMap((line) => line.ticks.map((t) => <circle cx={t[0]} cy={t[1]} r="5" fill="#fff" stroke="var(--ink)" stroke-width="2.4" />))}
         {LINES.flatMap((line) => (line.terminals ?? []).map((t) => <circle cx={t[0]} cy={t[1]} r="9" fill="#fff" stroke="var(--ink)" stroke-width="3.5" />))}
       </g>
