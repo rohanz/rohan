@@ -110,15 +110,26 @@ function ride(lineId: LineId, href: string) {
     return best;
   };
   const AMBER = '#f9c25e';
-  const stops: { d: number; el: Element | null }[] = line.ticks
+  const GLOW_ON = 'drop-shadow(0 0 4px rgba(249,194,94,0.85))';
+  const GLOW_OFF = 'drop-shadow(0 0 0px rgba(249,194,94,0))';
+  // Passing a stop: amber fades in with a whisper of glow, then fades out
+  // (out faster than in). The destination keeps its amber — you're there.
+  const light = (el: Element | null, keep = false) => {
+    if (!el) return;
+    const t2 = gsap.timeline();
+    t2.to(el, { attr: { fill: AMBER }, filter: GLOW_ON, duration: 0.3, ease: 'power1.out' });
+    if (!keep) t2.to(el, { attr: { fill: '#ffffff' }, filter: GLOW_OFF, duration: 0.18, ease: 'power1.in' }, '+=0.1');
+  };
+  const stops: { d: number; el: Element | null; keep?: boolean }[] = line.ticks
     .map((t) => ({ p: arcDistance(t), at: t }))
     .filter(({ p }) => p.off < 8 && p.d > 20 && p.d < total - 20)
     .sort((a, b) => a.p.d - b.p.d)
     .map(({ p, at }) => ({ d: p.d, el: document.querySelector(`circle[data-at="${at[0]},${at[1]}"]`) }));
-  // the destination capsule is the final stop
-  stops.push({ d: total, el: document.querySelector(`[data-destination="${lineId}"] circle`) });
-  // you're AT Home: it lights the moment the ride starts
-  document.querySelector('.home circle')?.setAttribute('fill', AMBER);
+  // the destination capsule is the final stop, and it stays lit
+  stops.push({ d: total, el: document.querySelector(`[data-destination="${lineId}"] circle`), keep: true });
+  // you're AT Home: it fades in amber the moment you click
+  const homeDot = document.querySelector('.home circle');
+  light(homeDot, true);
   let nextStop = 0;
 
   // Flat camera: pan + zoom only, in SVG vector space (crisp at any zoom).
@@ -145,7 +156,7 @@ function ride(lineId: LineId, href: string) {
     apply();
     const dNow = state.p * total;
     while (nextStop < stops.length && stops[nextStop].d <= dNow) {
-      stops[nextStop].el?.setAttribute('fill', AMBER);
+      light(stops[nextStop].el, stops[nextStop].keep);
       nextStop++;
     }
     if (gauss && blurTwin) {
@@ -180,6 +191,9 @@ function ride(lineId: LineId, href: string) {
   const RUN_START = 0.9;
   const ACCEL = 1.5;
   const BRAKE = 1.0;
+  tl.call(() => {
+    if (homeDot) gsap.to(homeDot, { attr: { fill: '#ffffff' }, filter: GLOW_OFF, duration: 0.25, ease: 'power1.in' });
+  }, undefined, RUN_START + 0.15);
   tl.to(state, { p: 0.78, duration: ACCEL, ease: 'power2.in', onUpdate: moveSample }, RUN_START);
   tl.to(state, { s: RIDE_SCALE, duration: ACCEL, ease: 'power1.in', onUpdate: apply }, RUN_START);
 
