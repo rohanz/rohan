@@ -33,3 +33,13 @@ import StationBoard from '../components/StationBoard.astro';
     .map-wrap { height: 58vh; }
   }
 </style>
+
+<script>
+  import '../scripts/ride.ts';
+</script>
+
+<style is:global>
+  /* fade targets used by the ride timeline (GSAP autoAlpha needs a starting visibility) */
+  #station-board, #logo { will-change: opacity; }
+  #streaks { opacity: 0; }
+</style>
