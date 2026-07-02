@@ -37,15 +37,15 @@ const line = lineById('projects');
 </PageLayout>
 
 <style>
-  .article { max-width: 760px; }
+  .article { max-width: 760px; padding-left: 1.2rem; }
   .article :global(h2) { font-size: 1.5rem; font-weight: 800; margin-top: 2.2rem; }
   .article :global(h3) { font-size: 1.2rem; font-weight: 700; margin-top: 1.6rem; }
   .article :global(img) { border-radius: var(--radius); margin: 1.5rem 0; box-shadow: 0 6px 24px rgba(0,0,0,0.08); }
-  .article :global(a) { color: var(--line-projects); }
+  .article :global(a:not(.try-it-btn):not(.support-btn)) { color: var(--line-projects); }
   .article :global(table) { border-collapse: collapse; width: 100%; margin: 1.5rem 0; font-size: 0.92rem; }
   .article :global(th), .article :global(td) { border: 1px solid rgba(0,0,0,0.12); padding: 0.5rem 0.7rem; text-align: left; }
 
-  .stop-nav { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid rgba(0,0,0,0.1); flex-wrap: wrap; }
+  .stop-nav { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-top: 3rem; padding-top: 1.5rem; padding-left: 1.2rem; border-top: 1px solid rgba(0,0,0,0.1); flex-wrap: wrap; }
   .stop-nav a { text-decoration: none; font-weight: 700; color: var(--line-projects); display: flex; flex-direction: column; gap: 0.15rem; }
   .stop-nav a span { color: var(--muted); font-weight: 500; font-size: 0.85rem; }
   .stop-nav .next { text-align: right; }
@@ -60,7 +60,9 @@ const line = lineById('projects');
     padding: 0.5rem 1.1rem; border-radius: 999px; margin: 0.25rem 0.5rem 0.25rem 0;
     background: var(--line-projects); color: #fff;
   }
+  .try-it-btn:hover { filter: brightness(1.12); }
   .support-btn { background: transparent; color: var(--line-projects); border: 2px solid var(--line-projects); }
+  .support-btn:hover { background: var(--line-projects); color: #fff; }
   .download-actions, .bqst-download-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
   .article-stat-grid, .bqst-asset-strip { display: flex; flex-wrap: wrap; gap: 1rem; margin: 1.5rem 0; }
   .article-stat-card, .bqst-asset-card { flex: 1 1 160px; background: #fff; border-radius: var(--radius); padding: 1rem; box-shadow: 0 4px 16px rgba(0,0,0,0.06); text-align: center; }
@@ -69,6 +71,14 @@ const line = lineById('projects');
   .article-figure { margin: 1.5rem 0; }
   .article-caption { color: var(--muted); font-size: 0.85rem; text-align: center; margin-top: 0.4rem; }
   .bqst-data-table { border-collapse: collapse; width: 100%; }
-  /* Empty interactive placeholders (old JS is gone): hide so they leave no gap. */
-  #bqst-eq-visual, #bqst-transfer-visual, #bqst-asset-strip:empty { display: none; }
+  /* Empty interactive placeholders (old JS is gone): hide so they leave no gap.
+     Full set per Task 6 audit. Note: .bqst-asset-strip is a CLASS on a populated
+     div in bqst.md (styled above), not an id, so it must NOT be hidden here. */
+  #bqst-eq-visual,
+  #bqst-transfer-visual,
+  #bqst-harmonics-visual,
+  #bqst-oversampling-visual,
+  #lcm-demo,
+  #demo-player-placeholder,
+  #theme-palette-placeholder { display: none; }
 </style>
