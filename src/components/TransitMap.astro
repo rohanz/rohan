@@ -16,10 +16,26 @@ const PARKS: [number, number, number, number][] = [
   [520, 470, 150, 100],
   [700, -60, 150, 100],
   [-160, 180, 170, 110],
+  // along the music corridor
   [480, -480, 180, 120],
-  [540, 950, 170, 130],
-  [-460, 610, 170, 100],
+  [460, -160, 140, 100],
+  [760, -620, 150, 100],
   [140, -700, 160, 110],
+  // along the projects corridor
+  [540, 950, 170, 130],
+  [700, 1150, 160, 110],
+  [480, 700, 150, 100],
+  // along the about corridor
+  [-460, 610, 170, 100],
+  [-700, 850, 180, 120],
+  [-1000, 620, 150, 90],
+  // wider world
+  [-800, 300, 200, 140],
+  [-900, -300, 180, 120],
+  [-100, 1000, 220, 150],
+  [300, 1500, 200, 130],
+  [-1200, 700, 180, 110],
+  [200, -1000, 180, 120],
 ];
 const RIVER: Point[] = [
   [240, -1600],
@@ -33,24 +49,34 @@ const RIVER: Point[] = [
 const LAKE = 'M880,-1600 L2600,-1600 L2600,2000 L880,2000 L880,1160 L930,1110 L930,330 L880,280 Z';
 ---
 <div class="map-tilt">
+  <div class="map-3d" id="map-3d">
+  <!-- Depth layer 1 (farthest): land, parks, river, lake -->
+  <svg
+    class="layer layer-land"
+    viewBox={`0 0 ${VIEWBOX.w} ${VIEWBOX.h}`}
+    preserveAspectRatio="xMidYMid slice"
+    aria-hidden="true"
+  >
+    <g data-camera-land>
+      <rect x="-1600" y="-1600" width="4200" height="3600" fill={LAND} />
+      <rect x="150" y="90" width="700" height="580" rx="26" fill={CITY} />
+      {PARKS.map(([x, y, w, h]) => (
+        <rect x={x} y={y} width={w} height={h} rx="12" fill={PARK} />
+      ))}
+      <polyline points={polyPoints(RIVER)} fill="none" stroke={WATER} stroke-width="24" stroke-linejoin="round" />
+      <path d={LAKE} fill={WATER} />
+    </g>
+  </svg>
+
+  <!-- Depth layer 2: the lines themselves (also the click surface) -->
   <svg
     id="transit-map"
-    class="transit-map"
+    class="layer transit-map"
     viewBox={`0 0 ${VIEWBOX.w} ${VIEWBOX.h}`}
     preserveAspectRatio="xMidYMid slice"
     aria-hidden="true"
   >
     <g data-camera>
-      <!-- Land, parks, river, lake — under everything, riding with the camera -->
-      <g class="land" aria-hidden="true">
-        <rect x="-1600" y="-1600" width="4200" height="3600" fill={LAND} />
-        <rect x="150" y="90" width="700" height="580" rx="26" fill={CITY} />
-        {PARKS.map(([x, y, w, h]) => (
-          <rect x={x} y={y} width={w} height={h} rx="12" fill={PARK} />
-        ))}
-        <polyline points={polyPoints(RIVER)} fill="none" stroke={WATER} stroke-width="24" stroke-linejoin="round" />
-        <path d={LAKE} fill={WATER} />
-      </g>
       {LINES.map((line) => (
         <g data-line={line.id} class:list={['line-group', { nav: !!line.nav }]}>
           <polyline
@@ -84,6 +110,22 @@ const LAKE = 'M880,-1600 L2600,-1600 L2600,2000 L880,2000 L880,1160 L930,1110 L9
         </g>
       ))}
 
+    </g>
+    <defs>
+      <filter id="motion-blur" x="-40%" y="-40%" width="180%" height="180%">
+        <feGaussianBlur id="motion-blur-gauss" stdDeviation="0 0" />
+      </filter>
+    </defs>
+  </svg>
+
+  <!-- Depth layer 3 (nearest): stations that float above the lines -->
+  <svg
+    class="layer layer-top"
+    viewBox={`0 0 ${VIEWBOX.w} ${VIEWBOX.h}`}
+    preserveAspectRatio="xMidYMid slice"
+    aria-hidden="true"
+  >
+    <g data-top-camera>
       <!-- Destination stations at the far end of each ride (off-canvas at rest;
            the camera brakes into them at the end of a ride) -->
       {NAV_LINES.map((line) => {
@@ -102,19 +144,23 @@ const LAKE = 'M880,-1600 L2600,-1600 L2600,2000 L880,2000 L880,1160 L930,1110 L9
         <text x={HOME[0] - 24} y={HOME[1] - 8} class="home-sub" style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif" fill="var(--muted)" text-anchor="end">You are here</text>
       </g>
     </g>
-    <defs>
-      <filter id="motion-blur" x="-40%" y="-40%" width="180%" height="180%">
-        <feGaussianBlur id="motion-blur-gauss" stdDeviation="0 0" />
-      </filter>
-    </defs>
   </svg>
+  </div>
 </div>
 
 <style>
-  .map-tilt { width: 100%; height: 100%; perspective: 1200px; }
-  .transit-map { width: 100%; height: 100%; display: block; transform-style: preserve-3d; }
-  .home-label { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 18px; font-weight: 700; letter-spacing: 0.04em; }
-  .home-sub { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 11px; font-weight: 500; letter-spacing: 0.06em; }
+  .map-tilt { width: 100%; height: 100%; perspective: 1100px; }
+  .map-3d {
+    position: relative; width: 100%; height: 100%;
+    transform-style: preserve-3d; transform-origin: 50% 50%; will-change: transform;
+  }
+  /* Depth comes from per-layer vector cameras in ride.ts (slightly different
+     zoom factors = parallax), so vectors stay crisp at any zoom; the stage
+     itself only ever tilts at ~1x, so no raster blur. */
+  .layer { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .layer-top { pointer-events: none; }
+  .home-label { font-size: 18px; font-weight: 700; letter-spacing: 0.04em; }
+  .home-sub { font-size: 11px; font-weight: 500; letter-spacing: 0.06em; }
   .hit-path { cursor: pointer; pointer-events: stroke; }
-  #transit-map.ride-active .home text { opacity: 0; transition: opacity 0.25s ease; }
+  #map-3d.ride-active .home text { opacity: 0; transition: opacity 0.25s ease; }
 </style>

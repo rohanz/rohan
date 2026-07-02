@@ -7,10 +7,6 @@ const RIDE_SCALE = 5.0; // zoom while speeding along the line
 const CX = VIEWBOX.w / 2;
 const CY = VIEWBOX.h / 2;
 
-function camAttr(x: number, y: number, s: number): string {
-  return `translate(${CX - s * x} ${CY - s * y}) scale(${s})`;
-}
-
 function prefersReducedMotion(): boolean {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
@@ -40,35 +36,69 @@ function pathSampler(pts: Point[]) {
 }
 
 function ride(lineId: LineId, href: string) {
+  const stage = document.getElementById('map-3d') as HTMLElement | null;
   const svg = document.getElementById('transit-map') as SVGSVGElement | null;
   const camera = svg?.querySelector('g[data-camera]') as SVGGElement | null;
+  const camLand = document.querySelector('g[data-camera-land]') as SVGGElement | null;
+  const camTop = document.querySelector('g[data-top-camera]') as SVGGElement | null;
   const gauss = document.getElementById('motion-blur-gauss');
   const board = document.getElementById('station-board');
   const line = lineById(lineId);
   const path = line.ride;
-  if (!svg || !camera || !path) {
+  if (!stage || !svg || !camera || !camLand || !camTop || !path) {
     navigate(href);
     return;
   }
 
-  svg.classList.add('ride-active');
+  stage.classList.add('ride-active');
   const sample = pathSampler(path);
 
-  const state = { x: HOME[0], y: HOME[1], s: 1, p: 0 };
-  let lastAt: Point = HOME;
-  const apply = () => camera.setAttribute('transform', camAttr(state.x, state.y, state.s));
+  // Hybrid 3D camera: pan/zoom run in SVG vector space (crisp at any zoom),
+  // one camera per depth layer with a slightly different zoom factor — which
+  // is exactly what depth looks like under projection: the target stays
+  // locked while off-center content drifts between layers (parallax). The
+  // CSS stage only tilts at ~1x scale, so nothing ever rasterizes blurry.
+  const layers: { el: SVGGElement; f: number }[] = [
+    { el: camLand, f: 0.93 },
+    { el: camera, f: 1 },
+    { el: camTop, f: 1.06 },
+  ];
+  const state = { x: CX, y: CY, s: 1, p: 0, a: 0 };
+  let lastAt: Point = [CX, CY];
+  const apply = () => {
+    for (const { el, f } of layers) {
+      const sf = 1 + (state.s - 1) * f;
+      el.setAttribute('transform', `translate(${CX - sf * state.x} ${CY - sf * state.y}) scale(${sf})`);
+    }
+    // Tilt-only on the stage; slight scale keeps the tilted plane covering the frame.
+    stage.style.transform = `rotateX(${state.a}deg) scale(${1 + 0.1 * (state.a / 12)})`;
+  };
 
   // Speed-proportional, direction-aware motion blur on the whole camera.
-  camera.setAttribute('filter', 'url(#motion-blur)');
+  let blurOn = false;
+  const setBlur = (on: boolean) => {
+    if (on === blurOn) return;
+    blurOn = on;
+    for (const { el } of layers) {
+      if (on) el.setAttribute('filter', 'url(#motion-blur)');
+      else el.removeAttribute('filter');
+    }
+  };
   const moveSample = () => {
     const { at, dir } = sample(state.p);
     state.x = at[0];
     state.y = at[1];
     apply();
     if (gauss) {
-      const speed = Math.hypot(at[0] - lastAt[0], at[1] - lastAt[1]) * state.s;
-      const b = Math.min(speed * 0.055, 14);
-      gauss.setAttribute('stdDeviation', `${Math.abs(dir[0]) * b} ${Math.abs(dir[1]) * b}`);
+      // Screen-pixel blur budget, converted to pre-transform units (the filter
+      // runs before the camera scale) so zoom doesn't multiply the smear.
+      const speedPx = Math.hypot(at[0] - lastAt[0], at[1] - lastAt[1]) * state.s;
+      const bPx = Math.min(speedPx * 0.05, 10);
+      const b = bPx / Math.max(state.s, 1);
+      // Only attach the filter while genuinely at speed — an attached filter
+      // rasterizes the layer and softens everything even at zero blur.
+      setBlur(bPx > 1.5);
+      if (blurOn) gauss.setAttribute('stdDeviation', `${Math.abs(dir[0]) * b} ${Math.abs(dir[1]) * b}`);
     }
     lastAt = at;
   };
@@ -89,8 +119,8 @@ function ride(lineId: LineId, href: string) {
 
   // (a) settle down onto HOME: zoom in as the map tilts away like a surface
   tl.to(board, { autoAlpha: 0, duration: 0.2, ease: 'power1.out' }, 0);
-  tl.to(svg, { rotateX: 13, transformPerspective: 1200, transformOrigin: '50% 60%', duration: 0.5, ease: 'power2.inOut' }, 0);
-  tl.to(state, { s: DIVE_SCALE, duration: 0.38, ease: 'power2.inOut', onUpdate: apply }, 0.02);
+  tl.to(state, { a: 12, duration: 0.5, ease: 'power2.inOut', onUpdate: apply }, 0);
+  tl.to(state, { x: HOME[0], y: HOME[1], s: DIVE_SCALE, duration: 0.38, ease: 'power2.inOut', onUpdate: apply }, 0.02);
 
   // (b) accelerate through the stops…
   const RUN_START = 0.34;
@@ -99,17 +129,17 @@ function ride(lineId: LineId, href: string) {
   tl.to(state, { p: 0.78, duration: ACCEL, ease: 'power2.in', onUpdate: moveSample }, RUN_START);
   tl.to(state, { s: RIDE_SCALE, duration: ACCEL, ease: 'power1.in', onUpdate: apply }, RUN_START);
 
-  // (c) …then brake smoothly into the destination station
+  // (c) …then brake smoothly into the destination station, leveling out
   tl.to(state, { p: 1, duration: BRAKE, ease: 'power3.out', onUpdate: moveSample }, RUN_START + ACCEL);
-  tl.to(state, { s: RIDE_SCALE * 0.92, duration: BRAKE, ease: 'power2.out', onUpdate: apply }, RUN_START + ACCEL);
-  tl.to(svg, { rotateX: 0, duration: BRAKE, ease: 'power2.out' }, RUN_START + ACCEL);
+  tl.to(state, { s: RIDE_SCALE * 0.92, a: 0, duration: BRAKE, ease: 'power2.out', onUpdate: apply }, RUN_START + ACCEL);
 
-  // (d) a beat at the platform, then hand off to the page's zoom-out arrival
-  tl.to(svg, { autoAlpha: 0, duration: 0.22, ease: 'power1.in' }, `>+0.08`);
+  // (d) a breath at the platform, then plunge INTO the station's white capsule
+  // until it swallows the screen — the page emerges from that white.
+  tl.to(state, { s: 55, duration: 0.45, ease: 'power3.in', onUpdate: apply }, `>+0.1`);
   tl.eventCallback('onComplete', () => {
     window.removeEventListener('pointerdown', skip);
     window.removeEventListener('keydown', skip);
-    camera.removeAttribute('filter');
+    setBlur(false);
     go();
   });
 

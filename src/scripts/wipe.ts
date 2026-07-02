@@ -69,13 +69,28 @@ document.addEventListener('astro:page-load', () => {
     return;
   }
   if (!lineId || reduced()) return;
+  // The ride ends inside the station's white capsule: start from white and
+  // pull the camera back out to reveal the page standing at that stop.
+  const wipe = document.getElementById('wipe');
+  if (wipe) {
+    wipe.style.background = '#fff';
+    const flash = wipe.animate([{ opacity: 1 }, { opacity: 0 }], {
+      duration: 340,
+      easing: 'ease-out',
+      fill: 'forwards',
+    });
+    flash.onfinish = () => {
+      wipe.style.background = '';
+      wipe.getAnimations().forEach((a) => a.cancel());
+    };
+  }
   const main = document.querySelector('main');
   if (!main) return;
   main.animate(
     [
-      { transform: 'scale(1.22)', opacity: 0, filter: 'blur(8px)' },
-      { transform: 'scale(1)', opacity: 1, filter: 'blur(0px)' },
+      { transform: 'scale(1.35)', filter: 'blur(10px)' },
+      { transform: 'scale(1)', filter: 'blur(0px)' },
     ],
-    { duration: 500, easing: 'cubic-bezier(0.16,0.8,0.25,1)' },
+    { duration: 560, easing: 'cubic-bezier(0.16,0.8,0.25,1)' },
   );
 });
