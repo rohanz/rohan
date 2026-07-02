@@ -90,4 +90,29 @@ describe('transit system integrity (v2 mesh)', () => {
   it('lineById returns the matching nav line', () => {
     expect(lineById('projects').hex).toBe('#d13d59');
   });
+
+  it('every nav line has a platform matching its axis, stops on the line', () => {
+    for (const line of NAV_LINES) {
+      const p = line.platform;
+      expect(p, `${line.id} has a platform`).toBeDefined();
+      expect(p!.stops.length).toBeGreaterThanOrEqual(p!.perPage);
+      for (const stop of p!.stops) {
+        expect(onPolyline(stop, line.points), `${line.id} stop on line`).toBe(true);
+      }
+      for (let i = 1; i < p!.stops.length; i++) {
+        const [ax, ay] = p!.stops[i - 1];
+        const [bx, by] = p!.stops[i];
+        if (p!.axis === 'v') {
+          expect(bx).toBe(ax);
+          expect(by).toBeGreaterThan(ay);
+        } else if (p!.axis === 'h') {
+          expect(by).toBe(ay);
+          expect(bx).toBeGreaterThan(ax);
+        } else {
+          expect(bx - ax).toBe(by - ay); // 45° down-right
+          expect(bx).toBeGreaterThan(ax);
+        }
+      }
+    }
+  });
 });

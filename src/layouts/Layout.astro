@@ -8,8 +8,15 @@ interface Props {
   description: string;
   ogImage?: string;
   bodyClass?: string;
+  initialView?: string;
 }
-const { title, description, ogImage = '/assets/images/og.png', bodyClass = '' } = Astro.props;
+const {
+  title,
+  description,
+  ogImage = '/assets/images/og.png',
+  bodyClass = '',
+  initialView,
+} = Astro.props;
 const canonical = new URL(Astro.url.pathname, Astro.site).href;
 const ogAbs = new URL(ogImage, Astro.site).href;
 ---
@@ -42,7 +49,7 @@ const ogAbs = new URL(ogImage, Astro.site).href;
     <link rel="manifest" href="/site.webmanifest" />
     <ClientRouter />
   </head>
-  <body class={bodyClass}>
+  <body class={bodyClass} data-initial-view={initialView}>
     <a href="#main" class="sr-only">Skip to content</a>
     <div id="routeAnnouncer" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
     <slot />

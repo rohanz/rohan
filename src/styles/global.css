@@ -92,10 +92,3 @@ h1, h2, h3, h4,
 .sign-header, .sign-header h1, .sign-header .back {
   font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
-
-/* Ride arrivals: the growing-circle reveal is the only animation — suppress
-   the router's default crossfade so the old map doesn't double-expose. */
-html.ride-arriving::view-transition-old(root),
-html.ride-arriving::view-transition-new(root) {
-  animation: none;
-}

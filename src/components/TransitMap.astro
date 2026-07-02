@@ -60,14 +60,18 @@ const LAKE = 'M880,-1600 L2600,-1600 L2600,2000 L880,2000 L880,1160 L930,1110 L9
   >
     <g data-camera-land>
       <rect x="-1600" y="-1600" width="4200" height="3600" fill={LAND} />
-      <rect x="150" y="90" width="700" height="580" rx="26" fill={CITY} />
-      {PARKS.map(([x, y, w, h]) => (
-        <rect x={x} y={y} width={w} height={h} rx="12" fill={PARK} />
-      ))}
+      <g data-land-zones>
+        <rect x="150" y="90" width="700" height="580" rx="26" fill={CITY} />
+        {PARKS.map(([x, y, w, h]) => (
+          <rect x={x} y={y} width={w} height={h} rx="12" fill={PARK} />
+        ))}
+      </g>
       <!-- faint graph grid: map-paper feel; water covers it -->
       <rect x="-1600" y="-1600" width="4200" height="3600" fill="url(#grid)" opacity="0.05" />
-      <polyline points={polyPoints(RIVER)} fill="none" stroke={WATER} stroke-width="24" stroke-linejoin="round" />
-      <path d={LAKE} fill={WATER} />
+      <g data-land-water>
+        <polyline points={polyPoints(RIVER)} fill="none" stroke={WATER} stroke-width="24" stroke-linejoin="round" />
+        <path d={LAKE} fill={WATER} />
+      </g>
     </g>
     <defs>
       <pattern id="grid" width="50" height="50" patternUnits="userSpaceOnUse">
@@ -114,10 +118,22 @@ const LAKE = 'M880,-1600 L2600,-1600 L2600,2000 L880,2000 L880,1160 L930,1110 L9
       ))}
 
       <!-- All stops drawn AFTER every line: a stop on an intersection can
-           never hide behind another line. -->
+           never hide behind another line. Grouped per line so a parked view
+           can fade the others; platform stops are the content anchors. -->
       <g class="stops">
-        {LINES.flatMap((line) => line.ticks.map((t) => <circle data-at={`${t[0]},${t[1]}`} cx={t[0]} cy={t[1]} r="5" fill="#fff" stroke="var(--ink)" stroke-width="2.4" />))}
-        {LINES.flatMap((line) => (line.terminals ?? []).map((t) => <circle cx={t[0]} cy={t[1]} r="9" fill="#fff" stroke="var(--ink)" stroke-width="3.5" />))}
+        {LINES.map((line) => (
+          <g data-ticks-for={line.id}>
+            {line.ticks.map((t) => <circle data-at={`${t[0]},${t[1]}`} cx={t[0]} cy={t[1]} r="5" fill="#fff" stroke="var(--ink)" stroke-width="2.4" />)}
+            {(line.terminals ?? []).map((t) => <circle cx={t[0]} cy={t[1]} r="9" fill="#fff" stroke="var(--ink)" stroke-width="3.5" />)}
+          </g>
+        ))}
+        {NAV_LINES.map((line) => (
+          <g data-pstops={line.id}>
+            {(line.platform?.stops ?? []).map((t) => (
+              <circle data-at={`${t[0]},${t[1]}`} cx={t[0]} cy={t[1]} r="6.5" fill="#fff" stroke="var(--ink)" stroke-width="2.8" />
+            ))}
+          </g>
+        ))}
       </g>
       </g>
     </g>

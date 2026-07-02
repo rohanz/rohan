@@ -1,53 +1,8 @@
 ---
-import PageLayout from '../../layouts/PageLayout.astro';
-import { getCollection } from 'astro:content';
-import { lineById } from '../../data/system';
-
-const line = lineById('projects');
-const projects = (await getCollection('projects')).sort((a, b) => a.data.order - b.data.order);
+import MapApp from '../../components/MapApp.astro';
 ---
-<PageLayout
+<MapApp
   title="projects — rohan.jk"
   description="Projects by rohan.jk — software, AI, audio, and data engineering builds."
-  lineId="projects"
-  hex={line.hex}
-  signName="Projects"
->
-  <ol class="line" role="list">
-    {projects.map((p) => (
-      <li class="stop">
-        <span class="stop-dot" aria-hidden="true"></span>
-        <a class="card" href={`/projects/${p.id}`} data-astro-prefetch="hover">
-          <img class="card-img" src={p.data.image} alt={`${p.data.title} banner`} loading="lazy" />
-          <div class="card-body">
-            <h2 class="card-title">{p.data.title}</h2>
-            <p class="card-summary">{p.data.summary}</p>
-            <ul class="tags">
-              {p.data.technologies.map((t) => <li class="tag">{t}</li>)}
-            </ul>
-          </div>
-        </a>
-      </li>
-    ))}
-  </ol>
-</PageLayout>
-
-<style>
-  /* Desktop: horizontal scroll-along-line with snap. Mobile: vertical stack. */
-  .line { list-style: none; margin: 0; padding: 0; display: flex; gap: 2rem; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 1.5rem; border-top: 4px solid var(--line-projects); padding-top: 2.25rem; }
-  .stop { position: relative; flex: 0 0 320px; scroll-snap-align: start; }
-  .stop-dot { position: absolute; top: -2.6rem; left: 24px; width: 18px; height: 18px; border-radius: 50%; background: var(--bg); border: 4px solid var(--line-projects); }
-  .card { display: block; background: #fff; border-radius: var(--radius); overflow: hidden; text-decoration: none; color: inherit; box-shadow: 0 6px 24px rgba(0,0,0,0.06); transition: transform 0.15s ease, box-shadow 0.15s ease; height: 100%; }
-  .card:hover, .card:focus-visible { transform: translateY(-4px); box-shadow: 0 14px 36px rgba(0,0,0,0.12); }
-  .card-img { aspect-ratio: 16 / 9; object-fit: cover; width: 100%; }
-  .card-body { padding: 1rem 1.1rem 1.2rem; }
-  .card-title { margin: 0 0 0.4rem; font-size: 1.25rem; font-weight: 800; }
-  .card-summary { margin: 0 0 0.9rem; font-size: 0.95rem; color: #444; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
-  .tags { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.4rem; }
-  .tag { font-size: 0.72rem; font-weight: 700; color: var(--line-projects); border: 1.5px solid var(--line-projects); border-radius: 999px; padding: 0.15rem 0.6rem; }
-  @media (max-width: 768px) {
-    .line { flex-direction: column; overflow-x: visible; border-top: none; padding-left: 1.2rem; }
-    .stop { flex: initial; }
-    .stop-dot { top: 1rem; left: -1.6rem; }
-  }
-</style>
+  initialView="projects"
+/>

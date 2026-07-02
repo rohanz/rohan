@@ -20,9 +20,6 @@ function reduced(): boolean {
 document.addEventListener('astro:before-preparation', (e: any) => {
   if (reduced()) return;
   const to: URL = e.to;
-  const from: URL = e.from;
-  // Skip the wipe for the homepage ride (handled by ride.ts) and for nav landing on the map.
-  if (from.pathname === '/' || to.pathname === '/') return;
   const wipe = document.getElementById('wipe');
   if (!wipe) return;
   wipe.style.background = colorForPath(to.pathname);
@@ -56,54 +53,4 @@ document.addEventListener('astro:after-swap', () => {
   retract.onfinish = () => {
     wipe.style.background = '';
   };
-});
-
-// Ride arrivals get the growing-circle reveal as their ONLY animation:
-// flag the document before the swap so CSS can suppress the default crossfade.
-document.addEventListener('astro:before-swap', () => {
-  try {
-    if (sessionStorage.getItem('ride-arrive')) {
-      document.documentElement.classList.add('ride-arriving');
-    }
-  } catch {
-    /* ignore */
-  }
-});
-
-// Zoom-out arrival after a homepage ride: the ride exits the map at speed,
-// so the destination page settles from slightly-zoomed to rest.
-document.addEventListener('astro:page-load', () => {
-  document.documentElement.classList.remove('ride-arriving');
-  let lineId: string | null = null;
-  try {
-    lineId = sessionStorage.getItem('ride-arrive');
-    if (lineId) sessionStorage.removeItem('ride-arrive');
-  } catch {
-    return;
-  }
-  if (!lineId || reduced()) return;
-  // Continuation of the homepage dive: the ride ends heading into the
-  // station's circle, and the page grows out of a matching circle with the
-  // content already inside it — one gesture, not a flash then a zoom.
-  const shell = document.getElementById('page-shell');
-  const main = document.querySelector('main');
-  if (!shell) return;
-  const ease = 'cubic-bezier(0.16,0.8,0.25,1)';
-  const clip = shell.animate(
-    [
-      { clipPath: 'circle(16% at 50% 38%)' },
-      { clipPath: 'circle(150% at 50% 38%)' },
-    ],
-    { duration: 640, easing: ease },
-  );
-  clip.onfinish = () => {
-    shell.style.clipPath = '';
-  };
-  main?.animate(
-    [
-      { transform: 'scale(1.16)' },
-      { transform: 'scale(1)' },
-    ],
-    { duration: 640, easing: ease },
-  );
 });
