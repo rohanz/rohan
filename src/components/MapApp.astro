@@ -132,7 +132,7 @@ const socials: [string, string][] = [
                 <h3>{p.data.title}</h3>
                 <p class="summary">{p.data.summary}</p>
                 <ul class="tags">
-                  {p.data.technologies.slice(0, 3).map((t) => <li>{t}</li>)}
+                  {p.data.technologies.map((t) => <li>{t}</li>)}
                 </ul>
               </div>
             </div>
