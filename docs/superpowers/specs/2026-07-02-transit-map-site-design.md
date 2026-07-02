@@ -97,3 +97,11 @@ Theme switcher between stylizations; dark variant (CSS is structured for it); de
 - Keyboard-only pass: tab through map/board, activate a station, navigate a detail page.
 - Mobile viewport pass (responsive mode): map legibility, board docking, horizontal→vertical projects flip.
 - `npm run build` produces a static folder servable with any static server.
+
+Final ride direction (user decision, end of day 2026-07-02): the WebGL
+diorama and all 3D/perspective treatments were scrapped as unnecessary
+complexity. The shipping ride is flat and top-down, matching the poster:
+glide onto Home and zoom in, accelerate along the line's arc-length with
+speed-proportional directional motion blur, brake at the destination
+station, dive into its circle, page grows from a matching circle. The
+poster itself stays fully flat (no extrusion, no trench walls, no sheen).

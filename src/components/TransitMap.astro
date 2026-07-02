@@ -5,15 +5,6 @@ function polyPoints(pts: Point[]) {
   return pts.map(([x, y]) => `${x},${y}`).join(' ');
 }
 
-// Darken a #rrggbb color — used for the extruded side faces of tracks/stops.
-function shade(hex: string, f: number): string {
-  const n = parseInt(hex.slice(1), 16);
-  const c = (v: number) => Math.min(255, Math.round(v * f));
-  return `#${((c(n >> 16 & 255) << 16) | (c(n >> 8 & 255) << 8) | c(n & 255)).toString(16).padStart(6, '0')}`;
-}
-
-const EXTRUDE = 5; // world-units of track thickness
-
 // Land-use zones, CTA-diagram style: tan land, lighter city core, pale parks,
 // light-blue river + lake. World coordinates (move with the camera).
 const LAND = '#d9d4c8';
@@ -72,32 +63,9 @@ const LAKE = 'M880,-1600 L2600,-1600 L2600,2000 L880,2000 L880,1160 L930,1110 L9
       {PARKS.map(([x, y, w, h]) => (
         <rect x={x} y={y} width={w} height={h} rx="12" fill={PARK} />
       ))}
-      <!-- Water is sunken — the exact inverse of an extruded track: a dark
-           trench wall drops into the channel along its upper edge, sized by
-           camera tilt (invisible top-down). Structure: dark water shape with
-           a water-colored copy on top that slides DOWN with tilt, revealing
-           the wall only along top edges. -->
-      <g mask="url(#river-mask)">
-        <polyline points={polyPoints(RIVER)} fill="none" stroke={shade(WATER, 0.58)} stroke-width="24" stroke-linejoin="round" />
-        <g data-lift="8">
-          <polyline points={polyPoints(RIVER)} fill="none" stroke={WATER} stroke-width="24" stroke-linejoin="round" />
-        </g>
-      </g>
-      <g mask="url(#lake-mask)">
-        <path d={LAKE} fill={shade(WATER, 0.58)} />
-        <g data-lift="10">
-          <path d={LAKE} fill={WATER} />
-        </g>
-      </g>
+      <polyline points={polyPoints(RIVER)} fill="none" stroke={WATER} stroke-width="24" stroke-linejoin="round" />
+      <path d={LAKE} fill={WATER} />
     </g>
-    <defs>
-      <mask id="river-mask" maskUnits="userSpaceOnUse" x="-1600" y="-1600" width="4200" height="3600">
-        <polyline points={polyPoints(RIVER)} fill="none" stroke="#fff" stroke-width="24" stroke-linejoin="round" />
-      </mask>
-      <mask id="lake-mask" maskUnits="userSpaceOnUse" x="-1600" y="-1600" width="4200" height="3600">
-        <path d={LAKE} fill="#fff" />
-      </mask>
-    </defs>
   </svg>
 
   <!-- Depth layer 2: the lines themselves (also the click surface) -->
@@ -109,21 +77,6 @@ const LAKE = 'M880,-1600 L2600,-1600 L2600,2000 L880,2000 L880,1160 L930,1110 L9
     aria-hidden="true"
   >
     <g data-camera>
-      <!-- Extruded side faces (all lines) under all top faces. At rest they sit
-           exactly beneath the tops (invisible — the view is top-down); ride.ts
-           slides them out proportionally to the camera tilt. -->
-      <g data-lift={EXTRUDE}>
-        {LINES.map((line) => (
-          <polyline
-            points={polyPoints(line.points)}
-            fill="none"
-            stroke={shade(line.hex, 0.55)}
-            stroke-width={line.nav ? 8 : 6}
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-        ))}
-      </g>
       {LINES.map((line) => (
         <g data-line={line.id} class:list={['line-group', { nav: !!line.nav }]}>
           <polyline
@@ -152,9 +105,7 @@ const LAKE = 'M880,-1600 L2600,-1600 L2600,2000 L880,2000 L880,1160 L930,1110 L9
       ))}
 
       <!-- All stops drawn AFTER every line: a stop on an intersection can
-           never hide behind another line. Each dot is extruded too. -->
-      <!-- Stop dots are flat paint on the track surface (no extrusion) — only
-           the station capsules are physical objects with sides. -->
+           never hide behind another line. -->
       <g class="stops">
         {LINES.flatMap((line) => line.ticks.map((t) => <circle cx={t[0]} cy={t[1]} r="5" fill="#fff" stroke="var(--ink)" stroke-width="2.4" />))}
         {LINES.flatMap((line) => (line.terminals ?? []).map((t) => <circle cx={t[0]} cy={t[1]} r="9" fill="#fff" stroke="var(--ink)" stroke-width="3.5" />))}
@@ -177,13 +128,6 @@ const LAKE = 'M880,-1600 L2600,-1600 L2600,2000 L880,2000 L880,1160 L930,1110 L9
     <g data-top-camera>
       <!-- Destination stations at the far end of each ride (off-canvas at rest;
            the camera brakes into them at the end of a ride) -->
-      <g data-lift={EXTRUDE + 1}>
-        {NAV_LINES.map((line) => {
-          const end = line.ride[line.ride.length - 1];
-          return <circle cx={end[0]} cy={end[1]} r="15" fill="#8f8a7e" />;
-        })}
-        <circle cx={HOME[0]} cy={HOME[1]} r="15" fill="#8f8a7e" />
-      </g>
       {NAV_LINES.map((line) => {
         const end = line.ride[line.ride.length - 1];
         return (
@@ -205,14 +149,8 @@ const LAKE = 'M880,-1600 L2600,-1600 L2600,2000 L880,2000 L880,1160 L930,1110 L9
 </div>
 
 <style>
-  .map-tilt { width: 100%; height: 100%; perspective: 1100px; }
-  .map-3d {
-    position: relative; width: 100%; height: 100%;
-    transform-style: preserve-3d; transform-origin: 50% 50%; will-change: transform;
-  }
-  /* Depth comes from per-layer vector cameras in ride.ts (slightly different
-     zoom factors = parallax), so vectors stay crisp at any zoom; the stage
-     itself only ever tilts at ~1x, so no raster blur. */
+  .map-tilt { width: 100%; height: 100%; }
+  .map-3d { position: relative; width: 100%; height: 100%; }
   .layer { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
   .layer-top { pointer-events: none; }
   .home-label { font-size: 18px; font-weight: 700; letter-spacing: 0.04em; }
