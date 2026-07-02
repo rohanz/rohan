@@ -19,8 +19,11 @@ import StationBoard from '../components/StationBoard.astro';
   </main>
 </Layout>
 
+<style is:global>
+  body.home { overflow: hidden; }
+</style>
+
 <style>
-  .home { overflow: hidden; }
   .logo { position: fixed; top: 1.4rem; left: 1.6rem; z-index: 20; display: flex; align-items: center; gap: 0.6rem; text-decoration: none; color: var(--ink); font-weight: 800; font-size: 1.4rem; }
   .logo img { color: var(--ink); }
   .map-stage { display: grid; grid-template-columns: 1fr minmax(220px, 300px); gap: 1.5rem; align-items: center; min-height: 100vh; padding: 1.5rem clamp(1rem, 3vw, 2.5rem); }
