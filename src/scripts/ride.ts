@@ -61,7 +61,7 @@ class MapView {
   );
   echoes = Array.from(document.querySelectorAll<SVGGElement>('g[data-echo]'));
 
-  state = { x: CX, y: CY, s: 1 };
+  state = { x: HOME[0], y: HOME[1], s: 1 };
   echo = { dx: 0, dy: 0, k: 0 };
   view: ViewId = 'map';
   page = 0;
@@ -118,18 +118,29 @@ class MapView {
     const toWorldX = (fx: number, s: number) => (fx * rect.width + cropX) / k;
     const toWorldY = (fy: number, s: number) => (fy * rect.height + cropY) / k;
     if (p.axis === 'v') {
-      const s = rect.height / k / 520;
-      return { s, x: slice[0][0] - (toWorldX(0.24, s) - CX) / s, y: cy0 };
+      const s = rect.height / k / 560;
+      // Nudge the vertical center down slightly so the destination roundel
+      // just above the topmost stop clears the top bar with margin instead
+      // of getting clipped by the map stage's overflow boundary. The
+      // horizontal anchor (0.30, up from 0.24) keeps the platform clear of
+      // the persistent left nav rail (~230px + margin).
+      return { s, x: slice[0][0] - (toWorldX(0.3, s) - CX) / s, y: cy0 - 20 };
     }
     if (p.axis === 'h') {
       const s = rect.width / k / 900;
-      return { s, x: cx0, y: slice[0][1] - (toWorldY(0.3, s) - CY) / s };
+      // Anchor the page's leftmost stop at 30% across the viewport (rather
+      // than centering the page) so its cards — which start right at the
+      // stop's screen x — clear the persistent left rail (~28px + 230px +
+      // margin) instead of sliding underneath it.
+      return { s, x: slice[0][0] - (toWorldX(0.3, s) - CX) / s, y: slice[0][1] - (toWorldY(0.3, s) - CY) / s };
     }
-    const s = Math.min(rect.width, rect.height * 1.35) / k / 660;
+    const s = Math.min(rect.width, rect.height * 1.35) / k / 780;
     return {
       s,
-      x: cx0 - (toWorldX(0.4, s) - CX) / s,
-      y: cy0 - (toWorldY(0.6, s) - CY) / s,
+      // 0.46 (up from 0.4): shifted right of center so the diagonal's cards
+      // — which sit right of each stop — clear the rail too.
+      x: cx0 - (toWorldX(0.46, s) - CX) / s,
+      y: cy0 - (toWorldY(0.54, s) - CY) / s,
     };
   }
 
@@ -137,6 +148,10 @@ class MapView {
   fadeTargets(line: Line): Element[] {
     const others: Element[] = [];
     document.querySelectorAll('[data-line], [data-ticks-for], [data-pstops]').forEach((el) => {
+      // The rail's own links carry `data-line` too (for map-view hover
+      // highlighting), but the rail is persistent now — it must never be
+      // swept into the map's per-line fade.
+      if (el.closest('#station-board')) return;
       const id =
         el.getAttribute('data-line') ?? el.getAttribute('data-ticks-for') ?? el.getAttribute('data-pstops');
       if (id !== line.id) others.push(el);
@@ -188,12 +203,30 @@ class MapView {
     cards.forEach((card) => {
       card.style.display = 'none';
     });
+
+    // Project cards scale with the actual on-screen stop pitch (which is
+    // itself proportional to viewport size) instead of a fixed px width, so
+    // they're never cramped on small screens or undersized on big monitors.
+    // Sized to ~62% of the pitch (not the full pitch) so there's a clear
+    // gutter between adjacent cards rather than them touching edge-to-edge.
+    let cardWidth: number | null = null;
+    if (this.view === 'projects' && p.stops.length > 1) {
+      const [ax] = this.worldToScreen(p.stops[0]);
+      const [bx] = this.worldToScreen(p.stops[1]);
+      cardWidth = Math.max(140, Math.abs(bx - ax) * 0.62);
+    }
+
     for (let j = 0; j < p.perPage; j++) {
       const idx = order[from + j];
       if (idx === undefined) continue;
       const card = cards[idx];
       if (!card) continue;
       card.style.display = '';
+      if (cardWidth !== null) {
+        card.style.width = `${cardWidth}px`;
+        const thumb = card.querySelector<HTMLElement>('.thumb');
+        if (thumb) thumb.style.height = `${cardWidth * 0.56}px`;
+      }
       const [sx, sy] = this.worldToScreen(p.stops[from + j]);
       if (p.axis === 'h') {
         card.style.left = `${sx}px`;
@@ -270,11 +303,21 @@ class MapView {
     if (back) back.hidden = pages <= 1 || this.page === 0;
   }
 
+  /** Mark the current view's row on the (now-persistent) rail: a tint of
+   *  the line's own color plus a bolder label. `id === 'map'` activates the
+   *  rail's own Home row. */
+  setActiveDest(id: ViewId) {
+    document.querySelectorAll<HTMLAnchorElement>('#station-board .board-link').forEach((a) => {
+      a.classList.toggle('active', a.getAttribute('data-line') === id);
+    });
+  }
+
   showUI(id: LineId) {
     if (!this.ui) return;
     const line = lineById(id);
     this.ui.hidden = false;
     this.ui.setAttribute('data-axis', line.platform!.axis);
+    this.setActiveDest(id);
     const bar = document.querySelector('.top-bar');
     const section = document.getElementById('bar-section');
     if (bar) gsap.to(bar, { backgroundColor: line.hex, duration: 0.4, ease: 'power1.out', overwrite: 'auto' });
@@ -307,7 +350,7 @@ class MapView {
     this.placeCards();
     this.cardsIn(id);
     gsap.fromTo(
-      ['#back-map', '#more-next', '#more-prev', '#filter-bar'],
+      ['#more-next', '#more-prev', '#filter-bar'],
       { autoAlpha: 0 },
       { autoAlpha: 1, duration: 0.4, ease: 'power1.out', overwrite: 'auto' },
     );
@@ -344,7 +387,7 @@ class MapView {
   hideUI(fast = false) {
     if (!this.ui) return;
     const ui = this.ui;
-    gsap.to(['#platform-ui [data-card]', '#platform-ui [data-divider]', '#back-map', '#more-next', '#more-prev', '#filter-bar'], {
+    gsap.to(['#platform-ui [data-card]', '#platform-ui [data-divider]', '#more-next', '#more-prev', '#filter-bar'], {
       autoAlpha: 0,
       duration: fast ? 0.15 : 0.3,
       ease: 'power1.in',
@@ -430,7 +473,6 @@ class MapView {
       Object.assign(this.state, park);
       this.setFades(line, 0, 0.01);
       this.apply();
-      if (this.board) gsap.set(this.board, { autoAlpha: 0 });
       this.showUI(id);
       this.busy = false;
       return;
@@ -449,14 +491,18 @@ class MapView {
     const prog = { p: 0 };
 
     const homeDot = document.getElementById('home-dot');
-    this.light(homeDot, true);
+    // Lead distance: fire each stop's pulse this many world units before the
+    // camera actually reaches it, so the amber flash peaks as the camera
+    // passes rather than after (the ~0.3s fade-in in `light()` otherwise
+    // lags visibly behind the moving camera).
+    const PULSE_LEAD = 70;
 
     const moveSample = () => {
       const { at, dir } = sampler.at(prog.p);
       this.state.x = at[0];
       this.state.y = at[1];
       const dNow = prog.p * sampler.total;
-      while (nextStop < stops.length && stops[nextStop].d <= dNow) {
+      while (nextStop < stops.length && stops[nextStop].d - PULSE_LEAD <= dNow) {
         this.light(stops[nextStop].el);
         nextStop++;
       }
@@ -475,7 +521,7 @@ class MapView {
         // short of 1, leaving a trailing stop (often the final one) unlit.
         // Flush any remaining stops as if we'd reached the very end.
         const dNow = sampler.total + 1;
-        while (nextStop < stops.length && stops[nextStop].d <= dNow) {
+        while (nextStop < stops.length && stops[nextStop].d - PULSE_LEAD <= dNow) {
           this.light(stops[nextStop].el);
           nextStop++;
         }
@@ -485,12 +531,14 @@ class MapView {
         this.busy = false;
       },
     });
-    tl.to(this.board, { autoAlpha: 0, duration: 0.3, ease: 'power1.out' }, 0);
     tl.to(
       this.state,
       { x: start[0], y: start[1], s: MAP_SCALE, duration: 0.75, ease: 'power2.inOut', onUpdate: this.apply },
       0.05,
     );
+    // Fade the Home tick to amber mid-glide (rather than instantly on click)
+    // so it lights up AS the camera closes in on it.
+    tl.call(() => this.light(homeDot, true), undefined, 0.45);
     tl.call(
       () => {
         if (homeDot) gsap.to(homeDot, { attr: { fill: '#ffffff' }, duration: 0.25, ease: 'power1.in' });
@@ -517,7 +565,7 @@ class MapView {
 
     const done = () => {
       this.stage.classList.remove('ride-active');
-      if (this.board) gsap.to(this.board, { autoAlpha: 1, duration: 0.35, ease: 'power1.out' });
+      this.setActiveDest('map');
       document.querySelectorAll(`[data-destination="${leaving}"] circle, #home-dot`).forEach((el) => {
         gsap.set(el, { attr: { fill: '#ffffff' } });
       });
@@ -530,7 +578,7 @@ class MapView {
 
     if (!animate || prefersReducedMotion()) {
       this.setFades(null, 1, 0.01);
-      Object.assign(this.state, { x: CX, y: CY, s: 1 });
+      Object.assign(this.state, { x: HOME[0], y: HOME[1], s: 1 });
       this.echo.k = 0;
       this.apply();
       done();
@@ -572,11 +620,50 @@ class MapView {
     tl.to(prog, { p: 1, duration: 0.9, ease: 'power3.out', onUpdate: moveSample }, 2.0);
     tl.to(
       this.state,
-      { x: CX, y: CY, s: 1, duration: 0.8, ease: 'power2.inOut', onUpdate: this.apply },
+      { x: HOME[0], y: HOME[1], s: 1, duration: 0.8, ease: 'power2.inOut', onUpdate: this.apply },
       2.95,
     );
 
     this.skippable(tl);
+  }
+
+  /** Platform → platform, via the persistent rail: an express pull-back to
+   *  the rest pose (no reverse ride, just a quick zoom-out) chained
+   *  straight into the normal ride to `id`. Used instead of toMap()+
+   *  toPlatform() so clicking another destination while already parked
+   *  doesn't require detouring through the map first. */
+  switchPlatform(id: LineId) {
+    if (this.busy || this.view === 'map' || this.view === id) return;
+    const leaving = this.view;
+    this.busy = true;
+    stopMusicPlayback();
+    this.hideUI(true);
+    this.setFades(null, 1, 0.35);
+    document.querySelectorAll(`[data-destination="${leaving}"] circle, #home-dot`).forEach((el) => {
+      gsap.set(el, { attr: { fill: '#ffffff' } });
+    });
+    const bar = document.querySelector('.top-bar');
+    const section = document.getElementById('bar-section');
+    if (bar) gsap.to(bar, { backgroundColor: '#000', duration: 0.3, ease: 'power1.out', overwrite: 'auto' });
+    if (section) section.textContent = '';
+
+    gsap.to(this.state, {
+      x: HOME[0],
+      y: HOME[1],
+      s: 1,
+      duration: 0.7,
+      ease: 'power2.inOut',
+      overwrite: 'auto',
+      onUpdate: this.apply,
+      onComplete: () => {
+        this.stage.classList.remove('ride-active');
+        this.echo.k = 0;
+        this.apply();
+        this.view = 'map';
+        this.busy = false;
+        this.toPlatform(id);
+      },
+    });
   }
 
   toPage(page: number) {
@@ -680,9 +767,11 @@ function viewFromPath(path: string): ViewId {
 
 function go(view: ViewId, push = true) {
   if (!mv || mv.busy) return;
+  if (mv.view === view) return;
   if (push) history.pushState({ view }, '', urlFor(view));
   if (view === 'map') mv.toMap();
-  else mv.toPlatform(view);
+  else if (mv.view === 'map') mv.toPlatform(view);
+  else mv.switchPlatform(view);
 }
 
 function init() {
@@ -711,7 +800,6 @@ function init() {
     .querySelectorAll<SVGPathElement>('[data-ride-line]')
     .forEach((el) => bind(el, el.getAttribute('data-ride-line')));
 
-  document.getElementById('back-map')?.addEventListener('click', () => go('map'));
   document.getElementById('more-prev')?.addEventListener('click', () => mv?.toPage(mv.page - 1));
   document.getElementById('more-next')?.addEventListener('click', () => mv?.toPage(mv.page + 1));
   document.getElementById('filter-bar')?.addEventListener('click', (e) => {
@@ -744,6 +832,7 @@ function init() {
     mv.toPlatform(initial, false);
   } else {
     history.replaceState({ view: 'map' }, '', location.pathname);
+    mv.setActiveDest('map');
   }
 }
 

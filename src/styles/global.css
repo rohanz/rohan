@@ -71,16 +71,19 @@ img { max-width: 100%; display: block; }
 
 /* Homepage Destinations panel — pinned globally so client-side navigation
    back to the map can never lose the placement. */
+/* Persistent left nav rail: unlike the map-view-only panel this used to be,
+   it now stays on screen through every view (map + all three platforms),
+   so it's pinned to the edge rather than framed relative to Home. */
 body.home #station-board {
   position: absolute;
-  right: 28px;
+  left: 28px;
   top: 50%;
   transform: translateY(-50%);
-  width: min(380px, 82vw);
+  width: min(230px, 60vw);
   z-index: 10;
 }
 @media (max-width: 768px) {
-  body.home #station-board { right: 20px; top: auto; bottom: 20px; transform: none; }
+  body.home #station-board { left: auto; right: 20px; top: auto; bottom: 20px; transform: none; width: min(230px, 82vw); }
 }
 
 /* Inner pages sit on the same map land as the homepage world. */

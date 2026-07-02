@@ -11,22 +11,43 @@ const dests = NAV_LINES.map((l) => ({
   <p class="board-title"><span class="board-icon" aria-hidden="true">i</span> Destinations</p>
   <div class="board-body">
     <ul>
+      <li>
+        <a
+          href="/"
+          data-terminal
+          data-line="map"
+          data-astro-prefetch="hover"
+          class="board-link"
+          style="--line-hex:#131313"
+        >
+          <span class="swatch swatch-home" aria-hidden="true"></span>
+          <span class="board-name">Home</span>
+        </a>
+      </li>
       {dests.map((d) => (
         <li>
-          <a href={d.href} data-terminal data-line={d.id} data-astro-prefetch="hover" class="board-link">
+          <a
+            href={d.href}
+            data-terminal
+            data-line={d.id}
+            data-astro-prefetch="hover"
+            class="board-link"
+            style={`--line-hex:${d.hex}`}
+          >
             <span class="swatch" style={`background:${d.hex}`} aria-hidden="true"></span>
             <span class="board-name">{d.name}</span>
           </a>
         </li>
       ))}
     </ul>
-    <p class="board-note">From Home, ride any line to its end</p>
   </div>
 </nav>
 
 <style>
   /* Modeled on the CTA diagram's Legend panel: black header bar with the
-     white "i" roundel, white body with dark rows. */
+     white "i" roundel, white body with dark rows. Now a persistent left nav
+     rail (see MapApp.astro for placement) rather than a map-view-only
+     panel, so it's slimmed down from its earlier map-centered sizing. */
   .station-board {
     border-radius: 8px;
     overflow: hidden;
@@ -36,10 +57,10 @@ const dests = NAV_LINES.map((l) => ({
   .board-title {
     display: flex;
     align-items: center;
-    gap: 0.6rem;
+    gap: 0.55rem;
     margin: 0;
-    padding: 0.85rem 1.1rem;
-    font-size: 1.25rem;
+    padding: 0.75rem 0.9rem;
+    font-size: 1.1rem;
     font-weight: 700;
     color: #fff;
     background: #131313;
@@ -48,33 +69,54 @@ const dests = NAV_LINES.map((l) => ({
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 1.45rem;
-    height: 1.45rem;
+    width: 1.35rem;
+    height: 1.35rem;
     border-radius: 50%;
     background: #fff;
     color: #131313;
-    font-weight: 800;
-    font-size: 0.85rem;
-    font-style: italic;
-    font-family: Georgia, 'Times New Roman', serif;
+    font-weight: 700;
+    font-size: 0.88rem;
+    font-style: normal;
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    line-height: 1;
+    /* optical centering: Helvetica's lowercase "i" sits slightly left/high
+       of its box metrics, so nudge it into the visual middle of the disc */
+    padding-bottom: 0.05em;
   }
-  .board-body { background: #fff; padding: 0.55rem 0.55rem 0.7rem; }
+  .board-body { background: #fff; padding: 0.5rem 0.5rem 0.65rem; }
   .board-body ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
   .board-link {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    padding: 0.7rem 0.6rem;
+    gap: 0.65rem;
+    padding: 0.5rem 0.55rem;
     border-radius: 6px;
     text-decoration: none;
     color: #131313;
     font-weight: 700;
-    font-size: 1.3rem;
+    font-size: 1.2rem;
     transition: background 0.15s ease;
   }
   .board-link:hover, .board-link:focus-visible { background: rgba(0, 0, 0, 0.07); }
+  /* Active row (the platform currently being ridden): a tint of the line's
+     own color plus a bolder label, so the rail always reflects where you
+     are — it persists on-screen through every view now. */
+  .board-link.active {
+    background: color-mix(in srgb, var(--line-hex) 14%, transparent);
+  }
+  .board-link.active .board-name { font-weight: 800; }
   /* Legend swatches are short line segments, not dots */
-  .swatch { width: 34px; height: 9px; border-radius: 2px; flex: none; transition: transform 0.15s ease; }
+  .swatch { width: 32px; height: 9px; border-radius: 2px; flex: none; transition: transform 0.15s ease; background: var(--line-hex); }
   .board-link:hover .swatch, .board-link:focus-visible .swatch { transform: scaleX(1.25); transform-origin: left; }
-  .board-note { margin: 0.4rem 0.5rem 0; font-size: 0.75rem; font-weight: 400; color: #6f6a60; }
+  /* Home's row gets a mini version of the map's Home interchange capsule
+     (white circle, dark ring) instead of a line-color bar. */
+  .swatch-home {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #fff;
+    border: 3px solid #131313;
+    box-sizing: border-box;
+  }
+  .board-link:hover .swatch-home, .board-link:focus-visible .swatch-home { transform: none; }
 </style>

@@ -103,7 +103,7 @@ export const LINES: Line[] = [
     ],
     stations: [],
     platform: {
-      perPage: 4,
+      perPage: 3,
       axis: 'h',
       stops: [
         [-1400, 500],

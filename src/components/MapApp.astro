@@ -14,16 +14,9 @@ const { title, description, initialView } = Astro.props;
 
 const projects = (await getCollection('projects')).sort((a, b) => a.data.order - b.data.order);
 
-// Filter pills: one per technology that shows up on 2+ projects, so the bar
-// doesn't balloon with one-off tags.
-const techCounts = new Map<string, number>();
-projects.forEach((p) => {
-  new Set(p.data.technologies).forEach((t) => techCounts.set(t, (techCounts.get(t) ?? 0) + 1));
-});
-const filterTags = Array.from(techCounts.entries())
-  .filter(([, count]) => count >= 2)
-  .map(([t]) => t)
-  .sort();
+// Filter pills: one per unique technology across all projects, matching the
+// full tag set from the original site (wraps to two centered rows if needed).
+const filterTags = Array.from(new Set(projects.flatMap((p) => p.data.technologies))).sort();
 
 const stats = [
   { value: '1.3m+', label: 'streams' },
@@ -72,7 +65,6 @@ const socials: [string, string][] = [
     <StationBoard />
 
     <div id="platform-ui" hidden>
-      <button id="back-map" type="button">← Back to map</button>
       <button id="more-prev" class="edge-btn edge-btn-left" type="button" hidden>← Back</button>
       <button id="more-next" class="edge-btn edge-btn-right" type="button" hidden>More projects →</button>
       <div id="filter-bar" hidden>
@@ -88,15 +80,24 @@ const socials: [string, string][] = [
         ))}
         {music.map((t) => (
           <div class="platform-row" data-card="music" data-audio-url={t.audio}>
-            <div class="row-info">
-              <h3 class="row-title">{t.title}</h3>
-              <p class="row-artist">{t.artist}</p>
-              <div class="row-links">
-                <a href={t.spotifyUrl} target="_blank" rel="noopener noreferrer">spotify</a>
-                <a href={t.appleMusicUrl} target="_blank" rel="noopener noreferrer">apple music</a>
-                <a href={t.youtubeUrl} target="_blank" rel="noopener noreferrer">youtube</a>
+            <div class="row-header">
+              <img class="row-cover" src={t.cover} alt="" loading="lazy" />
+              <div class="row-info">
+                <h3 class="row-title">{t.title}</h3>
+                <p class="row-artist">{t.artist}</p>
+                <div class="row-links">
+                  <a href={t.spotifyUrl} target="_blank" rel="noopener noreferrer">spotify</a>
+                  <a href={t.appleMusicUrl} target="_blank" rel="noopener noreferrer">apple music</a>
+                  <a href={t.youtubeUrl} target="_blank" rel="noopener noreferrer">youtube</a>
+                </div>
               </div>
             </div>
+            <!-- Order matches the original's waveform-player: play button,
+                 then waveform, then meters (see main.js displayMusic). -->
+            <button type="button" class="row-play" data-play aria-label="Play snippet" aria-pressed="false">
+              <svg class="row-play-icon icon-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5.5v13l11-6.5z" /></svg>
+              <svg class="row-play-icon icon-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 5h4v14h-4zM13.5 5h4v14h-4z" /></svg>
+            </button>
             <canvas class="row-wave" height="56" aria-hidden="true"></canvas>
             <div class="row-meters">
               <div class="meter-group">
@@ -112,7 +113,6 @@ const socials: [string, string][] = [
                 <span class="meter-label">vu</span>
               </div>
             </div>
-            <button type="button" class="row-play" data-play aria-pressed="false">preview</button>
           </div>
         ))}
       </div>
@@ -241,7 +241,10 @@ const socials: [string, string][] = [
     .logo-name { font-size: 1.3rem; }
     .logo-sub { font-size: 1.05rem; }
     .map-stage { height: calc(100dvh - 60px); padding: 0; }
-    :global(#station-board) { right: 20px; top: auto; bottom: 20px; transform: none; }
+    :global(#station-board) { left: auto; right: 20px; top: auto; bottom: 20px; transform: none; width: min(230px, 82vw); }
+    /* Rail docks to the bottom on mobile, not the left edge, so the paging
+       button doesn't need the desktop rail clearance. */
+    .edge-btn-left { left: 20px; }
   }
 
   /* ------------------------------------------------------------------ */
@@ -256,24 +259,6 @@ const socials: [string, string][] = [
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
   }
 
-  #back-map {
-    position: absolute;
-    top: 18px;
-    left: 18px;
-    pointer-events: auto;
-    font: inherit;
-    font-weight: 700;
-    font-size: 0.95rem;
-    color: #fff;
-    background: #131313;
-    border: none;
-    border-radius: 999px;
-    padding: 0.55rem 1.1rem;
-    cursor: pointer;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
-  }
-  #back-map:hover { filter: brightness(1.15); }
-
   /* Edge paging buttons: vertically centered on the left/right edges of the
      map stage; the engine sets their background to the current line's hex. */
   .edge-btn {
@@ -281,6 +266,10 @@ const socials: [string, string][] = [
     top: 50%;
     transform: translateY(-50%);
     pointer-events: auto;
+    /* Sit above every platform card (which paint later in the DOM but at
+       the default stacking order) so the buttons are never buried under a
+       card and remain fully clickable. */
+    z-index: 40;
     font: inherit;
     font-weight: 700;
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
@@ -296,8 +285,10 @@ const socials: [string, string][] = [
   }
   .edge-btn:hover { filter: brightness(1.12); }
   .edge-btn[hidden] { display: none; }
-  .edge-btn-right { right: 22px; }
-  .edge-btn-left { left: 22px; }
+  .edge-btn-right { right: 20px; }
+  /* Clears the persistent left rail (28px + ~230px wide) instead of
+     sitting under/beside it. */
+  .edge-btn-left { left: 270px; }
 
   /* Cards: absolutely positioned by the engine (left/top + GSAP transforms).
      No transform set here — GSAP owns it. */
@@ -331,38 +322,85 @@ const socials: [string, string][] = [
     gap: 1.4rem;
     color: #1a1a1a;
   }
-  .row-info { width: 240px; flex: none; min-width: 0; }
+  /* Cover + title/artist/links, grouped like the original's .music-header:
+     a fixed-width block so it doesn't compete for space with the waveform
+     and meters that follow. */
+  .row-header {
+    flex: none;
+    width: 320px;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    min-width: 0;
+  }
+  /* Cover art, matching the original site's per-track thumbnail (enlarged
+     from an icon-sized thumb to a real cover, per the original layout). */
+  .row-cover {
+    width: 88px;
+    height: 88px;
+    flex: none;
+    border-radius: 6px;
+    object-fit: cover;
+    border: 1px solid rgba(26, 26, 26, 0.12);
+  }
+  .row-info { flex: 1 1 auto; min-width: 0; }
   .row-title { margin: 0; font-size: 1.15rem; font-weight: 700; line-height: 1.2; }
   .row-artist { margin: 0.2rem 0 0.4rem; font-size: 0.82rem; color: #6f6a60; font-weight: 600; }
   .row-links { display: flex; flex-wrap: wrap; gap: 0.6rem; font-size: 0.72rem; font-weight: 700; }
   .row-links a { color: #754fad; text-decoration: none; }
   .row-links a:hover { text-decoration: underline; }
-  .row-wave { flex: 1 1 auto; min-width: 60px; height: 56px; display: block; }
-  .row-meters { display: flex; gap: 0.6rem; align-items: flex-end; flex: none; }
-  .meter-group { display: flex; flex-direction: column; align-items: center; gap: 0.25rem; }
+  /* Icon-style play/pause button, matching the original's circular
+     waveform-play-btn (not a text pill). Sits at the end of the row. */
+  .row-play {
+    flex: none;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border: 1.5px solid #754fad;
+    border-radius: 50%;
+    background: transparent;
+    color: #754fad;
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+  .row-play:hover { background: rgba(117, 79, 173, 0.12); }
+  .row-play[aria-pressed='true'] { background: #754fad; color: #fff; }
+  .row-play-icon { width: 18px; height: 18px; fill: currentColor; }
+  .row-play .icon-pause { display: none; }
+  .row-play[aria-pressed='true'] .icon-play { display: none; }
+  .row-play[aria-pressed='true'] .icon-pause { display: block; }
+  /* A modest strip (matching the original's clamp(150px,17vw,270px)), not a
+     space-filling element — the meters are the star, not the waveform. */
+  .row-wave { flex: 0 1 clamp(150px, 17vw, 270px); min-width: 90px; max-width: 270px; height: 56px; display: block; }
+  .row-meters { display: flex; gap: 0.6rem; align-items: center; flex: none; }
+  /* Position: relative + an absolutely-positioned label keeps the label out
+     of the flow, so the group's box is exactly the canvas's box — nothing
+     asymmetric pushes the canvas's own vertical center off the row's
+     centerline, which is the world grid line the stop sits on (see
+     ride.ts placeCards/parkPose: the row is centered on the stop via
+     yPercent -50). Without this, the label's height below the canvas would
+     drag the visual center down and the vectorscope's horizontal axis would
+     no longer sit on the grid line. */
+  .meter-group { position: relative; flex: none; }
   .meter-label {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-top: 0.3rem;
     font-size: 10px;
     font-weight: 600;
     letter-spacing: 0.08em;
     color: #6f6a60;
     text-transform: lowercase;
+    white-space: nowrap;
   }
-  .row-freq { width: 280px; height: 110px; }
-  .row-vec { width: 110px; height: 110px; }
-  .row-vu { width: 76px; height: 110px; }
-  .row-play {
-    flex: none;
-    font: inherit;
-    font-weight: 700;
-    font-size: 0.78rem;
-    cursor: pointer;
-    border: 1.5px solid #754fad;
-    background: transparent;
-    color: #754fad;
-    border-radius: 999px;
-    padding: 0.32rem 0.9rem;
-  }
-  .row-play[aria-pressed='true'] { background: #754fad; color: #fff; }
+  .row-freq { display: block; width: 280px; height: 110px; }
+  .row-vec { display: block; width: 110px; height: 110px; }
+  .row-vu { display: block; width: 76px; height: 110px; }
 
   /* Grid-line dividers: thin ink lines that read as the map's own grid
      fading in. The engine positions them at the midpoints between music
@@ -385,7 +423,9 @@ const socials: [string, string][] = [
      (xPercent/x), so hover scale/shadow live on an inner wrapper instead —
      applying transform to the positioned element would fight GSAP. */
   .card-project {
-    width: 360px;
+    /* Fallback for the instant before JS sizes it from the real stop pitch
+       (see placeCards() in ride.ts) — actual width is set inline per card. */
+    width: 270px;
     padding: 0;
     display: block;
     background: transparent;
@@ -397,95 +437,112 @@ const socials: [string, string][] = [
     border-radius: 12px;
     overflow: hidden;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.22);
+    /* Pure composited transform: always-on translateZ(0) keeps this element
+       on its own GPU layer whether or not it's hovered, so hovering never
+       toggles compositing (which otherwise causes a one-frame subpixel
+       snap in the text below as font rasterization switches paths). */
+    transform: translateZ(0) scale(1);
+    transform-origin: center center;
+    will-change: transform;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
   }
   .card-project:hover .card-inner,
   .card-project:focus-visible .card-inner {
-    transform: scale(1.04);
+    transform: translateZ(0) scale(1.04);
     box-shadow: 0 20px 46px rgba(0, 0, 0, 0.32);
   }
-  .card-project .thumb { width: 100%; height: 170px; object-fit: cover; display: block; }
-  .card-project .body { padding: 0.85rem 1.05rem 1.05rem; }
-  .card-project h3 { margin: 0 0 0.3rem; font-size: 1.15rem; font-weight: 800; line-height: 1.2; }
+  /* height is set inline by placeCards() to track the card's own (dynamic,
+     now ~62% of the stop pitch) width; this is just a pre-JS fallback. */
+  .card-project .thumb { width: 100%; height: 100px; object-fit: cover; display: block; }
+  .card-project .body { padding: 0.55rem 0.65rem 0.65rem; }
+  .card-project h3 { margin: 0 0 0.2rem; font-size: clamp(0.78rem, 1vw, 0.95rem); font-weight: 800; line-height: 1.2; }
   .card-project .summary {
-    margin: 0 0 0.5rem;
-    font-size: 0.88rem;
+    margin: 0 0 0.35rem;
+    font-size: clamp(0.62rem, 0.72vw, 0.72rem);
     color: #444;
-    line-height: 1.4;
+    line-height: 1.35;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
-  .card-project .tags { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.3rem; }
-  .card-project .tags li { font-size: 0.64rem; font-weight: 700; color: #d13d59; border: 1.2px solid #d13d59; border-radius: 999px; padding: 0.12rem 0.5rem; }
+  .card-project .tags { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.22rem; }
+  .card-project .tags li { font-size: clamp(0.5rem, 0.56vw, 0.58rem); font-weight: 700; color: #d13d59; border: 1.1px solid #d13d59; border-radius: 999px; padding: 0.08rem 0.4rem; }
 
   /* Filter bar: horizontally centered above the platform line, projects
-     view only (toggled in showUI/hideUI). */
+     view only (toggled in showUI/hideUI). Styling mirrors the original
+     site's .projects-filter-bar / .filter-tag (small rectangular pills,
+     subtle border, solid fill only when active) rather than a pill-cloud,
+     adapted to the projects line's red. */
   #filter-bar {
     position: absolute;
     top: 92px;
-    left: 50%;
+    /* Centered on the area right of the persistent left rail (not the full
+       viewport), so it never overlaps it. */
+    left: calc(50% + 100px);
     transform: translateX(-50%);
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 0.4rem;
-    max-width: min(84vw, 760px);
+    gap: 0.5rem;
+    width: min(72vw, 780px);
     pointer-events: auto;
   }
   #filter-bar[hidden] { display: none; }
   .filter-tag {
     font: inherit;
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    font-weight: 700;
-    font-size: 0.72rem;
-    color: #d13d59;
-    background: rgba(255, 255, 255, 0.9);
-    border: 1.2px solid #d13d59;
-    border-radius: 999px;
-    padding: 0.28rem 0.75rem;
+    font-weight: 500;
+    font-size: 0.8rem;
+    text-align: center;
+    text-transform: lowercase;
+    color: #4a453c;
+    background: rgba(255, 255, 255, 0.92);
+    border: 1px solid rgba(26, 26, 26, 0.2);
+    border-radius: 3px;
+    padding: 0.4rem 1rem;
     cursor: pointer;
+    transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
   }
   .filter-tag.active,
   .filter-tag[aria-pressed='true'] {
     background: #d13d59;
+    border-color: #d13d59;
     color: #fff;
   }
-  .filter-tag:hover:not(.active) { background: rgba(209, 61, 89, 0.12); }
+  .filter-tag:hover:not(.active) { border-color: #d13d59; color: #1a1a1a; }
 
   .card-about {
-    width: 400px;
+    width: 300px;
   }
-  /* The bio card carries a portrait photo + far more text than its
-     siblings; it needs extra width so the text column wraps to fewer
-     lines and the card stays short enough not to collide with the next
-     stop's card on the diagonal about platform (5 stops). */
+  /* The bio card carries a portrait photo beside the text. Both children are
+     stretched (align-items: stretch, the flex default) so the card's height
+     is set purely by content — no fixed heights left over as a phantom
+     white strip below the shorter of the two. */
   .card-about-bio {
-    width: 760px;
+    width: 380px;
     display: flex;
-    align-items: flex-start;
+    align-items: stretch;
     gap: 0;
     padding: 0;
     overflow: hidden;
   }
   .about-label { margin: 0 0 0.4rem; font-size: 0.66rem; letter-spacing: 0.16em; text-transform: uppercase; color: #6f6a60; }
   .card-about-bio .photo {
-    width: 38%;
-    /* Fixed (not stretched to the text column's height): the photo is a
-       portrait image, so letting it stretch/aspect-fit would make its
-       intrinsic ratio dictate the whole card's height. Pin it instead so
-       the text column's own content controls card height. */
-    height: 150px;
+    width: 180px;
+    /* No fixed height: stretches to match the text column via the flex
+       row's align-items: stretch, so object-fit: cover always fills the
+       card's full (content-driven) height with no leftover gap. */
     flex: none;
     object-fit: cover;
     display: block;
   }
   .card-about-bio .bio {
     margin: 0;
-    padding: 0.85rem 1rem;
-    font-size: 1.05rem;
-    line-height: 1.65;
+    padding: 0.75rem 0.95rem;
+    font-size: 0.86rem;
+    line-height: 1.42;
+    flex: 1 1 auto;
   }
   .stat-row { display: flex; gap: 0.5rem; }
   .stat-tile { flex: 1; background: #815e49; color: #fff; border-radius: 8px; padding: 0.5rem 0.6rem; display: flex; flex-direction: column; }
@@ -493,7 +550,11 @@ const socials: [string, string][] = [
   .stat-label { margin-top: 0.2rem; font-size: 0.68rem; opacity: 0.9; }
   .chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.3rem; }
   .chip { font-size: 0.64rem; font-weight: 700; border-radius: 999px; padding: 0.16rem 0.55rem; background: #eee7db; color: #3a352b; }
-  .social-buttons { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+  /* Sized to its content (not the shared card width) so there's no dead
+     space to the right of the button row — and wide enough that all four
+     buttons sit on one line instead of wrapping. */
+  .card-about-socials { width: fit-content; max-width: none; }
+  .social-buttons { display: flex; flex-wrap: nowrap; gap: 0.4rem; }
   .social-btn { text-decoration: none; font-weight: 700; font-size: 0.78rem; color: #fff; background: #815e49; border-radius: 8px; padding: 0.4rem 0.75rem; }
   .social-btn:hover { filter: brightness(1.12); }
   .cv-btn {

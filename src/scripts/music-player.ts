@@ -4,7 +4,8 @@
  * A faithful port of the original Web Audio visualizers (waveform scroll,
  * 128-band spectrum with peak overlay, L/R vectorscope, analog VU needle),
  * re-homed into TypeScript with no globals and a light-theme-only pastel
- * palette: purple accents, ink dividers, amber for peaks/hot zones.
+ * palette: purple accents, ink dividers, a brighter violet for peaks/hot
+ * zones (amber is reserved for the map's stop-lighting language).
  *
  * One shared AudioContext graph feeds every row; only the row that owns the
  * currently-playing track animates. The engine (ride.ts) calls
@@ -12,12 +13,14 @@
  * onto the map, and astro:before-swap silences it on cross-page navigation.
  */
 
-// -- palette ---------------------------------------------------------------
-const accent = (a = 1) => `rgba(117, 79, 173, ${a})`; // #754fad purple
-const accentHex = '#754fad';
-const amber = (a = 1) => `rgba(249, 194, 94, ${a})`; // #f9c25e peaks / hot zone
-const amberHex = '#f9c25e';
-const ink = (a = 1) => `rgba(26, 26, 26, ${a})`; // #1a1a1a
+// -- palette -----------------------------------------------------------------
+// Amber is reserved for the map's stop-lighting language (ride.ts) and must
+// never appear in these visualizers. Everything here draws in the music
+// line's purple plus neutral ink/grey — the VU meter's hot zone uses a
+// brighter purple tint rather than amber or red.
+const accent = (a = 1) => `rgba(117, 79, 173, ${a})`; // #754fad purple (base)
+const peak = (a = 1) => `rgba(167, 139, 250, ${a})`; // brighter violet — spectrum peak overlay + VU hot zone
+const ink = (a = 1) => `rgba(26, 26, 26, ${a})`; // #1a1a1a — neutral grey/ink for VU normal range
 
 function prefersReducedMotion(): boolean {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -135,6 +138,20 @@ class RowPlayer {
     this.drawMetersIdle();
 
     this.btn.addEventListener('click', () => this.onClick());
+
+    // The row is built while the music platform is still hidden (display:
+    // none ancestors), so the very first resizeWaveCanvas() above sees a
+    // zero-width rect and falls back to a default backing-store size. A
+    // plain `window.resize` listener never fires when the platform later
+    // becomes visible at its *real* width, so the canvas's backing store
+    // stays stuck at the fallback size — the browser then stretches that
+    // stale bitmap into the actual (narrower) CSS box, leaving a leftover
+    // edge from the old draw visible as a stray vertical seam. A
+    // ResizeObserver catches every real layout-size change (visibility
+    // toggles included), not just window resizes.
+    if (typeof ResizeObserver !== 'undefined') {
+      new ResizeObserver(() => this.resizeWaveCanvas()).observe(this.waveCanvas);
+    }
   }
 
   resizeWaveCanvas(): void {
@@ -355,9 +372,9 @@ class RowPlayer {
       const halfWidth = 7 + visible * 20;
       const glow = ctx.createLinearGradient(x - halfWidth, 0, x + halfWidth, 0);
       const peakAlpha = (0.04 + visible * 0.3) * alpha;
-      glow.addColorStop(0, amber(0));
-      glow.addColorStop(0.5, amber(peakAlpha));
-      glow.addColorStop(1, amber(0));
+      glow.addColorStop(0, peak(0));
+      glow.addColorStop(0.5, peak(peakAlpha));
+      glow.addColorStop(1, peak(0));
       ctx.fillStyle = glow;
       ctx.fillRect(x - halfWidth, 0, halfWidth * 2, baseline);
     }
@@ -435,16 +452,17 @@ class RowPlayer {
     const endAngle = Math.PI * 0.15;
     const totalSweep = startAngle - endAngle;
 
-    ctx.strokeStyle = accent(0.3);
+    ctx.strokeStyle = ink(0.28);
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.arc(cx, cy, arcRadius, -startAngle, -endAngle);
     ctx.stroke();
 
-    // Hot zone arc (-10 to 0) in amber.
+    // Hot zone arc (-10 to 0) in a brighter purple — grey for the normal
+    // range, purple for "hot," no amber/red anywhere in this meter.
     const redStartFrac = dbToFrac(RED_THRESHOLD_DB);
     const redStartAngle = startAngle - redStartFrac * totalSweep;
-    ctx.strokeStyle = amber(0.7);
+    ctx.strokeStyle = peak(0.75);
     ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.arc(cx, cy, arcRadius - 4, -redStartAngle, -endAngle);
@@ -463,14 +481,14 @@ class RowPlayer {
       const labelR = arcRadius + 12;
       const isHot = db >= RED_THRESHOLD_DB;
 
-      ctx.strokeStyle = isHot ? amber(0.9) : accent(0.7);
+      ctx.strokeStyle = isHot ? peak(0.9) : ink(0.55);
       ctx.lineWidth = db === 0 ? 2 : 1;
       ctx.beginPath();
       ctx.moveTo(cx + tickInner * Math.cos(angle), cy - tickInner * Math.sin(angle));
       ctx.lineTo(cx + tickOuter * Math.cos(angle), cy - tickOuter * Math.sin(angle));
       ctx.stroke();
 
-      ctx.fillStyle = isHot ? amber(0.95) : accent(0.8);
+      ctx.fillStyle = isHot ? peak(0.95) : ink(0.6);
       ctx.fillText(String(db), cx + labelR * Math.cos(angle), cy - labelR * Math.sin(angle));
     });
 
@@ -482,7 +500,7 @@ class RowPlayer {
       const tickInner = arcRadius - 3;
       const tickOuter = arcRadius + 2;
       const isHot = db >= RED_THRESHOLD_DB;
-      ctx.strokeStyle = isHot ? amber(0.4) : accent(0.3);
+      ctx.strokeStyle = isHot ? peak(0.45) : ink(0.22);
       ctx.lineWidth = 0.6;
       ctx.beginPath();
       ctx.moveTo(cx + tickInner * Math.cos(angle), cy - tickInner * Math.sin(angle));
@@ -493,7 +511,7 @@ class RowPlayer {
     if (needleFrac !== null) {
       const needleAngle = startAngle - needleFrac * totalSweep;
       const needleLen = arcRadius + 5;
-      ctx.strokeStyle = accentHex;
+      ctx.strokeStyle = ink(0.75);
       ctx.lineWidth = 1.5;
       ctx.beginPath();
       ctx.moveTo(cx, cy);
@@ -501,7 +519,7 @@ class RowPlayer {
       ctx.stroke();
     }
 
-    ctx.fillStyle = accentHex;
+    ctx.fillStyle = ink(0.75);
     ctx.beginPath();
     ctx.arc(cx, cy, 2.5, 0, Math.PI * 2);
     ctx.fill();
@@ -704,7 +722,6 @@ class RowPlayer {
   // -- state ---------------------------------------------------------------
   setPressed(on: boolean): void {
     this.btn.setAttribute('aria-pressed', String(on));
-    this.btn.textContent = on ? 'pause' : 'preview';
     this.btn.classList.toggle('playing', on);
   }
 
