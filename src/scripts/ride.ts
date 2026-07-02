@@ -3,8 +3,8 @@ import { navigate } from 'astro:transitions/client';
 import { HOME, VIEWBOX, lineById, type LineId, type Point } from '../data/system';
 import { filletPoints } from '../lib/fillet';
 
-const DIVE_SCALE = 2.6; // zoom after gliding onto HOME
-const RIDE_SCALE = 5.0; // zoom while riding
+const DIVE_SCALE = 2.8; // zoom after gliding onto HOME
+const RIDE_SCALE = 2.8; // held through the ride (raise for a speed-zoom feel)
 const CX = VIEWBOX.w / 2;
 const CY = VIEWBOX.h / 2;
 
@@ -91,34 +91,34 @@ function ride(lineId: LineId, href: string) {
     cum.push(cum[i - 1] + Math.hypot(ridePts[i][0] - ridePts[i - 1][0], ridePts[i][1] - ridePts[i - 1][1]));
   }
   const total = cum[cum.length - 1];
-  const nearestRide = (q: Point) => {
-    let best = 0;
-    let bd = Infinity;
-    for (let i = 0; i < ridePts.length; i++) {
-      const d = (ridePts[i][0] - q[0]) ** 2 + (ridePts[i][1] - q[1]) ** 2;
-      if (d < bd) {
-        bd = d;
-        best = i;
-      }
+  // Arc distance of a point along the ride via segment projection (vertex
+  // distance fails on straight runs, which have no intermediate vertices).
+  const arcDistance = (q: Point): { d: number; off: number } => {
+    let best = { d: 0, off: Infinity };
+    for (let i = 0; i < ridePts.length - 1; i++) {
+      const [x1, y1] = ridePts[i];
+      const [x2, y2] = ridePts[i + 1];
+      const dx = x2 - x1;
+      const dy = y2 - y1;
+      const len2 = dx * dx + dy * dy || 1;
+      const t = Math.min(1, Math.max(0, ((q[0] - x1) * dx + (q[1] - y1) * dy) / len2));
+      const px = x1 + dx * t;
+      const py = y1 + dy * t;
+      const off = Math.hypot(px - q[0], py - q[1]);
+      if (off < best.off) best = { d: cum[i] + Math.sqrt(len2) * t, off };
     }
     return best;
   };
-  const stops: { d: number; at: Point }[] = line.ticks
-    .map((t) => ({ i: nearestRide(t), at: t }))
-    .filter(({ i, at }) => Math.hypot(ridePts[i][0] - at[0], ridePts[i][1] - at[1]) < 8)
-    .map(({ i, at }) => ({ d: cum[i], at }))
-    .filter(({ d }) => d > 20 && d < total - 20)
-    .sort((a, b) => a.d - b.d);
-  stops.push({ d: total, at: ridePts[ridePts.length - 1] });
-  const topCam = document.querySelector<SVGGElement>('g[data-top-camera]');
-  const marker = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-  marker.setAttribute('r', '7');
-  marker.setAttribute('fill', '#f6a821');
-  marker.setAttribute('stroke', 'var(--ink)');
-  marker.setAttribute('stroke-width', '2.5');
-  marker.setAttribute('cx', String(start[0]));
-  marker.setAttribute('cy', String(start[1]));
-  topCam?.appendChild(marker);
+  const AMBER = '#f9c25e';
+  const stops: { d: number; el: Element | null }[] = line.ticks
+    .map((t) => ({ p: arcDistance(t), at: t }))
+    .filter(({ p }) => p.off < 8 && p.d > 20 && p.d < total - 20)
+    .sort((a, b) => a.p.d - b.p.d)
+    .map(({ p, at }) => ({ d: p.d, el: document.querySelector(`circle[data-at="${at[0]},${at[1]}"]`) }));
+  // the destination capsule is the final stop
+  stops.push({ d: total, el: document.querySelector(`[data-destination="${lineId}"] circle`) });
+  // you're AT Home: it lights the moment the ride starts
+  document.querySelector('.home circle')?.setAttribute('fill', AMBER);
   let nextStop = 0;
 
   // Flat camera: pan + zoom only, in SVG vector space (crisp at any zoom).
@@ -145,8 +145,7 @@ function ride(lineId: LineId, href: string) {
     apply();
     const dNow = state.p * total;
     while (nextStop < stops.length && stops[nextStop].d <= dNow) {
-      const s2 = stops[nextStop];
-      gsap.to(marker, { attr: { cx: s2.at[0], cy: s2.at[1] }, duration: 0.16, ease: 'power2.out', overwrite: 'auto' });
+      stops[nextStop].el?.setAttribute('fill', AMBER);
       nextStop++;
     }
     if (gauss && blurTwin) {
@@ -198,7 +197,6 @@ function ride(lineId: LineId, href: string) {
       blurTwin.setAttribute('opacity', '0');
       blurTwin.style.display = 'none';
     }
-    marker.remove();
     go();
   });
 
