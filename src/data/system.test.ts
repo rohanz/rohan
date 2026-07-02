@@ -99,18 +99,25 @@ describe('transit system integrity (v2 mesh)', () => {
       for (const stop of p!.stops) {
         expect(onPolyline(stop, line.points), `${line.id} stop on line`).toBe(true);
       }
-      for (let i = 1; i < p!.stops.length; i++) {
-        const [ax, ay] = p!.stops[i - 1];
-        const [bx, by] = p!.stops[i];
-        if (p!.axis === 'v') {
-          expect(bx).toBe(ax);
-          expect(by).toBeGreaterThan(ay);
-        } else if (p!.axis === 'h') {
-          expect(by).toBe(ay);
-          expect(bx).toBeGreaterThan(ax);
-        } else {
-          expect(bx - ax).toBe(by - ay); // 45° down-right
-          expect(bx).toBeGreaterThan(ax);
+      // Stops are grouped into pages; each page is monotonic along its axis,
+      // but a new page may jump backward (e.g. projects' second page runs
+      // further west than the first). Check monotonicity per page only.
+      const pages = Math.ceil(p!.stops.length / p!.perPage);
+      for (let page = 0; page < pages; page++) {
+        const slice = p!.stops.slice(page * p!.perPage, (page + 1) * p!.perPage);
+        for (let i = 1; i < slice.length; i++) {
+          const [ax, ay] = slice[i - 1];
+          const [bx, by] = slice[i];
+          if (p!.axis === 'v') {
+            expect(bx).toBe(ax);
+            expect(by).toBeGreaterThan(ay);
+          } else if (p!.axis === 'h') {
+            expect(by).toBe(ay);
+            expect(bx).toBeGreaterThan(ax);
+          } else {
+            expect(bx - ax).toBe(by - ay); // 45° down-right
+            expect(bx).toBeGreaterThan(ax);
+          }
         }
       }
     }

@@ -111,11 +111,11 @@ class MapView {
     const toWorldX = (fx: number, s: number) => (fx * rect.width + cropX) / k;
     const toWorldY = (fy: number, s: number) => (fy * rect.height + cropY) / k;
     if (p.axis === 'v') {
-      const s = rect.height / k / 620;
+      const s = rect.height / k / 520;
       return { s, x: slice[0][0] - (toWorldX(0.24, s) - CX) / s, y: cy0 };
     }
     if (p.axis === 'h') {
-      const s = rect.width / k / 660;
+      const s = rect.width / k / 900;
       return { s, x: cx0, y: slice[0][1] - (toWorldY(0.3, s) - CY) / s };
     }
     const s = Math.min(rect.width, rect.height * 1.35) / k / 660;
@@ -183,11 +183,10 @@ class MapView {
     const line = lineById(id);
     this.ui.hidden = false;
     this.ui.setAttribute('data-axis', line.platform!.axis);
-    const title = this.ui.querySelector<HTMLElement>('#platform-name');
-    if (title) {
-      title.textContent = line.nav!.name;
-      title.style.background = line.hex;
-    }
+    const bar = document.querySelector('.top-bar');
+    const section = document.getElementById('bar-section');
+    if (bar) gsap.to(bar, { backgroundColor: line.hex, duration: 0.4, ease: 'power1.out', overwrite: 'auto' });
+    if (section) section.textContent = line.nav!.name;
     const pages = Math.ceil(line.platform!.stops.length / line.platform!.perPage);
     const pager = this.ui.querySelector<HTMLElement>('#pager');
     if (pager) pager.hidden = pages <= 1;
@@ -198,7 +197,7 @@ class MapView {
     this.placeCards();
     this.cardsIn(id);
     gsap.fromTo(
-      ['#back-map', '#platform-name', '#pager'],
+      ['#back-map', '#pager'],
       { autoAlpha: 0 },
       { autoAlpha: 1, duration: 0.4, ease: 'power1.out', overwrite: 'auto' },
     );
@@ -227,7 +226,7 @@ class MapView {
   hideUI(fast = false) {
     if (!this.ui) return;
     const ui = this.ui;
-    gsap.to(['#platform-ui [data-card]', '#back-map', '#platform-name', '#pager'], {
+    gsap.to(['#platform-ui [data-card]', '#back-map', '#pager'], {
       autoAlpha: 0,
       duration: fast ? 0.15 : 0.3,
       ease: 'power1.in',
@@ -283,7 +282,10 @@ class MapView {
     return forward ? clipped : clipped.slice().reverse();
   }
 
-  pulseStops(line: Line, sampler: ReturnType<typeof pathSampler>) {
+  pulseStops(
+    line: Line,
+    sampler: ReturnType<typeof pathSampler>,
+  ): { d: number; el: Element | null; keep?: boolean }[] {
     const pts = sampler.pts;
     const cum = sampler.cum;
     const arc = (q: Point) => {
@@ -300,7 +302,7 @@ class MapView {
       }
       return best;
     };
-    return [...line.ticks, ...(line.platform?.stops ?? [])]
+    const sorted = [...line.ticks, ...(line.platform?.stops ?? [])]
       .map((t) => ({ p: arc(t), at: t }))
       .filter(({ p }) => p.off < 8 && p.d > 20)
       .sort((a, b) => a.p.d - b.p.d)
@@ -308,6 +310,11 @@ class MapView {
         d: p.d,
         el: document.querySelector(`circle[data-at="${at[0]},${at[1]}"]`),
       }));
+    // The stop nearest the destination (the last platform stop the ride
+    // passes) stays amber rather than fading, echoing the terminal capsule.
+    const last = sorted[sorted.length - 1];
+    if (last) (last as { keep?: boolean }).keep = true;
+    return sorted;
   }
 
   toPlatform(id: LineId, animate = true) {
@@ -335,6 +342,11 @@ class MapView {
     const sampler = pathSampler(ridePts);
     const start = ridePts[0];
     const stops = this.pulseStops(line, sampler);
+    stops.push({
+      d: sampler.total,
+      el: document.querySelector(`[data-destination="${line.id}"] circle`),
+      keep: true,
+    });
     let nextStop = 0;
     let lastAt: Point = start;
     const prog = { p: 0 };
@@ -348,7 +360,7 @@ class MapView {
       this.state.y = at[1];
       const dNow = prog.p * sampler.total;
       while (nextStop < stops.length && stops[nextStop].d <= dNow) {
-        this.light(stops[nextStop].el);
+        this.light(stops[nextStop].el, stops[nextStop].keep);
         nextStop++;
       }
       const speedPx = Math.hypot(at[0] - lastAt[0], at[1] - lastAt[1]) * this.state.s;
@@ -362,6 +374,14 @@ class MapView {
     const tl = gsap.timeline({
       defaults: { overwrite: 'auto' },
       onComplete: () => {
+        // Floating-point guard: the progress tween may land at p fractionally
+        // short of 1, leaving a trailing stop (often the final one) unlit.
+        // Flush any remaining stops as if we'd reached the very end.
+        const dNow = sampler.total + 1;
+        while (nextStop < stops.length && stops[nextStop].d <= dNow) {
+          this.light(stops[nextStop].el, stops[nextStop].keep);
+          nextStop++;
+        }
         this.echo.k = 0;
         this.apply();
         this.showUI(id);
@@ -403,6 +423,10 @@ class MapView {
       document.querySelectorAll(`[data-destination="${leaving}"] circle, #home-dot`).forEach((el) => {
         gsap.set(el, { attr: { fill: '#ffffff' } });
       });
+      const bar = document.querySelector('.top-bar');
+      const section = document.getElementById('bar-section');
+      if (bar) gsap.to(bar, { backgroundColor: '#000', duration: 0.4, ease: 'power1.out', overwrite: 'auto' });
+      if (section) section.textContent = '';
       this.busy = false;
     };
 
