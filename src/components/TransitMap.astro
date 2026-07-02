@@ -8,10 +8,10 @@ function polyPoints(pts: Point[]) {
 
 // Land-use zones, CTA-diagram style: tan land, lighter city core, pale parks,
 // light-blue river + lake. World coordinates (move with the camera).
-const LAND = '#d9d4c8';
-const CITY = '#e7e3d9';
-const PARK = '#cfe0c6';
-const WATER = '#bcd8e6';
+const LAND = '#e4e1d8';
+const CITY = '#eeebe4';
+const PARK = '#dde9d7';
+const WATER = '#d0e4ee';
 const PARKS: [number, number, number, number][] = [
   [40, 30, 130, 170],
   [520, 470, 150, 100],
@@ -64,9 +64,16 @@ const LAKE = 'M880,-1600 L2600,-1600 L2600,2000 L880,2000 L880,1160 L930,1110 L9
       {PARKS.map(([x, y, w, h]) => (
         <rect x={x} y={y} width={w} height={h} rx="12" fill={PARK} />
       ))}
+      <!-- faint graph grid: map-paper feel; water covers it -->
+      <rect x="-1600" y="-1600" width="4200" height="3600" fill="url(#grid)" opacity="0.05" />
       <polyline points={polyPoints(RIVER)} fill="none" stroke={WATER} stroke-width="24" stroke-linejoin="round" />
       <path d={LAKE} fill={WATER} />
     </g>
+    <defs>
+      <pattern id="grid" width="50" height="50" patternUnits="userSpaceOnUse">
+        <path d="M50,0 H0 V50" fill="none" stroke="var(--ink)" stroke-width="1" />
+      </pattern>
+    </defs>
   </svg>
 
   <!-- Depth layer 2: the lines themselves (also the click surface) -->
@@ -78,8 +85,9 @@ const LAKE = 'M880,-1600 L2600,-1600 L2600,2000 L880,2000 L880,1160 L930,1110 L9
     aria-hidden="true"
   >
     <g data-camera>
+      <g id="lines-world">
       {LINES.map((line) => (
-        <g data-line={line.id} class:list={['line-group', { nav: !!line.nav }]}>
+        <g data-line={line.id} class:list={['line-group', { nav: !!line.nav }]} style={`--glow:${line.hex}`}>
           <path
             class="line-path"
             d={filletPath(line.points)}
@@ -111,6 +119,13 @@ const LAKE = 'M880,-1600 L2600,-1600 L2600,2000 L880,2000 L880,1160 L930,1110 L9
         {LINES.flatMap((line) => line.ticks.map((t) => <circle cx={t[0]} cy={t[1]} r="5" fill="#fff" stroke="var(--ink)" stroke-width="2.4" />))}
         {LINES.flatMap((line) => (line.terminals ?? []).map((t) => <circle cx={t[0]} cy={t[1]} r="9" fill="#fff" stroke="var(--ink)" stroke-width="3.5" />))}
       </g>
+      </g>
+    </g>
+    <!-- Motion blur lives on a permanently-filtered twin whose OPACITY rides
+         with speed — attaching/detaching a filter mid-ride causes a visible
+         raster snap; fading a twin cannot. -->
+    <g data-camera-blur opacity="0" filter="url(#motion-blur)" aria-hidden="true">
+      <use href="#lines-world" />
     </g>
     <defs>
       <filter id="motion-blur" x="-40%" y="-40%" width="180%" height="180%">
@@ -158,4 +173,13 @@ const LAKE = 'M880,-1600 L2600,-1600 L2600,2000 L880,2000 L880,1160 L930,1110 L9
   .home-sub { font-size: 11px; font-weight: 500; letter-spacing: 0.06em; }
   .hit-path { cursor: pointer; pointer-events: stroke; }
   #map-3d.ride-active .home text { opacity: 0; transition: opacity 0.25s ease; }
+  /* Hover highlight: the hovered destination's line glows, the rest recede */
+  .line-path { transition: opacity 0.25s ease, filter 0.25s ease; }
+  :global(#map-3d[data-hl]:not(.ride-active)) .line-group .line-path { opacity: 0.42; }
+  :global(#map-3d[data-hl='music']:not(.ride-active)) [data-line='music'] .line-path,
+  :global(#map-3d[data-hl='projects']:not(.ride-active)) [data-line='projects'] .line-path,
+  :global(#map-3d[data-hl='about']:not(.ride-active)) [data-line='about'] .line-path {
+    opacity: 1;
+    filter: drop-shadow(0 0 3.5px var(--glow));
+  }
 </style>

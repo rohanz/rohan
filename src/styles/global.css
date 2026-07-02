@@ -1,7 +1,7 @@
 :root {
-  --line-music: #522398;
-  --line-projects: #c60c30;
-  --line-about: #62361b;
+  --line-music: #754fad;
+  --line-projects: #d13d59;
+  --line-about: #815e49;
   --bg: #f4f1ea;
   --ink: #1a1a1a;
   --muted: #8a8578;
@@ -84,7 +84,7 @@ body.home #station-board {
 }
 
 /* Inner pages sit on the same map land as the homepage world. */
-body.page { background: #d9d4c8; }
+body.page { background: #e4e1d8; }
 
 /* Poster typography: every title and subheader carries the transit signage
    face (Helvetica), matching the map labels and Legend panel. */

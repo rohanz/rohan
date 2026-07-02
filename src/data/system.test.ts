@@ -88,6 +88,6 @@ describe('transit system integrity (v2 mesh)', () => {
   });
 
   it('lineById returns the matching nav line', () => {
-    expect(lineById('projects').hex).toBe('#c60c30');
+    expect(lineById('projects').hex).toBe('#d13d59');
   });
 });

@@ -43,7 +43,7 @@ function ride(lineId: LineId, href: string) {
   const line = lineById(lineId);
   const path = line.ride;
   const cameras = Array.from(
-    document.querySelectorAll<SVGGElement>('g[data-camera], g[data-camera-land], g[data-top-camera]'),
+    document.querySelectorAll<SVGGElement>('g[data-camera], g[data-camera-land], g[data-top-camera], g[data-camera-blur]'),
   );
   if (!stage || cameras.length === 0 || !path) {
     navigate(href);
@@ -51,9 +51,28 @@ function ride(lineId: LineId, href: string) {
   }
 
   stage.classList.add('ride-active');
-  // Camera follows the same filleted geometry the tracks are drawn with,
-  // so every turn is a sweep rather than a snap.
-  const sample = pathSampler(filletPoints(path));
+  delete stage.dataset.hl;
+  // Camera follows the DRAWN line's filleted geometry exactly — important at
+  // HOME, where a line with a corner there (purple) is drawn sweeping a few
+  // units off the vertex; riding the ideal polyline instead reads as a snap.
+  const dense = filletPoints(line.points);
+  const nearest = (q: Point) => {
+    let best = 0;
+    let bd = Infinity;
+    for (let i = 0; i < dense.length; i++) {
+      const d = (dense[i][0] - q[0]) ** 2 + (dense[i][1] - q[1]) ** 2;
+      if (d < bd) {
+        bd = d;
+        best = i;
+      }
+    }
+    return best;
+  };
+  const iH = nearest(HOME);
+  const iD = nearest(path[path.length - 1]);
+  const ridePts = iH <= iD ? dense.slice(iH, iD + 1) : dense.slice(iD, iH + 1).reverse();
+  const start = ridePts[0];
+  const sample = pathSampler(ridePts);
 
   // Flat camera: pan + zoom only, in SVG vector space (crisp at any zoom).
   const state = { x: CX, y: CY, s: 1, p: 0 };
@@ -67,28 +86,21 @@ function ride(lineId: LineId, href: string) {
     }
   };
 
-  // Speed-proportional, direction-aware motion blur; attached only at speed
-  // (an attached filter rasterizes the layer and softens everything).
-  let blurOn = false;
-  const setBlur = (on: boolean) => {
-    if (on === blurOn) return;
-    blurOn = on;
-    for (const el of cameras) {
-      if (on) el.setAttribute('filter', 'url(#motion-blur)');
-      else el.removeAttribute('filter');
-    }
-  };
+  // Speed-proportional, direction-aware motion blur. The filter never
+  // attaches or detaches (that causes a visible raster snap); instead a
+  // permanently-filtered twin of the lines fades in with speed.
+  const blurTwin = document.querySelector<SVGGElement>('g[data-camera-blur]');
   const moveSample = () => {
     const { at, dir } = sample(state.p);
     state.x = at[0];
     state.y = at[1];
     apply();
-    if (gauss) {
+    if (gauss && blurTwin) {
       const speedPx = Math.hypot(at[0] - lastAt[0], at[1] - lastAt[1]) * state.s;
       const bPx = Math.min(speedPx * 0.05, 10);
       const b = bPx / Math.max(state.s, 1);
-      setBlur(bPx > 1.5);
-      if (blurOn) gauss.setAttribute('stdDeviation', `${Math.abs(dir[0]) * b} ${Math.abs(dir[1]) * b}`);
+      gauss.setAttribute('stdDeviation', `${Math.abs(dir[0]) * b} ${Math.abs(dir[1]) * b}`);
+      blurTwin.setAttribute('opacity', String(Math.min(bPx / 5, 1) * 0.85));
     }
     lastAt = at;
   };
@@ -109,7 +121,7 @@ function ride(lineId: LineId, href: string) {
 
   // (a) glide onto HOME and zoom in — no travel yet
   tl.to(board, { autoAlpha: 0, duration: 0.3, ease: 'power1.out' }, 0);
-  tl.to(state, { x: HOME[0], y: HOME[1], s: DIVE_SCALE, duration: 0.75, ease: 'power2.inOut', onUpdate: apply }, 0.05);
+  tl.to(state, { x: start[0], y: start[1], s: DIVE_SCALE, duration: 0.75, ease: 'power2.inOut', onUpdate: apply }, 0.05);
 
   // (b) accelerate along the line, blur building with speed
   const RUN_START = 0.9;
@@ -128,7 +140,7 @@ function ride(lineId: LineId, href: string) {
   tl.eventCallback('onComplete', () => {
     window.removeEventListener('pointerdown', skip);
     window.removeEventListener('keydown', skip);
-    setBlur(false);
+    blurTwin?.setAttribute('opacity', '0');
     go();
   });
 
@@ -141,6 +153,7 @@ function initRide() {
   // Only wire up on the homepage (map present).
   if (!document.getElementById('transit-map')) return;
 
+  const stage = document.getElementById('map-3d');
   const bind = (el: Element, href: string | null, lineId: string | null) => {
     // Astro's hover-prefetch skips SVG elements; warm the destination ourselves.
     el.addEventListener(
@@ -150,6 +163,13 @@ function initRide() {
       },
       { once: true },
     );
+    // Hover highlight on both the board entry and the track itself
+    el.addEventListener('mouseenter', () => {
+      if (stage && lineId) stage.dataset.hl = lineId;
+    });
+    el.addEventListener('mouseleave', () => {
+      if (stage) delete stage.dataset.hl;
+    });
     el.addEventListener('click', (e) => {
       const ev = e as MouseEvent;
       if (!href || !lineId) return;

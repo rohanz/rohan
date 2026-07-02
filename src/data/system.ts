@@ -31,14 +31,14 @@ export const VIEWBOX = { w: 1000, h: 700 };
 
 // Real CTA palette.
 export const CTA = {
-  red: '#c60c30',
-  blue: '#00a1de',
-  brown: '#62361b',
-  green: '#009b3a',
-  orange: '#f9461c',
-  purple: '#522398',
-  pink: '#e27ea6',
-  yellow: '#f9e300',
+  red: '#d13d59',
+  blue: '#33b4e5',
+  brown: '#815e49',
+  green: '#33af61',
+  orange: '#fa6b49',
+  purple: '#754fad',
+  pink: '#e898b8',
+  yellow: '#fae933',
 } as const;
 
 // Nav lines end AT their destination station (off-canvas); texture lines run
