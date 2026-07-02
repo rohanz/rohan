@@ -1,10 +1,36 @@
 ---
-import { LINES, HOME, VIEWBOX, type Point } from '../data/system';
+import { LINES, NAV_LINES, HOME, VIEWBOX, type Point } from '../data/system';
 
 function polyPoints(pts: Point[]) {
   return pts.map(([x, y]) => `${x},${y}`).join(' ');
 }
 
+// Land-use zones, CTA-diagram style: tan land, lighter city core, pale parks,
+// light-blue river + lake. World coordinates (move with the camera).
+const LAND = '#d9d4c8';
+const CITY = '#e7e3d9';
+const PARK = '#cfe0c6';
+const WATER = '#bcd8e6';
+const PARKS: [number, number, number, number][] = [
+  [40, 30, 130, 170],
+  [520, 470, 150, 100],
+  [700, -60, 150, 100],
+  [-160, 180, 170, 110],
+  [480, -480, 180, 120],
+  [540, 950, 170, 130],
+  [-460, 610, 170, 100],
+  [140, -700, 160, 110],
+];
+const RIVER: Point[] = [
+  [240, -1600],
+  [240, -140],
+  [360, -20],
+  [360, 520],
+  [240, 640],
+  [240, 2000],
+];
+// Lake shoreline (east edge), gentle octilinear steps.
+const LAKE = 'M880,-1600 L2600,-1600 L2600,2000 L880,2000 L880,1160 L930,1110 L930,330 L880,280 Z';
 ---
 <div class="map-tilt">
   <svg
@@ -15,18 +41,18 @@ function polyPoints(pts: Point[]) {
     aria-hidden="true"
   >
     <g data-camera>
+      <!-- Land, parks, river, lake — under everything, riding with the camera -->
+      <g class="land" aria-hidden="true">
+        <rect x="-1600" y="-1600" width="4200" height="3600" fill={LAND} />
+        <rect x="150" y="90" width="700" height="580" rx="26" fill={CITY} />
+        {PARKS.map(([x, y, w, h]) => (
+          <rect x={x} y={y} width={w} height={h} rx="12" fill={PARK} />
+        ))}
+        <polyline points={polyPoints(RIVER)} fill="none" stroke={WATER} stroke-width="24" stroke-linejoin="round" />
+        <path d={LAKE} fill={WATER} />
+      </g>
       {LINES.map((line) => (
         <g data-line={line.id} class:list={['line-group', { nav: !!line.nav }]}>
-          <!-- casing: background-colored under-stroke separates crossings, CTA-print style -->
-          <polyline
-            class="line-casing"
-            points={polyPoints(line.points)}
-            fill="none"
-            stroke="var(--bg)"
-            stroke-width={line.nav ? 14 : 12}
-            stroke-linecap="butt"
-            stroke-linejoin="round"
-          />
           <polyline
             class="line-path"
             points={polyPoints(line.points)}
@@ -38,6 +64,9 @@ function polyPoints(pts: Point[]) {
           />
           {line.ticks.map((t) => (
             <circle cx={t[0]} cy={t[1]} r={line.nav ? 5.5 : 5} fill="#fff" stroke="var(--ink)" stroke-width="2.4" />
+          ))}
+          {(line.terminals ?? []).map((t) => (
+            <circle cx={t[0]} cy={t[1]} r="9" fill="#fff" stroke="var(--ink)" stroke-width="3.5" />
           ))}
           {line.nav && (
             <polyline
@@ -55,14 +84,24 @@ function polyPoints(pts: Point[]) {
         </g>
       ))}
 
-      <!-- HOME — the only named station; CTA transfer-station capsule -->
+      <!-- Destination stations at the far end of each ride (off-canvas at rest;
+           the camera brakes into them at the end of a ride) -->
+      {NAV_LINES.map((line) => {
+        const end = line.ride[line.ride.length - 1];
+        return (
+          <g class="destination" data-destination={line.id}>
+            <circle cx={end[0]} cy={end[1]} r="15" fill="#fff" stroke="var(--ink)" stroke-width="5" />
+          </g>
+        );
+      })}
+
+      <!-- HOME — the only named station -->
       <g class="home">
         <circle cx={HOME[0]} cy={HOME[1]} r="15" fill="#fff" stroke="var(--ink)" stroke-width="5" />
-        <text x={HOME[0] - 24} y={HOME[1] - 22} class="home-label" fill="var(--ink)" text-anchor="end">HOME</text>
-        <text x={HOME[0] - 24} y={HOME[1] - 8} class="home-sub" fill="var(--muted)" text-anchor="end">you are here</text>
+        <text x={HOME[0] - 24} y={HOME[1] - 22} class="home-label" style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif" fill="var(--ink)" text-anchor="end">Home</text>
+        <text x={HOME[0] - 24} y={HOME[1] - 8} class="home-sub" style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif" fill="var(--muted)" text-anchor="end">You are here</text>
       </g>
     </g>
-    <g id="streaks" aria-hidden="true"></g>
     <defs>
       <filter id="motion-blur" x="-40%" y="-40%" width="180%" height="180%">
         <feGaussianBlur id="motion-blur-gauss" stdDeviation="0 0" />
@@ -74,10 +113,8 @@ function polyPoints(pts: Point[]) {
 <style>
   .map-tilt { width: 100%; height: 100%; perspective: 1200px; }
   .transit-map { width: 100%; height: 100%; display: block; transform-style: preserve-3d; }
-  .home-label { font-size: 18px; font-weight: 800; letter-spacing: 0.04em; }
-  .home-sub { font-size: 11px; font-weight: 500; letter-spacing: 0.06em; }
+  .home-label { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 18px; font-weight: 700; letter-spacing: 0.04em; }
+  .home-sub { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 11px; font-weight: 500; letter-spacing: 0.06em; }
   .hit-path { cursor: pointer; pointer-events: stroke; }
-  /* During a ride only the HOME text gets out of the way; other lines stay crisp
-     (the whole camera carries speed-proportional motion blur instead). */
   #transit-map.ride-active .home text { opacity: 0; transition: opacity 0.25s ease; }
 </style>

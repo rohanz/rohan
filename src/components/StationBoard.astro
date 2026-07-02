@@ -7,26 +7,74 @@ const dests = NAV_LINES.map((l) => ({
   href: l.nav.href,
 }));
 ---
-<nav id="station-board" class="station-board" aria-label="destinations">
-  <p class="board-title">from home, ride to</p>
-  <ul>
-    {dests.map((d) => (
-      <li>
-        <a href={d.href} data-terminal data-line={d.id} data-astro-prefetch="hover" class="board-link">
-          <span class="dot" style={`background:${d.hex}`} aria-hidden="true"></span>
-          <span class="board-name">{d.name}</span>
-        </a>
-      </li>
-    ))}
-  </ul>
+<nav id="station-board" class="station-board" aria-label="Destinations">
+  <p class="board-title"><span class="board-icon" aria-hidden="true">i</span> Destinations</p>
+  <div class="board-body">
+    <ul>
+      {dests.map((d) => (
+        <li>
+          <a href={d.href} data-terminal data-line={d.id} data-astro-prefetch="hover" class="board-link">
+            <span class="swatch" style={`background:${d.hex}`} aria-hidden="true"></span>
+            <span class="board-name">{d.name}</span>
+          </a>
+        </li>
+      ))}
+    </ul>
+    <p class="board-note">From Home, ride any line to its end</p>
+  </div>
 </nav>
 
 <style>
-  .station-board { background: var(--board); color: #fff; border-radius: var(--radius); padding: 1.25rem 1.4rem; box-shadow: 0 12px 40px rgba(0,0,0,0.22); }
-  .board-title { margin: 0 0 0.85rem; font-size: 0.7rem; letter-spacing: 0.22em; text-transform: uppercase; color: #9a958c; }
-  .station-board ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.35rem; }
-  .board-link { display: flex; align-items: center; gap: 0.85rem; padding: 0.7rem 0.6rem; border-radius: 8px; text-decoration: none; color: #fff; font-weight: 700; font-size: 1.15rem; transition: background 0.15s ease; }
-  .board-link:hover, .board-link:focus-visible { background: rgba(255,255,255,0.09); }
-  .dot { width: 14px; height: 14px; border-radius: 50%; flex: none; transition: transform 0.15s ease; }
-  .board-link:hover .dot, .board-link:focus-visible .dot { transform: scale(1.35); }
+  /* Modeled on the CTA diagram's Legend panel: black header bar with the
+     white "i" roundel, white body with dark rows. */
+  .station-board {
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.28);
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  }
+  .board-title {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin: 0;
+    padding: 0.85rem 1.1rem;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #fff;
+    background: #131313;
+  }
+  .board-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.45rem;
+    height: 1.45rem;
+    border-radius: 50%;
+    background: #fff;
+    color: #131313;
+    font-weight: 800;
+    font-size: 0.85rem;
+    font-style: italic;
+    font-family: Georgia, 'Times New Roman', serif;
+  }
+  .board-body { background: #fff; padding: 0.55rem 0.55rem 0.7rem; }
+  .board-body ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+  .board-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.7rem 0.6rem;
+    border-radius: 6px;
+    text-decoration: none;
+    color: #131313;
+    font-weight: 700;
+    font-size: 1.3rem;
+    transition: background 0.15s ease;
+  }
+  .board-link:hover, .board-link:focus-visible { background: rgba(0, 0, 0, 0.07); }
+  /* Legend swatches are short line segments, not dots */
+  .swatch { width: 34px; height: 9px; border-radius: 2px; flex: none; transition: transform 0.15s ease; }
+  .board-link:hover .swatch, .board-link:focus-visible .swatch { transform: scaleX(1.25); transform-origin: left; }
+  .board-note { margin: 0.4rem 0.5rem 0; font-size: 0.75rem; font-weight: 400; color: #6f6a60; }
 </style>

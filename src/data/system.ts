@@ -14,14 +14,16 @@ export interface Line {
   hex: string;
   /** Present only on the three nav lines. */
   nav?: { href: string; name: string };
-  /** Full polyline; both endpoints off-canvas. Octilinear. */
+  /** Full polyline; endpoints far off-canvas (no cap visible at any aspect). Octilinear. */
   points: Point[];
-  /** Nav lines only: the path the camera rides, HOME → off-canvas. Octilinear. */
+  /** Nav lines only: camera path, HOME → the off-canvas destination station. Octilinear. */
   ride?: Point[];
-  /** Named stations (HOME + sparse duds, nav lines only). */
+  /** Named stations (HOME only). */
   stations: Station[];
-  /** Unnamed tick stations. */
+  /** Unnamed dot stops. */
   ticks: Point[];
+  /** On-canvas end-of-line stations (texture lines that stop at the lake shore). */
+  terminals?: Point[];
 }
 
 export const HOME: Point = [420, 380];
@@ -39,29 +41,35 @@ export const CTA = {
   yellow: '#f9e300',
 } as const;
 
+// Nav lines end AT their destination station (off-canvas); texture lines run
+// to ±1600/±1100+ so no viewport aspect can ever reveal an end cap. Texture
+// lines also jog through the three ride corridors so the world stays
+// populated mid-ride: blue crosses music's first tail leg, green its second;
+// yellow crosses projects' tail; pink and green cross about's tail.
 export const LINES: Line[] = [
   {
     id: 'music',
     hex: CTA.purple,
-    nav: { href: '/music', name: 'music' },
+    nav: { href: '/music', name: 'Music' },
     points: [
-      [-260, 560],
+      [-1600, 560],
       [240, 560],
       [420, 380],
       [580, 220],
       [580, -200],
       [700, -320],
-      [700, -900],
+      [700, -780],
     ],
     ride: [
       [420, 380],
       [580, 220],
       [580, -200],
       [700, -320],
-      [700, -900],
+      [700, -780],
     ],
     stations: [{ id: 'home', name: 'HOME', kind: 'home', at: [420, 380] }],
     ticks: [
+      [-300, 560],
       [160, 560],
       [330, 470],
       [480, 320],
@@ -73,31 +81,32 @@ export const LINES: Line[] = [
       [640, -260],
       [700, -420],
       [700, -560],
-      [700, -700],
+      [700, -680],
     ],
   },
   {
     id: 'projects',
     hex: CTA.red,
-    nav: { href: '/projects', name: 'projects' },
+    nav: { href: '/projects', name: 'Projects' },
     points: [
-      [-260, 380],
+      [-1600, 380],
       [620, 380],
       [760, 520],
       [760, 700],
-      [900, 840],
-      [900, 1400],
+      [620, 840],
+      [620, 1280],
     ],
     ride: [
       [420, 380],
       [620, 380],
       [760, 520],
       [760, 700],
-      [900, 840],
-      [900, 1400],
+      [620, 840],
+      [620, 1280],
     ],
     stations: [],
     ticks: [
+      [-300, 380],
       [120, 380],
       [240, 380],
       [500, 380],
@@ -105,24 +114,23 @@ export const LINES: Line[] = [
       [680, 440],
       [760, 580],
       [760, 660],
-      [830, 770],
-      [900, 900],
-      [900, 1040],
-      [900, 1180],
-      [900, 1320],
+      [690, 770],
+      [620, 900],
+      [620, 1020],
+      [620, 1140],
     ],
   },
   {
     id: 'about',
     hex: CTA.brown,
-    nav: { href: '/about', name: 'about me' },
+    nav: { href: '/about', name: 'About Me' },
     points: [
-      [420, -260],
+      [420, -1100],
       [420, 500],
       [300, 620],
       [140, 620],
       [0, 760],
-      [-700, 760],
+      [-1160, 760],
     ],
     ride: [
       [420, 380],
@@ -130,7 +138,7 @@ export const LINES: Line[] = [
       [300, 620],
       [140, 620],
       [0, 760],
-      [-700, 760],
+      [-1160, 760],
     ],
     stations: [],
     ticks: [
@@ -143,18 +151,22 @@ export const LINES: Line[] = [
       [-250, 760],
       [-400, 760],
       [-550, 760],
+      [-700, 760],
+      [-850, 760],
+      [-1000, 760],
     ],
   },
   {
     id: 'blue',
     hex: CTA.blue,
     points: [
-      [-260, 140],
+      [-1600, 140],
       [300, 140],
       [440, 280],
       [700, 280],
       [860, 120],
-      [860, -260],
+      [860, -100],
+      [-1600, -100],
     ],
     stations: [],
     ticks: [
@@ -162,73 +174,93 @@ export const LINES: Line[] = [
       [380, 220],
       [560, 280],
       [780, 200],
+      [660, -100],
+      [500, -100],
+      [200, -100],
     ],
   },
   {
     id: 'green',
     hex: CTA.green,
     points: [
-      [200, -260],
+      [840, -500],
+      [200, -500],
       [200, 100],
       [80, 220],
-      [80, 960],
+      [80, 1800],
     ],
     stations: [],
+    terminals: [[840, -500]],
     ticks: [
+      [500, -500],
+      [200, -300],
       [200, 20],
       [140, 160],
       [80, 400],
       [80, 560],
+      [80, 900],
     ],
   },
   {
     id: 'orange',
     hex: CTA.orange,
     points: [
-      [1260, 240],
+      [840, 240],
       [760, 240],
       [640, 120],
       [300, 120],
-      [300, -260],
+      [300, -1100],
     ],
     stations: [],
+    terminals: [[840, 240]],
     ticks: [
-      [880, 240],
       [700, 180],
       [460, 120],
+      [300, -60],
+      [300, -300],
     ],
   },
   {
     id: 'pink',
     hex: CTA.pink,
     points: [
-      [-260, 480],
+      [-450, 1800],
+      [-450, 480],
       [100, 480],
       [260, 320],
-      [1260, 320],
+      [840, 320],
     ],
     stations: [],
+    terminals: [[840, 320]],
     ticks: [
+      [-450, 900],
+      [-450, 650],
+      [-200, 480],
       [180, 400],
       [520, 320],
       [700, 320],
-      [880, 320],
     ],
   },
   {
     id: 'yellow',
     hex: CTA.yellow,
     points: [
-      [560, 960],
+      [840, 1100],
+      [560, 1100],
       [560, 640],
       [680, 520],
-      [1260, 520],
+      [840, 520],
     ],
     stations: [],
+    terminals: [
+      [840, 1100],
+      [840, 520],
+    ],
     ticks: [
+      [760, 1100],
+      [560, 900],
       [620, 580],
-      [860, 520],
-      [960, 520],
+      [740, 520],
     ],
   },
 ];

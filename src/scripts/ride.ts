@@ -15,9 +15,9 @@ function prefersReducedMotion(): boolean {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
-// Arc-length lookup: eased progress [0,1] → point + unit direction on the path.
-// Constant progress-rate = constant speed, so the tween's ease alone shapes
-// acceleration — no per-segment time jumps.
+// Arc-length lookup: progress [0,1] → point + unit direction on the path.
+// Constant progress-rate = constant speed, so tween eases alone shape the
+// acceleration and braking — no per-segment time jumps.
 function pathSampler(pts: Point[]) {
   const cum: number[] = [0];
   for (let i = 1; i < pts.length; i++) {
@@ -39,49 +39,19 @@ function pathSampler(pts: Point[]) {
   };
 }
 
-// Thin parallel streak lines aligned to the overall travel direction.
-function buildStreaks(streaksEl: SVGGElement, from: Point, to: Point) {
-  streaksEl.replaceChildren();
-  const dx = to[0] - from[0];
-  const dy = to[1] - from[1];
-  const len = Math.hypot(dx, dy) || 1;
-  const nx = -dy / len;
-  const ny = dx / len;
-  const count = 16;
-  for (let i = 0; i < count; i++) {
-    const t = (i / (count - 1) - 0.5) * 950;
-    const cx = CX + nx * t;
-    const cy = CY + ny * t;
-    const ux = (dx / len) * 300;
-    const uy = (dy / len) * 300;
-    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    line.setAttribute('x1', String(cx - ux));
-    line.setAttribute('y1', String(cy - uy));
-    line.setAttribute('x2', String(cx + ux));
-    line.setAttribute('y2', String(cy + uy));
-    line.setAttribute('stroke', 'rgba(0,0,0,0.14)');
-    line.setAttribute('stroke-width', '2');
-    line.setAttribute('stroke-linecap', 'round');
-    streaksEl.appendChild(line);
-  }
-}
-
 function ride(lineId: LineId, href: string) {
   const svg = document.getElementById('transit-map') as SVGSVGElement | null;
   const camera = svg?.querySelector('g[data-camera]') as SVGGElement | null;
-  const streaks = document.getElementById('streaks') as SVGGElement | null;
   const gauss = document.getElementById('motion-blur-gauss');
   const board = document.getElementById('station-board');
-  const logo = document.getElementById('logo');
   const line = lineById(lineId);
   const path = line.ride;
-  if (!svg || !camera || !streaks || !path) {
+  if (!svg || !camera || !path) {
     navigate(href);
     return;
   }
 
   svg.classList.add('ride-active');
-  buildStreaks(streaks, HOME, path[path.length - 1]);
   const sample = pathSampler(path);
 
   const state = { x: HOME[0], y: HOME[1], s: 1, p: 0 };
@@ -90,10 +60,17 @@ function ride(lineId: LineId, href: string) {
 
   // Speed-proportional, direction-aware motion blur on the whole camera.
   camera.setAttribute('filter', 'url(#motion-blur)');
-  const applyBlur = (dir: Point, speed: number) => {
-    if (!gauss) return;
-    const b = Math.min(speed * 0.055, 14); // world-units/frame → blur px, capped
-    gauss.setAttribute('stdDeviation', `${Math.abs(dir[0]) * b} ${Math.abs(dir[1]) * b}`);
+  const moveSample = () => {
+    const { at, dir } = sample(state.p);
+    state.x = at[0];
+    state.y = at[1];
+    apply();
+    if (gauss) {
+      const speed = Math.hypot(at[0] - lastAt[0], at[1] - lastAt[1]) * state.s;
+      const b = Math.min(speed * 0.055, 14);
+      gauss.setAttribute('stdDeviation', `${Math.abs(dir[0]) * b} ${Math.abs(dir[1]) * b}`);
+    }
+    lastAt = at;
   };
 
   let navigated = false;
@@ -111,39 +88,24 @@ function ride(lineId: LineId, href: string) {
   const tl = gsap.timeline({ defaults: { overwrite: 'auto' } });
 
   // (a) settle down onto HOME: zoom in as the map tilts away like a surface
-  tl.to([board, logo], { autoAlpha: 0, duration: 0.2, ease: 'power1.out' }, 0);
+  tl.to(board, { autoAlpha: 0, duration: 0.2, ease: 'power1.out' }, 0);
   tl.to(svg, { rotateX: 13, transformPerspective: 1200, transformOrigin: '50% 60%', duration: 0.5, ease: 'power2.inOut' }, 0);
   tl.to(state, { s: DIVE_SCALE, duration: 0.38, ease: 'power2.inOut', onUpdate: apply }, 0.02);
 
-  // (b) one continuous run: constant-speed param + a single accelerating ease,
-  // so speed ramps smoothly through every bend and past every stop.
+  // (b) accelerate through the stops…
   const RUN_START = 0.34;
-  const RUN = 1.25;
-  tl.to(
-    state,
-    {
-      p: 1,
-      duration: RUN,
-      ease: 'power2.in',
-      onUpdate: () => {
-        const { at, dir } = sample(state.p);
-        state.x = at[0];
-        state.y = at[1];
-        apply();
-        const speed = Math.hypot(at[0] - lastAt[0], at[1] - lastAt[1]) * state.s;
-        lastAt = at;
-        applyBlur(dir, speed);
-      },
-    },
-    RUN_START,
-  );
-  tl.to(state, { s: RIDE_SCALE, duration: RUN, ease: 'power1.in', onUpdate: apply }, RUN_START);
+  const ACCEL = 0.9;
+  const BRAKE = 0.55;
+  tl.to(state, { p: 0.78, duration: ACCEL, ease: 'power2.in', onUpdate: moveSample }, RUN_START);
+  tl.to(state, { s: RIDE_SCALE, duration: ACCEL, ease: 'power1.in', onUpdate: apply }, RUN_START);
 
-  // streaks ride along during the fast half
-  tl.fromTo(streaks, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.3, ease: 'power1.in' }, RUN_START + RUN * 0.45);
+  // (c) …then brake smoothly into the destination station
+  tl.to(state, { p: 1, duration: BRAKE, ease: 'power3.out', onUpdate: moveSample }, RUN_START + ACCEL);
+  tl.to(state, { s: RIDE_SCALE * 0.92, duration: BRAKE, ease: 'power2.out', onUpdate: apply }, RUN_START + ACCEL);
+  tl.to(svg, { rotateX: 0, duration: BRAKE, ease: 'power2.out' }, RUN_START + ACCEL);
 
-  // (c) exit at speed: fade the world, then navigate
-  tl.to(svg, { autoAlpha: 0, duration: 0.18, ease: 'power1.in' }, RUN_START + RUN - 0.16);
+  // (d) a beat at the platform, then hand off to the page's zoom-out arrival
+  tl.to(svg, { autoAlpha: 0, duration: 0.22, ease: 'power1.in' }, `>+0.08`);
   tl.eventCallback('onComplete', () => {
     window.removeEventListener('pointerdown', skip);
     window.removeEventListener('keydown', skip);

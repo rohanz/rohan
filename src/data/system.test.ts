@@ -45,10 +45,21 @@ describe('transit system integrity (v2 mesh)', () => {
     }
   });
 
-  it('every line runs off-canvas at both ends', () => {
+  it('every line end is off-canvas or a declared shore terminal', () => {
     for (const line of LINES) {
-      expect(offCanvas(line.points[0]), `${line.id} start off-canvas`).toBe(true);
-      expect(offCanvas(line.points[line.points.length - 1]), `${line.id} end off-canvas`).toBe(true);
+      const ends = [line.points[0], line.points[line.points.length - 1]];
+      for (const end of ends) {
+        const isTerminal = line.terminals?.some((t) => t[0] === end[0] && t[1] === end[1]) ?? false;
+        expect(offCanvas(end) || isTerminal, `${line.id} end [${end}] off-canvas or terminal`).toBe(true);
+      }
+    }
+  });
+
+  it('every declared terminal lies on its line', () => {
+    for (const line of LINES) {
+      for (const t of line.terminals ?? []) {
+        expect(onPolyline(t, line.points), `${line.id} terminal on line`).toBe(true);
+      }
     }
   });
 
