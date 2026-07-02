@@ -1,8 +1,40 @@
 ---
-import { LINES, VIEWBOX } from '../data/system';
+import { LINES, VIEWBOX, type Line, type Point } from '../data/system';
 
 function polyPoints(pts: [number, number][]) {
   return pts.map(([x, y]) => `${x},${y}`).join(' ');
+}
+
+// Direction of the segment a station sits on, so its label can be placed
+// off the line: horizontal segments get 45°-angled labels (transit-map
+// style, avoids neighbor collisions), vertical/diagonal get side labels.
+function segmentDir(line: Line, at: Point): 'h' | 'v' | 'd-down' | 'd-up' {
+  for (let i = 1; i < line.points.length; i++) {
+    const [x1, y1] = line.points[i - 1];
+    const [x2, y2] = line.points[i];
+    const within =
+      at[0] >= Math.min(x1, x2) && at[0] <= Math.max(x1, x2) &&
+      at[1] >= Math.min(y1, y2) && at[1] <= Math.max(y1, y2);
+    if (!within) continue;
+    if (y1 === y2) return 'h';
+    if (x1 === x2) return 'v';
+    // diagonal: does y increase (down) or decrease (up) left-to-right?
+    return (x2 - x1) * (y2 - y1) > 0 ? 'd-down' : 'd-up';
+  }
+  return 'h';
+}
+
+function dudLabel(line: Line, at: Point) {
+  switch (segmentDir(line, at)) {
+    case 'h':      // angle down-right off the line (signs occupy the space above)
+      return { x: at[0] + 6, y: at[1] + 16, transform: `rotate(45 ${at[0] + 6} ${at[1] + 16})` };
+    case 'v':      // to the right of the line
+      return { x: at[0] + 13, y: at[1] + 5, transform: undefined };
+    case 'd-down': // line falls left→right: clear space is above-right
+      return { x: at[0] + 11, y: at[1] - 7, transform: undefined };
+    case 'd-up':   // line rises left→right: clear space is below-right
+      return { x: at[0] + 11, y: at[1] + 17, transform: undefined };
+  }
 }
 ---
 <svg
@@ -25,19 +57,22 @@ function polyPoints(pts: [number, number][]) {
           stroke-linecap="round"
           stroke-linejoin="round"
         />
-        {line.stations.filter((s) => s.kind === 'dud').map((s) => (
-          <g class="dud">
-            <circle cx={s.at[0]} cy={s.at[1]} r="5" fill="var(--bg)" stroke={line.hex} stroke-width="2.5" />
-            <text x={s.at[0] + 9} y={s.at[1] + 4} class="dud-label" fill="var(--muted)">{s.name}</text>
-          </g>
-        ))}
+        {line.stations.filter((s) => s.kind === 'dud').map((s) => {
+          const l = dudLabel(line, s.at);
+          return (
+            <g class="dud">
+              <circle cx={s.at[0]} cy={s.at[1]} r="5" fill="var(--bg)" stroke={line.hex} stroke-width="2.5" />
+              <text x={l.x} y={l.y} transform={l.transform} class="dud-label" fill="var(--muted)">{s.name}</text>
+            </g>
+          );
+        })}
       </g>
     ))}
 
     <!-- HOME interchange (shared point, drawn once on top) -->
     <g class="home">
       <circle cx={LINES[0].stations[0].at[0]} cy={LINES[0].stations[0].at[1]} r="15" fill="var(--bg)" stroke="var(--ink)" stroke-width="4" />
-      <text x={LINES[0].stations[0].at[0]} y={LINES[0].stations[0].at[1] - 24} class="home-label" fill="var(--ink)" text-anchor="middle">HOME</text>
+      <text x={LINES[0].stations[0].at[0] - 26} y={LINES[0].stations[0].at[1] + 6} class="home-label" fill="var(--ink)" text-anchor="end">HOME</text>
     </g>
 
     <!-- Terminal signs: clickable for mouse/touch, but tabindex="-1" — the whole
