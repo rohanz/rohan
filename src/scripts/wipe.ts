@@ -58,9 +58,22 @@ document.addEventListener('astro:after-swap', () => {
   };
 });
 
+// Ride arrivals get the growing-circle reveal as their ONLY animation:
+// flag the document before the swap so CSS can suppress the default crossfade.
+document.addEventListener('astro:before-swap', () => {
+  try {
+    if (sessionStorage.getItem('ride-arrive')) {
+      document.documentElement.classList.add('ride-arriving');
+    }
+  } catch {
+    /* ignore */
+  }
+});
+
 // Zoom-out arrival after a homepage ride: the ride exits the map at speed,
 // so the destination page settles from slightly-zoomed to rest.
 document.addEventListener('astro:page-load', () => {
+  document.documentElement.classList.remove('ride-arriving');
   let lineId: string | null = null;
   try {
     lineId = sessionStorage.getItem('ride-arrive');
@@ -69,28 +82,28 @@ document.addEventListener('astro:page-load', () => {
     return;
   }
   if (!lineId || reduced()) return;
-  // The ride ends inside the station's white capsule: start from white and
-  // pull the camera back out to reveal the page standing at that stop.
-  const wipe = document.getElementById('wipe');
-  if (wipe) {
-    wipe.style.background = '#fff';
-    const flash = wipe.animate([{ opacity: 1 }, { opacity: 0 }], {
-      duration: 340,
-      easing: 'ease-out',
-      fill: 'forwards',
-    });
-    flash.onfinish = () => {
-      wipe.style.background = '';
-      wipe.getAnimations().forEach((a) => a.cancel());
-    };
-  }
+  // Continuation of the homepage dive: the ride ends heading into the
+  // station's circle, and the page grows out of a matching circle with the
+  // content already inside it — one gesture, not a flash then a zoom.
+  const shell = document.getElementById('page-shell');
   const main = document.querySelector('main');
-  if (!main) return;
-  main.animate(
+  if (!shell) return;
+  const ease = 'cubic-bezier(0.16,0.8,0.25,1)';
+  const clip = shell.animate(
     [
-      { transform: 'scale(1.35)', filter: 'blur(10px)' },
-      { transform: 'scale(1)', filter: 'blur(0px)' },
+      { clipPath: 'circle(16% at 50% 38%)' },
+      { clipPath: 'circle(150% at 50% 38%)' },
     ],
-    { duration: 560, easing: 'cubic-bezier(0.16,0.8,0.25,1)' },
+    { duration: 640, easing: ease },
+  );
+  clip.onfinish = () => {
+    shell.style.clipPath = '';
+  };
+  main?.animate(
+    [
+      { transform: 'scale(1.16)' },
+      { transform: 'scale(1)' },
+    ],
+    { duration: 640, easing: ease },
   );
 });

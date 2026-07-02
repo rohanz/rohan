@@ -5,6 +5,15 @@ function polyPoints(pts: Point[]) {
   return pts.map(([x, y]) => `${x},${y}`).join(' ');
 }
 
+// Darken a #rrggbb color — used for the extruded side faces of tracks/stops.
+function shade(hex: string, f: number): string {
+  const n = parseInt(hex.slice(1), 16);
+  const c = (v: number) => Math.round(v * f);
+  return `#${((c(n >> 16 & 255) << 16) | (c(n >> 8 & 255) << 8) | c(n & 255)).toString(16).padStart(6, '0')}`;
+}
+
+const EXTRUDE = 5; // world-units of track thickness
+
 // Land-use zones, CTA-diagram style: tan land, lighter city core, pale parks,
 // light-blue river + lake. World coordinates (move with the camera).
 const LAND = '#d9d4c8';
@@ -65,7 +74,44 @@ const LAKE = 'M880,-1600 L2600,-1600 L2600,2000 L880,2000 L880,1160 L930,1110 L9
       ))}
       <polyline points={polyPoints(RIVER)} fill="none" stroke={WATER} stroke-width="24" stroke-linejoin="round" />
       <path d={LAKE} fill={WATER} />
+      <!-- Water is sunken: an inner shadow along the upper edges (masked to
+           the water itself) reads as land casting shadow into the channel. -->
+      <g mask="url(#river-mask)">
+        <polyline
+          points={polyPoints(RIVER)}
+          fill="none"
+          stroke="#1a1a1a"
+          stroke-width="24"
+          stroke-linejoin="round"
+          transform="translate(0 -7)"
+          filter="url(#shadow-blur)"
+          opacity="0.22"
+        />
+      </g>
+      <g mask="url(#lake-mask)">
+        <path d={LAKE} fill="#1a1a1a" transform="translate(-8 -8)" filter="url(#shadow-blur)" opacity="0.2" />
+      </g>
+      <!-- Track shadows live on the GROUND plane: the tracks themselves are a
+           layer above, so camera motion shifts them against their shadows —
+           the elevation is real parallax, and the soft blur is the AO. -->
+      <g class="track-shadows" data-lift="9" filter="url(#shadow-blur)" opacity="0.16">
+        {LINES.map((line) => (
+          <polyline
+            points={polyPoints(line.points)}
+            fill="none"
+            stroke="#1a1a1a"
+            stroke-width={line.nav ? 10 : 8}
+            stroke-linecap="butt"
+            stroke-linejoin="round"
+          />
+        ))}
+      </g>
     </g>
+    <defs>
+      <filter id="shadow-blur" x="-30%" y="-30%" width="160%" height="160%">
+        <feGaussianBlur stdDeviation="4" />
+      </filter>
+    </defs>
   </svg>
 
   <!-- Depth layer 2: the lines themselves (also the click surface) -->
@@ -77,6 +123,21 @@ const LAKE = 'M880,-1600 L2600,-1600 L2600,2000 L880,2000 L880,1160 L930,1110 L9
     aria-hidden="true"
   >
     <g data-camera>
+      <!-- Extruded side faces (all lines) under all top faces. At rest they sit
+           exactly beneath the tops (invisible — the view is top-down); ride.ts
+           slides them out proportionally to the camera tilt. -->
+      <g data-lift={EXTRUDE}>
+        {LINES.map((line) => (
+          <polyline
+            points={polyPoints(line.points)}
+            fill="none"
+            stroke={shade(line.hex, 0.55)}
+            stroke-width={line.nav ? 9 : 7}
+            stroke-linecap="butt"
+            stroke-linejoin="round"
+          />
+        ))}
+      </g>
       {LINES.map((line) => (
         <g data-line={line.id} class:list={['line-group', { nav: !!line.nav }]}>
           <polyline
@@ -88,12 +149,6 @@ const LAKE = 'M880,-1600 L2600,-1600 L2600,2000 L880,2000 L880,1160 L930,1110 L9
             stroke-linecap="butt"
             stroke-linejoin="round"
           />
-          {line.ticks.map((t) => (
-            <circle cx={t[0]} cy={t[1]} r={line.nav ? 5.5 : 5} fill="#fff" stroke="var(--ink)" stroke-width="2.4" />
-          ))}
-          {(line.terminals ?? []).map((t) => (
-            <circle cx={t[0]} cy={t[1]} r="9" fill="#fff" stroke="var(--ink)" stroke-width="3.5" />
-          ))}
           {line.nav && (
             <polyline
               class="hit-path"
@@ -110,6 +165,16 @@ const LAKE = 'M880,-1600 L2600,-1600 L2600,2000 L880,2000 L880,1160 L930,1110 L9
         </g>
       ))}
 
+      <!-- All stops drawn AFTER every line: a stop on an intersection can
+           never hide behind another line. Each dot is extruded too. -->
+      <g class="stops">
+        <g data-lift={EXTRUDE - 1}>
+          {LINES.flatMap((line) => line.ticks.map((t) => <circle cx={t[0]} cy={t[1]} r="5" fill={shade('#e8e4da', 0.62)} />))}
+          {LINES.flatMap((line) => (line.terminals ?? []).map((t) => <circle cx={t[0]} cy={t[1]} r="9" fill={shade('#e8e4da', 0.55)} />))}
+        </g>
+        {LINES.flatMap((line) => line.ticks.map((t) => <circle cx={t[0]} cy={t[1]} r="5" fill="#fff" stroke="var(--ink)" stroke-width="2.4" />))}
+        {LINES.flatMap((line) => (line.terminals ?? []).map((t) => <circle cx={t[0]} cy={t[1]} r="9" fill="#fff" stroke="var(--ink)" stroke-width="3.5" />))}
+      </g>
     </g>
     <defs>
       <filter id="motion-blur" x="-40%" y="-40%" width="180%" height="180%">
@@ -128,6 +193,13 @@ const LAKE = 'M880,-1600 L2600,-1600 L2600,2000 L880,2000 L880,1160 L930,1110 L9
     <g data-top-camera>
       <!-- Destination stations at the far end of each ride (off-canvas at rest;
            the camera brakes into them at the end of a ride) -->
+      <g data-lift={EXTRUDE + 1}>
+        {NAV_LINES.map((line) => {
+          const end = line.ride[line.ride.length - 1];
+          return <circle cx={end[0]} cy={end[1]} r="15" fill="#8f8a7e" />;
+        })}
+        <circle cx={HOME[0]} cy={HOME[1]} r="15" fill="#8f8a7e" />
+      </g>
       {NAV_LINES.map((line) => {
         const end = line.ride[line.ride.length - 1];
         return (

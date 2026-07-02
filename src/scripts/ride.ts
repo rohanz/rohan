@@ -65,13 +65,23 @@ function ride(lineId: LineId, href: string) {
   ];
   const state = { x: CX, y: CY, s: 1, p: 0, a: 0 };
   let lastAt: Point = [CX, CY];
+  // Extrusion groups: side faces and shadows slide out with camera tilt —
+  // zero (invisible) in the top-down rest view, full at the lowest angle.
+  const lifts = Array.from(document.querySelectorAll<SVGGElement>('g[data-lift]')).map((el) => ({
+    el,
+    amount: Number(el.dataset.lift) || 0,
+  }));
   const apply = () => {
     for (const { el, f } of layers) {
       const sf = 1 + (state.s - 1) * f;
       el.setAttribute('transform', `translate(${CX - sf * state.x} ${CY - sf * state.y}) scale(${sf})`);
     }
+    const tiltRatio = state.a / 26;
+    for (const { el, amount } of lifts) {
+      el.setAttribute('transform', `translate(0 ${amount * tiltRatio})`);
+    }
     // Tilt-only on the stage; slight scale keeps the tilted plane covering the frame.
-    stage.style.transform = `rotateX(${state.a}deg) scale(${1 + 0.1 * (state.a / 12)})`;
+    stage.style.transform = `rotateX(${state.a}deg) scale(${1 + 0.013 * state.a})`;
   };
 
   // Speed-proportional, direction-aware motion blur on the whole camera.
@@ -126,16 +136,18 @@ function ride(lineId: LineId, href: string) {
   const RUN_START = 0.34;
   const ACCEL = 0.9;
   const BRAKE = 0.55;
+  // …dropping lower to the ground as speed builds (steeper grazing angle)
   tl.to(state, { p: 0.78, duration: ACCEL, ease: 'power2.in', onUpdate: moveSample }, RUN_START);
-  tl.to(state, { s: RIDE_SCALE, duration: ACCEL, ease: 'power1.in', onUpdate: apply }, RUN_START);
+  tl.to(state, { s: RIDE_SCALE, a: 26, duration: ACCEL, ease: 'power1.in', onUpdate: apply }, RUN_START);
 
   // (c) …then brake smoothly into the destination station, leveling out
   tl.to(state, { p: 1, duration: BRAKE, ease: 'power3.out', onUpdate: moveSample }, RUN_START + ACCEL);
   tl.to(state, { s: RIDE_SCALE * 0.92, a: 0, duration: BRAKE, ease: 'power2.out', onUpdate: apply }, RUN_START + ACCEL);
 
-  // (d) a breath at the platform, then plunge INTO the station's white capsule
-  // until it swallows the screen — the page emerges from that white.
-  tl.to(state, { s: 55, duration: 0.45, ease: 'power3.in', onUpdate: apply }, `>+0.1`);
+  // (d) a breath at the platform, then dive INTO the station's circle — the
+  // destination page picks up mid-dive as a growing circle with the content
+  // already inside it (see wipe.ts), so it reads as one continuous move.
+  tl.to(state, { s: 22, duration: 0.4, ease: 'power2.in', onUpdate: apply }, `>+0.1`);
   tl.eventCallback('onComplete', () => {
     window.removeEventListener('pointerdown', skip);
     window.removeEventListener('keydown', skip);

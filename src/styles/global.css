@@ -85,3 +85,17 @@ body.home #station-board {
 
 /* Inner pages sit on the same map land as the homepage world. */
 body.page { background: #d9d4c8; }
+
+/* Poster typography: every title and subheader carries the transit signage
+   face (Helvetica), matching the map labels and Legend panel. */
+h1, h2, h3, h4,
+.sign-header, .sign-header h1, .sign-header .back {
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+/* Ride arrivals: the growing-circle reveal is the only animation — suppress
+   the router's default crossfade so the old map doesn't double-expose. */
+html.ride-arriving::view-transition-old(root),
+html.ride-arriving::view-transition-new(root) {
+  animation: none;
+}

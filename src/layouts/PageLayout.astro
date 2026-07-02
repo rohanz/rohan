@@ -14,18 +14,20 @@ interface Props {
 const { title, description, lineId, hex, signName, ogImage } = Astro.props;
 ---
 <Layout title={title} description={description} ogImage={ogImage} bodyClass={`page page-${lineId}`}>
-  <MapBackdrop lineId={lineId} />
-  <header class="sign-header" style={`background:${hex}; --sign-vt: sign-${lineId};`}>
-    <h1>{signName}</h1>
-    <a class="back" href="/">back to map</a>
-  </header>
-  <main id="main" class="page-body">
-    <span class="spine" style={`background:${hex}`} aria-hidden="true">
-      <span class="station-here" aria-hidden="true"></span>
-    </span>
-    <slot />
-  </main>
-  <Footer />
+  <div id="page-shell">
+    <MapBackdrop lineId={lineId} />
+    <header class="sign-header" style={`background:${hex}; --sign-vt: sign-${lineId};`}>
+      <h1>{signName}</h1>
+      <a class="back" href="/">back to map</a>
+    </header>
+    <main id="main" class="page-body">
+      <span class="spine" style={`background:${hex}`} aria-hidden="true">
+        <span class="station-here" aria-hidden="true"></span>
+      </span>
+      <slot />
+    </main>
+    <Footer />
+  </div>
 </Layout>
 
 <style>
