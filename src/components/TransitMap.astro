@@ -170,7 +170,7 @@ const LAKE = 'M880,-1600 L2600,-1600 L2600,2000 L880,2000 L880,1310 L1030,1160 L
       <!-- HOME — the only named station -->
       <g class="home">
         <circle id="home-dot" cx={HOME[0]} cy={HOME[1]} r="15" fill="#fff" stroke="var(--ink)" stroke-width="5" />
-        <text x={HOME[0] - 24} y={HOME[1] - 15} class="home-label" style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif" fill="var(--ink)" text-anchor="end">Home</text>
+        <text x={HOME[0] + 22} y={HOME[1] + 28} class="home-label" style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif" fill="var(--ink)" text-anchor="start">Home</text>
       </g>
     </g>
   </svg>
@@ -184,6 +184,8 @@ const LAKE = 'M880,-1600 L2600,-1600 L2600,2000 L880,2000 L880,1310 L1030,1160 L
   .layer-top { pointer-events: none; }
   .home-label { font-size: 18px; font-weight: 700; letter-spacing: 0.04em; }
   .home-sub { font-size: 11px; font-weight: 500; letter-spacing: 0.06em; }
+  .home { transition: opacity 0.25s ease; }
+  :global(#map-3d[data-hl]:not(.ride-active)) .home { opacity: 0.55; }
   .hit-path { cursor: pointer; pointer-events: stroke; }
   #map-3d.ride-active .home text { opacity: 0; transition: opacity 0.25s ease; }
   /* Hover highlight: the hovered destination's line glows, the rest recede.
