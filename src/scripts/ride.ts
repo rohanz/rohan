@@ -122,6 +122,16 @@ function initRide() {
   // Only wire up on the homepage (map present).
   if (!document.getElementById('transit-map')) return;
   document.querySelectorAll<HTMLAnchorElement>('a[data-terminal][data-line]').forEach((el) => {
+    // Astro's hover-prefetch skips SVG <a> elements, so warm the destination
+    // ourselves; harmless duplicate for the board links (fetch hits the cache).
+    el.addEventListener(
+      'mouseenter',
+      () => {
+        const href = el.getAttribute('href');
+        if (href) fetch(href).catch(() => {});
+      },
+      { once: true },
+    );
     el.addEventListener('click', (e) => {
       const href = el.getAttribute('href');
       const lineId = el.getAttribute('data-line') as LineId | null;

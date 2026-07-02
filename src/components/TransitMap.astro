@@ -110,7 +110,10 @@ function dudLabel(line: Line, at: Point) {
   .terminal-sign { transition: transform 0.18s ease, filter 0.18s ease; transform-box: fill-box; transform-origin: center; }
   .terminal:hover .terminal-sign,
   .terminal:focus-visible .terminal-sign { transform: translateY(-3px) scale(1.03); filter: brightness(1.12); }
-  .terminal:focus-visible { outline: none; }
+  /* No UA focus ring on mouse click (SVG anchors get one in Chromium);
+     keyboard users navigate via the station board, and focus-visible
+     styling below still applies if focus ever lands here. */
+  .terminal:focus, .terminal:focus-visible { outline: none; }
   .terminal:focus-visible .terminal-sign { outline: 3px solid var(--ink); }
   /* Ride state hooks (used by Task 9) */
   #transit-map.ride-active .line-group:not(.ridden) { filter: blur(4px); opacity: 0.35; transition: filter 0.35s ease, opacity 0.35s ease; }
