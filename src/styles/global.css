@@ -1,0 +1,70 @@
+:root {
+  --line-music: #5b2d8e;
+  --line-projects: #c62828;
+  --line-about: #5d3a1a;
+  --bg: #f4f1ea;
+  --ink: #1a1a1a;
+  --muted: #8a8578;
+  --board: #1e1e1e;
+  --max: 1100px;
+  --radius: 10px;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Inter Variable', system-ui, sans-serif;
+  font-size: 17px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: inherit; }
+img { max-width: 100%; display: block; }
+
+:where(a, button):focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 3px;
+}
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+/* Full-width station-sign header shared by inner pages */
+.sign-header {
+  color: #fff;
+  padding: 1.4rem clamp(1rem, 4vw, 3rem);
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  view-transition-name: var(--sign-vt);
+}
+.sign-header h1 { margin: 0; font-size: clamp(1.6rem, 5vw, 2.6rem); font-weight: 800; letter-spacing: -0.01em; }
+.sign-header .back { color: #fff; text-decoration: none; font-weight: 600; font-size: 0.95rem; opacity: 0.92; }
+.sign-header .back:hover { text-decoration: underline; }
+
+/* Line-color spine running down the content */
+.spine {
+  position: absolute; top: 0; bottom: 0; left: clamp(1rem, 4vw, 3rem);
+  width: 4px; border-radius: 2px; opacity: 0.85;
+}
+.page-body { position: relative; max-width: var(--max); margin: 0 auto; padding: 2.5rem clamp(1rem, 4vw, 3rem) 4rem; }
+
+/* Footer */
+.site-footer { border-top: 1px solid rgba(0,0,0,0.08); padding: 2rem clamp(1rem,4vw,3rem); }
+.site-footer nav { display: flex; gap: 1.25rem; flex-wrap: wrap; justify-content: center; }
+.site-footer a { color: var(--muted); text-decoration: none; font-weight: 600; }
+.site-footer a:hover { color: var(--ink); }
+
+/* Streak-wipe overlay (Task 10) */
+#wipe {
+  position: fixed; inset: 0; z-index: 9999; pointer-events: none;
+  transform: translateX(-100%); opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+}
