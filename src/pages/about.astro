@@ -1,0 +1,106 @@
+---
+import PageLayout from '../layouts/PageLayout.astro';
+import { lineById } from '../data/system';
+
+const line = lineById('about');
+
+const stats = [
+  { value: '1.3m+', label: 'streams' },
+  { value: '8+', label: 'projects built' },
+];
+
+// [label, background, text color]
+const tech: [string, string, string][] = [
+  ['Python', '#3776ab', '#fff'],
+  ['JavaScript', '#f7df1e', '#1a1a1a'],
+  ['React', '#61dafb', '#1a1a1a'],
+  ['C++', '#00599c', '#fff'],
+  ['JUCE', '#8dc63f', '#1a1a1a'],
+  ['DSP', '#5b2d8e', '#fff'],
+  ['OpenAI', '#412991', '#fff'],
+  ['Codex', '#1a1a1a', '#fff'],
+  ['Google Cloud', '#4285f4', '#fff'],
+  ['Node.js', '#539e43', '#fff'],
+  ['Docker', '#2496ed', '#fff'],
+  ['Git', '#f05032', '#fff'],
+  ['Linux', '#1a1a1a', '#fff'],
+  ['DuckDB', '#fff000', '#1a1a1a'],
+  ['PostgreSQL', '#336791', '#fff'],
+  ['Claude', '#d97757', '#fff'],
+  ['Gemini', '#8e75f8', '#fff'],
+];
+
+const socials: [string, string][] = [
+  ['github', 'https://github.com/rohanz'],
+  ['spotify', 'https://open.spotify.com/artist/3I1V2FxqX2qs3zrUY0fCPp'],
+  ['instagram', 'https://www.instagram.com/rrohan.jk/'],
+  ['linkedin', 'https://www.linkedin.com/in/rohan-jk'],
+];
+---
+<PageLayout
+  title="about — rohan.jk"
+  description="Computer engineering student at NTU Singapore building end-to-end products with AI."
+  lineId="about"
+  hex={line.hex}
+  signName="ABOUT ME"
+>
+  <div class="about-grid">
+    <section class="card bio-card">
+      <img class="photo" src="/assets/images/profile.webp" width="140" height="140" alt="Rohan, smiling outdoors" />
+      <div>
+        <h2 class="label">bio</h2>
+        <p class="bio">hi, i'm rohan, a computer engineering student at ntu, singapore. i build end-to-end products with AI, from data pipelines and cloud infrastructure to mobile apps and everything in between. outside of code, i write, produce and record music. feel free to reach out below!</p>
+      </div>
+    </section>
+
+    <section class="stats">
+      {stats.map((s) => (
+        <div class="stat-tile">
+          <span class="stat-value">{s.value}</span>
+          <span class="stat-label">{s.label}</span>
+        </div>
+      ))}
+    </section>
+
+    <section class="card tech-card">
+      <h2 class="label">tech stack</h2>
+      <ul class="chips">
+        {tech.map(([name, bg, fg]) => (
+          <li class="chip" style={`background:${bg}; color:${fg};`}>{name}</li>
+        ))}
+      </ul>
+    </section>
+
+    <section class="card socials-card">
+      <h2 class="label">socials</h2>
+      <div class="social-buttons">
+        {socials.map(([name, href]) => (
+          <a class="social-btn" href={href} target="_blank" rel="noopener noreferrer">{name}</a>
+        ))}
+      </div>
+    </section>
+  </div>
+</PageLayout>
+
+<style>
+  .about-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; max-width: 860px; }
+  .card { background: #fff; border-radius: var(--radius); padding: 1.4rem; box-shadow: 0 6px 24px rgba(0,0,0,0.06); border-left: 5px solid var(--line-about); }
+  .label { margin: 0 0 0.7rem; font-size: 0.72rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); }
+  .bio-card { grid-column: 1 / -1; display: flex; gap: 1.4rem; align-items: center; }
+  .photo { border-radius: var(--radius); object-fit: cover; flex: none; }
+  .bio { margin: 0; font-size: 1.05rem; }
+  .stats { display: grid; grid-template-rows: 1fr 1fr; gap: 1.5rem; }
+  .stat-tile { background: var(--line-about); color: #fff; border-radius: var(--radius); padding: 1.4rem; display: flex; flex-direction: column; justify-content: center; }
+  .stat-value { font-size: 2.6rem; font-weight: 800; line-height: 1; }
+  .stat-label { margin-top: 0.35rem; opacity: 0.9; }
+  .chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .chip { font-size: 0.85rem; font-weight: 700; border-radius: 999px; padding: 0.3rem 0.85rem; }
+  .social-buttons { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+  .social-btn { text-decoration: none; font-weight: 700; color: #fff; background: var(--line-about); border-radius: 8px; padding: 0.55rem 1.1rem; }
+  .social-btn:hover { filter: brightness(1.12); }
+  @media (max-width: 700px) {
+    .about-grid { grid-template-columns: 1fr; }
+    .bio-card { flex-direction: column; text-align: center; }
+    .stats { grid-template-rows: none; grid-template-columns: 1fr 1fr; }
+  }
+</style>
