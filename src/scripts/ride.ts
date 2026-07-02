@@ -63,25 +63,37 @@ function ride(lineId: LineId, href: string) {
     { el: camera, f: 1 },
     { el: camTop, f: 1.06 },
   ];
+  const A_MAX = 45; // lowest camera angle, deg — near-ground at full speed
+  const LOOK = 70; // world-units of look-ahead when riding low
   const state = { x: CX, y: CY, s: 1, p: 0, a: 0 };
   let lastAt: Point = [CX, CY];
-  // Extrusion groups: side faces and shadows slide out with camera tilt —
+  let rotCur: number | null = null; // smoothed world rotation (deg)
+  // Extrusion groups: side faces and trench walls slide out with camera tilt —
   // zero (invisible) in the top-down rest view, full at the lowest angle.
   const lifts = Array.from(document.querySelectorAll<SVGGElement>('g[data-lift]')).map((el) => ({
     el,
     amount: Number(el.dataset.lift) || 0,
   }));
   const apply = () => {
+    const blend = state.a / A_MAX;
+    const rot = (rotCur ?? 0) * blend;
+    const r = (rot * Math.PI) / 180;
+    // Forward (screen-up) in world space, given the current rotation…
+    const fwd: Point = [-Math.sin(r), -Math.cos(r)];
+    // …so the camera looks ahead down the track when riding low.
+    const lx = state.x + fwd[0] * LOOK * blend;
+    const ly = state.y + fwd[1] * LOOK * blend;
     for (const { el, f } of layers) {
       const sf = 1 + (state.s - 1) * f;
-      el.setAttribute('transform', `translate(${CX - sf * state.x} ${CY - sf * state.y}) scale(${sf})`);
+      el.setAttribute('transform', `translate(${CX} ${CY}) rotate(${rot}) scale(${sf}) translate(${-lx} ${-ly})`);
     }
-    const tiltRatio = state.a / 26;
+    // Extrusion must read as screen-down whatever the rotation.
     for (const { el, amount } of lifts) {
-      el.setAttribute('transform', `translate(0 ${amount * tiltRatio})`);
+      const d = amount * blend;
+      el.setAttribute('transform', `translate(${d * Math.sin(r)} ${d * Math.cos(r)})`);
     }
     // Tilt-only on the stage; slight scale keeps the tilted plane covering the frame.
-    stage.style.transform = `rotateX(${state.a}deg) scale(${1 + 0.013 * state.a})`;
+    stage.style.transform = `rotateX(${state.a}deg) scale(${1 + 0.011 * state.a})`;
   };
 
   // Speed-proportional, direction-aware motion blur on the whole camera.
@@ -98,6 +110,11 @@ function ride(lineId: LineId, href: string) {
     const { at, dir } = sample(state.p);
     state.x = at[0];
     state.y = at[1];
+    // Rotate the world so travel reads as forward (screen-up), smoothed
+    // through bends; blend-gated in apply() so it eases in with the tilt.
+    const target = -90 - (Math.atan2(dir[1], dir[0]) * 180) / Math.PI;
+    if (rotCur === null) rotCur = target;
+    else rotCur += (((target - rotCur + 540) % 360) - 180) * 0.14;
     apply();
     if (gauss) {
       // Screen-pixel blur budget, converted to pre-transform units (the filter
@@ -136,9 +153,12 @@ function ride(lineId: LineId, href: string) {
   const RUN_START = 0.34;
   const ACCEL = 0.9;
   const BRAKE = 0.55;
-  // …dropping lower to the ground as speed builds (steeper grazing angle)
+  // …settling all the way down to track level FIRST (while speed is still
+  // low), then holding that angle through the whole fast section, so the
+  // track thickness reads constant while moving.
+  tl.to(state, { a: 45, duration: 0.35, ease: 'power2.inOut', onUpdate: apply }, RUN_START);
   tl.to(state, { p: 0.78, duration: ACCEL, ease: 'power2.in', onUpdate: moveSample }, RUN_START);
-  tl.to(state, { s: RIDE_SCALE, a: 26, duration: ACCEL, ease: 'power1.in', onUpdate: apply }, RUN_START);
+  tl.to(state, { s: RIDE_SCALE, duration: ACCEL, ease: 'power1.in', onUpdate: apply }, RUN_START);
 
   // (c) …then brake smoothly into the destination station, leveling out
   tl.to(state, { p: 1, duration: BRAKE, ease: 'power3.out', onUpdate: moveSample }, RUN_START + ACCEL);

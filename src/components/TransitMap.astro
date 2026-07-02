@@ -72,45 +72,31 @@ const LAKE = 'M880,-1600 L2600,-1600 L2600,2000 L880,2000 L880,1160 L930,1110 L9
       {PARKS.map(([x, y, w, h]) => (
         <rect x={x} y={y} width={w} height={h} rx="12" fill={PARK} />
       ))}
-      <polyline points={polyPoints(RIVER)} fill="none" stroke={WATER} stroke-width="24" stroke-linejoin="round" />
-      <path d={LAKE} fill={WATER} />
-      <!-- Water is sunken: an inner shadow along the upper edges (masked to
-           the water itself) reads as land casting shadow into the channel. -->
+      <!-- Water is sunken — the exact inverse of an extruded track: a dark
+           trench wall drops into the channel along its upper edge, sized by
+           camera tilt (invisible top-down). Structure: dark water shape with
+           a water-colored copy on top that slides DOWN with tilt, revealing
+           the wall only along top edges. -->
       <g mask="url(#river-mask)">
-        <polyline
-          points={polyPoints(RIVER)}
-          fill="none"
-          stroke="#1a1a1a"
-          stroke-width="24"
-          stroke-linejoin="round"
-          transform="translate(0 -7)"
-          filter="url(#shadow-blur)"
-          opacity="0.22"
-        />
+        <polyline points={polyPoints(RIVER)} fill="none" stroke={shade(WATER, 0.58)} stroke-width="24" stroke-linejoin="round" />
+        <g data-lift="8">
+          <polyline points={polyPoints(RIVER)} fill="none" stroke={WATER} stroke-width="24" stroke-linejoin="round" />
+        </g>
       </g>
       <g mask="url(#lake-mask)">
-        <path d={LAKE} fill="#1a1a1a" transform="translate(-8 -8)" filter="url(#shadow-blur)" opacity="0.2" />
-      </g>
-      <!-- Track shadows live on the GROUND plane: the tracks themselves are a
-           layer above, so camera motion shifts them against their shadows —
-           the elevation is real parallax, and the soft blur is the AO. -->
-      <g class="track-shadows" data-lift="9" filter="url(#shadow-blur)" opacity="0.16">
-        {LINES.map((line) => (
-          <polyline
-            points={polyPoints(line.points)}
-            fill="none"
-            stroke="#1a1a1a"
-            stroke-width={line.nav ? 10 : 8}
-            stroke-linecap="butt"
-            stroke-linejoin="round"
-          />
-        ))}
+        <path d={LAKE} fill={shade(WATER, 0.58)} />
+        <g data-lift="10">
+          <path d={LAKE} fill={WATER} />
+        </g>
       </g>
     </g>
     <defs>
-      <filter id="shadow-blur" x="-30%" y="-30%" width="160%" height="160%">
-        <feGaussianBlur stdDeviation="4" />
-      </filter>
+      <mask id="river-mask" maskUnits="userSpaceOnUse" x="-1600" y="-1600" width="4200" height="3600">
+        <polyline points={polyPoints(RIVER)} fill="none" stroke="#fff" stroke-width="24" stroke-linejoin="round" />
+      </mask>
+      <mask id="lake-mask" maskUnits="userSpaceOnUse" x="-1600" y="-1600" width="4200" height="3600">
+        <path d={LAKE} fill="#fff" />
+      </mask>
     </defs>
   </svg>
 
@@ -132,8 +118,8 @@ const LAKE = 'M880,-1600 L2600,-1600 L2600,2000 L880,2000 L880,1160 L930,1110 L9
             points={polyPoints(line.points)}
             fill="none"
             stroke={shade(line.hex, 0.55)}
-            stroke-width={line.nav ? 9 : 7}
-            stroke-linecap="butt"
+            stroke-width={line.nav ? 8 : 6}
+            stroke-linecap="round"
             stroke-linejoin="round"
           />
         ))}
@@ -146,7 +132,7 @@ const LAKE = 'M880,-1600 L2600,-1600 L2600,2000 L880,2000 L880,1160 L930,1110 L9
             fill="none"
             stroke={line.hex}
             stroke-width={line.nav ? 9 : 7}
-            stroke-linecap="butt"
+            stroke-linecap="round"
             stroke-linejoin="round"
           />
           {line.nav && (
