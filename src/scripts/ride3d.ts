@@ -8,6 +8,10 @@
  * one world unit. "North" (map -y) is screen-up at rest via camera.up.
  */
 import * as THREE from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import gsap from 'gsap';
 import { LINES, NAV_LINES, HOME, VIEWBOX, type LineId, type Point } from '../data/system';
 
@@ -34,31 +38,6 @@ function trackCurve(pts: Point[], r: number): THREE.CatmullRomCurve3 {
   return new THREE.CatmullRomCurve3(v, false, 'catmullrom', 0.03);
 }
 
-/** Arc-length sampler over the 2D ride path (same math as the SVG ride). */
-function pathSampler(pts: Point[]) {
-  const cum: number[] = [0];
-  for (let i = 1; i < pts.length; i++) {
-    cum.push(cum[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
-  }
-  const total = cum[cum.length - 1];
-  return {
-    total,
-    at(p: number): { pos: Point; dir: Point } {
-      const d = Math.min(Math.max(p, 0), 1) * total;
-      let i = 1;
-      while (i < cum.length - 1 && cum[i] < d) i++;
-      const segLen = cum[i] - cum[i - 1] || 1;
-      const t = (d - cum[i - 1]) / segLen;
-      const [x1, y1] = pts[i - 1];
-      const [x2, y2] = pts[i];
-      return {
-        pos: [x1 + (x2 - x1) * t, y1 + (y2 - y1) * t],
-        dir: [(x2 - x1) / segLen, (y2 - y1) / segLen],
-      };
-    },
-  };
-}
-
 /** Vertical wall box between two points (octilinear segments only). */
 function wall(a: Point, b: Point, depth: number, thickness: number, mat: THREE.Material): THREE.Mesh {
   const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
@@ -76,11 +55,13 @@ function stationStack(x: number, z: number, rOuter: number, rInner: number, h: n
     new THREE.MeshLambertMaterial({ color: INK }),
   );
   ink.position.set(x, y + h / 2, z);
+  ink.castShadow = true;
   const white = new THREE.Mesh(
     new THREE.CylinderGeometry(rInner, rInner, h * 1.25, 32),
     new THREE.MeshLambertMaterial({ color: 0xffffff }),
   );
   white.position.set(x, y + (h * 1.25) / 2, z);
+  white.castShadow = true;
   g.add(ink, white);
   return g;
 }
@@ -110,25 +91,49 @@ let built: { scene: THREE.Scene; destinations: Map<string, THREE.Vector3> } | nu
 function buildScene(): { scene: THREE.Scene; destinations: Map<string, THREE.Vector3> } {
   if (built) return built;
   const scene = new THREE.Scene();
-  scene.fog = new THREE.Fog(LAND, 900, 3200);
+  const SKY = 0xd6ebf6;
+  scene.background = new THREE.Color(SKY);
+  scene.fog = new THREE.Fog(SKY, 900, 3400);
 
-  scene.add(new THREE.AmbientLight(0xffffff, 2.1));
-  const sun = new THREE.DirectionalLight(0xffffff, 1.4);
-  sun.position.set(300, 900, 250);
-  scene.add(sun);
+  scene.add(new THREE.AmbientLight(0xffffff, 2.35));
+  const sun = new THREE.DirectionalLight(0xffffff, 0.8);
+  sun.position.set(650, 1300, 150);
+  sun.target.position.set(500, 0, 350);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(2048, 2048);
+  sun.shadow.camera.left = -2300;
+  sun.shadow.camera.right = 2300;
+  sun.shadow.camera.top = 2300;
+  sun.shadow.camera.bottom = -2300;
+  sun.shadow.camera.near = 300;
+  sun.shadow.camera.far = 2600;
+  sun.shadow.bias = -0.0006;
+  scene.add(sun, sun.target);
 
   const flat = (color: number) => new THREE.MeshLambertMaterial({ color });
 
-  // Land
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(4600, 4000), flat(LAND));
+  // Land: a shaped slab that ENDS at the lake shoreline and has the river
+  // channel cut clean through it, so the sunken water is genuinely open water.
+  // Shape space is (x, -z).
+  const groundShape = new THREE.Shape([
+    [-1900, -1900], [880, -1900], [880, 280], [930, 330], [930, 1110], [880, 1160], [880, 2300], [-1900, 2300],
+  ].map(([x, z]) => new THREE.Vector2(x, -z)));
+  const HW = RIVER_W / 2;
+  const riverHole = new THREE.Path([
+    [240 + HW, -1900], [240 + HW, -145], [360 + HW, -25], [360 + HW, 515], [240 + HW, 635], [240 + HW, 2300],
+    [240 - HW, 2300], [240 - HW, 645], [348 - HW + 12 - 12, 525], [360 - HW, 515], [360 - HW, -15], [240 - HW, -135], [240 - HW, -1900],
+  ].map(([x, z]) => new THREE.Vector2(x, -z)));
+  groundShape.holes.push(riverHole);
+  const ground = new THREE.Mesh(new THREE.ShapeGeometry(groundShape, 4), flat(LAND));
   ground.rotation.x = -Math.PI / 2;
-  ground.position.set(500, 0, 200);
+  ground.receiveShadow = true;
   scene.add(ground);
 
   // City core + parks: whisper-thin plates to avoid z-fighting
   const plate = (x: number, y: number, w: number, h: number, color: number, lift: number) => {
     const m = new THREE.Mesh(new THREE.BoxGeometry(w, 1, h), flat(color));
     m.position.set(x + w / 2, lift, y + h / 2);
+    m.receiveShadow = true;
     scene.add(m);
   };
   plate(150, 90, 700, 580, CITY, 0.4);
@@ -144,6 +149,7 @@ function buildScene(): { scene: THREE.Scene; destinations: Map<string, THREE.Vec
     const strip = new THREE.Mesh(new THREE.BoxGeometry(len + RIVER_W, 1, RIVER_W), waterMat);
     strip.position.set((a[0] + b[0]) / 2, -WATER_DEPTH, (a[1] + b[1]) / 2);
     strip.rotation.y = -Math.atan2(b[1] - a[1], b[0] - a[0]);
+    strip.receiveShadow = true;
     scene.add(strip);
     // trench walls parallel to the strip on both sides
     const nx = -(b[1] - a[1]) / len;
@@ -175,24 +181,27 @@ function buildScene(): { scene: THREE.Scene; destinations: Map<string, THREE.Vec
       new THREE.TubeGeometry(curve, segs, r, 14, false),
       flat(parseInt(line.hex.slice(1), 16)),
     );
+    tube.scale.y = 0.6; // slab with rounded edges, not a full pipe
+    tube.castShadow = true;
+    tube.receiveShadow = true;
     scene.add(tube);
 
     // stops: flat discs resting on top of the tube
     for (const t of line.ticks) {
-      const disc = stationStack(t[0], t[1], 6, 4.2, 1.4, 2 * r - 1);
+      const disc = stationStack(t[0], t[1], 6, 4.2, 1.4, r * 1.2);
       scene.add(disc);
     }
     for (const t of line.terminals ?? []) {
-      scene.add(stationStack(t[0], t[1], 10.5, 7.5, 1.8, 2 * r - 1));
+      scene.add(stationStack(t[0], t[1], 10.5, 7.5, 1.8, r * 1.2));
     }
   }
 
   // HOME + destination stations: chunky capsule stacks
   const destinations = new Map<string, THREE.Vector3>();
-  scene.add(stationStack(HOME[0], HOME[1], 17, 12, 2.6, TRACK_R.nav * 2 - 1));
+  scene.add(stationStack(HOME[0], HOME[1], 17, 12, 2.6, TRACK_R.nav * 1.2));
   for (const line of NAV_LINES) {
     const end = line.ride[line.ride.length - 1];
-    scene.add(stationStack(end[0], end[1], 17, 12, 2.6, TRACK_R.nav * 2 - 1));
+    scene.add(stationStack(end[0], end[1], 17, 12, 2.6, TRACK_R.nav * 1.2));
     destinations.set(line.id, to3(end, TRACK_R.nav * 2 + 2));
   }
 
@@ -216,6 +225,8 @@ export function ride3d(lineId: LineId, href: string, onNavigate: () => void): bo
   } catch {
     return false; // no WebGL — caller falls back
   }
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
   const { scene, destinations } = buildScene();
   const rect = wrap.getBoundingClientRect();
@@ -227,7 +238,15 @@ export function ride3d(lineId: LineId, href: string, onNavigate: () => void): bo
   wrap.style.position = 'relative';
   wrap.appendChild(canvas);
 
-  const camera = new THREE.PerspectiveCamera(55, rect.width / rect.height, 1, 6000);
+  const camera = new THREE.PerspectiveCamera(26, rect.width / rect.height, 1, 9000);
+
+  // Motion blur: frame-accumulation trails, damped by actual camera speed.
+  const composer = new EffectComposer(renderer);
+  composer.setSize(rect.width, rect.height);
+  composer.addPass(new RenderPass(scene, camera));
+  const trail = new AfterimagePass(0);
+  composer.addPass(trail);
+  composer.addPass(new OutputPass()); // restores sRGB output after the blur pass
 
   // Rest pose: top-down over the same view the SVG shows (slice fit, center 500,350)
   const fovRad = (camera.fov * Math.PI) / 180;
@@ -235,11 +254,10 @@ export function ride3d(lineId: LineId, href: string, onNavigate: () => void): bo
   const visH = rect.height / scaleK;
   const restH = visH / 2 / Math.tan(fovRad / 2);
   const restPos = new THREE.Vector3(500, restH, 350);
-  const restTarget = new THREE.Vector3(500, 0, 350);
-  const restUp = new THREE.Vector3(0, 0, -1);
 
-  const sampler = pathSampler(line.ride);
-  const d0 = sampler.at(0.001).dir;
+  // The camera rides the SAME rounded curve the nav tube is drawn from, so
+  // it never cuts a corner off the rail.
+  const rideCurve = new THREE.CatmullRomCurve3(line.ride.map((p) => to3(p, 0)), false, 'catmullrom', 0.03);
 
   // POV pose parameters
   const CAM_BACK = 110;
@@ -247,43 +265,51 @@ export function ride3d(lineId: LineId, href: string, onNavigate: () => void): bo
   const LOOK_AHEAD = 220;
 
   const state = { p: 0, mix: 0, plunge: 0 }; // mix: rest→POV; plunge: brake→into capsule
-  const dirS = { x: d0[0], y: d0[1] }; // smoothed travel direction
   const dest = destinations.get(lineId)!;
+  const tanS = rideCurve.getTangentAt(0.001).setY(0).normalize(); // smoothed forward
 
-  const povPose = () => {
-    const { pos, dir } = sampler.at(state.p);
-    dirS.x += (dir[0] - dirS.x) * 0.06;
-    dirS.y += (dir[1] - dirS.y) * 0.06;
-    const n = Math.hypot(dirS.x, dirS.y) || 1;
-    const dx = dirS.x / n;
-    const dy = dirS.y / n;
-    return {
-      pos: new THREE.Vector3(pos[0] - dx * CAM_BACK, CAM_UP, pos[1] - dy * CAM_BACK),
-      target: new THREE.Vector3(pos[0] + dx * LOOK_AHEAD, TRACK_R.nav, pos[1] + dy * LOOK_AHEAD),
-      up: new THREE.Vector3(0, 1, 0),
-    };
-  };
+  // All orientation is quaternion-slerped — no up-vector lerp, so no pose can
+  // ever pass through a singularity and flip (the brown line rides south,
+  // exactly opposite the rest view's up).
+  const M = new THREE.Matrix4();
+  const quatFor = (pos: THREE.Vector3, target: THREE.Vector3, up: THREE.Vector3) =>
+    new THREE.Quaternion().setFromRotationMatrix(M.lookAt(pos, target, up));
+
+  const restQuat = quatFor(restPos, new THREE.Vector3(500, 0, 350), new THREE.Vector3(0, 0, -1));
+  const lastPos = new THREE.Vector3().copy(restPos);
 
   const applyCam = () => {
-    const pov = povPose();
-    const m = state.mix;
-    const pos = restPos.clone().lerp(pov.pos, m);
-    const target = restTarget.clone().lerp(pov.target, m);
-    const up = restUp.clone().lerp(pov.up, m).normalize();
+    // cruise pose on the rounded curve
+    const u = Math.min(Math.max(state.p, 0.0005), 0.9995);
+    const pt = rideCurve.getPointAt(u);
+    tanS.lerp(rideCurve.getTangentAt(u).setY(0).normalize(), 0.08).normalize();
+    const cruisePos = pt.clone().addScaledVector(tanS, -CAM_BACK).setY(CAM_UP);
+    const cruiseTarget = pt.clone().addScaledVector(tanS, LOOK_AHEAD).setY(TRACK_R.nav);
+    const cruiseQuat = quatFor(cruisePos, cruiseTarget, new THREE.Vector3(0, 1, 0));
+
+    // blend rest → cruise
+    const pos = restPos.clone().lerp(cruisePos, state.mix);
+    const quat = restQuat.clone().slerp(cruiseQuat, state.mix);
+
+    // blend → plunge (down into the destination capsule)
     if (state.plunge > 0) {
-      // dive toward the destination capsule until white fills the frame
-      const over = dest.clone().setY(TRACK_R.nav * 2 + 40);
-      const at = dest.clone().setY(0);
-      pos.lerp(over, state.plunge);
-      target.lerp(at, state.plunge);
+      const plungePos = dest.clone().add(new THREE.Vector3(0, 8, 0));
+      const plungeQuat = quatFor(plungePos, dest.clone().setY(0), tanS);
+      pos.lerp(plungePos, state.plunge);
+      quat.slerp(plungeQuat, state.plunge);
     }
+
     camera.position.copy(pos);
-    camera.up.copy(up);
-    camera.lookAt(target);
-    // a touch of speed-fov
-    camera.fov = 55 + 12 * state.mix * (1 - state.plunge);
+    camera.quaternion.copy(quat);
+    camera.fov = 26 + 41 * state.mix * (1 - state.plunge * 0.35);
     camera.updateProjectionMatrix();
-    renderer.render(scene, camera);
+
+    // trail strength follows real camera speed (world units per frame)
+    const speed = pos.distanceTo(lastPos);
+    lastPos.copy(pos);
+    trail.uniforms['damp'].value = Math.min(speed * 0.028, 0.82) * state.mix * (1 - state.plunge);
+
+    composer.render();
   };
 
   let navigated = false;
@@ -299,7 +325,10 @@ export function ride3d(lineId: LineId, href: string, onNavigate: () => void): bo
     }
     onNavigate();
     // canvas is swapped out with the page; free GPU resources explicitly
-    setTimeout(() => renderer.dispose(), 1200);
+    setTimeout(() => {
+      composer.dispose();
+      renderer.dispose();
+    }, 1200);
   };
 
   const tl = gsap.timeline({ defaults: { overwrite: 'auto' } });

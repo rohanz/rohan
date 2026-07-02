@@ -135,17 +135,6 @@ const LAKE = 'M880,-1600 L2600,-1600 L2600,2000 L880,2000 L880,1160 L930,1110 L9
             stroke-linecap="round"
             stroke-linejoin="round"
           />
-          <!-- crown highlight: sells the rounded pipe profile from any angle -->
-          <polyline
-            points={polyPoints(line.points)}
-            fill="none"
-            stroke={shade(line.hex, 1.45)}
-            stroke-width={line.nav ? 3 : 2.5}
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            transform="translate(0 -1.5)"
-            opacity="0.75"
-          />
           {line.nav && (
             <polyline
               class="hit-path"
