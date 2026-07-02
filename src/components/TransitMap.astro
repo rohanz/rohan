@@ -5,34 +5,6 @@ function polyPoints(pts: Point[]) {
   return pts.map(([x, y]) => `${x},${y}`).join(' ');
 }
 
-// Dud labels sit off the line based on their segment's direction.
-function segmentDir(pts: Point[], at: Point): 'h' | 'v' | 'd-down' | 'd-up' {
-  for (let i = 1; i < pts.length; i++) {
-    const [x1, y1] = pts[i - 1];
-    const [x2, y2] = pts[i];
-    const within =
-      at[0] >= Math.min(x1, x2) && at[0] <= Math.max(x1, x2) &&
-      at[1] >= Math.min(y1, y2) && at[1] <= Math.max(y1, y2);
-    if (!within) continue;
-    if (y1 === y2) return 'h';
-    if (x1 === x2) return 'v';
-    return (x2 - x1) * (y2 - y1) > 0 ? 'd-down' : 'd-up';
-  }
-  return 'h';
-}
-
-function dudLabel(pts: Point[], at: Point) {
-  switch (segmentDir(pts, at)) {
-    case 'h':
-      return { x: at[0] + 5, y: at[1] + 14, transform: `rotate(45 ${at[0] + 5} ${at[1] + 14})` };
-    case 'v':
-      return { x: at[0] + 11, y: at[1] + 4, transform: undefined };
-    case 'd-down':
-      return { x: at[0] + 9, y: at[1] - 6, transform: undefined };
-    case 'd-up':
-      return { x: at[0] + 9, y: at[1] + 14, transform: undefined };
-  }
-}
 ---
 <div class="map-tilt">
   <svg
@@ -45,27 +17,28 @@ function dudLabel(pts: Point[], at: Point) {
     <g data-camera>
       {LINES.map((line) => (
         <g data-line={line.id} class:list={['line-group', { nav: !!line.nav }]}>
+          <!-- casing: background-colored under-stroke separates crossings, CTA-print style -->
+          <polyline
+            class="line-casing"
+            points={polyPoints(line.points)}
+            fill="none"
+            stroke="var(--bg)"
+            stroke-width={line.nav ? 14 : 12}
+            stroke-linecap="butt"
+            stroke-linejoin="round"
+          />
           <polyline
             class="line-path"
             points={polyPoints(line.points)}
             fill="none"
             stroke={line.hex}
-            stroke-width={line.nav ? 8 : 6}
-            stroke-linecap="round"
+            stroke-width={line.nav ? 9 : 7}
+            stroke-linecap="butt"
             stroke-linejoin="round"
           />
           {line.ticks.map((t) => (
-            <circle cx={t[0]} cy={t[1]} r="3.5" fill="var(--bg)" stroke={line.hex} stroke-width="2" />
+            <circle cx={t[0]} cy={t[1]} r={line.nav ? 5.5 : 5} fill="#fff" stroke="var(--ink)" stroke-width="2.4" />
           ))}
-          {line.stations.filter((s) => s.kind === 'dud').map((s) => {
-            const l = dudLabel(line.points, s.at);
-            return (
-              <g class="dud">
-                <circle cx={s.at[0]} cy={s.at[1]} r="4.5" fill="var(--bg)" stroke={line.hex} stroke-width="2.5" />
-                <text x={l.x} y={l.y} transform={l.transform} class="dud-label" fill="var(--muted)">{s.name}</text>
-              </g>
-            );
-          })}
           {line.nav && (
             <polyline
               class="hit-path"
@@ -82,26 +55,29 @@ function dudLabel(pts: Point[], at: Point) {
         </g>
       ))}
 
-      <!-- HOME — the only named station; three nav lines interchange here -->
+      <!-- HOME — the only named station; CTA transfer-station capsule -->
       <g class="home">
-        <circle cx={HOME[0]} cy={HOME[1]} r="16" fill="var(--bg)" stroke="var(--ink)" stroke-width="4.5" />
-        <circle cx={HOME[0]} cy={HOME[1]} r="6" fill="var(--ink)" />
-        <text x={HOME[0] - 28} y={HOME[1] + 1} class="home-label" fill="var(--ink)" text-anchor="end">HOME</text>
-        <text x={HOME[0] - 28} y={HOME[1] + 17} class="home-sub" fill="var(--muted)" text-anchor="end">you are here</text>
+        <circle cx={HOME[0]} cy={HOME[1]} r="15" fill="#fff" stroke="var(--ink)" stroke-width="5" />
+        <text x={HOME[0] - 24} y={HOME[1] - 22} class="home-label" fill="var(--ink)" text-anchor="end">HOME</text>
+        <text x={HOME[0] - 24} y={HOME[1] - 8} class="home-sub" fill="var(--muted)" text-anchor="end">you are here</text>
       </g>
     </g>
     <g id="streaks" aria-hidden="true"></g>
+    <defs>
+      <filter id="motion-blur" x="-40%" y="-40%" width="180%" height="180%">
+        <feGaussianBlur id="motion-blur-gauss" stdDeviation="0 0" />
+      </filter>
+    </defs>
   </svg>
 </div>
 
 <style>
   .map-tilt { width: 100%; height: 100%; perspective: 1200px; }
   .transit-map { width: 100%; height: 100%; display: block; transform-style: preserve-3d; }
-  .dud-label { font-size: 12px; font-weight: 500; }
   .home-label { font-size: 18px; font-weight: 800; letter-spacing: 0.04em; }
   .home-sub { font-size: 11px; font-weight: 500; letter-spacing: 0.06em; }
   .hit-path { cursor: pointer; pointer-events: stroke; }
-  /* Ride state hooks (ride.ts) */
-  #transit-map.ride-active .line-group:not(.ridden) { filter: blur(4px); opacity: 0.3; transition: filter 0.35s ease, opacity 0.35s ease; }
+  /* During a ride only the HOME text gets out of the way; other lines stay crisp
+     (the whole camera carries speed-proportional motion blur instead). */
   #transit-map.ride-active .home text { opacity: 0; transition: opacity 0.25s ease; }
 </style>

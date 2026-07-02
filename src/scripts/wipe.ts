@@ -73,9 +73,9 @@ document.addEventListener('astro:page-load', () => {
   if (!main) return;
   main.animate(
     [
-      { transform: 'scale(1.14)', opacity: 0, filter: 'blur(6px)' },
+      { transform: 'scale(1.22)', opacity: 0, filter: 'blur(8px)' },
       { transform: 'scale(1)', opacity: 1, filter: 'blur(0px)' },
     ],
-    { duration: 420, easing: 'cubic-bezier(0.2,0.7,0.2,1)' },
+    { duration: 500, easing: 'cubic-bezier(0.16,0.8,0.25,1)' },
   );
 });

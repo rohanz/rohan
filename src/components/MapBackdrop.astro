@@ -1,0 +1,43 @@
+---
+// Faint continuation of the transit mesh behind inner-page content, so every
+// page reads as another place on the same map the ride just crossed.
+import { LINES, VIEWBOX, type Point } from '../data/system';
+
+interface Props {
+  /** The page's own line is drawn slightly stronger. */
+  lineId: string;
+}
+const { lineId } = Astro.props;
+
+function polyPoints(pts: Point[]) {
+  return pts.map(([x, y]) => `${x},${y}`).join(' ');
+}
+---
+<svg
+  class="map-backdrop"
+  viewBox={`0 0 ${VIEWBOX.w} ${VIEWBOX.h}`}
+  preserveAspectRatio="xMidYMid slice"
+  aria-hidden="true"
+>
+  {LINES.map((line) => (
+    <polyline
+      points={polyPoints(line.points)}
+      fill="none"
+      stroke={line.hex}
+      stroke-width={line.id === lineId ? 8 : 6}
+      stroke-linejoin="round"
+      opacity={line.id === lineId ? 0.1 : 0.05}
+    />
+  ))}
+</svg>
+
+<style>
+  .map-backdrop {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    pointer-events: none;
+  }
+</style>

@@ -33,6 +33,13 @@ User revision after seeing v1: destinations must NOT be visible on the map.
 - **Ride v2**: 3D dive — the whole map tilts (perspective + rotateX) as the camera drops toward HOME, then races along the line's ride path clear off the canvas at high zoom (no deceleration, no arrival sign — the destination is off-screen), streaks and cross-line blur during the speed phase, quick fade-out, navigate. The destination page **arrives by zooming out**: content starts slightly scaled up and settles to rest (~0.4s). Reduced-motion: plain navigation, no dive, no arrival zoom.
 - Nav-line CSS vars change to the CTA hexes (inner pages inherit automatically).
 
+Further user revisions (same day, v3):
+- Styled like the printed CTA map: white paper (homepage), lines with background-colored casing at crossings, stations as short perpendicular black ticks, butt line caps. No dud text anywhere — HOME ("you are here") is the only label on the map.
+- All line endpoints extend far off-canvas (±260+) so no end-cap is ever visible at any viewport aspect.
+- Each nav line has a long off-canvas tail with many tick stops; the ride passes a string of stops before arriving.
+- Ride motion: no blurring/dimming of the other lines. Speed comes from arc-length-constant pacing with one continuous acceleration ease (no per-segment time jumps), plus speed-proportional directional motion blur applied to the whole camera (feGaussianBlur, dx/dy from travel direction).
+- Inner pages carry a faint full-bleed mesh backdrop (their own line slightly stronger) and a station capsule at the top of the spine, so the arrival zoom-out reveals the page as a place on the same map.
+
 ## Homepage v1 (layout B: map + station board) — superseded by v2 above
 
 - Full-viewport fictional map. Three colored lines interchange at a **HOME** station (large interchange circle) and each terminates at its destination station, which carries a real station-sign nameplate: MUSIC, PROJECTS, ABOUT ME.

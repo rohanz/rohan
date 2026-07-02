@@ -20,7 +20,9 @@ import StationBoard from '../components/StationBoard.astro';
 </Layout>
 
 <style is:global>
-  body.home { overflow: hidden; }
+  /* The map page sits on white paper like the printed CTA map; casing and
+     tick fills follow via var(--bg). */
+  body.home { overflow: hidden; --bg: #ffffff; background: #ffffff; }
 </style>
 
 <style>

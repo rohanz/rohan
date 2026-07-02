@@ -1,6 +1,7 @@
 ---
 import Layout from './Layout.astro';
 import Footer from '../components/Footer.astro';
+import MapBackdrop from '../components/MapBackdrop.astro';
 
 interface Props {
   title: string;
@@ -13,13 +14,34 @@ interface Props {
 const { title, description, lineId, hex, signName, ogImage } = Astro.props;
 ---
 <Layout title={title} description={description} ogImage={ogImage} bodyClass={`page page-${lineId}`}>
+  <MapBackdrop lineId={lineId} />
   <header class="sign-header" style={`background:${hex}; --sign-vt: sign-${lineId};`}>
     <h1>{signName}</h1>
     <a class="back" href="/">back to map</a>
   </header>
   <main id="main" class="page-body">
-    <span class="spine" style={`background:${hex}`} aria-hidden="true"></span>
+    <span class="spine" style={`background:${hex}`} aria-hidden="true">
+      <span class="station-here" aria-hidden="true"></span>
+    </span>
     <slot />
   </main>
   <Footer />
 </Layout>
+
+<style>
+  /* This page's station on its line: white capsule with ink ring at the top
+     of the spine, matching the map's transfer-station mark. */
+  .station-here {
+    position: absolute;
+    top: 2.2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #fff;
+    border: 5px solid var(--ink);
+    box-sizing: border-box;
+  }
+  .spine { position: relative; }
+</style>
