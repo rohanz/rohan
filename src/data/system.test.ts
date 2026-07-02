@@ -95,16 +95,21 @@ describe('transit system integrity (v2 mesh)', () => {
     for (const line of NAV_LINES) {
       const p = line.platform;
       expect(p, `${line.id} has a platform`).toBeDefined();
-      expect(p!.stops.length).toBeGreaterThanOrEqual(p!.perPage);
+      // The about (diagonal) platform pairs TWO cards per stop (one each side
+      // of the line), so its perPage counts cards while stops counts stops —
+      // page size in stops is perPage / 2 there. The v/h platforms are
+      // one-card-per-stop, so stopsPerPage === perPage.
+      const stopsPerPage = p!.axis === 'd' ? p!.perPage / 2 : p!.perPage;
+      expect(p!.stops.length).toBeGreaterThanOrEqual(stopsPerPage);
       for (const stop of p!.stops) {
         expect(onPolyline(stop, line.points), `${line.id} stop on line`).toBe(true);
       }
       // Stops are grouped into pages; each page is monotonic along its axis,
       // but a new page may jump backward (e.g. projects' second page runs
       // further west than the first). Check monotonicity per page only.
-      const pages = Math.ceil(p!.stops.length / p!.perPage);
+      const pages = Math.ceil(p!.stops.length / stopsPerPage);
       for (let page = 0; page < pages; page++) {
-        const slice = p!.stops.slice(page * p!.perPage, (page + 1) * p!.perPage);
+        const slice = p!.stops.slice(page * stopsPerPage, (page + 1) * stopsPerPage);
         for (let i = 1; i < slice.length; i++) {
           const [ax, ay] = slice[i - 1];
           const [bx, by] = slice[i];

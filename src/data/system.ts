@@ -141,14 +141,16 @@ export const LINES: Line[] = [
     ],
     stations: [],
     platform: {
-      perPage: 5,
+      // Three stops down the 45° diagonal; each anchors a symmetric pair of
+      // cards (one card left of the line, one right). All six show at once on
+      // desktop widths — perPageFor('about') is computed live in ride.ts and
+      // only drops to fewer stop-pairs on very small viewports.
+      perPage: 6,
       axis: 'd',
       stops: [
         [500, 550],
         [600, 650],
         [700, 750],
-        [800, 850],
-        [900, 950],
       ],
     },
     ticks: [
