@@ -28,6 +28,7 @@ const line = lineById('music');
                 class="preview"
                 data-audio={t.audio}
                 aria-label={`preview ${t.title}`}
+                aria-pressed="false"
               >preview</button>
               <a href={t.spotifyUrl} target="_blank" rel="noopener noreferrer">spotify</a>
               <a href={t.appleMusicUrl} target="_blank" rel="noopener noreferrer">apple music</a>
@@ -70,6 +71,7 @@ const line = lineById('music');
       if (current) { current.pause(); current = null; }
       if (currentBtn) {
         currentBtn.classList.remove('playing');
+        currentBtn.setAttribute('aria-pressed', 'false');
         currentBtn.textContent = 'preview';
         currentBtn.closest('.stop')?.querySelector('.stop-dot')?.classList.remove('playing');
         currentBtn = null;
@@ -88,6 +90,7 @@ const line = lineById('music');
         current = audio;
         currentBtn = btn;
         btn.classList.add('playing');
+        btn.setAttribute('aria-pressed', 'true');
         btn.textContent = 'pause';
         btn.closest('.stop')?.querySelector('.stop-dot')?.classList.add('playing');
       });
