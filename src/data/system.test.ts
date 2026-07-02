@@ -1,52 +1,82 @@
 import { describe, it, expect } from 'vitest';
-import { LINES, HOME, lineById } from './system';
+import { LINES, NAV_LINES, HOME, VIEWBOX, lineById, type Point } from './system';
 
-describe('transit system integrity', () => {
-  it('has exactly three lines in order music, projects, about', () => {
-    expect(LINES.map((l) => l.id)).toEqual(['music', 'projects', 'about']);
+function offCanvas([x, y]: Point): boolean {
+  return x < 0 || x > VIEWBOX.w || y < 0 || y > VIEWBOX.h;
+}
+
+function octilinear(pts: Point[], label: string) {
+  for (let i = 1; i < pts.length; i++) {
+    const dx = Math.abs(pts[i][0] - pts[i - 1][0]);
+    const dy = Math.abs(pts[i][1] - pts[i - 1][1]);
+    const ok = dx === 0 || dy === 0 || dx === dy;
+    expect(ok, `${label} segment ${i} is octilinear (dx=${dx}, dy=${dy})`).toBe(true);
+  }
+}
+
+function onPolyline(p: Point, pts: Point[]): boolean {
+  for (let i = 1; i < pts.length; i++) {
+    const [x1, y1] = pts[i - 1];
+    const [x2, y2] = pts[i];
+    const withinBox =
+      p[0] >= Math.min(x1, x2) && p[0] <= Math.max(x1, x2) &&
+      p[1] >= Math.min(y1, y2) && p[1] <= Math.max(y1, y2);
+    if (!withinBox) continue;
+    const cross = (x2 - x1) * (p[1] - y1) - (y2 - y1) * (p[0] - x1);
+    if (cross === 0) return true;
+  }
+  return false;
+}
+
+describe('transit system integrity (v2 mesh)', () => {
+  it('has exactly eight lines, three of them nav', () => {
+    expect(LINES).toHaveLength(8);
+    expect(NAV_LINES.map((l) => l.id)).toEqual(['music', 'projects', 'about']);
   });
 
-  it('every line shares the HOME interchange point', () => {
+  it('nav hrefs are the three routes', () => {
+    expect(NAV_LINES.map((l) => l.nav.href)).toEqual(['/music', '/projects', '/about']);
+  });
+
+  it('every polyline and ride path is octilinear', () => {
     for (const line of LINES) {
-      const home = line.stations.find((s) => s.kind === 'home');
-      expect(home, `line ${line.id} has a home station`).toBeDefined();
-      expect(home!.at).toEqual(HOME);
+      octilinear(line.points, `${line.id}.points`);
+      if (line.ride) octilinear(line.ride, `${line.id}.ride`);
     }
   });
 
-  it('every line has exactly one terminal with a route href', () => {
-    const expected: Record<string, string> = { music: '/music', projects: '/projects', about: '/about' };
+  it('every line runs off-canvas at both ends', () => {
     for (const line of LINES) {
-      const terminals = line.stations.filter((s) => s.kind === 'terminal');
-      expect(terminals).toHaveLength(1);
-      expect(terminals[0].href).toBe(expected[line.id]);
+      expect(offCanvas(line.points[0]), `${line.id} start off-canvas`).toBe(true);
+      expect(offCanvas(line.points[line.points.length - 1]), `${line.id} end off-canvas`).toBe(true);
     }
   });
 
-  it('has globally unique station ids', () => {
+  it('every nav line passes through HOME and rides from HOME to off-canvas', () => {
+    for (const line of NAV_LINES) {
+      expect(onPolyline(HOME, line.points), `${line.id} passes through HOME`).toBe(true);
+      expect(line.ride[0]).toEqual(HOME);
+      expect(offCanvas(line.ride[line.ride.length - 1]), `${line.id} ride exits canvas`).toBe(true);
+    }
+  });
+
+  it('every station and tick lies on its line', () => {
+    for (const line of LINES) {
+      for (const s of line.stations) {
+        expect(onPolyline(s.at, line.points), `${line.id}/${s.id} on line`).toBe(true);
+      }
+      for (const [i, t] of line.ticks.entries()) {
+        expect(onPolyline(t, line.points), `${line.id} tick ${i} on line`).toBe(true);
+      }
+    }
+  });
+
+  it('station ids are globally unique', () => {
     const ids = LINES.flatMap((l) => l.stations.map((s) => s.id));
     expect(new Set(ids).size).toBe(ids.length);
   });
 
-  it('every line polyline starts at HOME and has at least two bends', () => {
-    for (const line of LINES) {
-      expect(line.points[0]).toEqual(HOME);
-      expect(line.points.length).toBeGreaterThanOrEqual(4); // start + >=2 bends + terminal
-    }
-  });
-
-  it('lineById returns the matching line', () => {
-    expect(lineById('projects').hex).toBe('#c62828');
-  });
-
-  it('every segment is octilinear (horizontal, vertical, or 45°)', () => {
-    for (const line of LINES) {
-      for (let i = 1; i < line.points.length; i++) {
-        const dx = Math.abs(line.points[i][0] - line.points[i - 1][0]);
-        const dy = Math.abs(line.points[i][1] - line.points[i - 1][1]);
-        const ok = dx === 0 || dy === 0 || dx === dy;
-        expect(ok, `${line.id} segment ${i} is octilinear (dx=${dx}, dy=${dy})`).toBe(true);
-      }
-    }
+  it('lineById returns the matching nav line', () => {
+    expect(lineById('projects').hex).toBe('#c60c30');
   });
 });

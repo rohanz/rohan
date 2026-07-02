@@ -1,8 +1,9 @@
 import gsap from 'gsap';
 import { navigate } from 'astro:transitions/client';
-import { LINES, HOME, VIEWBOX, lineById, type LineId } from '../data/system';
+import { HOME, VIEWBOX, lineById, type LineId, type Point } from '../data/system';
 
-const SCALE = 2.8;
+const DIVE_SCALE = 2.6; // zoom level after the initial drop onto HOME
+const RIDE_SCALE = 5.5; // zoom level while speeding along the line
 const CX = VIEWBOX.w / 2; // 500
 const CY = VIEWBOX.h / 2; // 350
 
@@ -15,21 +16,21 @@ function prefersReducedMotion(): boolean {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
-// Build the thin parallel streak lines once per ride, aligned to the travel direction.
-function buildStreaks(streaksEl: SVGGElement, from: [number, number], to: [number, number]) {
+// Thin parallel streak lines aligned to the overall travel direction.
+function buildStreaks(streaksEl: SVGGElement, from: Point, to: Point) {
   streaksEl.replaceChildren();
   const dx = to[0] - from[0];
   const dy = to[1] - from[1];
   const len = Math.hypot(dx, dy) || 1;
-  const nx = -dy / len; // unit normal
+  const nx = -dy / len;
   const ny = dx / len;
-  const count = 14;
+  const count = 16;
   for (let i = 0; i < count; i++) {
-    const t = (i / (count - 1) - 0.5) * 900; // spread across the normal
+    const t = (i / (count - 1) - 0.5) * 950;
     const cx = CX + nx * t;
     const cy = CY + ny * t;
-    const ux = (dx / len) * 260;
-    const uy = (dy / len) * 260;
+    const ux = (dx / len) * 300;
+    const uy = (dy / len) * 300;
     const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
     line.setAttribute('x1', String(cx - ux));
     line.setAttribute('y1', String(cy - uy));
@@ -50,17 +51,15 @@ function ride(lineId: LineId, href: string) {
   const logo = document.getElementById('logo');
   const line = lineById(lineId);
   const rideGroup = svg?.querySelector(`g[data-line="${lineId}"]`);
-  if (!svg || !camera || !streaks || !rideGroup) {
+  const path = line.ride;
+  if (!svg || !camera || !streaks || !rideGroup || !path) {
     navigate(href);
     return;
   }
 
-  const terminal = line.stations.find((s) => s.kind === 'terminal')!;
-  const destSign = rideGroup.querySelector('.terminal-sign') as SVGRectElement | null;
-
   svg.classList.add('ride-active');
   rideGroup.classList.add('ridden');
-  buildStreaks(streaks, HOME, terminal.at);
+  buildStreaks(streaks, HOME, path[path.length - 1]);
 
   const state = { x: HOME[0], y: HOME[1], s: 1 };
   const apply = () => camera.setAttribute('transform', camAttr(state.x, state.y, state.s));
@@ -69,78 +68,91 @@ function ride(lineId: LineId, href: string) {
   const go = () => {
     if (navigated) return;
     navigated = true;
+    // Tells the destination page to play the zoom-out arrival (wipe.ts reads it).
+    try {
+      sessionStorage.setItem('ride-arrive', lineId);
+    } catch {
+      /* private mode etc. — arrival just won't animate */
+    }
     navigate(href);
   };
 
-  const tl = gsap.timeline({ defaults: { overwrite: 'auto' }, onComplete: go });
+  const tl = gsap.timeline({ defaults: { overwrite: 'auto' } });
 
-  // (a) pulse at HOME + fade chrome
-  tl.to('.home circle', { attr: { r: 22 }, duration: 0.15, yoyo: true, repeat: 1, ease: 'power2.out' }, 0);
+  // (a) drop down onto HOME: zoom + the whole map tilts away like a table surface
   tl.to([board, logo], { autoAlpha: 0, duration: 0.2, ease: 'power1.out' }, 0);
+  tl.to(svg, { rotateX: 13, transformPerspective: 1200, transformOrigin: '50% 60%', duration: 0.42, ease: 'power2.inOut' }, 0);
+  tl.to(state, { s: DIVE_SCALE, duration: 0.3, ease: 'power2.in', onUpdate: apply }, 0.02);
 
-  // (b) dive along the line's bends to the terminal, accelerate then decelerate
-  const pts = line.points;
-  const total = 0.9;
-  const per = total / (pts.length - 1);
-  for (let i = 1; i < pts.length; i++) {
-    const isLast = i === pts.length - 1;
+  // (b) speed along the ride path clear off the canvas — accelerate, never brake
+  const DIVE_END = 0.32;
+  const total = 0.85;
+  const per = total / (path.length - 1);
+  for (let i = 1; i < path.length; i++) {
     tl.to(
       state,
       {
-        x: pts[i][0],
-        y: pts[i][1],
-        s: SCALE,
+        x: path[i][0],
+        y: path[i][1],
+        s: RIDE_SCALE,
         duration: per,
-        ease: i === 1 ? 'power2.in' : isLast ? 'power3.out' : 'none',
+        ease: i === 1 ? 'power2.in' : 'none',
         onUpdate: apply,
       },
-      0.12 + (i - 1) * per,
+      DIVE_END + (i - 1) * per,
     );
   }
 
-  // streak overlay fades in during the fast middle, out at arrival
-  tl.fromTo(streaks, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.2, ease: 'power1.in' }, 0.28);
-  tl.to(streaks, { autoAlpha: 0, duration: 0.2, ease: 'power1.out' }, 0.12 + total - 0.1);
+  // streaks live through the whole speed phase
+  tl.fromTo(streaks, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.18, ease: 'power1.in' }, DIVE_END + 0.1);
 
-  // (c) arrive: destination sign scales up centered
-  if (destSign) {
-    tl.to(destSign, { scale: 1.35, transformOrigin: 'center', duration: 0.25, ease: 'power2.out' }, '>-0.05');
-  }
-
-  // Skip: any input jumps to the end (which fires onComplete -> navigate)
-  const skip = () => tl.progress(1);
-  window.addEventListener('pointerdown', skip, { once: true });
-  window.addEventListener('keydown', skip, { once: true });
+  // (c) exit: whole map fades as we leave the canvas, then navigate
+  tl.to(svg, { autoAlpha: 0, duration: 0.16, ease: 'power1.in' }, DIVE_END + total - 0.14);
   tl.eventCallback('onComplete', () => {
     window.removeEventListener('pointerdown', skip);
     window.removeEventListener('keydown', skip);
     go();
   });
+
+  // Skip: any input jumps to the end (fires onComplete -> navigate)
+  const skip = () => tl.progress(1);
+  window.addEventListener('pointerdown', skip, { once: true });
+  window.addEventListener('keydown', skip, { once: true });
 }
 
 function initRide() {
   // Only wire up on the homepage (map present).
   if (!document.getElementById('transit-map')) return;
-  document.querySelectorAll<HTMLAnchorElement>('a[data-terminal][data-line]').forEach((el) => {
-    // Astro's hover-prefetch skips SVG <a> elements, so warm the destination
+
+  const bind = (el: Element, href: string | null, lineId: string | null) => {
+    // Astro's hover-prefetch skips SVG elements, so warm the destination
     // ourselves; harmless duplicate for the board links (fetch hits the cache).
     el.addEventListener(
       'mouseenter',
       () => {
-        const href = el.getAttribute('href');
         if (href) fetch(href).catch(() => {});
       },
       { once: true },
     );
     el.addEventListener('click', (e) => {
-      const href = el.getAttribute('href');
-      const lineId = el.getAttribute('data-line') as LineId | null;
+      const ev = e as MouseEvent;
       if (!href || !lineId) return;
-      if (prefersReducedMotion() || e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return; // let default nav happen
+      if (prefersReducedMotion() || ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.button !== 0) {
+        // Map hit-paths aren't links, so give reduced-motion users the plain nav.
+        if (!(el instanceof HTMLAnchorElement)) navigate(href);
+        return;
+      }
       e.preventDefault();
-      ride(lineId, href);
+      ride(lineId as LineId, href);
     });
-  });
+  };
+
+  document
+    .querySelectorAll<HTMLAnchorElement>('a[data-terminal][data-line]')
+    .forEach((el) => bind(el, el.getAttribute('href'), el.getAttribute('data-line')));
+  document
+    .querySelectorAll<SVGPolylineElement>('[data-ride-line][data-href]')
+    .forEach((el) => bind(el, el.getAttribute('data-href'), el.getAttribute('data-ride-line')));
 }
 
 document.addEventListener('astro:page-load', initRide);

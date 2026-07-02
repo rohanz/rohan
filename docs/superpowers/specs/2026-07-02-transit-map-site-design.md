@@ -23,7 +23,17 @@ Rohan wants multiple flip-able stylizations of his personal site. This first one
 - **Signage:** station signs are saturated color blocks with bold white type set in **Inter** (already used on the current site; Helvetica-grade neutrality). Transfer/terminal stations = large white circles with dark ring; dud stations = small ticks with small gray labels.
 - **Texture:** restrained — flat print-like surfaces, subtle paper grain at most. No skeuomorphic rust/rivets.
 
-## Homepage (layout B: map + station board)
+## Homepage v2 (revised 2026-07-02, supersedes the section below)
+
+User revision after seeing v1: destinations must NOT be visible on the map.
+
+- The map is a dense mesh of **8 lines** in the real CTA palette (red `#c60c30`, blue `#00a1de`, brown `#62361b`, green `#009b3a`, orange `#f9461c`, purple `#522398`, pink `#e27ea6`, yellow `#f9e300`), all octilinear, every line running off-screen at both ends. No station signs, no visible destinations — all real locations are off-screen.
+- **HOME is the only named station** ("you are here"), the interchange where the three nav lines cross: purple = music, red = projects, brown = about. The other five lines are texture, with unnamed tick stations. Sparse small dud labels (song titles / project names / life facts) remain on the three nav lines only.
+- **The station board panel is the primary nav** — three color-keyed entries. The three nav lines on the map are also clickable (wide invisible hit area), as a bonus affordance.
+- **Ride v2**: 3D dive — the whole map tilts (perspective + rotateX) as the camera drops toward HOME, then races along the line's ride path clear off the canvas at high zoom (no deceleration, no arrival sign — the destination is off-screen), streaks and cross-line blur during the speed phase, quick fade-out, navigate. The destination page **arrives by zooming out**: content starts slightly scaled up and settles to rest (~0.4s). Reduced-motion: plain navigation, no dive, no arrival zoom.
+- Nav-line CSS vars change to the CTA hexes (inner pages inherit automatically).
+
+## Homepage v1 (layout B: map + station board) — superseded by v2 above
 
 - Full-viewport fictional map. Three colored lines interchange at a **HOME** station (large interchange circle) and each terminates at its destination station, which carries a real station-sign nameplate: MUSIC, PROJECTS, ABOUT ME.
 - **Dud stations:** small tick stops along each line. Names are a mix of (a) real content — song titles on purple, project names on red, life facts (ntu, singapore) on brown — and (b) invented generic transit-sounding names as filler. Not clickable, visually quiet, cursor stays default. (Some may become deep-links later; not in scope now.)

@@ -1,14 +1,14 @@
 ---
-import { LINES } from '../data/system';
-const dests = LINES.map((l) => ({
+import { NAV_LINES } from '../data/system';
+const dests = NAV_LINES.map((l) => ({
   id: l.id,
   hex: l.hex,
-  name: l.stations.find((s) => s.kind === 'terminal')!.name,
-  href: l.stations.find((s) => s.kind === 'terminal')!.href!,
+  name: l.nav.name,
+  href: l.nav.href,
 }));
 ---
 <nav id="station-board" class="station-board" aria-label="destinations">
-  <p class="board-title">stops</p>
+  <p class="board-title">from home, ride to</p>
   <ul>
     {dests.map((d) => (
       <li>

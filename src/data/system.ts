@@ -1,97 +1,214 @@
 export type Point = [number, number];
 export type LineId = 'music' | 'projects' | 'about';
-export type StationKind = 'home' | 'terminal' | 'dud';
+export type StationKind = 'home' | 'dud';
 
 export interface Station {
   id: string;
   name: string;
   kind: StationKind;
   at: Point;
-  href?: string;
 }
 
 export interface Line {
-  id: LineId;
-  name: string;
-  colorVar: string;
+  id: string; // nav lines use LineId; texture lines use their color name
   hex: string;
+  /** Present only on the three nav lines. */
+  nav?: { href: string; name: string };
+  /** Full polyline; both endpoints off-canvas. Octilinear. */
   points: Point[];
+  /** Nav lines only: the path the camera rides, HOME → off-canvas. Octilinear. */
+  ride?: Point[];
+  /** Named stations (HOME + sparse duds, nav lines only). */
   stations: Station[];
+  /** Unnamed tick stations. */
+  ticks: Point[];
 }
 
 export const HOME: Point = [420, 380];
 export const VIEWBOX = { w: 1000, h: 700 };
 
+// Real CTA palette.
+export const CTA = {
+  red: '#c60c30',
+  blue: '#00a1de',
+  brown: '#62361b',
+  green: '#009b3a',
+  orange: '#f9461c',
+  purple: '#522398',
+  pink: '#e27ea6',
+  yellow: '#f9e300',
+} as const;
+
 export const LINES: Line[] = [
   {
     id: 'music',
-    name: 'MUSIC',
-    colorVar: 'var(--line-music)',
-    hex: '#5b2d8e',
-    // Octilinear: 45° up-right, then vertical up, then horizontal right.
+    hex: CTA.purple,
+    nav: { href: '/music', name: 'music' },
     points: [
+      [-60, 560],
+      [240, 560],
       [420, 380],
-      [540, 260],
-      [540, 170],
-      [760, 170],
+      [420, 200],
+      [560, 60],
+      [560, -60],
+    ],
+    ride: [
+      [420, 380],
+      [420, 200],
+      [560, 60],
+      [560, -220],
     ],
     stations: [
-      { id: 'music-home', name: 'HOME', kind: 'home', at: [420, 380] },
-      { id: 'music-loose-ends', name: 'loose ends', kind: 'dud', at: [460, 340] },
-      { id: 'music-eastgate', name: 'eastgate', kind: 'dud', at: [500, 300] },
-      { id: 'music-call-me-back', name: 'call me back', kind: 'dud', at: [540, 215] },
-      { id: 'music-dont-want-me', name: "don't want me", kind: 'dud', at: [610, 170] },
-      { id: 'music-where-have-u-been', name: 'where have u been?', kind: 'dud', at: [685, 170] },
-      { id: 'music-terminal', name: 'MUSIC', kind: 'terminal', at: [760, 170], href: '/music' },
+      { id: 'home', name: 'HOME', kind: 'home', at: [420, 380] },
+      { id: 'music-loose-ends', name: 'loose ends', kind: 'dud', at: [420, 300] },
+      { id: 'music-dont-want-me', name: "don't want me", kind: 'dud', at: [420, 240] },
+      { id: 'music-call-me-back', name: 'call me back', kind: 'dud', at: [480, 140] },
+      { id: 'music-where-have-u-been', name: 'where have u been?', kind: 'dud', at: [530, 90] },
     ],
+    ticks: [[160, 560]],
   },
   {
     id: 'projects',
-    name: 'PROJECTS',
-    colorVar: 'var(--line-projects)',
-    hex: '#c62828',
-    // Octilinear: horizontal right, then 45° down-right, then horizontal right.
+    hex: CTA.red,
+    nav: { href: '/projects', name: 'projects' },
     points: [
+      [-60, 380],
+      [620, 380],
+      [760, 520],
+      [760, 760],
+    ],
+    ride: [
       [420, 380],
       [620, 380],
       [760, 520],
-      [900, 520],
+      [760, 860],
     ],
     stations: [
-      { id: 'projects-home', name: 'HOME', kind: 'home', at: [420, 380] },
-      { id: 'projects-bqst', name: 'bqst', kind: 'dud', at: [470, 380] },
-      { id: 'projects-yourcast', name: 'yourcast', kind: 'dud', at: [520, 380] },
-      { id: 'projects-careersphere', name: 'careersphere', kind: 'dud', at: [570, 380] },
-      { id: 'projects-datacenter-atlas', name: 'datacenter atlas', kind: 'dud', at: [665, 425] },
-      { id: 'projects-the-sidings', name: 'the sidings', kind: 'dud', at: [710, 470] },
-      { id: 'projects-patentease', name: 'patentease', kind: 'dud', at: [795, 520] },
-      { id: 'projects-tesla-feed', name: 'tesla feed', kind: 'dud', at: [830, 520] },
-      { id: 'projects-live-chord-monitor', name: 'live chord monitor', kind: 'dud', at: [865, 520] },
-      { id: 'projects-terminal', name: 'PROJECTS', kind: 'terminal', at: [900, 520], href: '/projects' },
+      { id: 'projects-bqst', name: 'bqst', kind: 'dud', at: [500, 380] },
+      { id: 'projects-yourcast', name: 'yourcast', kind: 'dud', at: [560, 380] },
+      { id: 'projects-careersphere', name: 'careersphere', kind: 'dud', at: [680, 440] },
+      { id: 'projects-patentease', name: 'patentease', kind: 'dud', at: [760, 580] },
+    ],
+    ticks: [
+      [120, 380],
+      [240, 380],
     ],
   },
   {
     id: 'about',
-    name: 'ABOUT ME',
-    colorVar: 'var(--line-about)',
-    hex: '#5d3a1a',
-    // Octilinear: vertical down, then 45° down-left, then horizontal left.
+    hex: CTA.brown,
+    nav: { href: '/about', name: 'about me' },
     points: [
+      [420, -60],
+      [420, 500],
+      [300, 620],
+      [-60, 620],
+    ],
+    ride: [
       [420, 380],
       [420, 500],
       [300, 620],
-      [140, 620],
+      [-220, 620],
     ],
     stations: [
-      { id: 'about-home', name: 'HOME', kind: 'home', at: [420, 380] },
       { id: 'about-ntu', name: 'ntu', kind: 'dud', at: [420, 440] },
-      { id: 'about-riverside', name: 'riverside', kind: 'dud', at: [380, 540] },
-      { id: 'about-singapore', name: 'singapore', kind: 'dud', at: [340, 580] },
-      { id: 'about-old-mill', name: 'old mill', kind: 'dud', at: [230, 620] },
-      { id: 'about-terminal', name: 'ABOUT ME', kind: 'terminal', at: [140, 620], href: '/about' },
+      { id: 'about-singapore', name: 'singapore', kind: 'dud', at: [360, 560] },
+      { id: 'about-old-mill', name: 'old mill', kind: 'dud', at: [200, 620] },
+    ],
+    ticks: [[420, 120]],
+  },
+  {
+    id: 'blue',
+    hex: CTA.blue,
+    points: [
+      [-60, 140],
+      [300, 140],
+      [440, 280],
+      [700, 280],
+      [860, 120],
+      [860, -60],
+    ],
+    stations: [],
+    ticks: [
+      [160, 140],
+      [380, 220],
+      [560, 280],
+      [780, 200],
+    ],
+  },
+  {
+    id: 'green',
+    hex: CTA.green,
+    points: [
+      [200, -60],
+      [200, 100],
+      [80, 220],
+      [80, 760],
+    ],
+    stations: [],
+    ticks: [
+      [200, 20],
+      [140, 160],
+      [80, 400],
+      [80, 560],
+    ],
+  },
+  {
+    id: 'orange',
+    hex: CTA.orange,
+    points: [
+      [1060, 240],
+      [760, 240],
+      [640, 120],
+      [300, 120],
+      [300, -60],
+    ],
+    stations: [],
+    ticks: [
+      [880, 240],
+      [700, 180],
+      [460, 120],
+    ],
+  },
+  {
+    id: 'pink',
+    hex: CTA.pink,
+    points: [
+      [-60, 480],
+      [100, 480],
+      [260, 320],
+      [1060, 320],
+    ],
+    stations: [],
+    ticks: [
+      [180, 400],
+      [520, 320],
+      [700, 320],
+      [880, 320],
+    ],
+  },
+  {
+    id: 'yellow',
+    hex: CTA.yellow,
+    points: [
+      [560, 760],
+      [560, 640],
+      [680, 520],
+      [1060, 520],
+    ],
+    stations: [],
+    ticks: [
+      [620, 580],
+      [860, 520],
+      [960, 520],
     ],
   },
 ];
+
+export const NAV_LINES = LINES.filter((l) => l.nav) as (Line & {
+  nav: NonNullable<Line['nav']>;
+  ride: Point[];
+})[];
 
 export function lineById(id: LineId): Line {
   const line = LINES.find((l) => l.id === id);
