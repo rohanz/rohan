@@ -124,7 +124,7 @@ const LAKE = 'M880,-1600 L2600,-1600 L2600,2000 L880,2000 L880,1160 L930,1110 L9
     <!-- Motion blur lives on a permanently-filtered twin whose OPACITY rides
          with speed — attaching/detaching a filter mid-ride causes a visible
          raster snap; fading a twin cannot. -->
-    <g data-camera-blur opacity="0" style="display:none" filter="url(#motion-blur)" aria-hidden="true">
+    <g data-camera-blur opacity="0" style="display:none" pointer-events="none" filter="url(#motion-blur)" aria-hidden="true">
       <use href="#lines-world" />
     </g>
     <defs>
@@ -155,7 +155,7 @@ const LAKE = 'M880,-1600 L2600,-1600 L2600,2000 L880,2000 L880,1160 L930,1110 L9
 
       <!-- HOME — the only named station -->
       <g class="home">
-        <circle cx={HOME[0]} cy={HOME[1]} r="15" fill="#fff" stroke="var(--ink)" stroke-width="5" />
+        <circle id="home-dot" cx={HOME[0]} cy={HOME[1]} r="15" fill="#fff" stroke="var(--ink)" stroke-width="5" />
         <text x={HOME[0] - 24} y={HOME[1] - 22} class="home-label" style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif" fill="var(--ink)" text-anchor="end">Home</text>
         <text x={HOME[0] - 24} y={HOME[1] - 8} class="home-sub" style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif" fill="var(--muted)" text-anchor="end">You are here</text>
       </g>

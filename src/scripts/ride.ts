@@ -110,15 +110,14 @@ function ride(lineId: LineId, href: string) {
     return best;
   };
   const AMBER = '#f9c25e';
-  const GLOW_ON = 'drop-shadow(0 0 4px rgba(249,194,94,0.85))';
-  const GLOW_OFF = 'drop-shadow(0 0 0px rgba(249,194,94,0))';
-  // Passing a stop: amber fades in with a whisper of glow, then fades out
-  // (out faster than in). The destination keeps its amber — you're there.
+  // Passing a stop: amber fades in, holds a beat, fades out faster. Fill
+  // tweens only — filter animations force re-rasterization (stutter). The
+  // destination keeps its amber — you're there.
   const light = (el: Element | null, keep = false) => {
     if (!el) return;
     const t2 = gsap.timeline();
-    t2.to(el, { attr: { fill: AMBER }, filter: GLOW_ON, duration: 0.3, ease: 'power1.out' });
-    if (!keep) t2.to(el, { attr: { fill: '#ffffff' }, filter: GLOW_OFF, duration: 0.18, ease: 'power1.in' }, '+=0.1');
+    t2.to(el, { attr: { fill: AMBER }, duration: 0.3, ease: 'power1.out' });
+    if (!keep) t2.to(el, { attr: { fill: '#ffffff' }, duration: 0.18, ease: 'power1.in' }, '+=0.1');
   };
   const stops: { d: number; el: Element | null; keep?: boolean }[] = line.ticks
     .map((t) => ({ p: arcDistance(t), at: t }))
@@ -128,7 +127,9 @@ function ride(lineId: LineId, href: string) {
   // the destination capsule is the final stop, and it stays lit
   stops.push({ d: total, el: document.querySelector(`[data-destination="${lineId}"] circle`), keep: true });
   // you're AT Home: it fades in amber the moment you click
-  const homeDot = document.querySelector('.home circle');
+  // NOT '.home circle' — the homepage body has class 'home', so that selector
+  // matches the first circle on the page instead of the Home capsule.
+  const homeDot = document.getElementById('home-dot');
   light(homeDot, true);
   let nextStop = 0;
 
@@ -148,7 +149,10 @@ function ride(lineId: LineId, href: string) {
   // attaches or detaches (that causes a visible raster snap); instead a
   // permanently-filtered twin of the lines fades in with speed.
   const blurTwin = document.querySelector<SVGGElement>('g[data-camera-blur]');
-  if (blurTwin) blurTwin.style.display = '';
+  if (blurTwin) {
+    blurTwin.style.display = '';
+    blurTwin.setAttribute('opacity', '0.003'); // imperceptible; forces the raster now
+  }
   const moveSample = () => {
     const { at, dir } = sample(state.p);
     state.x = at[0];
@@ -192,7 +196,7 @@ function ride(lineId: LineId, href: string) {
   const ACCEL = 1.5;
   const BRAKE = 1.0;
   tl.call(() => {
-    if (homeDot) gsap.to(homeDot, { attr: { fill: '#ffffff' }, filter: GLOW_OFF, duration: 0.25, ease: 'power1.in' });
+    if (homeDot) gsap.to(homeDot, { attr: { fill: '#ffffff' }, duration: 0.25, ease: 'power1.in' });
   }, undefined, RUN_START + 0.15);
   tl.to(state, { p: 0.78, duration: ACCEL, ease: 'power2.in', onUpdate: moveSample }, RUN_START);
   tl.to(state, { s: RIDE_SCALE, duration: ACCEL, ease: 'power1.in', onUpdate: apply }, RUN_START);
