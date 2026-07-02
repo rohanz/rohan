@@ -13,9 +13,14 @@ export async function getStaticPaths() {
 }
 
 const { project, ordered } = Astro.props;
-const { Content } = await render(project);
+const { Content, headings } = await render(project);
 const { prev, next } = getProjectNav(ordered, project.id);
 const line = lineById('projects');
+// TOC covers h2/h3 of the article body only — no h1/title, and nothing
+// before the first h2 (a leading h3 would float above the line's first stop).
+const h2h3 = headings.filter((h) => h.depth === 2 || h.depth === 3);
+const firstH2 = h2h3.findIndex((h) => h.depth === 2);
+const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
 ---
 <PageLayout
   title={`${project.data.title} — rohan.jk`}
@@ -25,27 +30,107 @@ const line = lineById('projects');
   signName={project.data.title}
   ogImage={project.data.image}
 >
-  <article class="article">
-    <Content />
-  </article>
+  <div class="article-layout">
+    {sections.length > 0 && (
+      <nav class="train-toc" aria-label="section navigation">
+        <div class="toc-inner">
+          <svg class="toc-rail" aria-hidden="true"></svg>
+          <ol>
+            {sections.map((h) => (
+              <li class={h.depth === 3 ? 'sub' : ''} data-depth={h.depth}>
+                <a href={`#${h.slug}`} data-target={h.slug}>
+                  <span class="toc-label">{h.text}</span>
+                </a>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </nav>
+    )}
 
-  <nav class="stop-nav" aria-label="project navigation">
-    {prev ? <a class="prev" href={`/projects/${prev.slug}`} data-astro-prefetch="hover">← previous stop<span>{prev.title}</span></a> : <span></span>}
-    <a class="to-line" href="/projects">back to projects</a>
-    {next ? <a class="next" href={`/projects/${next.slug}`} data-astro-prefetch="hover">next stop →<span>{next.title}</span></a> : <span></span>}
-  </nav>
+    <article class="article">
+      <img class="article-banner" src={project.data.image} alt={`${project.data.title} banner`} />
+      <Content />
+
+      <nav class="stop-nav" aria-label="project navigation">
+        {prev ? <a class="prev" href={`/projects/${prev.slug}`} data-astro-prefetch="hover">← previous stop<span>{prev.title}</span></a> : <span></span>}
+        <a class="to-line" href="/projects">back to projects</a>
+        {next ? <a class="next" href={`/projects/${next.slug}`} data-astro-prefetch="hover">next stop →<span>{next.title}</span></a> : <span></span>}
+      </nav>
+    </article>
+  </div>
 </PageLayout>
 
+<script>
+  import '../../scripts/article.ts';
+  import '../../scripts/article-widgets.ts';
+</script>
+
 <style>
-  .article { max-width: 760px; padding-left: 1.2rem; }
-  .article :global(h2) { font-size: 1.5rem; font-weight: 800; margin-top: 2.2rem; }
+  .article-layout { position: relative; display: grid; grid-template-columns: 1fr; justify-items: center; }
+  .article { max-width: 760px; width: 100%; min-width: 0; }
+
+  .article-banner {
+    width: 100%; height: auto; border-radius: var(--radius);
+    margin: 0 0 2rem; box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+  }
+
+  .article :global(h2) { font-size: 1.5rem; font-weight: 800; margin-top: 2.4rem; scroll-margin-top: 90px; }
   .article :global(h3) { font-size: 1.2rem; font-weight: 700; margin-top: 1.6rem; }
-  .article :global(img) { border-radius: var(--radius); margin: 1.5rem 0; box-shadow: 0 6px 24px rgba(0,0,0,0.08); }
+  .article :global(img) { border-radius: var(--radius); margin: 1.5rem 0; box-shadow: 0 6px 24px rgba(0,0,0,0.08); cursor: zoom-in; }
+  .article :global(.article-banner) { cursor: zoom-in; }
   .article :global(a:not(.try-it-btn):not(.support-btn)) { color: var(--line-projects); }
   .article :global(table) { border-collapse: collapse; width: 100%; margin: 1.5rem 0; font-size: 0.92rem; }
   .article :global(th), .article :global(td) { border: 1px solid rgba(0,0,0,0.12); padding: 0.5rem 0.7rem; text-align: left; }
 
-  .stop-nav { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-top: 3rem; padding-top: 1.5rem; padding-left: 1.2rem; border-top: 1px solid rgba(0,0,0,0.1); flex-wrap: wrap; }
+  /* Train-line table of contents. The rail is one octilinear SVG path in the
+     line color (drawn by src/scripts/article.ts after layout): it runs
+     vertically past the h2 ticks, jogs 18px right at 45° for h3 runs, and
+     steps back out when h2s resume — like the map's route geometry. Ticks are
+     SVG circles on the path; the current one's fill transitions white→amber
+     flush against the ink ring (SVG fill meets the stroke's inner edge, so
+     there is no white sliver). Active state changes fill/color only — never a
+     layout property — so passing a section never nudges the rail. */
+  .train-toc { display: none; }
+  @media (min-width: 1000px) {
+    .train-toc {
+      display: block;
+      position: fixed;
+      top: 7.5rem;
+      left: clamp(1.25rem, calc(50vw - 570px), 26rem);
+      width: 216px;
+      max-height: calc(100vh - 9.5rem);
+      overflow-y: auto;
+      scrollbar-width: none;
+      z-index: 5;
+    }
+    .train-toc::-webkit-scrollbar { display: none; }
+  }
+  .train-toc .toc-inner { position: relative; }
+  .train-toc :global(.toc-rail) { position: absolute; top: 0; left: 0; width: 44px; pointer-events: none; }
+  .train-toc :global(.toc-rail path) {
+    fill: none; stroke: var(--line-projects); stroke-width: 3.2;
+    stroke-linejoin: round; stroke-linecap: round; opacity: 0.9;
+  }
+  .train-toc :global(.toc-rail circle) {
+    fill: #fff; stroke: var(--ink); cursor: pointer; pointer-events: auto;
+    transition: fill 0.45s ease;
+  }
+  .train-toc :global(.toc-rail circle.is-current) { fill: #f9c25e; }
+  .train-toc ol { list-style: none; margin: 0; padding: 0.4rem 0; position: relative; }
+  .train-toc li { position: relative; margin: 0 0 1.05rem; }
+  .train-toc li:last-child { margin-bottom: 0; }
+  .train-toc a {
+    display: block; text-decoration: none; color: var(--muted);
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-size: 1.05rem; font-weight: 600; line-height: 1.25;
+    padding-left: 32px;
+  }
+  .train-toc li.sub a { font-size: 0.92rem; padding-left: 48px; }
+  .train-toc a:hover .toc-label { color: var(--ink); }
+  .train-toc a.is-current .toc-label { color: var(--ink); }
+
+  .stop-nav { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid rgba(0,0,0,0.1); flex-wrap: wrap; }
   .stop-nav a { text-decoration: none; font-weight: 700; color: var(--line-projects); display: flex; flex-direction: column; gap: 0.15rem; }
   .stop-nav a span { color: var(--muted); font-weight: 500; font-size: 0.85rem; }
   .stop-nav .next { text-align: right; }
@@ -53,7 +138,12 @@ const line = lineById('projects');
 </style>
 
 <style is:global>
-  /* Neutralize legacy classes carried over from the old site's markdown bodies (see Task 6 audit). */
+  /* The PageLayout spine's station capsule sits right next to the banner and
+     reads as a stray TOC tick on detail pages — the train-line TOC is the
+     station marker here, so hide the spine's. */
+  body.page-projects .station-here { display: none; }
+
+  /* Legacy classes carried over from the old site's markdown bodies. */
   .gloss-term { border-bottom: 1px dotted var(--muted); cursor: help; }
   .try-it-btn, .support-btn {
     display: inline-block; text-decoration: none; font-weight: 700;
@@ -64,21 +154,171 @@ const line = lineById('projects');
   .support-btn { background: transparent; color: var(--line-projects); border: 2px solid var(--line-projects); }
   .support-btn:hover { background: var(--line-projects); color: #fff; }
   .download-actions, .bqst-download-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
-  .article-stat-grid, .bqst-asset-strip { display: flex; flex-wrap: wrap; gap: 1rem; margin: 1.5rem 0; }
-  .article-stat-card, .bqst-asset-card { flex: 1 1 160px; background: #fff; border-radius: var(--radius); padding: 1rem; box-shadow: 0 4px 16px rgba(0,0,0,0.06); text-align: center; }
+  .article-stat-grid { display: flex; flex-wrap: wrap; gap: 1rem; margin: 1.5rem 0; }
+  .article-stat-card { flex: 1 1 160px; background: #fff; border-radius: var(--radius); padding: 1rem; box-shadow: 0 4px 16px rgba(0,0,0,0.06); text-align: center; }
   .article-stat-value { display: block; font-size: 1.8rem; font-weight: 800; color: var(--line-projects); }
   .article-stat-label { display: block; color: var(--muted); font-size: 0.85rem; }
   .article-figure { margin: 1.5rem 0; }
   .article-caption { color: var(--muted); font-size: 0.85rem; text-align: center; margin-top: 0.4rem; }
   .bqst-data-table { border-collapse: collapse; width: 100%; }
-  /* Empty interactive placeholders (old JS is gone): hide so they leave no gap.
-     Full set per Task 6 audit. Note: .bqst-asset-strip is a CLASS on a populated
-     div in bqst.md (styled above), not an id, so it must NOT be hidden here. */
-  #bqst-eq-visual,
-  #bqst-transfer-visual,
-  #bqst-harmonics-visual,
-  #bqst-oversampling-visual,
-  #lcm-demo,
-  #demo-player-placeholder,
-  #theme-palette-placeholder { display: none; }
+
+  /* BQST static asset strip: a clean 3-image row. */
+  .bqst-asset-strip {
+    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin: 1.5rem 0;
+  }
+  .bqst-asset-card {
+    display: flex; flex-direction: column; align-items: center; gap: 0.6rem;
+    background: #fff; border-radius: var(--radius); padding: 1.2rem 1rem;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+  }
+  .bqst-asset-card img { width: min(70%, 150px); aspect-ratio: 1; object-fit: contain; margin: 0; border-radius: 0; box-shadow: none; cursor: default; }
+  .bqst-asset-card span { color: var(--muted); font-size: 0.8rem; font-weight: 600; letter-spacing: 0.04em; text-align: center; }
+  @media (max-width: 560px) { .bqst-asset-strip { grid-template-columns: 1fr; } }
+
+  /* ============ Interactive widget styling (light theme) ============ */
+  :root {
+    --w-accent: #f9c25e;
+    --w-accent-glow: rgba(249,194,94,0.45);
+    --w-card: #ffffff;
+    --w-border: rgba(0,0,0,0.12);
+    --w-ink: #1a1a1a;
+    --w-muted: #6f6a60;
+  }
+
+  /* Image lightbox */
+  .image-lightbox {
+    position: fixed; inset: 0; z-index: 3000; display: flex; align-items: center; justify-content: center;
+    padding: clamp(1rem, 3vw, 2.5rem); background: rgba(5,5,10,0.9);
+    opacity: 0; visibility: hidden; transition: opacity 0.18s ease, visibility 0.18s ease; cursor: zoom-out;
+  }
+  .image-lightbox.is-visible { opacity: 1; visibility: visible; }
+  .image-lightbox-img { max-width: min(96vw, 1600px); max-height: 86vh; object-fit: contain; border-radius: 6px; box-shadow: 0 20px 80px rgba(0,0,0,0.55); }
+  .image-lightbox-hint {
+    position: fixed; left: 50%; bottom: 1.2rem; transform: translateX(-50%);
+    width: min(100% - 2rem, 420px); padding: 0.58rem 0.78rem; border-radius: 8px;
+    background: rgba(20,20,20,0.72); color: #eee; font-size: 0.84rem; font-weight: 600; text-align: center;
+  }
+  body.image-lightbox-open { overflow: hidden; }
+
+  /* Shared lab / audio demo card frame */
+  .bqst-lab, .bqst-audio-demo {
+    box-sizing: border-box; max-width: 100%; margin: 1.6rem 0 2rem;
+    border: 1px solid var(--w-border); border-radius: 12px;
+    background: linear-gradient(135deg, rgba(249,194,94,0.08), transparent 42%), var(--w-card);
+    overflow: hidden;
+  }
+  .bqst-lab-header, .bqst-audio-demo-header {
+    display: flex; justify-content: space-between; gap: 1rem; align-items: baseline;
+    padding: 0.9rem 1rem 0.75rem; border-bottom: 1px solid var(--w-border);
+  }
+  .bqst-lab-kicker { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: 700; color: #b8802a; font-size: 1rem; }
+  .bqst-lab-meta { color: var(--w-muted); font-size: 0.82rem; }
+
+  .bqst-interactive-row { display: grid; grid-template-columns: 176px minmax(0, 1fr); align-items: center; gap: 0.4rem; padding: 0.6rem 0.9rem 0 0.3rem; }
+  .bqst-drive-control { display: flex; justify-content: center; position: relative; color: var(--w-muted); }
+  .bqst-drive-module { display: grid; justify-items: center; gap: 0.55rem; }
+  .bqst-knob-stage { width: 138px; height: 138px; position: relative; display: grid; place-items: center; cursor: grab; touch-action: none; outline: none; }
+  .bqst-knob-stage.is-dragging { cursor: grabbing; }
+  .bqst-knob-stage:focus-visible { outline: 2px solid var(--w-accent); outline-offset: 4px; border-radius: 50%; }
+  .bqst-knob-ticks { position: absolute; inset: 0; pointer-events: none; }
+  .bqst-knob-ticks::before {
+    content: ''; position: absolute; left: 50%; top: 50%; width: 138px; height: 138px;
+    border-radius: 999px; border: 1.2px solid rgba(0,0,0,0.28); transform: translate(-50%, -50%);
+  }
+  .bqst-knob-tick {
+    --tick-angle: 0deg; position: absolute; left: 50%; top: 50%; width: 1.35px; height: 9px;
+    border-radius: 999px; background: rgba(0,0,0,0.3); transform-origin: 50% 69px;
+    transform: translate(-50%, -69px) rotate(var(--tick-angle));
+  }
+  .bqst-knob-tick.bqst-tick-major { width: 2.1px; height: 16px; background: rgba(0,0,0,0.5); }
+  .bqst-mini-knob {
+    --bqst-knob-angle: 0deg; width: 114px; height: 114px; border-radius: 999px;
+    background: url('/assets/images/projects/bqst/knob-large-cream.webp') center / 128% no-repeat;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.18); position: relative;
+    transform: rotate(var(--bqst-knob-angle)); transform-origin: center;
+  }
+  .bqst-mini-knob span { display: none; }
+  .bqst-drive-control label { display: grid; justify-items: center; gap: 0.1rem; text-align: center; }
+  .bqst-drive-control label span { color: #b8802a; font-weight: 700; line-height: 1; }
+  .bqst-drive-control label strong { color: var(--w-ink); font-size: 1.12rem; font-weight: 700; line-height: 1; }
+  .bqst-drive-control input[type="range"] { position: absolute; opacity: 0; pointer-events: none; width: 1px; height: 1px; }
+  .bqst-visual-canvas { box-sizing: border-box; display: block; max-width: 100%; width: 100%; height: 340px; }
+  .bqst-legend { display: flex; flex-wrap: wrap; gap: 0.7rem; padding: 0.6rem 1rem 0.95rem; color: var(--w-muted); font-size: 0.82rem; }
+  .bqst-legend span { display: inline-flex; align-items: center; gap: 0.35rem; }
+  .bqst-legend i { width: 0.75rem; height: 0.75rem; border-radius: 999px; display: inline-block; }
+  @media (max-width: 620px) {
+    .bqst-interactive-row { grid-template-columns: 1fr; }
+    .bqst-visual-canvas { height: 300px; }
+  }
+
+  /* BQST audio A/B demo */
+  .bqst-audio-demo-body { padding: 1rem; }
+  .bqst-audio-main { display: grid; gap: 0.8rem; min-width: 0; }
+  .bqst-audio-controls { display: flex; align-items: center; gap: 0.85rem; }
+  .bqst-audio-play {
+    width: 58px; height: 58px; border-radius: 999px; border: 2px solid var(--w-accent);
+    background: transparent; color: #b8802a; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+    font-size: 1rem; font-weight: 700; transition: background 180ms ease, color 180ms ease, box-shadow 180ms ease; flex-shrink: 0;
+  }
+  .bqst-audio-play:hover { background: var(--w-accent); color: #1a1a1a; box-shadow: 0 0 22px var(--w-accent-glow); }
+  .bqst-audio-play.playing { background: var(--w-accent); color: #1a1a1a; box-shadow: 0 0 24px var(--w-accent-glow); }
+  .bqst-audio-toggle {
+    display: inline-grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: min(100%, 280px);
+    padding: 0.2rem; border: 1px solid var(--w-border); border-radius: 999px; background: rgba(0,0,0,0.03);
+  }
+  .bqst-audio-toggle button {
+    min-height: 34px; border: 0; border-radius: 999px; background: transparent; color: var(--w-muted);
+    font-weight: 700; font-size: 0.92rem; cursor: pointer; transition: background 160ms ease, color 160ms ease, box-shadow 160ms ease;
+  }
+  .bqst-audio-toggle button.is-active { background: var(--w-accent); color: #1a1a1a; box-shadow: 0 0 18px var(--w-accent-glow); }
+  .bqst-audio-wave {
+    position: relative; height: 68px; border: 1px solid var(--w-border); border-radius: 8px; overflow: hidden;
+    background: linear-gradient(180deg, rgba(249,194,94,0.08), rgba(249,194,94,0.03));
+  }
+  .bqst-audio-wave canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .bqst-audio-wave span { position: absolute; inset: 50% 0 auto; height: 1px; background: rgba(0,0,0,0.16); }
+  .bqst-audio-wave i {
+    position: absolute; top: 0; bottom: 0; left: 0; width: 0; display: block; pointer-events: none;
+    background: linear-gradient(90deg, rgba(249,194,94,0.26), rgba(249,194,94,0.06));
+    border-right: 2px solid var(--w-accent); will-change: width;
+  }
+
+  /* Live chord monitor piano */
+  .lcm-demo { margin: 1.5rem 0 0.5rem; }
+  .lcm-readout { height: 6.5rem; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; margin-bottom: 1.25rem; overflow: hidden; }
+  .lcm-chord { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 2.6rem; font-weight: 800; color: #b8802a; line-height: 1.1; white-space: nowrap; }
+  .lcm-chord.lcm-empty { color: var(--w-muted); font-size: 1.4rem; font-weight: 500; }
+  .lcm-notes { margin-top: 0.5rem; font-size: 1.05rem; letter-spacing: 0.04em; color: var(--w-ink); min-height: 1.4rem; white-space: nowrap; }
+  .lcm-alts { margin-top: 0.35rem; font-size: 0.85rem; color: var(--w-muted); min-height: 1.1rem; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lcm-piano { position: relative; display: flex; height: 160px; max-width: 560px; margin: 0 auto; user-select: none; touch-action: none; }
+  .lcm-key { padding: 0; font: inherit; cursor: pointer; display: flex; align-items: flex-end; justify-content: center; }
+  .lcm-key.white { background: #ECEAE3; border: 1px solid #b9b6ad; border-radius: 0 0 5px 5px; margin: 0 1px; }
+  .lcm-key.black { position: absolute; top: 0; width: 2.1rem; height: 62%; transform: translateX(-50%); background: #20202e; border: 2px solid #14141f; border-top: none; border-radius: 0 0 4px 4px; z-index: 2; }
+  .lcm-key.active { background: var(--w-accent); border-color: var(--w-accent); }
+  .lcm-key.black.active { border-color: #14141f; }
+  .lcm-key-label { font-size: 0.7rem; font-weight: 700; padding-bottom: 0.5rem; pointer-events: none; }
+  .lcm-key.white .lcm-key-label { color: #6a6a72; }
+  .lcm-key.black .lcm-key-label { color: #cfcfd8; padding-bottom: 0.35rem; }
+  .lcm-key.active .lcm-key-label { color: #1a1a2e; }
+  .lcm-hint { text-align: center; font-size: 0.85rem; color: var(--w-muted); margin-top: 1rem; }
+  @media (max-width: 560px) { .lcm-piano { height: 132px; } .lcm-key.black { width: 1.6rem; } .lcm-chord { font-size: 2rem; } }
+
+  /* Demo player (This Website) */
+  .demo-player { display: flex; align-items: center; gap: 1rem; padding: 0.5rem 0; margin: 1rem 0 1.5rem; min-height: 120px; flex-wrap: wrap; }
+  .demo-waveform-canvas { flex: 1 1 240px; min-width: 0; height: 56px; display: block; }
+  .demo-meters { display: flex; gap: 0.8rem; align-items: flex-end; flex-shrink: 0; }
+  .demo-meter-group { display: flex; flex-direction: column; align-items: center; gap: 0.15rem; }
+  .demo-meter-label { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; color: var(--w-muted); }
+  .demo-vu-canvas { width: 190px; height: 130px; border-radius: 4px; display: block; }
+  .demo-vec-canvas { width: 140px; height: 140px; border-radius: 50%; display: block; }
+
+  /* Theme palette grid */
+  .theme-palette { display: flex; flex-direction: column; gap: 1rem; margin: 1rem 0 1.5rem; }
+  .palette-group { border: 1px solid var(--w-border); border-radius: 8px; overflow: hidden; background: var(--w-card); }
+  .palette-label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.5rem 0.75rem; color: var(--w-muted); border-bottom: 1px solid var(--w-border); }
+  .palette-swatches { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 0; }
+  .palette-swatch { display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
+  .palette-swatch-color { aspect-ratio: 1; }
+  .palette-swatch-label { font-size: 0.72rem; text-align: center; padding: 0.3rem 0; letter-spacing: 0.02em; color: var(--w-muted); }
+  @media (max-width: 560px) { .palette-swatches { grid-template-columns: repeat(4, minmax(0,1fr)); } }
 </style>
