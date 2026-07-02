@@ -192,14 +192,26 @@ class MapView {
   perPageFor(id: ViewId): number {
     if (id === 'map') return 1;
     if (id !== 'about') return lineById(id).platform!.perPage;
+    // About shows STOP-PAIRS: each visible stop carries two identical cards
+    // (one left of the line, one right), so the returned card count is always
+    // even (2 = 1 stop, 4 = 2 stops, 6 = all three). All six hold on any
+    // reasonably wide/tall viewport; only genuinely small screens page down to
+    // fewer pairs so the uniform cards stay legible and on-screen.
     const { rect } = this.metrics();
     const w = rect.width;
-    const widthPer = w >= 1760 ? 5 : w >= 1240 ? 3 : w >= 900 ? 2 : 1;
-    // Cards need enough vertical pitch for the (tall) bio, so the count is
-    // also capped by viewport height: on a short viewport even a very wide
-    // screen shows fewer cards rather than squashing them.
-    const heightPer = Math.max(1, Math.floor((rect.height - 120) / 210));
-    return Math.min(widthPer, heightPer);
+    const h = rect.height;
+    // The bio paragraph (and the 16-pill tech stack) need a card roughly
+    // 200px tall to sit unclipped, and a uniform 6-up run only reaches that
+    // height on a wide viewport. Above ~1280px all three stops (six cards)
+    // show at once; narrower screens page down to two stops, then one, so the
+    // shared card box always stays large enough for the fullest card.
+    const widthStops = w >= 1280 ? 3 : w >= 1000 ? 2 : 1;
+    // Vertical guard: a stop-pitch below ~200px screen px squashes the bio, so
+    // short viewports drop a stop-pair even when the width could carry it.
+    const minPitch = 200;
+    const heightStops = Math.max(1, Math.floor((h - 168 + 16) / minPitch));
+    const stops = Math.min(3, widthStops, heightStops);
+    return stops * 2;
   }
 
   pagesFor(id: LineId): number {
@@ -212,48 +224,53 @@ class MapView {
    *  page fits on-screen clear of the persistent left rail. */
   aboutGeom(page: number) {
     const stops = lineById('about').platform!.stops;
-    const per = this.perPageFor('about');
+    const perCards = this.perPageFor('about'); // even: 2 / 4 / 6
+    const stopsPerPage = Math.max(1, perCards / 2);
     const { rect, k, cropX, cropY } = this.metrics();
-    const from = page * per;
-    const slice = stops.slice(from, from + per);
+    const fromStop = page * stopsPerPage;
+    const slice = stops.slice(fromStop, fromStop + stopsPerPage);
     const n = Math.max(1, slice.length);
+
     const railW = Math.min(230, Math.max(160, rect.width * 0.16));
     const railLeft = 28 + railW + 16; // clear the persistent left nav rail
     const gap = 16;
     const marginR = 24;
-    const marginV = 130;
-    let cardW: number;
-    let cardH: number;
-    let s: number;
-    let X: number;
-    let Y: number;
-    if (n === 1) {
-      // Single card per page (narrow screens): left-anchored just past the
-      // rail and width-capped so it clears the right-edge paging button; the
-      // bio's long text still gets a comfortable, legible column here.
-      const rightBtnClear = 200;
-      cardW = Math.min(340, Math.max(240, rect.width - railLeft - gap - rightBtnClear));
-      cardH = Math.min(280, Math.max(190, rect.height * 0.34));
-      s = 200 / (k * 100);
-      const stopX = railLeft; // card left edge = railLeft + gap
-      X = slice[0][0] - (((stopX + cropX) / k - CX) / s);
-      Y = slice[0][1] - (((rect.height * 0.5 + cropY) / k - CY) / s);
-    } else {
-      cardW = Math.min(300, Math.max(200, rect.width * 0.22));
-      // Anchor the page's first (top-left, right-side) stop so a card fits
-      // between the rail and it; solve the pitch P so the last stop's card's
-      // right edge lands exactly on the right margin.
-      const anchorX = railLeft + gap + cardW;
-      let P = (rect.width - anchorX - (marginR + gap + cardW)) / (n - 1);
-      P = Math.min(P, (rect.height - 2 * marginV) / (n - 1));
-      P = Math.max(60, Math.min(P, 300));
-      s = P / (k * 100);
-      cardH = Math.max(120, Math.min(P - 14, 260));
-      X = slice[0][0] - (((anchorX + cropX) / k - CX) / s);
-      const midY = slice[0][1] + ((n - 1) / 2) * 100;
-      Y = midY - (((rect.height * 0.5 + cropY) / k - CY) / s);
-    }
-    return { s, x: X, y: Y, cardW, cardH, per, from };
+    const marginV = 84;
+    const wAvail = rect.width - marginR - railLeft;
+    const hBudget = rect.height - 2 * marginV;
+
+    // Uniform card aspect (squarer/larger than the old wide-short cards).
+    const R = 1.32;
+    // World stop spacing is 100 in both x and y (45°), so one on-screen pitch
+    // P = 100 * s * k is identical horizontally and vertically. Solve the
+    // largest P that fits BOTH runs, with the shared card sized
+    // cardH = P - gap (tight, non-overlapping vertical pitch) and cardW = R*cardH:
+    //   horizontal: (n-1)P + 2gap + 2*cardW      <= wAvail
+    //   vertical:   (n-1)P + cardH  (== nP - gap) <= hBudget
+    const nm1 = n - 1;
+    const pH = (wAvail - 2 * gap + 2 * R * gap) / (nm1 + 2 * R);
+    const pV = (hBudget + gap) / n;
+    let P = Math.min(pH, pV, 320);
+    P = Math.max(120, P);
+    let cardH = P - gap;
+    let cardW = R * cardH;
+    // Safety: never let the aspect-derived width overrun the horizontal band.
+    const maxCardW = (wAvail - nm1 * P - 2 * gap) / 2;
+    if (cardW > maxCardW) cardW = Math.max(150, maxCardW);
+
+    const s = P / (100 * k);
+    // Center the visible stop block: its centroid maps to the middle of the
+    // available horizontal band (rail → right margin) and to screen-centre
+    // vertically. Because each stop's pair extents are symmetric about the
+    // stop, this keeps the top-left card clear of the rail and the
+    // bottom-right card clear of the right margin.
+    const cx = slice.reduce((a, p2) => a + p2[0], 0) / n;
+    const cy = slice.reduce((a, p2) => a + p2[1], 0) / n;
+    const targetX = (railLeft + (rect.width - marginR)) / 2;
+    const targetY = rect.height * 0.5;
+    const X = cx - ((targetX + cropX) / k - CX) / s;
+    const Y = cy - ((targetY + cropY) / k - CY) / s;
+    return { s, x: X, y: Y, cardW, cardH, per: perCards, from: page * perCards };
   }
 
   placeCards() {
@@ -293,24 +310,33 @@ class MapView {
         const thumb = card.querySelector<HTMLElement>('.thumb');
         if (thumb) thumb.style.height = `${cardWidth * 0.56}px`;
       }
-      const [sx, sy] = this.worldToScreen(p.stops[from + j]);
-      if (p.axis === 'h') {
-        card.style.left = `${sx}px`;
-        card.style.top = `${sy + 0.055 * rect.height}px`;
-      } else if (p.axis === 'd' && about) {
-        // About: uniform, evenly-pitched diagonal cards. Every card gets the
-        // same width and min-height (from aboutGeom, scaled to the viewport)
-        // and is centered on its stop; even slots sit right of the line, odd
-        // slots mirror to the left. aboutGeom frames the camera so the run
-        // always fits clear of the rail, and the pitch exceeds the card
-        // height, so no anti-overlap cursor is needed.
-        const onLeft = j % 2 === 1;
+      if (p.axis === 'd' && about) {
+        // About: three stops, each carrying a symmetric pair of identical
+        // cards. The global card index (from + j) maps to stop floor(i/2);
+        // even indices sit right of the line, odd indices mirror to the left.
+        // Every card gets the SAME width and height (from aboutGeom, scaled to
+        // the viewport) and is vertically centred on its stop (yPercent -50 in
+        // cardsIn), so each stop reads as a balanced left/right pair.
+        const gi = from + j;
+        const stopPt = p.stops[Math.floor(gi / 2)];
+        if (!stopPt) {
+          card.style.display = 'none';
+          continue;
+        }
+        const [sx, sy] = this.worldToScreen(stopPt);
+        const onLeft = gi % 2 === 1;
         card.dataset.side = onLeft ? 'left' : 'right';
         const gap = 16;
         card.style.width = `${about.cardW}px`;
         card.style.height = `${about.cardH}px`;
         card.style.left = `${onLeft ? sx - gap : sx + gap}px`;
         card.style.top = `${sy}px`;
+        continue;
+      }
+      const [sx, sy] = this.worldToScreen(p.stops[from + j]);
+      if (p.axis === 'h') {
+        card.style.left = `${sx}px`;
+        card.style.top = `${sy + 0.055 * rect.height}px`;
       } else {
         card.style.left = `${sx + 0.04 * rect.width}px`;
         card.style.top = `${sy}px`;
@@ -934,7 +960,7 @@ function init() {
   // overlapping — but the bio card's lazy-loaded photo can finish loading
   // (and change the row's stretched height) after that measurement runs,
   // leaving stale, now-overlapping positions. Re-run placement once it's in.
-  const bioPhoto = document.querySelector<HTMLImageElement>('.card-about-bio .photo');
+  const bioPhoto = document.querySelector<HTMLImageElement>('.card-about-photo .photo');
   if (bioPhoto && !bioPhoto.complete) {
     bioPhoto.addEventListener(
       'load',
