@@ -108,12 +108,17 @@ class RowPlayer {
   playIntent = 0;
 
   vuSmoothed = -40;
-  readonly vuW = 76;
-  readonly vuH = 110;
-  readonly vecW = 110;
-  readonly vecH = 110;
-  readonly freqW = 280;
-  readonly freqH = 110;
+  // Meter dimensions in CSS px. Defaults match the 1280px-viewport rendered
+  // sizes of the original site's meters; resizeMeters() overwrites them from
+  // each canvas's actual rendered box (the CSS widths are viewport-relative
+  // clamps) so the backing store is always rect * devicePixelRatio —
+  // retina-sharp, never a stretched bitmap.
+  vuW = 141;
+  vuH = 100;
+  vecW = 110;
+  vecH = 110;
+  freqW = 282;
+  freqH = 110;
   freqSmoothed = new Float32Array(FREQ_BANDS);
   freqHighlights = new Float32Array(FREQ_BANDS);
   freqHighlightTargets = new Float32Array(FREQ_BANDS);
@@ -132,6 +137,8 @@ class RowPlayer {
     this.freqCtx = this.freqCanvas ? sizeCanvas(this.freqCanvas, this.freqW, this.freqH) : null;
     this.vuCanvas = el.querySelector<HTMLCanvasElement>('.row-vu');
     this.vuCtx = this.vuCanvas ? sizeCanvas(this.vuCanvas, this.vuW, this.vuH) : null;
+    // Then immediately sync with the real rendered boxes (no-op while hidden).
+    this.resizeMeters();
 
     this.resizeWaveCanvas();
     this.drawIdle();
@@ -150,7 +157,15 @@ class RowPlayer {
     // ResizeObserver catches every real layout-size change (visibility
     // toggles included), not just window resizes.
     if (typeof ResizeObserver !== 'undefined') {
-      new ResizeObserver(() => this.resizeWaveCanvas()).observe(this.waveCanvas);
+      const ro = new ResizeObserver(() => {
+        this.resizeWaveCanvas();
+        this.resizeMeters();
+      });
+      ro.observe(this.waveCanvas);
+      // The meter canvases have viewport-relative CSS widths (clamp(...vw...)),
+      // so their rendered boxes change with the viewport too — observe one of
+      // them (they resize together) to keep backing stores in sync.
+      if (this.vuCanvas) ro.observe(this.vuCanvas);
     }
   }
 
@@ -160,6 +175,43 @@ class RowPlayer {
     const h = rect.height || 56;
     this.waveCtx = sizeCanvas(this.waveCanvas, w, h);
     if (!this.isPlaying) this.drawIdle();
+  }
+
+  /** Sync each meter canvas's CSS-px dimensions + backing store with its
+   *  rendered box. Falls back to the field defaults while the platform is
+   *  hidden (display:none → zero rect). Skips the (destructive) backing-store
+   *  rewrite when nothing changed, so observer churn never blanks a frame. */
+  resizeMeters(): void {
+    const apply = (
+      canvas: HTMLCanvasElement | null,
+      defW: number,
+      defH: number,
+    ): [number, number, CanvasRenderingContext2D] | null => {
+      if (!canvas) return null;
+      const rect = canvas.getBoundingClientRect();
+      const w = rect.width || defW;
+      const h = rect.height || defH;
+      const dpr = window.devicePixelRatio || 1;
+      if (canvas.width === Math.round(w * dpr) && canvas.height === Math.round(h * dpr)) return null;
+      return [w, h, sizeCanvas(canvas, w, h)];
+    };
+    let changed = false;
+    const vec = apply(this.vecCanvas, this.vecW, this.vecH);
+    if (vec) {
+      [this.vecW, this.vecH, this.vecCtx] = vec;
+      changed = true;
+    }
+    const freq = apply(this.freqCanvas, this.freqW, this.freqH);
+    if (freq) {
+      [this.freqW, this.freqH, this.freqCtx] = freq;
+      changed = true;
+    }
+    const vu = apply(this.vuCanvas, this.vuW, this.vuH);
+    if (vu) {
+      [this.vuW, this.vuH, this.vuCtx] = vu;
+      changed = true;
+    }
+    if (changed && !this.isPlaying) this.drawMetersIdle();
   }
 
   // -- waveform ------------------------------------------------------------
@@ -802,7 +854,14 @@ export function stopMusicPlayback(): void {
 
 function onResize(): void {
   clearTimeout(resizeTimer);
-  resizeTimer = setTimeout(() => players.forEach((p) => p.resizeWaveCanvas()), 150);
+  resizeTimer = setTimeout(
+    () =>
+      players.forEach((p) => {
+        p.resizeWaveCanvas();
+        p.resizeMeters();
+      }),
+    150,
+  );
 }
 
 function initMusicPlayer(): void {
