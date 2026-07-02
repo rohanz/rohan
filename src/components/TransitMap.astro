@@ -124,7 +124,7 @@ const LAKE = 'M880,-1600 L2600,-1600 L2600,2000 L880,2000 L880,1160 L930,1110 L9
     <!-- Motion blur lives on a permanently-filtered twin whose OPACITY rides
          with speed — attaching/detaching a filter mid-ride causes a visible
          raster snap; fading a twin cannot. -->
-    <g data-camera-blur opacity="0" filter="url(#motion-blur)" aria-hidden="true">
+    <g data-camera-blur opacity="0" style="display:none" filter="url(#motion-blur)" aria-hidden="true">
       <use href="#lines-world" />
     </g>
     <defs>
@@ -173,13 +173,16 @@ const LAKE = 'M880,-1600 L2600,-1600 L2600,2000 L880,2000 L880,1160 L930,1110 L9
   .home-sub { font-size: 11px; font-weight: 500; letter-spacing: 0.06em; }
   .hit-path { cursor: pointer; pointer-events: stroke; }
   #map-3d.ride-active .home text { opacity: 0; transition: opacity 0.25s ease; }
-  /* Hover highlight: the hovered destination's line glows, the rest recede */
+  /* Hover highlight: the hovered destination's line glows, the rest recede.
+     Transitions are disabled during rides — animating filter/opacity forces
+     re-rasterization every frame and reads as flicker. */
   .line-path { transition: opacity 0.25s ease, filter 0.25s ease; }
-  :global(#map-3d[data-hl]:not(.ride-active)) .line-group .line-path { opacity: 0.42; }
+  :global(#map-3d.ride-active) .line-path { transition: none; filter: none; }
+  :global(#map-3d[data-hl]:not(.ride-active)) .line-group .line-path { opacity: 0.55; }
   :global(#map-3d[data-hl='music']:not(.ride-active)) [data-line='music'] .line-path,
   :global(#map-3d[data-hl='projects']:not(.ride-active)) [data-line='projects'] .line-path,
   :global(#map-3d[data-hl='about']:not(.ride-active)) [data-line='about'] .line-path {
     opacity: 1;
-    filter: drop-shadow(0 0 2px var(--glow));
+    filter: drop-shadow(0 0 1.2px var(--glow));
   }
 </style>

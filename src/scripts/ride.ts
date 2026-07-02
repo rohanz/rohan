@@ -74,6 +74,43 @@ function ride(lineId: LineId, href: string) {
   const start = ridePts[0];
   const sample = pathSampler(ridePts);
 
+  // Amber marker for the stop you're currently at: starts at HOME, hops to
+  // each stop as you pass it, and lands on the destination as you brake.
+  const cum: number[] = [0];
+  for (let i = 1; i < ridePts.length; i++) {
+    cum.push(cum[i - 1] + Math.hypot(ridePts[i][0] - ridePts[i - 1][0], ridePts[i][1] - ridePts[i - 1][1]));
+  }
+  const total = cum[cum.length - 1];
+  const nearestRide = (q: Point) => {
+    let best = 0;
+    let bd = Infinity;
+    for (let i = 0; i < ridePts.length; i++) {
+      const d = (ridePts[i][0] - q[0]) ** 2 + (ridePts[i][1] - q[1]) ** 2;
+      if (d < bd) {
+        bd = d;
+        best = i;
+      }
+    }
+    return best;
+  };
+  const stops: { d: number; at: Point }[] = line.ticks
+    .map((t) => ({ i: nearestRide(t), at: t }))
+    .filter(({ i, at }) => Math.hypot(ridePts[i][0] - at[0], ridePts[i][1] - at[1]) < 8)
+    .map(({ i, at }) => ({ d: cum[i], at }))
+    .filter(({ d }) => d > 20 && d < total - 20)
+    .sort((a, b) => a.d - b.d);
+  stops.push({ d: total, at: ridePts[ridePts.length - 1] });
+  const topCam = document.querySelector<SVGGElement>('g[data-top-camera]');
+  const marker = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  marker.setAttribute('r', '7');
+  marker.setAttribute('fill', '#f6a821');
+  marker.setAttribute('stroke', 'var(--ink)');
+  marker.setAttribute('stroke-width', '2.5');
+  marker.setAttribute('cx', String(start[0]));
+  marker.setAttribute('cy', String(start[1]));
+  topCam?.appendChild(marker);
+  let nextStop = 0;
+
   // Flat camera: pan + zoom only, in SVG vector space (crisp at any zoom).
   const state = { x: CX, y: CY, s: 1, p: 0 };
   let lastAt: Point = [CX, CY];
@@ -90,11 +127,18 @@ function ride(lineId: LineId, href: string) {
   // attaches or detaches (that causes a visible raster snap); instead a
   // permanently-filtered twin of the lines fades in with speed.
   const blurTwin = document.querySelector<SVGGElement>('g[data-camera-blur]');
+  if (blurTwin) blurTwin.style.display = '';
   const moveSample = () => {
     const { at, dir } = sample(state.p);
     state.x = at[0];
     state.y = at[1];
     apply();
+    const dNow = state.p * total;
+    while (nextStop < stops.length && stops[nextStop].d <= dNow) {
+      const s2 = stops[nextStop];
+      gsap.to(marker, { attr: { cx: s2.at[0], cy: s2.at[1] }, duration: 0.16, ease: 'power2.out', overwrite: 'auto' });
+      nextStop++;
+    }
     if (gauss && blurTwin) {
       const speedPx = Math.hypot(at[0] - lastAt[0], at[1] - lastAt[1]) * state.s;
       const bPx = Math.min(speedPx * 0.05, 10);
@@ -140,7 +184,11 @@ function ride(lineId: LineId, href: string) {
   tl.eventCallback('onComplete', () => {
     window.removeEventListener('pointerdown', skip);
     window.removeEventListener('keydown', skip);
-    blurTwin?.setAttribute('opacity', '0');
+    if (blurTwin) {
+      blurTwin.setAttribute('opacity', '0');
+      blurTwin.style.display = 'none';
+    }
+    marker.remove();
     go();
   });
 
