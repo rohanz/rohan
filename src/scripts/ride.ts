@@ -38,13 +38,13 @@ function pathSampler(pts: Point[]) {
 
 function ride(lineId: LineId, href: string) {
   const stage = document.getElementById('map-3d');
-  const gauss = document.getElementById('motion-blur-gauss');
   const board = document.getElementById('station-board');
   const line = lineById(lineId);
   const path = line.ride;
   const cameras = Array.from(
-    document.querySelectorAll<SVGGElement>('g[data-camera], g[data-camera-land], g[data-top-camera], g[data-camera-blur]'),
+    document.querySelectorAll<SVGGElement>('g[data-camera], g[data-camera-land], g[data-top-camera]'),
   );
+  const echoes = Array.from(document.querySelectorAll<SVGGElement>('g[data-echo]'));
   if (!stage || cameras.length === 0 || !path) {
     navigate(href);
     return;
@@ -136,40 +136,34 @@ function ride(lineId: LineId, href: string) {
   // Flat camera: pan + zoom only, in SVG vector space (crisp at any zoom).
   const state = { x: CX, y: CY, s: 1, p: 0 };
   let lastAt: Point = [CX, CY];
+  const echo = { dx: 0, dy: 0, k: 0 }; // screen-px offset direction + strength
   const apply = () => {
+    const tx = CX - state.s * state.x;
+    const ty = CY - state.s * state.y;
     for (const el of cameras) {
-      el.setAttribute(
-        'transform',
-        `translate(${CX - state.s * state.x} ${CY - state.s * state.y}) scale(${state.s})`,
-      );
+      el.setAttribute('transform', `translate(${tx} ${ty}) scale(${state.s})`);
     }
+    echoes.forEach((el, i) => {
+      const m = (i + 1) * 4.5 * echo.k;
+      el.setAttribute('transform', `translate(${tx + echo.dx * m} ${ty + echo.dy * m}) scale(${state.s})`);
+      el.setAttribute('opacity', String(echo.k * (i === 0 ? 0.3 : 0.16)));
+    });
   };
 
-  // Speed-proportional, direction-aware motion blur. The filter never
-  // attaches or detaches (that causes a visible raster snap); instead a
-  // permanently-filtered twin of the lines fades in with speed.
-  const blurTwin = document.querySelector<SVGGElement>('g[data-camera-blur]');
-  if (blurTwin) {
-    blurTwin.style.display = '';
-    blurTwin.setAttribute('opacity', '0.003'); // imperceptible; forces the raster now
-  }
   const moveSample = () => {
     const { at, dir } = sample(state.p);
     state.x = at[0];
     state.y = at[1];
-    apply();
     const dNow = state.p * total;
     while (nextStop < stops.length && stops[nextStop].d <= dNow) {
       light(stops[nextStop].el, stops[nextStop].keep);
       nextStop++;
     }
-    if (gauss && blurTwin) {
-      const speedPx = Math.hypot(at[0] - lastAt[0], at[1] - lastAt[1]) * state.s;
-      const bPx = Math.min(speedPx * 0.05, 10);
-      const b = bPx / Math.max(state.s, 1);
-      gauss.setAttribute('stdDeviation', `${Math.abs(dir[0]) * b} ${Math.abs(dir[1]) * b}`);
-      blurTwin.setAttribute('opacity', String(Math.min(bPx / 5, 1) * 0.85));
-    }
+    const speedPx = Math.hypot(at[0] - lastAt[0], at[1] - lastAt[1]) * state.s;
+    echo.dx = -dir[0];
+    echo.dy = -dir[1];
+    echo.k = Math.min(speedPx / 22, 1);
+    apply();
     lastAt = at;
   };
 
@@ -211,10 +205,8 @@ function ride(lineId: LineId, href: string) {
   tl.eventCallback('onComplete', () => {
     window.removeEventListener('pointerdown', skip);
     window.removeEventListener('keydown', skip);
-    if (blurTwin) {
-      blurTwin.setAttribute('opacity', '0');
-      blurTwin.style.display = 'none';
-    }
+    echo.k = 0;
+    apply();
     go();
   });
 

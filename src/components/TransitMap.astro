@@ -121,17 +121,15 @@ const LAKE = 'M880,-1600 L2600,-1600 L2600,2000 L880,2000 L880,1160 L930,1110 L9
       </g>
       </g>
     </g>
-    <!-- Motion blur lives on a permanently-filtered twin whose OPACITY rides
-         with speed — attaching/detaching a filter mid-ride causes a visible
-         raster snap; fading a twin cannot. -->
-    <g data-camera-blur opacity="0" style="display:none" pointer-events="none" filter="url(#motion-blur)" aria-hidden="true">
+    <!-- Motion blur as filter-free echo taps: two unfiltered copies of the
+         lines, offset along the travel direction at low opacity. Pure
+         transforms — no gaussian rasterization, so no frame spikes ever. -->
+    <g data-echo="1" opacity="0" pointer-events="none" aria-hidden="true">
       <use href="#lines-world" />
     </g>
-    <defs>
-      <filter id="motion-blur" x="-40%" y="-40%" width="180%" height="180%">
-        <feGaussianBlur id="motion-blur-gauss" stdDeviation="0 0" />
-      </filter>
-    </defs>
+    <g data-echo="2" opacity="0" pointer-events="none" aria-hidden="true">
+      <use href="#lines-world" />
+    </g>
   </svg>
 
   <!-- Depth layer 3 (nearest): stations that float above the lines -->
