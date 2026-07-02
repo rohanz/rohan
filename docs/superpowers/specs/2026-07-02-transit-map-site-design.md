@@ -19,8 +19,8 @@ Rohan wants multiple flip-able stylizations of his personal site. This first one
 ## Visual language
 
 - **Canvas:** light — warm off-white (`#f4f1ea`-ish) like a printed transit map. All colors defined as CSS custom properties so a dark variant is cheap later (dark variant itself: out of scope).
-- **Lines:** one line per section, color-coded: purple = music, red = projects, brown = about (exact hues tuned during build, CTA-adjacent saturation). The destination page inherits its line color as the page accent.
-- **Signage:** station signs are saturated color blocks with bold white Helvetica-style type (Inter or system Helvetica; final font chosen during build). Transfer/terminal stations = large white circles with dark ring; dud stations = small ticks with small gray labels.
+- **Lines:** one line per section, color-coded: purple = music (`#5b2d8e`), red = projects (`#c62828`), brown = about (`#5d3a1a`). Starting values; may be nudged for contrast, but each stays recognizably purple/red/brown. The destination page inherits its line color as the page accent.
+- **Signage:** station signs are saturated color blocks with bold white type set in **Inter** (already used on the current site; Helvetica-grade neutrality). Transfer/terminal stations = large white circles with dark ring; dud stations = small ticks with small gray labels.
 - **Texture:** restrained — flat print-like surfaces, subtle paper grain at most. No skeuomorphic rust/rivets.
 
 ## Homepage (layout B: map + station board)
