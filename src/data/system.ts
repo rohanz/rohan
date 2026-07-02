@@ -37,7 +37,7 @@ export const CTA = {
   green: '#33af61',
   orange: '#fa6b49',
   purple: '#754fad',
-  pink: '#e898b8',
+  pink: '#e488ad',
   yellow: '#fae933',
 } as const;
 
