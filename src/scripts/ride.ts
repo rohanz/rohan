@@ -13,6 +13,7 @@
 import gsap from 'gsap';
 import { HOME, VIEWBOX, lineById, type LineId, type Line, type Point } from '../data/system';
 import { filletPoints } from '../lib/fillet';
+import { stopMusicPlayback } from './music-player';
 
 const MAP_SCALE = 2.8; // zoom while riding
 const AMBER = '#f9c25e';
@@ -202,6 +203,61 @@ class MapView {
         card.style.top = `${sy}px`;
       }
     }
+    this.placeDividers(line);
+  }
+
+  /** Position [data-divider] elements on the grid lines that fall at the
+   *  midpoints between this page's stops (plus one half-spacing above the
+   *  first and below the last). The stops sit on 100-unit centers, so the
+   *  midpoints land on the map's 50-unit grid lines. */
+  placeDividers(line: Line) {
+    const dividers = Array.from(
+      document.querySelectorAll<HTMLElement>(`#platform-ui [data-divider="${this.view}"]`),
+    );
+    if (!dividers.length) return;
+    const p = line.platform!;
+    const { rect } = this.metrics();
+    const from = this.page * p.perPage;
+    const stops: Point[] = [];
+    for (let j = 0; j < p.perPage; j++) {
+      const s = p.stops[from + j];
+      if (s) stops.push(s);
+    }
+
+    const mids: Point[] = [];
+    if (stops.length === 1) {
+      mids.push(stops[0]);
+    } else if (stops.length >= 2) {
+      const half = (a: Point, b: Point): Point => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+      // Above the first stop, extrapolated by half the first segment.
+      mids.push([
+        stops[0][0] - (stops[1][0] - stops[0][0]) / 2,
+        stops[0][1] - (stops[1][1] - stops[0][1]) / 2,
+      ]);
+      for (let i = 0; i < stops.length - 1; i++) mids.push(half(stops[i], stops[i + 1]));
+      const n = stops.length;
+      mids.push([
+        stops[n - 1][0] + (stops[n - 1][0] - stops[n - 2][0]) / 2,
+        stops[n - 1][1] + (stops[n - 1][1] - stops[n - 2][1]) / 2,
+      ]);
+    }
+
+    dividers.forEach((d, i) => {
+      const w = mids[i];
+      if (!w) {
+        d.style.display = 'none';
+        return;
+      }
+      d.style.display = '';
+      const [sx, sy] = this.worldToScreen(w);
+      if (p.axis === 'h') {
+        d.style.left = `${sx}px`;
+        d.style.top = `${sy + 0.055 * rect.height}px`;
+      } else {
+        d.style.left = `${sx + 0.04 * rect.width}px`;
+        d.style.top = `${sy}px`;
+      }
+    });
   }
 
   /** Show/hide the edge paging buttons for the current view + page. */
@@ -261,6 +317,14 @@ class MapView {
     const line = lineById(id);
     const axis = line.platform!.axis;
     const onPage = this.cardsFor(id).filter((c) => c.style.display !== 'none');
+    const dividers = Array.from(
+      document.querySelectorAll<HTMLElement>(`#platform-ui [data-divider="${id}"]`),
+    ).filter((d) => d.style.display !== 'none');
+    gsap.fromTo(
+      dividers,
+      { autoAlpha: 0 },
+      { autoAlpha: 1, duration: 0.5, stagger: 0.06, ease: 'power1.out', overwrite: 'auto' },
+    );
     gsap.set(onPage, axis === 'h' ? { xPercent: -50, yPercent: 0 } : { yPercent: -50, xPercent: 0 });
     gsap.fromTo(
       onPage,
@@ -280,7 +344,7 @@ class MapView {
   hideUI(fast = false) {
     if (!this.ui) return;
     const ui = this.ui;
-    gsap.to(['#platform-ui [data-card]', '#back-map', '#more-next', '#more-prev', '#filter-bar'], {
+    gsap.to(['#platform-ui [data-card]', '#platform-ui [data-divider]', '#back-map', '#more-next', '#more-prev', '#filter-bar'], {
       autoAlpha: 0,
       duration: fast ? 0.15 : 0.3,
       ease: 'power1.in',
@@ -448,6 +512,7 @@ class MapView {
     this.busy = true;
     const leaving = this.view;
     this.view = 'map';
+    stopMusicPlayback(); // silence any preview before riding back to the map
     this.hideUI(!animate);
 
     const done = () => {
@@ -620,35 +685,6 @@ function go(view: ViewId, push = true) {
   else mv.toPlatform(view);
 }
 
-function initAudio() {
-  let current: HTMLAudioElement | null = null;
-  let currentBtn: HTMLButtonElement | null = null;
-  const stop = () => {
-    current?.pause();
-    if (currentBtn) {
-      currentBtn.setAttribute('aria-pressed', 'false');
-      currentBtn.textContent = 'preview';
-    }
-    current = null;
-    currentBtn = null;
-  };
-  document.querySelectorAll<HTMLButtonElement>('#platform-ui [data-audio]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      if (currentBtn === btn) {
-        stop();
-        return;
-      }
-      stop();
-      current = new Audio(btn.getAttribute('data-audio')!);
-      current.play().catch(() => {});
-      current.addEventListener('ended', stop);
-      btn.setAttribute('aria-pressed', 'true');
-      btn.textContent = 'pause';
-      currentBtn = btn;
-    });
-  });
-}
-
 function init() {
   if (!document.getElementById('transit-map')) return;
   mv = new MapView();
@@ -701,8 +737,6 @@ function init() {
       mv.apply();
     }
   });
-
-  initAudio();
 
   const initial = (document.body.dataset.initialView ?? 'map') as ViewId;
   if (initial !== 'map') {

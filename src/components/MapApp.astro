@@ -83,21 +83,36 @@ const socials: [string, string][] = [
       </div>
 
       <div data-content="music" hidden>
+        {Array.from({ length: music.length + 1 }).map(() => (
+          <div class="platform-divider" data-divider="music" aria-hidden="true"></div>
+        ))}
         {music.map((t) => (
-          <div class="platform-card card-music" data-card="music">
-            <div class="card-row">
-              <img class="cover" src={t.cover} width="56" height="56" alt="" loading="lazy" />
-              <div class="meta">
-                <h3>{t.title}</h3>
-                <p class="artist">{t.artist}</p>
+          <div class="platform-row" data-card="music" data-audio-url={t.audio}>
+            <div class="row-info">
+              <h3 class="row-title">{t.title}</h3>
+              <p class="row-artist">{t.artist}</p>
+              <div class="row-links">
+                <a href={t.spotifyUrl} target="_blank" rel="noopener noreferrer">spotify</a>
+                <a href={t.appleMusicUrl} target="_blank" rel="noopener noreferrer">apple music</a>
+                <a href={t.youtubeUrl} target="_blank" rel="noopener noreferrer">youtube</a>
               </div>
             </div>
-            <div class="controls">
-              <button type="button" data-audio={t.audio} aria-pressed="false">preview</button>
-              <a href={t.spotifyUrl} target="_blank" rel="noopener noreferrer">spotify</a>
-              <a href={t.appleMusicUrl} target="_blank" rel="noopener noreferrer">apple music</a>
-              <a href={t.youtubeUrl} target="_blank" rel="noopener noreferrer">youtube</a>
+            <canvas class="row-wave" height="56" aria-hidden="true"></canvas>
+            <div class="row-meters">
+              <div class="meter-group">
+                <canvas class="row-freq" width="280" height="110"></canvas>
+                <span class="meter-label">freq</span>
+              </div>
+              <div class="meter-group">
+                <canvas class="row-vec" width="110" height="110"></canvas>
+                <span class="meter-label">stereo</span>
+              </div>
+              <div class="meter-group">
+                <canvas class="row-vu" width="76" height="110"></canvas>
+                <span class="meter-label">vu</span>
+              </div>
             </div>
+            <button type="button" class="row-play" data-play aria-pressed="false">preview</button>
           </div>
         ))}
       </div>
@@ -298,29 +313,73 @@ const socials: [string, string][] = [
     color: inherit;
   }
 
-  .card-music {
-    width: 330px;
-    max-height: 150px;
+  /* Music platform: full-width open rows instead of cards. The engine sets
+     `left` per stop; `right: 4vw` lets each row's width flow to near the
+     viewport edge. No card box, shadow, or radius — transparent rows over
+     the map, separated by grid-line dividers. */
+  .platform-row {
+    position: absolute;
+    pointer-events: auto;
+    right: 4vw;
+    box-sizing: border-box;
+    background: transparent;
+    box-shadow: none;
+    border-radius: 0;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    gap: 1.4rem;
+    color: #1a1a1a;
   }
-  .card-row { display: flex; gap: 0.7rem; align-items: center; }
-  .cover { border-radius: 6px; flex: none; object-fit: cover; }
-  .card-music .meta { min-width: 0; }
-  .card-music h3 { margin: 0; font-size: 0.98rem; font-weight: 800; line-height: 1.2; }
-  .artist { margin: 0.15rem 0 0; font-size: 0.78rem; color: #6f6a60; font-weight: 600; }
-  .controls { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-top: 0.5rem; font-size: 0.72rem; font-weight: 700; }
-  .controls button {
+  .row-info { width: 240px; flex: none; min-width: 0; }
+  .row-title { margin: 0; font-size: 1.15rem; font-weight: 700; line-height: 1.2; }
+  .row-artist { margin: 0.2rem 0 0.4rem; font-size: 0.82rem; color: #6f6a60; font-weight: 600; }
+  .row-links { display: flex; flex-wrap: wrap; gap: 0.6rem; font-size: 0.72rem; font-weight: 700; }
+  .row-links a { color: #754fad; text-decoration: none; }
+  .row-links a:hover { text-decoration: underline; }
+  .row-wave { flex: 1 1 auto; min-width: 60px; height: 56px; display: block; }
+  .row-meters { display: flex; gap: 0.6rem; align-items: flex-end; flex: none; }
+  .meter-group { display: flex; flex-direction: column; align-items: center; gap: 0.25rem; }
+  .meter-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    color: #6f6a60;
+    text-transform: lowercase;
+  }
+  .row-freq { width: 280px; height: 110px; }
+  .row-vec { width: 110px; height: 110px; }
+  .row-vu { width: 76px; height: 110px; }
+  .row-play {
+    flex: none;
     font: inherit;
     font-weight: 700;
+    font-size: 0.78rem;
     cursor: pointer;
-    border: 1.5px solid #815e49;
+    border: 1.5px solid #754fad;
     background: transparent;
-    color: #815e49;
+    color: #754fad;
     border-radius: 999px;
-    padding: 0.22rem 0.65rem;
+    padding: 0.32rem 0.9rem;
   }
-  .controls button[aria-pressed='true'] { background: #815e49; color: #fff; }
-  .controls a { color: #6f6a60; text-decoration: none; }
-  .controls a:hover { text-decoration: underline; }
+  .row-play[aria-pressed='true'] { background: #754fad; color: #fff; }
+
+  /* Grid-line dividers: thin ink lines that read as the map's own grid
+     fading in. The engine positions them at the midpoints between music
+     stops (which fall on 50-unit grid lines). Same left→right span as rows. */
+  .platform-divider {
+    position: absolute;
+    right: 4vw;
+    height: 1px;
+    background: rgba(26, 26, 26, 0.16);
+    transform: translateY(-50%);
+    pointer-events: none;
+  }
+
+  @media (max-width: 1180px) {
+    .row-meters { display: none; }
+    .row-info { width: 200px; }
+  }
 
   /* Project cards: the engine positions the <a> itself with GSAP transforms
      (xPercent/x), so hover scale/shadow live on an inner wrapper instead —
@@ -453,6 +512,7 @@ const socials: [string, string][] = [
 
 <script>
   import '../scripts/ride.ts';
+  import '../scripts/music-player.ts';
 </script>
 
 <style is:global>
