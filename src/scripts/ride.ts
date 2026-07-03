@@ -171,28 +171,9 @@ class MapView {
     return { s, x: slice[0][0] - (toWorldX(frac) - CX) / s, y: slice[0][1] - (toWorldY(0.42) - CY) / s };
   }
 
-  /** The focal point the glide should END on so the arrival closes as a
-   *  pull-back zoom-out. For the 'h' and 'd' axes that's the parked focal itself:
-   *  the closing tween then only animates scale and the platform grows into frame
-   *  in place. The vertical ('v', music) line's parked focal sits far to the
-   *  RIGHT of the line (so the line rests just past the docked rail), so a pure
-   *  zoom-out toward it would sweep the line in from far off-screen-left, behind
-   *  the rail. Instead end its glide with the line's anchor ALREADY at its parked
-   *  SCREEN x at ride scale, so the closing settleMonotonic can HOLD that screen-x
-   *  while zooming out — the line stays pinned just past the rail and the map
-   *  pulls back around it, ticks always clear of the rail. */
-  arrivalFocal(line: Line, park: { x: number; y: number; s: number }): Point {
-    if (line.platform!.axis !== 'v') return [park.x, park.y];
-    const anchorX = Math.min(...line.platform!.stops.map((s) => s[0]));
-    // Solve glideEnd.x so the anchor's ride-scale viewbox-x
-    // (CX + MAP_SCALE·(anchorX − glideEnd.x)) equals its PARKED viewbox-x
-    // (CX + park.s·(anchorX − park.x)); the anchor lands exactly at rest.
-    return [anchorX - (park.s / MAP_SCALE) * (anchorX - park.x), park.y];
-  }
-
-  /** Append an arrival settle that HOLDS the on-screen x of `anchorX` (a world x)
-   *  constant — or moves it MONOTONICALLY to rest, right-to-left, stopping AT rest
-   *  and never swinging past it — while the camera zooms out.
+  /** Arrival settle for the music (vertical) line that moves the on-screen x of
+   *  `anchorX` (a world x) MONOTONICALLY to rest, right-to-left, stopping AT rest
+   *  and never swinging past it, while the camera zooms out from the last tick.
    *
    *  A plain `tl.to(this.state, {x, s})` tweens camera x and scale together, but a
    *  point's screen x is `CX + s·(anchorX − x)` — a PRODUCT of two terms each
@@ -202,12 +183,11 @@ class MapView {
    *  ticks toward/behind the docked rail before settling. No ease removes it.
    *
    *  Instead we interpolate the anchor's screen x LINEARLY (in eased progress) and
-   *  back-solve the camera x each frame, so scale still eases s0→park.s but the
-   *  anchor glides monotonically to rest. When the glide has already placed the
-   *  anchor AT its parked screen x (start == rest), the interpolation is constant
-   *  and the anchor holds dead-still — the line stays pinned just past the rail
-   *  while the map pulls back around it (a pure grow-into-view). Endpoints match
-   *  the old coupled tween exactly, so the parked pose is unchanged. */
+   *  back-solve the camera x each frame, so scale still eases s0→park.s and y eases
+   *  y0→park.y (a coupled settle), but the anchor glides monotonically to rest —
+   *  the music line settles the SMALL last-tick → parked x/y offset into the
+   *  pull-back without its ticks ever dipping under the rail. Endpoints match the
+   *  plain coupled tween exactly, so the parked pose is unchanged. */
   settleMonotonic(
     tl: gsap.core.Timeline,
     park: { x: number; y: number; s: number },
@@ -777,19 +757,18 @@ class MapView {
     // x/y purely through the sampler — the two never write the same prop.
     const ridePts = this.ridePath(line);
     const startFocal: Point = [this.state.x, this.state.y];
-    // Append a glide-END focal so the arrival can close as a PULL-BACK zoom-out
-    // (mirroring how toMap() appends HOME to end its glide exactly on Home). The
-    // glide owns x/y for the whole ride; landing it at the right spot lets the
-    // closing beat be dominated by SCALE, so the platform GROWS into frame as the
-    // camera pulls back rather than sliding into place while it zooms.
-    const glideEnd = this.arrivalFocal(line, park);
-    const sampler = pathSampler([startFocal, ...ridePts, glideEnd]);
+    // The ride ends at the platform's LAST TICK (the line terminal) — we do NOT
+    // append the parked focal to the ride path. Appending it made the camera ride
+    // PAST the last tick and BACKWARD to the parked focal at full ride scale (the
+    // visible "bounce"). Instead the arrival stops dead at the last tick and the
+    // closing beat (BEAT 5) zooms OUT from there, blending the SMALL last-tick →
+    // parked-focal x/y offset INTO the pull-back — the time-reverse of clicking Home.
+    const sampler = pathSampler([startFocal, ...ridePts]);
     const stops = this.pulseStops(line, sampler);
-    // The destination roundel pulses when the camera passes the LINE END — i.e.
-    // at the arc distance of the last RIDE point — not sampler.total, which now
-    // sits at the appended glide-end focal one settle-segment further along.
+    // The destination roundel pulses when the camera reaches the LINE END, which
+    // is now the final sampler point.
     stops.push({
-      d: sampler.cum[sampler.cum.length - 2],
+      d: sampler.total,
       el: document.querySelector(`[data-destination="${line.id}"] circle`),
     });
     let nextStop = 0;
@@ -851,8 +830,8 @@ class MapView {
     tl.call(() => { this.echo.k = 0; this.light(homeDot, true); this.apply(); }, undefined, 0.6);
     // BEAT 3 — RIDE Home → platform. One eased glide: accelerates out of the Home
     // pause, cruises, decelerates into the platform, pulsing each stop as it
-    // passes. The Home tick fades back to white just after departure. The sampler
-    // ends on the arrival focal, so the glide lands x/y ready for a pure zoom-out.
+    // passes. The Home tick fades back to white just after departure. The ride ends
+    // at the platform's LAST TICK; the zoom-out that follows settles to the park pose.
     tl.call(
       () => { if (homeDot) gsap.to(homeDot, { attr: { fill: '#ffffff' }, duration: 0.25, ease: 'power1.in' }); },
       undefined,
@@ -864,20 +843,23 @@ class MapView {
     // BEAT 4 — PAUSE AT THE PLATFORM END (~0.35s): a still hold at ride scale,
     // "stopped at the platform", before the reveal. Echo cleared.
     tl.call(() => { this.echo.k = 0; this.apply(); }, undefined, 3.2);
-    // BEAT 5 — ZOOM-OUT REVEAL, mirroring toMap()'s return-to-Home. The glide
-    // already brought x/y to the arrival focal, so this beat is dominated by
-    // SCALE and the platform GROWS into frame as the camera eases back.
+    // BEAT 5 — ZOOM-OUT REVEAL from the last tick: the exact TIME-REVERSE of
+    // toMap()'s opening beat (which zooms IN from the parked pose onto the last
+    // tick). A SINGLE coupled tween eases the camera from the last tick back to the
+    // parked pose — it zooms OUT while making the SMALL last-tick → parked x/y
+    // adjustment, blended into the pull-back. No backward ride at ride scale.
     if (line.platform!.axis === 'v') {
-      // Music: hold the line's anchor at its (already-reached) parked screen-x
-      // while scale eases MAP_SCALE → park.s — the line stays pinned just past
-      // the docked rail and the map pulls back around it. Monotonic, so the ticks
-      // never swing under the rail.
+      // Music parks with its line far to the RIGHT (just past the docked rail), so
+      // a plain coupled zoom-out would swing the ticks convexly LEFT — toward/under
+      // the rail — before settling. settleMonotonic makes the same coupled settle
+      // but moves the anchor's screen-x MONOTONICALLY to rest, so the ticks never
+      // dip under the rail.
       const anchorX = Math.min(...line.platform!.stops.map((s) => s[0]));
       this.settleMonotonic(tl, park, anchorX, 3.55);
     } else {
-      // 'h'/'d': the glide parked x/y on the parked focal, so this is a PURE
-      // zoom-out — only scale animates and the platform grows in place.
-      tl.to(this.state, { s: park.s, duration: 0.8, ease: 'power2.inOut', onUpdate: this.apply }, 3.55);
+      // 'h'/'d': park's content cards sit well clear of the rail, so a plain
+      // coupled tween is fine — the platform grows into frame as x/y settle.
+      tl.to(this.state, { ...park, duration: 0.8, ease: 'power2.inOut', onUpdate: this.apply }, 3.55);
     }
     // Reveal the platform + its cards AS the camera pulls back (into the
     // zoom-out), so they grow into view with the settle rather than snapping in
@@ -1066,15 +1048,14 @@ class MapView {
     const inSampler = pathSampler(inPts);
     // Stops of the LEAVING line, pulsed as the reverse leg passes them (A→Home).
     const inStops = this.pulseStops(fromLine, inSampler);
-    // Outbound leg: Home → new-line platform (with its stop pulses). Append the
-    // arrival focal (mirroring toPlatform) so the outbound glide lands x/y where
-    // the arrival can close as a pull-back zoom-out reveal.
+    // Outbound leg: Home → new-line platform (with its stop pulses). The ride ends
+    // at the platform's LAST TICK — no appended parked focal — so the arrival stops
+    // dead at the last tick and BEAT 6 zooms out from there (no backward bounce).
     const outPts = this.ridePath(toLine);
-    const glideEnd = this.arrivalFocal(toLine, park);
-    const outSampler = pathSampler([...outPts, glideEnd]);
+    const outSampler = pathSampler(outPts);
     const outStops = this.pulseStops(toLine, outSampler);
     outStops.push({
-      d: outSampler.cum[outSampler.cum.length - 2],
+      d: outSampler.total,
       el: document.querySelector(`[data-destination="${toLine.id}"] circle`),
     });
 
@@ -1167,15 +1148,14 @@ class MapView {
     tl.call(() => this.setFades(toLine, 0, 0.7), undefined, 3.45);
     // BEAT 5 — PAUSE AT PLATFORM B (~0.35s): still hold at ride scale before the reveal.
     tl.call(() => { this.echo.k = 0; this.apply(); }, undefined, 3.85);
-    // BEAT 6 — ZOOM-OUT REVEAL of B, mirroring toPlatform()'s arrival.
+    // BEAT 6 — ZOOM-OUT REVEAL of B from its last tick, mirroring toPlatform()'s
+    // arrival: a single coupled settle from the last tick back to the parked pose.
     if (toLine.platform!.axis === 'v') {
-      // Music: hold the anchor at its parked screen-x while zooming out (the
-      // outbound glide already placed it there) so the ticks never swing under
-      // the docked rail when switching platforms into music.
+      // Music: monotonic settle so the ticks never swing under the docked rail.
       const anchorX = Math.min(...toLine.platform!.stops.map((s) => s[0]));
       this.settleMonotonic(tl, park, anchorX, 4.2);
     } else {
-      tl.to(this.state, { s: park.s, duration: 0.8, ease: 'power2.inOut', onUpdate: this.apply }, 4.2);
+      tl.to(this.state, { ...park, duration: 0.8, ease: 'power2.inOut', onUpdate: this.apply }, 4.2);
     }
     // Reveal the new platform + cards as the camera pulls back.
     tl.call(() => this.showUI(id), undefined, 4.35);
