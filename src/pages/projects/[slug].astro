@@ -96,8 +96,13 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
     .train-toc {
       display: block;
       position: fixed;
-      top: 7.5rem;
-      left: clamp(1.25rem, calc(50vw - 570px), 26rem);
+      /* top is set from the banner's edge by article.ts; this is the pre-JS
+         default (header + page-body padding) to avoid a first-paint jump. */
+      top: 11rem;
+      /* Track the centered article column so the rail keeps a constant, tight
+         offset from the body instead of drifting to the far margin on wide
+         screens (the article is 760px wide and centered). */
+      left: max(1.25rem, calc(50vw - 608px));
       width: 216px;
       max-height: calc(100vh - 9.5rem);
       overflow-y: auto;
