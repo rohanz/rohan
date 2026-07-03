@@ -646,7 +646,15 @@ class MapView {
       sec.hidden = sec.getAttribute('data-content') !== id;
     });
     this.placeCards();
-    this.cardsIn(id);
+    // Keep the entries INVISIBLE through the camera reveal. showUI() only does
+    // setup + positioning (via placeCards) here; the actual staggered fade-in is
+    // scheduled separately (cardsIn) to begin AFTER the reveal has settled, so
+    // the platform lands first and the entries then populate one by one.
+    const hideCards = this.cardsFor(id).filter((c) => c.style.display !== 'none');
+    const hideDivs = Array.from(
+      document.querySelectorAll<HTMLElement>(`#platform-ui [data-divider="${id}"]`),
+    );
+    gsap.set([...hideCards, ...hideDivs], { autoAlpha: 0 });
     gsap.fromTo(
       ['#more-next', '#more-prev', '#filter-bar'],
       { autoAlpha: 0 },
@@ -686,7 +694,9 @@ class MapView {
         x: 0,
         y: 0,
         duration: 0.45,
-        stagger: 0.09,
+        // Pronounced per-item stagger so each entry visibly follows the previous
+        // — the entrance reads as clearly one-by-one on an already-settled platform.
+        stagger: 0.15,
         ease: 'power2.out',
         overwrite: 'auto',
       },
@@ -835,6 +845,9 @@ class MapView {
       this.setFades(line, 0, 0.01);
       this.apply();
       this.showUI(id);
+      // No ride to wait for on a direct/reduced-motion entry — populate the
+      // entries immediately (showUI leaves them hidden).
+      this.cardsIn(id);
       this.busy = false;
       return;
     }
@@ -936,11 +949,15 @@ class MapView {
     // a single smooth arc with no stretch and no two-step (see vanWijkTo). No
     // backward ride at ride scale; ends exactly at the parked pose.
     this.vanWijkTo(tl, park, 3.55, 1.0);
-    // Reveal the platform + its cards AS the camera pulls back (into the
-    // zoom-out), so they grow into view with the settle rather than snapping in
-    // after all motion. apply() re-lays the cards every frame, so their screen
-    // positions track the changing scale while cardsIn() fades/slides them in.
+    // Set up the platform UI DURING the reveal (top-bar handoff, section title,
+    // filter/more buttons, data-content visibility, and placeCards to position
+    // the still-HIDDEN entries), so the structure is ready as the camera pulls
+    // back. The entries themselves stay invisible here.
     tl.call(() => this.showUI(id), undefined, 3.7);
+    // Then, only AFTER the reveal has fully settled (3.55 + 1.0 = 4.55) plus a
+    // tiny beat so the platform reads as "settled, THEN populated", stagger the
+    // entries in one by one.
+    tl.call(() => this.cardsIn(id), undefined, 4.7);
 
     this.skippable(tl);
   }
@@ -1111,6 +1128,7 @@ class MapView {
       Object.assign(this.state, park);
       this.apply();
       this.showUI(id);
+      this.cardsIn(id);
       this.busy = false;
       return;
     }
@@ -1226,8 +1244,11 @@ class MapView {
     // ONE combined Van Wijk zoom+pan swoop from ride scale to B's parked pose —
     // scale AND focal move together as a single smooth arc (see vanWijkTo).
     this.vanWijkTo(tl, park, 4.2, 1.0);
-    // Reveal the new platform + cards as the camera pulls back.
+    // Set up the new platform UI during the reveal (entries stay hidden).
     tl.call(() => this.showUI(id), undefined, 4.35);
+    // Stagger the entries in one by one only after the reveal settles
+    // (4.2 + 1.0 = 5.2) plus a tiny settle beat.
+    tl.call(() => this.cardsIn(id), undefined, 5.35);
 
     this.skippable(tl);
   }
