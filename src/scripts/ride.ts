@@ -181,7 +181,7 @@ class MapView {
       if (id !== line.id) others.push(el);
     });
     document
-      .querySelectorAll('[data-land-zones], [data-land-water], g.home, g.destination')
+      .querySelectorAll('[data-land-zones], [data-land-water], g.destination')
       .forEach((el) => {
         if (el.getAttribute('data-destination') !== line.id) others.push(el);
       });
@@ -714,7 +714,10 @@ class MapView {
     stopMusicPlayback(); // silence any preview before riding back to the map
     this.hideUI(!animate);
 
-    const homeG = this.stage.querySelector<SVGGElement>('g.home');
+    // Only the Home LABEL fades on arrival; the dot is never touched (it stays
+    // at opacity 1 the whole ride). GSAP writes the fade onto the wrap group so
+    // the .home-label CSS hover rule keeps working afterward.
+    const homeLabel = this.stage.querySelector<SVGGElement>('.home-label-wrap');
 
     const done = () => {
       this.stage.classList.remove('ride-active');
@@ -739,10 +742,6 @@ class MapView {
       return;
     }
 
-    // Home fades in at ARRIVAL (not with the rest of the map early in the
-    // ride): drop its data-was-faded so the generic setFades(null) restore
-    // skips it, keeping it hidden until the camera settles on Home.
-    homeG?.removeAttribute('data-was-faded');
 
     const ridePts = this.ridePath(line).reverse();
     const sampler = pathSampler(ridePts);
@@ -782,18 +781,18 @@ class MapView {
       { ...this.mapPose(), duration: 0.8, ease: 'power2.inOut', onUpdate: this.apply },
       2.95,
     );
-    // Arrival: reveal Home with a soft fade so the dot AND label glide in as
-    // the camera settles, rather than snapping to full opacity. ride-active is
-    // dropped here (so the label is no longer force-hidden) with the group held
-    // at 0 first — no flash — then faded up. This is the only opacity tween on
-    // the home group and it fires after all camera motion, so it never rasters
-    // mid-ride.
-    if (homeG) {
+    // Arrival: reveal the Home LABEL with a soft fade so it glides in as the
+    // camera settles, rather than snapping. ride-active is dropped here (so the
+    // label is no longer force-hidden) with the wrap held at 0 first — no flash
+    // — then faded up. The DOT is untouched throughout (always opacity 1). This
+    // is the only opacity tween on the label and it fires after all camera
+    // motion, so it never rasters mid-ride.
+    if (homeLabel) {
       tl.call(
         () => {
-          gsap.set(homeG, { opacity: 0 });
+          gsap.set(homeLabel, { opacity: 0 });
           this.stage.classList.remove('ride-active');
-          gsap.to(homeG, { opacity: 1, duration: 0.45, ease: 'power1.out', overwrite: 'auto' });
+          gsap.to(homeLabel, { opacity: 1, duration: 0.45, ease: 'power1.out', overwrite: 'auto' });
         },
         undefined,
         3.55,
