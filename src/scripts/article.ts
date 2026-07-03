@@ -157,11 +157,23 @@ function initToc(article: HTMLElement) {
     .filter((h): h is HTMLElement => !!h);
   if (!headings.length) return;
 
+  // The fixed rail begins at the banner's top edge, mirroring the original
+  // site where the TOC column and the content column share a top. Measured
+  // from the banner's initial document offset (scroll is 0 on page load).
+  const banner = article.querySelector<HTMLElement>('.article-banner');
+  const alignTop = () => {
+    if (!banner) return;
+    const top = Math.round(banner.getBoundingClientRect().top + window.scrollY);
+    if (top > 0) toc.style.top = `${top}px`;
+  };
+  alignTop();
+
   let circleFor = buildRail(toc);
   let disposed = false;
   // Label wrap can change once webfonts finish loading — rebuild then.
   document.fonts?.ready.then(() => {
     if (disposed) return;
+    alignTop();
     circleFor = buildRail(toc);
     circleFor.forEach((c, s) => c.classList.toggle('is-current', s === current));
   });
@@ -174,7 +186,24 @@ function initToc(article: HTMLElement) {
     circleFor.forEach((c, s) => c.classList.toggle('is-current', s === slug));
   };
 
+  // While a click-scroll is in flight, `clickTarget` holds the clicked slug so
+  // the scroll-driven spy is suppressed — the active state jumps straight to
+  // the clicked section instead of stepping through every heading it passes
+  // (mirrors the original's tocClickScrollTarget). A settle timer clears it
+  // once scrolling stops.
+  let clickTarget: string | null = null;
+  let clickTimer = 0;
+
   const computeActive = () => {
+    if (clickTarget) return;
+    // The last section may sit too low to ever reach the activation line, so
+    // once the page is scrolled to the bottom, force the final heading active
+    // (mirrors the original's isNearBottom).
+    const doc = document.documentElement;
+    if (window.innerHeight + window.scrollY >= doc.scrollHeight - 4) {
+      setCurrent(headings[headings.length - 1].id);
+      return;
+    }
     let active = headings[0];
     for (const h of headings) {
       if (h.getBoundingClientRect().top <= 140) active = h;
@@ -189,22 +218,45 @@ function initToc(article: HTMLElement) {
   });
   headings.forEach((h) => io.observe(h));
 
+  // Once scrolling settles, commit the clicked target as active and re-enable
+  // the scroll-driven spy.
+  const settle = () => {
+    if (!clickTarget) return;
+    clearTimeout(clickTimer);
+    clickTimer = window.setTimeout(() => {
+      if (clickTarget) setCurrent(clickTarget);
+      clickTarget = null;
+    }, 160);
+  };
+
   let raf = 0;
   const onScroll = () => {
-    if (raf) return;
-    raf = requestAnimationFrame(() => {
-      raf = 0;
-      computeActive();
-    });
+    if (!raf) {
+      raf = requestAnimationFrame(() => {
+        raf = 0;
+        computeActive();
+      });
+    }
+    settle();
   };
   window.addEventListener('scroll', onScroll, { passive: true });
 
   const scrollToSlug = (slug: string) => {
     const target = document.getElementById(slug);
     if (!target) return;
+    // Mark the clicked section active immediately and suppress the spy so the
+    // highlight goes straight to it rather than cycling through intermediates.
+    clickTarget = slug;
+    setCurrent(slug);
     const y = target.getBoundingClientRect().top + window.scrollY - 90;
     window.scrollTo({ top: y, behavior: 'smooth' });
     history.replaceState(null, '', `#${slug}`);
+    // Fallback in case the target is already in place and no scroll fires.
+    clearTimeout(clickTimer);
+    clickTimer = window.setTimeout(() => {
+      if (clickTarget === slug) setCurrent(slug);
+      clickTarget = null;
+    }, 700);
   };
   const onTickClick = (e: Event) => {
     const a = e.currentTarget as HTMLAnchorElement;
@@ -226,6 +278,7 @@ function initToc(article: HTMLElement) {
   const onResize = () => {
     clearTimeout(resizeTimer);
     resizeTimer = window.setTimeout(() => {
+      alignTop();
       circleFor = buildRail(toc);
       circleFor.forEach((c, s) => c.classList.toggle('is-current', s === current));
     }, 150);
@@ -240,6 +293,7 @@ function initToc(article: HTMLElement) {
     window.removeEventListener('scroll', onScroll);
     window.removeEventListener('resize', onResize);
     clearTimeout(resizeTimer);
+    clearTimeout(clickTimer);
     ticks.forEach((t) => t.removeEventListener('click', onTickClick));
     svg?.removeEventListener('click', onRailClick);
     if (raf) cancelAnimationFrame(raf);
