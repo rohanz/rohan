@@ -109,18 +109,15 @@ class MapView {
     };
   }
 
-  /** Camera rest pose for the map view. Home is centered within the VISIBLE
-   *  region to the right of the docked left rail (not the full viewport), so
-   *  the ~240px rail never sits over it. Mirrors how parkPose()/railWidth()
-   *  account for the rail. Used for initial load and every return-to-map. */
+  /** Camera rest pose for the map view. Home sits at the TRUE viewport center
+   *  (zoom 1) — no rail compensation. The docked left rail simply floats over
+   *  the left edge of the map; there are no content cards on the map view for
+   *  it to cover, so centering Home in the full viewport is correct. Making the
+   *  rest pose a plain HOME-centered pose is what lets every return-to-map be a
+   *  clean, pure zoom-out (only `s` changes, `x`/`y` already pinned to Home).
+   *  Used for initial load and every return-to-map. */
   mapPose() {
-    const { rect, k, cropX } = this.metrics();
-    const s = 1;
-    // Screen x (stage-local px) where Home should land: the midpoint of the
-    // band between the rail's right edge and the viewport's right edge.
-    const targetPx = (this.railWidth() + rect.width) / 2;
-    const x = HOME[0] - ((targetPx + cropX) / k - CX) / s;
-    return { x, y: HOME[1], s };
+    return { x: HOME[0], y: HOME[1], s: 1 };
   }
 
   worldToScreen(w: Point): Point {
@@ -743,7 +740,16 @@ class MapView {
     }
 
 
+    // Reverse-glide platform → Home, and END the glide EXACTLY at Home so the
+    // closing settle can be a pure zoom-out. ridePath ends at Home's projection
+    // onto the (filleted) line, which is a hair off the true HOME point; append
+    // HOME so the final short segment carries the focal point precisely onto
+    // Home. Then the closing tween below only has to change `s` (x/y already at
+    // Home) — no lateral/vertical drift while zooming out.
     const ridePts = this.ridePath(line).reverse();
+    if (ridePts[ridePts.length - 1][0] !== HOME[0] || ridePts[ridePts.length - 1][1] !== HOME[1]) {
+      ridePts.push([HOME[0], HOME[1]]);
+    }
     const sampler = pathSampler(ridePts);
     const prog = { p: 0 };
     let lastAt: Point = ridePts[0];
@@ -776,6 +782,10 @@ class MapView {
     );
     tl.to(prog, { p: 0.78, duration: 1.2, ease: 'power2.in', onUpdate: moveSample }, 0.8);
     tl.to(prog, { p: 1, duration: 0.9, ease: 'power3.out', onUpdate: moveSample }, 2.0);
+    // Closing settle: a PURE zoom-out. The glide already parked x/y exactly on
+    // Home (mapPose() is the plain HOME-centered pose), so this tween's x/y are
+    // no-ops and only `s` animates 2.8 → 1 — Home holds dead-still on screen
+    // and simply grows to fill the frame, never sliding sideways.
     tl.to(
       this.state,
       { ...this.mapPose(), duration: 0.8, ease: 'power2.inOut', onUpdate: this.apply },
