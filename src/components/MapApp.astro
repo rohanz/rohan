@@ -336,6 +336,17 @@ const socials: [string, string][] = [
     align-items: center;
     gap: 1.1rem;
     color: #1a1a1a;
+    /* Ceiling on how tall any in-row visual (cover / waveform / meters) may
+       grow. The rows are laid out on the map with a vertical PITCH that scales
+       with viewport HEIGHT (~0.164 * vh — see parkPose 'v': the stops are 100
+       world-units apart and the scale is height-derived), while the visual
+       sizes below otherwise scale with viewport WIDTH (vw). On a short (or
+       short-and-wide) viewport the width-driven visuals would outgrow the
+       height-driven pitch and bleed into the neighbouring song row. Capping
+       every tall element at ~13vh keeps each row's content inside its own band
+       with clear daylight to the next, while the vw-based clamps still let
+       things grow "bigger on large screens" whenever height allows. */
+    --viz-max-h: 13vh;
   }
   /* Cover + title/artist/links, grouped like the original's .music-header:
      a fixed-width block so it doesn't compete for space with the waveform
@@ -354,8 +365,8 @@ const socials: [string, string][] = [
      from an icon-sized thumb to a real cover, per the original layout).
      Scales up on large screens; floors at the original 100px. */
   .row-cover {
-    width: clamp(100px, 6.5vw, 132px);
-    height: clamp(100px, 6.5vw, 132px);
+    width: min(clamp(100px, 6.5vw, 132px), var(--viz-max-h));
+    height: min(clamp(100px, 6.5vw, 132px), var(--viz-max-h));
     flex: none;
     border-radius: 6px;
     object-fit: cover;
@@ -371,8 +382,8 @@ const socials: [string, string][] = [
      waveform-play-btn (not a text pill). Sits at the end of the row. */
   .row-play {
     flex: none;
-    width: clamp(56px, 4vw, 72px);
-    height: clamp(56px, 4vw, 72px);
+    width: min(clamp(56px, 4vw, 72px), var(--viz-max-h));
+    height: min(clamp(56px, 4vw, 72px), var(--viz-max-h));
     padding: 0;
     display: flex;
     align-items: center;
@@ -394,7 +405,7 @@ const socials: [string, string][] = [
      into whatever the fixed-size cover/play/meters leave over — mirroring
      the original's behavior in its own narrow window (769–1180px), where
      the wave is the flexible element. */
-  .row-wave { flex: 1 1 auto; min-width: 100px; max-width: clamp(270px, 22vw, 380px); height: clamp(56px, 4vw, 72px); display: block; }
+  .row-wave { flex: 1 1 auto; min-width: 100px; max-width: clamp(270px, 22vw, 380px); height: min(clamp(56px, 4vw, 72px), var(--viz-max-h)); display: block; }
   .row-meters { display: flex; gap: 0.6rem; align-items: center; flex: none; }
   /* Position: relative + an absolutely-positioned label keeps the label out
      of the flow, so the group's box is exactly the canvas's box — nothing
@@ -424,9 +435,25 @@ const socials: [string, string][] = [
      attribute rather than the original's rendered box — which is why it
      looked shrunken. music-player.ts re-sizes each backing store to the
      rendered box * devicePixelRatio, so CSS is the single source of truth. */
-  .row-freq { display: block; width: clamp(220px, 20vw, 340px); height: clamp(110px, 7.3vw, 140px); }
-  .row-vec { display: block; width: clamp(96px, 10vw, 140px); height: clamp(96px, 10vw, 140px); }
-  .row-vu { display: block; width: clamp(120px, 12vw, 180px); height: clamp(100px, 7vw, 130px); }
+  /* Heights capped by --viz-max-h so meters never outgrow the row pitch on
+     short screens; widths shrink in lock-step (calc keeps each canvas's native
+     aspect ratio — freq 282:110≈2.56, vec 1:1, vu 141:100≈1.41 — so the
+     WebAudio drawings, which read their own rendered box, stay undistorted). */
+  .row-freq {
+    display: block;
+    width: min(clamp(220px, 20vw, 340px), calc(var(--viz-max-h) * 2.56));
+    height: min(clamp(110px, 7.3vw, 140px), var(--viz-max-h));
+  }
+  .row-vec {
+    display: block;
+    width: min(clamp(96px, 10vw, 140px), var(--viz-max-h));
+    height: min(clamp(96px, 10vw, 140px), var(--viz-max-h));
+  }
+  .row-vu {
+    display: block;
+    width: min(clamp(120px, 12vw, 180px), calc(var(--viz-max-h) * 1.41));
+    height: min(clamp(100px, 7vw, 130px), var(--viz-max-h));
+  }
 
   /* Grid-line dividers: thin ink lines that read as the map's own grid
      fading in. The engine positions them at the midpoints between music
