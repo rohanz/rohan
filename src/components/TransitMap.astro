@@ -167,10 +167,18 @@ const LAKE = 'M880,-1600 L2600,-1600 L2600,2000 L880,2000 L880,1310 L1030,1160 L
         );
       })}
 
-      <!-- HOME — the only named station -->
+      <!-- HOME — the only named station.
+           The dot+label live inside an inner <g> so the hover-fade rule can
+           target THAT (a child) while GSAP writes ride/arrival opacity onto the
+           outer g.home. Otherwise GSAP's leftover inline opacity:1 on g.home
+           (from setFades restoring the map) would override the hover rule — the
+           same reason the line fade targets `.line-group .line-path`, not the
+           element GSAP animates. -->
       <g class="home">
-        <circle id="home-dot" cx={HOME[0]} cy={HOME[1]} r="15" fill="#fff" stroke="var(--ink)" stroke-width="5" />
-        <text x={HOME[0] + 22} y={HOME[1] + 28} class="home-label" style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif" fill="var(--ink)" text-anchor="start">Home</text>
+        <g class="home-inner">
+          <circle id="home-dot" cx={HOME[0]} cy={HOME[1]} r="15" fill="#fff" stroke="var(--ink)" stroke-width="5" />
+          <text x={HOME[0] + 22} y={HOME[1] + 28} class="home-label" style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif" fill="var(--ink)" text-anchor="start">Home</text>
+        </g>
       </g>
     </g>
   </svg>
@@ -184,10 +192,16 @@ const LAKE = 'M880,-1600 L2600,-1600 L2600,2000 L880,2000 L880,1310 L1030,1160 L
   .layer-top { pointer-events: none; }
   .home-label { font-size: 18px; font-weight: 700; letter-spacing: 0.04em; }
   .home-sub { font-size: 11px; font-weight: 500; letter-spacing: 0.06em; }
-  .home { transition: opacity 0.25s ease; }
-  :global(#map-3d[data-hl]:not(.ride-active)) .home { opacity: 0.55; }
+  /* Hover-fade the dot+label on the INNER group (which GSAP never writes to),
+     so the outer g.home's leftover inline opacity can't override it. */
+  .home-inner { transition: opacity 0.25s ease; }
+  :global(#map-3d[data-hl]:not(.ride-active)) .home-inner { opacity: 0.55; }
   .hit-path { cursor: pointer; pointer-events: stroke; }
-  #map-3d.ride-active .home text { opacity: 0; transition: opacity 0.25s ease; }
+  /* Label hidden while riding out (dot stays as the amber-lit target). No
+     transition here: on arrival ride-active is removed and the whole g.home
+     group is faded in by GSAP instead, so the label must snap (not CSS-fade)
+     when the class drops. */
+  #map-3d.ride-active .home text { opacity: 0; }
   /* Hover highlight: the hovered destination's line glows, the rest recede.
      Transitions are disabled during rides — animating filter/opacity forces
      re-rasterization every frame and reads as flicker. */
