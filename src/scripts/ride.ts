@@ -109,6 +109,20 @@ class MapView {
     };
   }
 
+  /** Camera rest pose for the map view. Home is centered within the VISIBLE
+   *  region to the right of the docked left rail (not the full viewport), so
+   *  the ~240px rail never sits over it. Mirrors how parkPose()/railWidth()
+   *  account for the rail. Used for initial load and every return-to-map. */
+  mapPose() {
+    const { rect, k, cropX } = this.metrics();
+    const s = 1;
+    // Screen x (stage-local px) where Home should land: the midpoint of the
+    // band between the rail's right edge and the viewport's right edge.
+    const targetPx = (this.railWidth() + rect.width) / 2;
+    const x = HOME[0] - ((targetPx + cropX) / k - CX) / s;
+    return { x, y: HOME[1], s };
+  }
+
   worldToScreen(w: Point): Point {
     const { k, cropX, cropY } = this.metrics();
     const vx = CX + this.state.s * (w[0] - this.state.x);
@@ -957,8 +971,14 @@ function init() {
   });
 
   window.addEventListener('resize', () => {
-    if (mv && mv.view !== 'map' && !mv.busy) {
+    if (!mv || mv.busy) return;
+    if (mv.view !== 'map') {
       Object.assign(mv.state, mv.parkPose(lineById(mv.view), mv.page));
+      mv.apply();
+    } else {
+      // Keep Home centered in the visible region as the rail width / viewport
+      // changes.
+      Object.assign(mv.state, mv.mapPose());
       mv.apply();
     }
   });
@@ -994,6 +1014,10 @@ function init() {
   } else {
     history.replaceState({ view: 'map' }, '', location.pathname);
     mv.setActiveDest('map');
+    // Center Home in the visible region right of the docked rail (same rest
+    // pose as every return-to-map), instead of the raw HOME-at-viewport pose.
+    Object.assign(mv.state, mv.mapPose());
+    mv.apply();
   }
 }
 
