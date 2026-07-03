@@ -291,10 +291,9 @@ const socials: [string, string][] = [
   .edge-btn:hover { filter: brightness(1.12); }
   .edge-btn[hidden] { display: none; }
   .edge-btn-right { right: 20px; }
-  /* Clears the persistent left rail. The rail narrows on small screens
-     (clamp(160px,16vw,230px)), so the button follows with a matching clamp
-     rather than a fixed 270px that would float far from a narrow rail. */
-  .edge-btn-left { left: clamp(200px, calc(28px + 16vw + 16px), 274px); }
+  /* Clears the docked left rail: anchored just right of the fixed rail width
+     (--rail-w), so it follows the rail at every breakpoint. */
+  .edge-btn-left { left: calc(var(--rail-w) + 20px); }
 
   /* On narrow viewports the right-edge paging button competes with the
      rightmost card for horizontal space, so drop the pair to the bottom
@@ -343,25 +342,28 @@ const socials: [string, string][] = [
      and meters that follow. */
   .row-header {
     flex: none;
-    width: 290px;
+    /* Grows on wide viewports (floors at the original 290px so narrow screens
+       are unchanged) so the cover + title block scales with the bigger rows. */
+    width: clamp(290px, 21vw, 380px);
     display: flex;
     align-items: center;
     gap: 1rem;
     min-width: 0;
   }
   /* Cover art, matching the original site's per-track thumbnail (enlarged
-     from an icon-sized thumb to a real cover, per the original layout). */
+     from an icon-sized thumb to a real cover, per the original layout).
+     Scales up on large screens; floors at the original 100px. */
   .row-cover {
-    width: 100px;
-    height: 100px;
+    width: clamp(100px, 6.5vw, 132px);
+    height: clamp(100px, 6.5vw, 132px);
     flex: none;
     border-radius: 6px;
     object-fit: cover;
     border: 1px solid rgba(26, 26, 26, 0.12);
   }
   .row-info { flex: 1 1 auto; min-width: 0; }
-  .row-title { margin: 0; font-size: 1.15rem; font-weight: 700; line-height: 1.2; }
-  .row-artist { margin: 0.2rem 0 0.4rem; font-size: 0.82rem; color: #6f6a60; font-weight: 600; }
+  .row-title { margin: 0; font-size: clamp(1.15rem, 1.35vw, 1.5rem); font-weight: 700; line-height: 1.2; }
+  .row-artist { margin: 0.2rem 0 0.4rem; font-size: clamp(0.82rem, 0.92vw, 1rem); color: #6f6a60; font-weight: 600; }
   .row-links { display: flex; flex-wrap: wrap; gap: 0.6rem; font-size: 0.72rem; font-weight: 700; }
   .row-links a { color: #754fad; text-decoration: none; }
   .row-links a:hover { text-decoration: underline; }
@@ -369,8 +371,8 @@ const socials: [string, string][] = [
      waveform-play-btn (not a text pill). Sits at the end of the row. */
   .row-play {
     flex: none;
-    width: 56px;
-    height: 56px;
+    width: clamp(56px, 4vw, 72px);
+    height: clamp(56px, 4vw, 72px);
     padding: 0;
     display: flex;
     align-items: center;
@@ -384,7 +386,7 @@ const socials: [string, string][] = [
   }
   .row-play:hover { background: rgba(117, 79, 173, 0.12); }
   .row-play[aria-pressed='true'] { background: #754fad; color: #fff; }
-  .row-play-icon { width: 20px; height: 20px; fill: currentColor; }
+  .row-play-icon { width: clamp(20px, 1.5vw, 26px); height: clamp(20px, 1.5vw, 26px); fill: currentColor; }
   .row-play .icon-pause { display: none; }
   .row-play[aria-pressed='true'] .icon-play { display: none; }
   .row-play[aria-pressed='true'] .icon-pause { display: block; }
@@ -392,7 +394,7 @@ const socials: [string, string][] = [
      into whatever the fixed-size cover/play/meters leave over — mirroring
      the original's behavior in its own narrow window (769–1180px), where
      the wave is the flexible element. */
-  .row-wave { flex: 1 1 auto; min-width: 100px; max-width: 270px; height: 56px; display: block; }
+  .row-wave { flex: 1 1 auto; min-width: 100px; max-width: clamp(270px, 22vw, 380px); height: clamp(56px, 4vw, 72px); display: block; }
   .row-meters { display: flex; gap: 0.6rem; align-items: center; flex: none; }
   /* Position: relative + an absolutely-positioned label keeps the label out
      of the flow, so the group's box is exactly the canvas's box — nothing
@@ -422,9 +424,9 @@ const socials: [string, string][] = [
      attribute rather than the original's rendered box — which is why it
      looked shrunken. music-player.ts re-sizes each backing store to the
      rendered box * devicePixelRatio, so CSS is the single source of truth. */
-  .row-freq { display: block; width: clamp(220px, 22vw, 300px); height: 110px; }
-  .row-vec { display: block; width: clamp(96px, 9vw, 110px); height: clamp(96px, 9vw, 110px); }
-  .row-vu { display: block; width: clamp(120px, 11vw, 150px); height: 100px; }
+  .row-freq { display: block; width: clamp(220px, 20vw, 340px); height: clamp(110px, 7.3vw, 140px); }
+  .row-vec { display: block; width: clamp(96px, 10vw, 140px); height: clamp(96px, 10vw, 140px); }
+  .row-vu { display: block; width: clamp(120px, 12vw, 180px); height: clamp(100px, 7vw, 130px); }
 
   /* Grid-line dividers: thin ink lines that read as the map's own grid
      fading in. The engine positions them at the midpoints between music
@@ -517,8 +519,14 @@ const socials: [string, string][] = [
   #filter-bar {
     position: absolute;
     top: 78px;
-    left: 270px;
-    right: 20px;
+    /* Constrained to a narrow, centered block within the content region to
+       the RIGHT of the docked rail: a compact ~4-6-pills-per-row multi-row
+       band (there are ~30 tags) instead of one very long row. Centering via
+       margin-inline:auto between the rail edge and the viewport edge. */
+    left: var(--rail-w);
+    right: 0;
+    max-width: 440px;
+    margin-inline: auto;
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
@@ -598,8 +606,9 @@ const socials: [string, string][] = [
   .card-about-bio .bio {
     margin: 0;
     flex: 1;
-    display: flex;
-    align-items: center;
+    /* Top-aligned: the paragraph starts just under the "BIO" label and flows
+       down, rather than being vertically centred in the box. */
+    display: block;
     font-size: clamp(0.72rem, 0.92vw, 0.98rem);
     line-height: 1.3;
     color: #2a2621;
@@ -612,9 +621,10 @@ const socials: [string, string][] = [
   /* Tech pills: fill the box, wrapping and vertically centred. */
   .chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; align-content: center; flex: 1; min-height: 0; gap: 0.36rem; }
   .chip { font-size: clamp(0.62rem, 0.85vw, 0.76rem); font-weight: 700; border-radius: 999px; padding: 0.26rem 0.62rem; background: #eee7db; color: #3a352b; }
-  /* Socials: two-column grid of chunky buttons that fill the box. */
-  .social-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; flex: 1; min-height: 0; align-content: center; }
-  .social-btn { display: flex; align-items: center; justify-content: center; text-decoration: none; font-weight: 700; font-size: clamp(0.74rem, 0.95vw, 0.9rem); color: #fff; background: #815e49; border-radius: 8px; padding: 0.6rem 0.5rem; }
+  /* Socials: 2×2 grid of chunky buttons that STRETCH to fill the box, so the
+     four links occupy the uniform card as fully as the other cards' content. */
+  .social-buttons { display: grid; grid-template-columns: 1fr 1fr; grid-auto-rows: 1fr; gap: 0.6rem; flex: 1; min-height: 0; }
+  .social-btn { display: flex; align-items: center; justify-content: center; text-decoration: none; font-weight: 700; font-size: clamp(0.9rem, 1.15vw, 1.12rem); color: #fff; background: #815e49; border-radius: 8px; padding: 0.7rem 0.6rem; }
   .social-btn:hover { filter: brightness(1.12); }
   /* CV: one big button that fills the box. */
   .cv-btn {

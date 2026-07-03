@@ -69,23 +69,35 @@ img { max-width: 100%; display: block; }
   *, *::before, *::after { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
 }
 
-/* Homepage Destinations panel — pinned globally so client-side navigation
+/* Homepage Destinations rail — pinned globally so client-side navigation
    back to the map can never lose the placement. */
-/* Persistent left nav rail: unlike the map-view-only panel this used to be,
-   it now stays on screen through every view (map + all three platforms),
-   so it's pinned to the edge rather than framed relative to Home. */
+/* Docked, full-height LEFT RAIL (the transit "line index"): flush to the
+   left edge, spanning the whole map stage below the top bar, at a fixed
+   predictable width (--rail-w). It stays on screen through every view (map +
+   all three platforms). All platform content is framed into the clean region
+   to the RIGHT of this rail (see ride.ts, which measures the rail width), so
+   nothing ever overlaps it. */
+body.home { --rail-w: 240px; }
+@media (max-width: 1024px) { body.home { --rail-w: 200px; } }
+@media (max-width: 768px) { body.home { --rail-w: 168px; } }
+
 body.home #station-board {
   position: absolute;
-  left: 28px;
-  top: 50%;
-  transform: translateY(-50%);
-  /* Narrows on smaller viewports but stays docked to the LEFT at every width
-     (rather than jumping to the bottom-right, where it used to overlap the
-     rightmost/lowest platform content). The per-page camera framing keeps
-     cards clear of this left band, leaving the right side free. */
-  width: clamp(160px, 16vw, 230px);
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: var(--rail-w);
   z-index: 10;
+  /* Full-height column: header on top, the destination list fills the rest.
+     Flush square edges (no floating-card radius) with a subtle right border +
+     shadow separating the rail from the map. */
+  display: flex;
+  flex-direction: column;
+  border-radius: 0;
+  border-right: 1px solid rgba(0, 0, 0, 0.14);
+  box-shadow: 6px 0 22px rgba(0, 0, 0, 0.14);
 }
+body.home #station-board .board-body { flex: 1 1 auto; }
 /* When the rail narrows on smaller viewports, trim the label type a touch so
    destination names ("About Me") stay on a single line. */
 @media (max-width: 1024px) {
