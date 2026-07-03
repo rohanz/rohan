@@ -708,16 +708,21 @@ class MapView {
       return;
     }
 
+    // Prefix the ride path with the CURRENT camera focal so the sampler owns
+    // the camera's x/y for the ENTIRE ride — including the short hop onto the
+    // line. That lets the zoom-in tween animate ONLY scale, so the pan can
+    // OVERLAP the zoom's deceleration (the two now touch different state props
+    // and never fight) with no dead stop between "zoomed in" and "riding out".
     const ridePts = this.ridePath(line);
-    const sampler = pathSampler(ridePts);
-    const start = ridePts[0];
+    const startFocal: Point = [this.state.x, this.state.y];
+    const sampler = pathSampler([startFocal, ...ridePts]);
     const stops = this.pulseStops(line, sampler);
     stops.push({
       d: sampler.total,
       el: document.querySelector(`[data-destination="${line.id}"] circle`),
     });
     let nextStop = 0;
-    let lastAt: Point = start;
+    let lastAt: Point = startFocal;
     const prog = { p: 0 };
 
     const homeDot = document.getElementById('home-dot');
@@ -761,11 +766,9 @@ class MapView {
         this.busy = false;
       },
     });
-    tl.to(
-      this.state,
-      { x: start[0], y: start[1], s: MAP_SCALE, duration: 0.75, ease: 'power2.inOut', onUpdate: this.apply },
-      0.05,
-    );
+    // Zoom-in: SCALE ONLY. The camera's x/y is the sampler's job now, so this
+    // tween and the pan below can overlap without both writing x/y.
+    tl.to(this.state, { s: MAP_SCALE, duration: 0.8, ease: 'power2.inOut', onUpdate: this.apply }, 0.05);
     // Fade the Home tick to amber mid-glide (rather than instantly on click)
     // so it lights up AS the camera closes in on it.
     tl.call(() => this.light(homeDot, true), undefined, 0.45);
@@ -776,7 +779,12 @@ class MapView {
       undefined,
       1.05,
     );
-    tl.to(prog, { p: 0.78, duration: 1.5, ease: 'power2.in', onUpdate: moveSample }, 0.9);
+    // Ride pan — starts BEFORE the zoom finishes (0.4 < 0.85) so on-screen
+    // motion is continuous: the pan accelerates from rest UNDER the zoom's
+    // deceleration, so the camera never hits zero velocity between the two. A
+    // gentle `power1.in` (not `power2.in`) gives the pan enough early velocity
+    // to fill the moment the zoom's own velocity fades to zero.
+    tl.to(prog, { p: 0.78, duration: 2.0, ease: 'power1.in', onUpdate: moveSample }, 0.4);
     tl.to(prog, { p: 1, duration: 1.0, ease: 'power3.out', onUpdate: moveSample }, 2.4);
     tl.call(() => this.setFades(line, 0, 0.7), undefined, 2.7);
     // Arrival settle. The vertical (music) line sits just past the docked rail,
