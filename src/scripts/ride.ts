@@ -16,6 +16,11 @@ import { filletPoints } from '../lib/fillet';
 import { stopMusicPlayback } from './music-player';
 
 const MAP_SCALE = 2.8; // zoom while riding
+// Van Wijk & Nuij (2003) curvature constant for the combined zoom+pan swoop.
+// Larger => a bigger zoom-out arc between the two poses; smaller => a flatter,
+// more direct blend. 1.4 gives a natural single gesture while keeping the music
+// line's arc clear of the docked rail (verified — see vanWijkTo).
+const VW_RHO = 1.4;
 const AMBER = '#f9c25e';
 const CX = VIEWBOX.w / 2;
 const CY = VIEWBOX.h / 2;
@@ -171,167 +176,140 @@ class MapView {
     return { s, x: slice[0][0] - (toWorldX(frac) - CX) / s, y: slice[0][1] - (toWorldY(0.42) - CY) / s };
   }
 
-  /** Arrival reveal: the zoom-out that lands the camera at the platform's parked
-   *  pose, split into two beats so the ZOOM itself is uniform — a pure
-   *  "grow in place" — and never reads as a stretch.
+  /** The combined zoom+pan "swoop" — one continuous motion that BOTH rescales
+   *  and re-centres the camera between two (focal, scale) poses, using the
+   *  Van Wijk & Nuij (2003) "Smooth and efficient zooming and panning"
+   *  interpolation. This replaces the old two-phase reveal/zoom-in (a discrete
+   *  zoom beat followed by a discrete pan beat, which read as two unnatural
+   *  steps). Van Wijk blends the zoom and the pan into a single perceptually
+   *  uniform arc: the camera zooms out slightly along a smooth path while it
+   *  pans, so both scale AND focal change THROUGHOUT — and it does so without the
+   *  shear/"stretch" that a naive simultaneous zoom+pan produces.
    *
-   *  The parked pose sits at both a smaller scale AND a focal offset from the
-   *  ride-end (last-tick) pose. That offset has two parts relative to the line's
-   *  travel direction: an ALONG-travel part and a PERPENDICULAR part. Panning the
-   *  focal PERPENDICULAR to travel WHILE the scale changes is what looked like a
-   *  non-uniform "stretch" (grid squares shearing into rectangles): near-focal and
-   *  far-focal regions appear to zoom by different amounts. A pan ALONG travel does
-   *  NOT — the About diagonal proves an along-travel pan reads as a natural reveal.
+   *  Used for BOTH directions with the SAME endpoints as before:
+   *   - ARRIVAL reveal: from the live ride-end pose (last tick @ MAP_SCALE) to
+   *     the platform's parked pose.
+   *   - DEPARTURE zoom-in: from the live parked pose to the last tick @ MAP_SCALE.
+   *  The start pose is captured live in onStart (so whatever the ride/pause left
+   *  us at is respected); `end` is the exact target pose, and onComplete snaps to
+   *  it so paging / the following ride are byte-for-byte unchanged.
    *
-   *  So PHASE A zooms while moving the focal ONLY along the travel axis (the
-   *  perpendicular coordinate is held fixed): a clean scale change with no
-   *  cross-axis slide. PHASE B then applies the perpendicular framing offset at
-   *  CONSTANT (parked) scale — a uniform pan, which cannot stretch. Endpoints are
-   *  the parked pose exactly, so paging / return-to-map are unchanged.
-   *
-   *  Side benefit for music (vertical line, perpendicular = screen-x): holding the
-   *  focal's x on the line through the zoom pins the purple line at a fixed
-   *  screen-x while it grows, then the constant-scale pan glides it left to its
-   *  docked rest MONOTONICALLY — so its ticks never sweep under the docked rail
-   *  (this supersedes the old back-solved monotonic settle). */
-  settleReveal(
+   *  Model: camera "viewport world-width" w is inversely proportional to scale,
+   *  w = W0 / s, where W0 is the world-space width the viewport spans at scale 1
+   *  (the SVG viewBox width — so w and the pan distance u share world units; this
+   *  is essential, otherwise the arc's zoom-out is wildly over- or under-scaled).
+   *  We interpolate along the straight line between the two focal points, with u
+   *  the signed distance along it. The pure-zoom degenerate case (focal points
+   *  coincident) is handled as a geometric (log) lerp of w. rho = VW_RHO controls
+   *  the arc curvature. */
+  vanWijkTo(
     tl: gsap.core.Timeline,
-    park: { x: number; y: number; s: number },
-    dir: Point,
-    at: number,
-  ) {
-    // Filled in phase A's onStart from the live ride-end pose, then read by both
-    // phases: s0/x0/y0 = ride-end pose; mx/my = the along-settled midpoint (the
-    // parked pose minus its perpendicular offset).
-    const c = { s0: 0, x0: 0, y0: 0, mx: 0, my: 0 };
-    const a = { e: 0 };
-    const b = { e: 0 };
-    // PHASE A — zoom + along-travel focal glide (perpendicular coordinate held).
-    tl.to(
-      a,
-      {
-        e: 1,
-        duration: 0.75,
-        ease: 'power2.inOut',
-        onStart: () => {
-          c.s0 = this.state.s;
-          c.x0 = this.state.x;
-          c.y0 = this.state.y;
-          const len = Math.hypot(dir[0], dir[1]) || 1;
-          const ux = dir[0] / len;
-          const uy = dir[1] / len;
-          const along = (park.x - c.x0) * ux + (park.y - c.y0) * uy;
-          c.mx = c.x0 + along * ux;
-          c.my = c.y0 + along * uy;
-        },
-        onUpdate: () => {
-          const e = a.e;
-          this.state.s = c.s0 + (park.s - c.s0) * e;
-          this.state.x = c.x0 + (c.mx - c.x0) * e;
-          this.state.y = c.y0 + (c.my - c.y0) * e;
-          this.apply();
-        },
-      },
-      at,
-    );
-    // PHASE B — apply the perpendicular framing offset at CONSTANT scale.
-    tl.to(
-      b,
-      {
-        e: 1,
-        duration: 0.5,
-        ease: 'power2.inOut',
-        onUpdate: () => {
-          const e = b.e;
-          this.state.x = c.mx + (park.x - c.mx) * e;
-          this.state.y = c.my + (park.y - c.my) * e;
-          this.apply();
-        },
-      },
-      at + 0.75,
-    );
-  }
-
-  /** Departure zoom-in: the exact time-reverse of settleReveal. Leaving a
-   *  platform, the camera goes from the parked pose up to ride scale at the
-   *  line's last tick as a UNIFORM two-phase move, so the SCALE change is never
-   *  accompanied by a cross-axis pan (which would read as the same "stretch"
-   *  the arrival reveal was fixed to avoid) — symmetric with the arrival.
-   *
-   *  The parked pose sits at a smaller scale AND a focal offset from the last
-   *  tick; that offset splits (relative to travel) into an ALONG part and a
-   *  PERPENDICULAR (content-framing) part. Panning the focal PERPENDICULAR to
-   *  travel WHILE the scale changes is what looked disjointed.
-   *
-   *  PHASE 1 (constant parked scale): pan the focal PERPENDICULAR-to-travel from
-   *  the parked pose onto the line — remove the card-framing offset — a uniform
-   *  pan, no zoom. PHASE 2 (pure zoom): zoom parked-scale → MAP_SCALE while
-   *  gliding the focal ALONG travel onto the last tick, with NO perpendicular
-   *  movement during the scale change. Ends EXACTLY at the last-tick focal at
-   *  MAP_SCALE so the ride that follows (which reads x/y from the sampler at
-   *  p=0 and holds scale at MAP_SCALE) is unchanged. Both phases ease to/from a
-   *  standstill (power2.inOut) so the phase junction has zero velocity on both
-   *  sides — no snap. `dir` only needs to give the travel AXIS; its sign is
-   *  irrelevant to the along/perpendicular split. */
-  zoomInToTick(
-    tl: gsap.core.Timeline,
-    tick: Point,
-    dir: Point,
+    end: { x: number; y: number; s: number },
     at: number,
     dur: number,
+    ease: string = 'power1.inOut',
   ) {
-    // Filled in phase 1's onStart from the live parked pose, then read by both
-    // phases: s0/x0/y0 = parked pose; mx/my = the on-line midpoint (parked pose
-    // with its perpendicular offset stripped, sharing the tick's cross-axis
-    // position but the parked focal's along position).
-    const c = { s0: 0, x0: 0, y0: 0, mx: 0, my: 0 };
-    const a = { e: 0 };
-    const b = { e: 0 };
-    const panDur = dur * 0.4;
-    const zoomDur = dur - panDur;
-    // PHASE 1 — remove the perpendicular framing offset at CONSTANT parked scale.
+    const proxy = { t: 0 };
+    // World-space width the viewport spans at scale 1 — keeps w commensurate with
+    // the pan distance u so the Van Wijk arc's zoom-out is sensibly proportioned.
+    const W0 = VIEWBOX.w;
+    // Parameterization, computed in onStart from the live start pose so the swoop
+    // always begins from wherever the preceding beat actually left the camera.
+    const P = {
+      pure: false,
+      c0x: 0,
+      c0y: 0,
+      c1x: 0,
+      c1y: 0,
+      s0: 0,
+      s1: 0,
+      w0: 0,
+      w1: 0,
+      u1: 0,
+      r0: 0,
+      S: 0,
+    };
     tl.to(
-      a,
+      proxy,
       {
-        e: 1,
-        duration: panDur,
-        ease: 'power2.inOut',
+        t: 1,
+        duration: dur,
+        ease,
         onStart: () => {
-          c.s0 = this.state.s;
-          c.x0 = this.state.x;
-          c.y0 = this.state.y;
-          const len = Math.hypot(dir[0], dir[1]) || 1;
-          const ux = dir[0] / len;
-          const uy = dir[1] / len;
-          const along = (c.x0 - tick[0]) * ux + (c.y0 - tick[1]) * uy;
-          c.mx = tick[0] + along * ux;
-          c.my = tick[1] + along * uy;
+          const c0x = this.state.x;
+          const c0y = this.state.y;
+          const s0 = this.state.s;
+          const c1x = end.x;
+          const c1y = end.y;
+          const s1 = end.s;
+          const w0 = W0 / s0;
+          const w1 = W0 / s1;
+          const dx = c1x - c0x;
+          const dy = c1y - c0y;
+          const u1 = Math.hypot(dx, dy);
+          P.c0x = c0x;
+          P.c0y = c0y;
+          P.c1x = c1x;
+          P.c1y = c1y;
+          P.s0 = s0;
+          P.s1 = s1;
+          P.w0 = w0;
+          P.w1 = w1;
+          P.u1 = u1;
+          if (u1 < 1e-6) {
+            // Pure zoom, no pan: geometric (log) lerp of w, focal held.
+            P.pure = true;
+            return;
+          }
+          P.pure = false;
+          const rho = VW_RHO;
+          const rho2 = rho * rho;
+          const rho4 = rho2 * rho2;
+          // u0 = 0, so (u1 - u0) = u1.
+          const b0 = (w1 * w1 - w0 * w0 + rho4 * u1 * u1) / (2 * w0 * rho2 * u1);
+          const b1 = (w1 * w1 - w0 * w0 - rho4 * u1 * u1) / (2 * w1 * rho2 * u1);
+          const r0 = Math.log(-b0 + Math.sqrt(b0 * b0 + 1));
+          const r1 = Math.log(-b1 + Math.sqrt(b1 * b1 + 1));
+          P.r0 = r0;
+          P.S = (r1 - r0) / rho;
         },
         onUpdate: () => {
-          const e = a.e;
-          this.state.x = c.x0 + (c.mx - c.x0) * e;
-          this.state.y = c.y0 + (c.my - c.y0) * e;
+          const t = proxy.t;
+          if (P.pure) {
+            // w(t) = w0 * (w1/w0)^t ; focal constant.
+            const w = P.w0 * Math.pow(P.w1 / P.w0, t);
+            this.state.s = W0 / w;
+            this.state.x = P.c1x;
+            this.state.y = P.c1y;
+            this.apply();
+            return;
+          }
+          const rho = VW_RHO;
+          const rho2 = rho * rho;
+          const sParam = t * P.S;
+          const arg = rho * sParam + P.r0;
+          // u(t) along the pan line (u0 = 0), w(t) the viewport world-width.
+          const u =
+            (P.w0 / rho2) * Math.cosh(P.r0) * Math.tanh(arg) -
+            (P.w0 / rho2) * Math.sinh(P.r0);
+          const w = (P.w0 * Math.cosh(P.r0)) / Math.cosh(arg);
+          this.state.s = W0 / w;
+          const frac = u / P.u1;
+          this.state.x = P.c0x + frac * (P.c1x - P.c0x);
+          this.state.y = P.c0y + frac * (P.c1y - P.c0y);
+          this.apply();
+        },
+        onComplete: () => {
+          // Snap to the EXACT target pose — the Van Wijk closed form lands on it
+          // only up to floating-point error, and downstream code (parked paging,
+          // the ride reading x/y at MAP_SCALE) needs the endpoints byte-exact.
+          this.state.x = end.x;
+          this.state.y = end.y;
+          this.state.s = end.s;
           this.apply();
         },
       },
       at,
-    );
-    // PHASE 2 — pure zoom + along-travel glide onto the last tick (perp held).
-    tl.to(
-      b,
-      {
-        e: 1,
-        duration: zoomDur,
-        ease: 'power2.inOut',
-        onUpdate: () => {
-          const e = b.e;
-          this.state.s = c.s0 + (MAP_SCALE - c.s0) * e;
-          this.state.x = c.mx + (tick[0] - c.mx) * e;
-          this.state.y = c.my + (tick[1] - c.my) * e;
-          this.apply();
-        },
-      },
-      at + panDur,
     );
   }
 
@@ -953,12 +931,11 @@ class MapView {
     // BEAT 4 — PAUSE AT THE PLATFORM END (~0.35s): a still hold at ride scale,
     // "stopped at the platform", before the reveal. Echo cleared.
     tl.call(() => { this.echo.k = 0; this.apply(); }, undefined, 3.2);
-    // BEAT 5 — ZOOM-OUT REVEAL from the last tick back to the parked pose. The
-    // reveal is split so the SCALE change is a PURE grow-in-place along the travel
-    // axis and the content-framing offset is a separate constant-scale pan — no
-    // cross-axis slide while zooming (see settleReveal). No backward ride at ride
-    // scale; `sampler.at(1).dir` is the line's travel direction at the last tick.
-    this.settleReveal(tl, park, sampler.at(1).dir, 3.55);
+    // BEAT 5 — REVEAL from the last tick (ride scale) to the parked pose as ONE
+    // combined Van Wijk zoom+pan swoop: scale AND focal move together throughout,
+    // a single smooth arc with no stretch and no two-step (see vanWijkTo). No
+    // backward ride at ride scale; ends exactly at the parked pose.
+    this.vanWijkTo(tl, park, 3.55, 1.0);
     // Reveal the platform + its cards AS the camera pulls back (into the
     // zoom-out), so they grow into view with the settle rather than snapping in
     // after all motion. apply() re-lays the cards every frame, so their screen
@@ -1059,14 +1036,12 @@ class MapView {
     });
     const homeDot = document.getElementById('home-dot');
     tl.call(() => this.setFades(null, 1, 0.8), undefined, 0.15);
-    // BEAT 1 — leave the platform: a UNIFORM two-phase zoom-in up to ride scale
-    // onto the line's far end (the last tick). The exact time-reverse of the
-    // arrival settleReveal — first a constant-scale perpendicular pan that
-    // removes the card-framing offset, then a pure zoom that glides ALONG travel
-    // onto the last tick with NO cross-axis pan while the scale changes (no more
-    // stretch). Ends exactly at ridePts[0] @ MAP_SCALE so the ride below is
-    // unchanged. sampler.at(0).dir is the travel axis leaving the last tick.
-    this.zoomInToTick(tl, ridePts[0], sampler.at(0).dir, 0, 0.7);
+    // BEAT 1 — leave the platform: ONE combined Van Wijk zoom+pan swoop from the
+    // parked pose up to ride scale onto the line's far end (the last tick). The
+    // time-mirror of the arrival reveal — scale AND focal move together as a
+    // single smooth arc (no two-step, no stretch). Ends exactly at ridePts[0] @
+    // MAP_SCALE so the ride below is unchanged.
+    this.vanWijkTo(tl, { x: ridePts[0][0], y: ridePts[0][1], s: MAP_SCALE }, 0, 0.7);
     // BEAT 2 — RIDE platform → Home, decelerating into the Home stop.
     tl.to(prog, { p: 0.78, duration: 1.2, ease: 'power2.in', onUpdate: moveSample }, 0.8);
     tl.to(prog, { p: 1, duration: 0.9, ease: 'power3.out', onUpdate: moveSample }, 2.0);
@@ -1217,14 +1192,12 @@ class MapView {
     // the whole A → Home → B journey and PAUSES at the Home interchange instead of
     // zooming out to the map.
     //
-    // BEAT 1 — leave platform A: a UNIFORM two-phase zoom-in up to ride scale
-    // onto A's far end (the last tick), then reveal every line (so the new line
-    // we're about to ride is visible). Same treatment as toMap()'s departure —
-    // the time-reverse of settleReveal: a constant-scale perpendicular pan that
-    // removes A's card-framing offset, then a pure zoom gliding ALONG travel
-    // onto the last tick with NO cross-axis pan while zooming. Ends exactly at
-    // inPts[0] @ MAP_SCALE so the ride below is unchanged.
-    this.zoomInToTick(tl, inPts[0], inSampler.at(0).dir, 0, 0.6);
+    // BEAT 1 — leave platform A: ONE combined Van Wijk zoom+pan swoop up to ride
+    // scale onto A's far end (the last tick), then reveal every line (so the new
+    // line we're about to ride is visible). Same treatment as toMap()'s departure
+    // — scale AND focal move together as a single smooth arc (no two-step, no
+    // stretch). Ends exactly at inPts[0] @ MAP_SCALE so the ride below is unchanged.
+    this.vanWijkTo(tl, { x: inPts[0][0], y: inPts[0][1], s: MAP_SCALE }, 0, 0.6);
     tl.call(() => this.setFades(null, 1, 0.6), undefined, 0.1);
     // BEAT 2 — RIDE A → Home, decelerating into the interchange stop.
     tl.to(progIn, { p: 1, duration: 1.3, ease: 'power2.inOut', onUpdate: moveIn }, 0.6);
@@ -1249,10 +1222,10 @@ class MapView {
     tl.call(() => this.setFades(toLine, 0, 0.7), undefined, 3.45);
     // BEAT 5 — PAUSE AT PLATFORM B (~0.35s): still hold at ride scale before the reveal.
     tl.call(() => { this.echo.k = 0; this.apply(); }, undefined, 3.85);
-    // BEAT 6 — ZOOM-OUT REVEAL of B from its last tick, mirroring toPlatform()'s
-    // arrival: a pure grow-in-place zoom along the travel axis, then a
-    // constant-scale pan for the content-framing offset (see settleReveal).
-    this.settleReveal(tl, park, outSampler.at(1).dir, 4.2);
+    // BEAT 6 — REVEAL of B from its last tick, mirroring toPlatform()'s arrival:
+    // ONE combined Van Wijk zoom+pan swoop from ride scale to B's parked pose —
+    // scale AND focal move together as a single smooth arc (see vanWijkTo).
+    this.vanWijkTo(tl, park, 4.2, 1.0);
     // Reveal the new platform + cards as the camera pulls back.
     tl.call(() => this.showUI(id), undefined, 4.35);
 
