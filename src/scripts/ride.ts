@@ -148,8 +148,14 @@ class MapView {
       // camera further right (small horizontal anchor) so the purple line
       // sits just past the docked rail and the rows — which run rightward to
       // right:4vw — are CENTRALIZED in the content region rather than hugging
-      // the left. Floored so the line always clears the rail by ~48px.
-      const frac = Math.max(0.16, (this.railWidth() + 48) / rect.width);
+      // the left. The floor keeps the line as far LEFT as possible while
+      // guaranteeing that not just the parked line but also the zoom-in SETTLE
+      // (which momentarily swings the stops ~35px further left as it eases from
+      // MAP_SCALE down to the parked scale) never lets a stop's roundel slide
+      // under the rail: railWidth + the roundel's on-screen radius + a margin
+      // that absorbs that settle overshoot with clear daylight to spare.
+      const stopR = (6.5 + 2.8 / 2) * s * k; // platform roundel screen radius
+      const frac = Math.max(0.16, (this.railWidth() + stopR + 56) / rect.width);
       return { s, x: slice[0][0] - (toWorldX(frac) - CX) / s, y: cy0 - 20 };
     }
     // axis 'h' (projects): anchor the leftmost stop so its card — centered on
