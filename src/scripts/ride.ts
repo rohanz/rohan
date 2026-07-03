@@ -947,8 +947,13 @@ class MapView {
     // BEAT 5 — REVEAL from the last tick (ride scale) to the parked pose as ONE
     // combined Van Wijk zoom+pan swoop: scale AND focal move together throughout,
     // a single smooth arc with no stretch and no two-step (see vanWijkTo). No
-    // backward ride at ride scale; ends exactly at the parked pose.
-    this.vanWijkTo(tl, park, 3.55, 1.0);
+    // backward ride at ride scale; ends exactly at the parked pose. The reveal
+    // TERMINATES at a stationary resting pose, so it uses a stronger ease
+    // (power2.inOut/Cubic, not the default power1.inOut/Quad) to visibly
+    // DECELERATE into the stop — the Van Wijk arc is ~constant-velocity, so the
+    // gentle default tail wasn't enough and the motion halted abruptly. Starts
+    // from the preceding still pause, so the ease-IN keeps the start smooth too.
+    this.vanWijkTo(tl, park, 3.55, 1.0, 'power2.inOut');
     // Set up the platform UI DURING the reveal (top-bar handoff, section title,
     // filter/more buttons, data-content visibility, and placeCards to position
     // the still-HIDDEN entries), so the structure is ready as the camera pulls
@@ -1039,6 +1044,13 @@ class MapView {
     };
 
     const tl = gsap.timeline({
+      // DEPARTURE SEQUENCING: hideUI() above starts a ~0.3s fade-out of the
+      // platform entries/cards. Delay the whole camera timeline so it begins only
+      // AFTER that fade completes — the entries fully vanish, THEN the camera
+      // starts moving (mirrors the arrival, where entries stagger in only after
+      // the platform settles). The delay shifts every beat uniformly, so all
+      // internal handoffs/pulses/pauses keep their relative timing.
+      delay: 0.35,
       defaults: { overwrite: 'auto' },
       onComplete: () => {
         const dNow = sampler.total + 1;
@@ -1192,6 +1204,12 @@ class MapView {
     const moveOut = () => move(outSampler, progOut, outStops, nOut);
 
     const tl = gsap.timeline({
+      // DEPARTURE SEQUENCING: hideUI() above starts a ~0.3s fade-out of platform
+      // A's entries/cards. Delay the whole pass-through timeline so the camera
+      // begins only AFTER that fade completes — entries fully vanish, THEN the
+      // camera leaves (mirrors arrival's stagger-in-after-settle). Uniform shift,
+      // so all beats/pulses/pauses keep their relative timing.
+      delay: 0.35,
       defaults: { overwrite: 'auto' },
       onComplete: () => {
         while (nIn.n < inStops.length) pulse(inStops[nIn.n++].el);
@@ -1242,8 +1260,10 @@ class MapView {
     tl.call(() => { this.echo.k = 0; this.apply(); }, undefined, 3.85);
     // BEAT 6 — REVEAL of B from its last tick, mirroring toPlatform()'s arrival:
     // ONE combined Van Wijk zoom+pan swoop from ride scale to B's parked pose —
-    // scale AND focal move together as a single smooth arc (see vanWijkTo).
-    this.vanWijkTo(tl, park, 4.2, 1.0);
+    // scale AND focal move together as a single smooth arc (see vanWijkTo). Like
+    // toPlatform()'s reveal, this ENDS AT A RESTING STOP, so it uses the stronger
+    // power2.inOut ease to decelerate visibly into rest rather than halting abruptly.
+    this.vanWijkTo(tl, park, 4.2, 1.0, 'power2.inOut');
     // Set up the new platform UI during the reveal (entries stay hidden).
     tl.call(() => this.showUI(id), undefined, 4.35);
     // Stagger the entries in one by one only after the reveal settles
