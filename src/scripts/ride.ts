@@ -171,6 +171,62 @@ class MapView {
     return { s, x: slice[0][0] - (toWorldX(frac) - CX) / s, y: slice[0][1] - (toWorldY(0.42) - CY) / s };
   }
 
+  /** Append an arrival settle whose ON-SCREEN x for `anchorX` (a world x)
+   *  approaches its rest value MONOTONICALLY — right-to-left, stopping AT rest,
+   *  never swinging past it and bouncing back.
+   *
+   *  A plain `tl.to(this.state, {x, s})` tweens camera x and scale together, but
+   *  a point's screen x is `CX + s·(anchorX − x)` — a PRODUCT of two terms that
+   *  are each linear in the eased progress, i.e. a QUADRATIC in progress. When
+   *  the camera zooms OUT (Δs<0) while panning right (Δx>0) that quadratic is
+   *  convex and dips to an interior minimum BELOW both endpoints: the leftward
+   *  overshoot that swings the music ticks toward/behind the docked rail before
+   *  settling. No ease can remove it — the ease only re-times the traversal; the
+   *  interior minimum is crossed regardless.
+   *
+   *  Instead we interpolate the anchor's screen x LINEARLY (in eased progress)
+   *  and back-solve the camera x each frame, so scale still eases s0→park.s but
+   *  the anchor glides monotonically to rest. Endpoints are identical to the old
+   *  tween (at e=1 the back-solved x is exactly park.x for any anchor), so the
+   *  parked pose is unchanged. Since the music line is vertical (all stops share
+   *  ~one world x), anchoring its leftmost stop makes every tick monotonic. */
+  settleMonotonic(
+    tl: gsap.core.Timeline,
+    park: { x: number; y: number; s: number },
+    anchorX: number,
+    at: number,
+  ) {
+    const proxy = { e: 0 };
+    let s0 = 0;
+    let y0 = 0;
+    let vx0 = 0;
+    let vx1 = 0;
+    tl.to(
+      proxy,
+      {
+        e: 1,
+        duration: 0.8,
+        ease: 'power2.inOut',
+        onStart: () => {
+          s0 = this.state.s;
+          y0 = this.state.y;
+          vx0 = CX + s0 * (anchorX - this.state.x);
+          vx1 = CX + park.s * (anchorX - park.x);
+        },
+        onUpdate: () => {
+          const e = proxy.e;
+          const s = s0 + (park.s - s0) * e;
+          const vx = vx0 + (vx1 - vx0) * e;
+          this.state.s = s;
+          this.state.y = y0 + (park.y - y0) * e;
+          this.state.x = anchorX - (vx - CX) / s;
+          this.apply();
+        },
+      },
+      at,
+    );
+  }
+
   /** Everything that isn't `line`, its stops, or the grid. */
   fadeTargets(line: Line): Element[] {
     const others: Element[] = [];
@@ -652,16 +708,21 @@ class MapView {
       return;
     }
 
+    // Prefix the ride path with the CURRENT camera focal so the sampler owns
+    // the camera's x/y for the ENTIRE ride — including the short hop onto the
+    // line. That lets the zoom-in tween animate ONLY scale, so the pan can
+    // OVERLAP the zoom's deceleration (the two now touch different state props
+    // and never fight) with no dead stop between "zoomed in" and "riding out".
     const ridePts = this.ridePath(line);
-    const sampler = pathSampler(ridePts);
-    const start = ridePts[0];
+    const startFocal: Point = [this.state.x, this.state.y];
+    const sampler = pathSampler([startFocal, ...ridePts]);
     const stops = this.pulseStops(line, sampler);
     stops.push({
       d: sampler.total,
       el: document.querySelector(`[data-destination="${line.id}"] circle`),
     });
     let nextStop = 0;
-    let lastAt: Point = start;
+    let lastAt: Point = startFocal;
     const prog = { p: 0 };
 
     const homeDot = document.getElementById('home-dot');
@@ -705,11 +766,9 @@ class MapView {
         this.busy = false;
       },
     });
-    tl.to(
-      this.state,
-      { x: start[0], y: start[1], s: MAP_SCALE, duration: 0.75, ease: 'power2.inOut', onUpdate: this.apply },
-      0.05,
-    );
+    // Zoom-in: SCALE ONLY. The camera's x/y is the sampler's job now, so this
+    // tween and the pan below can overlap without both writing x/y.
+    tl.to(this.state, { s: MAP_SCALE, duration: 0.8, ease: 'power2.inOut', onUpdate: this.apply }, 0.05);
     // Fade the Home tick to amber mid-glide (rather than instantly on click)
     // so it lights up AS the camera closes in on it.
     tl.call(() => this.light(homeDot, true), undefined, 0.45);
@@ -720,10 +779,24 @@ class MapView {
       undefined,
       1.05,
     );
-    tl.to(prog, { p: 0.78, duration: 1.5, ease: 'power2.in', onUpdate: moveSample }, 0.9);
+    // Ride pan — starts BEFORE the zoom finishes (0.4 < 0.85) so on-screen
+    // motion is continuous: the pan accelerates from rest UNDER the zoom's
+    // deceleration, so the camera never hits zero velocity between the two. A
+    // gentle `power1.in` (not `power2.in`) gives the pan enough early velocity
+    // to fill the moment the zoom's own velocity fades to zero.
+    tl.to(prog, { p: 0.78, duration: 2.0, ease: 'power1.in', onUpdate: moveSample }, 0.4);
     tl.to(prog, { p: 1, duration: 1.0, ease: 'power3.out', onUpdate: moveSample }, 2.4);
     tl.call(() => this.setFades(line, 0, 0.7), undefined, 2.7);
-    tl.to(this.state, { ...park, duration: 0.8, ease: 'power2.inOut', onUpdate: this.apply }, 3.35);
+    // Arrival settle. The vertical (music) line sits just past the docked rail,
+    // so its ticks are the ones at risk of swinging under the rail: use the
+    // monotonic settle (no leftward overshoot). Other axes park with content
+    // cards well clear of the rail, so a plain coupled tween is fine.
+    if (line.platform!.axis === 'v') {
+      const anchorX = Math.min(...line.platform!.stops.map((s) => s[0]));
+      this.settleMonotonic(tl, park, anchorX, 3.35);
+    } else {
+      tl.to(this.state, { ...park, duration: 0.8, ease: 'power2.inOut', onUpdate: this.apply }, 3.35);
+    }
 
     this.skippable(tl);
   }
@@ -962,7 +1035,14 @@ class MapView {
     // 5. Fade everything but the new line as it arrives, then settle to its
     //    parked pose (the only place scale leaves MAP_SCALE).
     tl.call(() => this.setFades(toLine, 0, 0.7), undefined, 3.5);
-    tl.to(this.state, { ...park, duration: 0.8, ease: 'power2.inOut', onUpdate: this.apply }, 4.05);
+    // Same monotonic settle for the vertical (music) line so its ticks never
+    // swing under the docked rail when switching platforms into music.
+    if (toLine.platform!.axis === 'v') {
+      const anchorX = Math.min(...toLine.platform!.stops.map((s) => s[0]));
+      this.settleMonotonic(tl, park, anchorX, 4.05);
+    } else {
+      tl.to(this.state, { ...park, duration: 0.8, ease: 'power2.inOut', onUpdate: this.apply }, 4.05);
+    }
 
     this.skippable(tl);
   }
