@@ -138,14 +138,15 @@ const LAKE = 'M880,-1600 L2600,-1600 L2600,2000 L880,2000 L880,1310 L1030,1160 L
       </g>
       <!-- Floating nav-line name labels. Live in the camera group (move with
            the map) but OUTSIDE #lines-world so the motion-blur echoes never
-           duplicate them. Each sits over a clear stretch of its line and fades
-           in only while that line is the hovered one (data-hl on #map-3d, set
-           by BOTH the rail rows and the map hit-paths — map view only). White
-           halo (paint-order) keeps them legible over lines/land. -->
+           duplicate them. Each sits over a clear stretch of its line, ahead of
+           Home in that line's ride/outbound direction (see each line's `ride`
+           points in data/system.ts), and fades in only while that line is the
+           hovered one (data-hl on #map-3d, set by BOTH the rail rows and the
+           map hit-paths — map view only). Plain ink-black text, no halo. -->
       <g class="line-names" aria-hidden="true">
-        <text class="line-name line-name-music" x="90" y="560" fill="#754fad" text-anchor="middle" dominant-baseline="middle">Music</text>
-        <text class="line-name line-name-projects" x="600" y="345" fill="#d13d59" text-anchor="middle" dominant-baseline="middle">Projects</text>
-        <text class="line-name line-name-about" x="470" y="250" fill="#815e49" text-anchor="middle" dominant-baseline="middle">About Me</text>
+        <text class="line-name line-name-music" x="560" y="150" fill="var(--ink)" text-anchor="middle" dominant-baseline="middle">Music</text>
+        <text class="line-name line-name-projects" x="150" y="380" fill="var(--ink)" text-anchor="middle" dominant-baseline="middle">Projects</text>
+        <text class="line-name line-name-about" x="460" y="480" fill="var(--ink)" text-anchor="middle" dominant-baseline="middle">About Me</text>
       </g>
     </g>
     <!-- Motion blur as filter-free echo taps: two unfiltered copies of the
@@ -230,17 +231,12 @@ const LAKE = 'M880,-1600 L2600,-1600 L2600,2000 L880,2000 L880,1310 L1030,1160 L
     filter: drop-shadow(0 0 1.2px var(--glow));
   }
   /* Floating line-name labels: hidden by default, fade in over the hovered
-     line. paint-order stroke first paints a white outline behind the glyphs
-     so the name stays legible over the coloured lines and land. */
+     line. Plain ink-black text, no halo/outline. */
   .line-name {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
     font-size: 27px;
     font-weight: 700;
     letter-spacing: 0.005em;
-    paint-order: stroke fill;
-    stroke: #fff;
-    stroke-width: 5px;
-    stroke-linejoin: round;
     opacity: 0;
     transition: opacity 0.25s ease;
     pointer-events: none;
