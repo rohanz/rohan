@@ -133,9 +133,12 @@ class MapView {
       const s = rect.height / k / 560;
       // Nudge the vertical center down slightly so the destination roundel
       // just above the topmost stop clears the top bar with margin instead
-      // of getting clipped by the map stage's overflow boundary. The
-      // horizontal anchor clears the docked left rail (+ a small margin).
-      const frac = Math.max(0.3, (this.railWidth() + 32) / rect.width);
+      // of getting clipped by the map stage's overflow boundary. Pan the
+      // camera further right (small horizontal anchor) so the purple line
+      // sits just past the docked rail and the rows — which run rightward to
+      // right:4vw — are CENTRALIZED in the content region rather than hugging
+      // the left. Floored so the line always clears the rail by ~48px.
+      const frac = Math.max(0.16, (this.railWidth() + 48) / rect.width);
       return { s, x: slice[0][0] - (toWorldX(frac) - CX) / s, y: cy0 - 20 };
     }
     // axis 'h' (projects): anchor the leftmost stop so its card — centered on
