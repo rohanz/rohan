@@ -656,28 +656,26 @@ const socials: [string, string][] = [
   .social-buttons { display: grid; grid-template-columns: 1fr 1fr; grid-auto-rows: 1fr; gap: 0.6rem; flex: 1; min-height: 0; }
   .social-btn { display: flex; align-items: center; justify-content: center; text-decoration: none; font-weight: 700; font-size: clamp(0.9rem, 1.15vw, 1.12rem); color: #fff; background: #815e49; border-radius: 8px; padding: 0.7rem 0.6rem; }
   .social-btn:hover { filter: brightness(1.12); }
-  /* CV: a normal, comfortably-sized button centred within the (still
-     uniform) box, rather than a giant block filling the whole card. */
-  .card-about-cv {
-    align-items: center;
-    justify-content: center;
-  }
+  /* CV: label stays top-left like every other About card (inherits
+     .card-about's flex-start column flow); the button is then centred in
+     the remaining space below it via auto margins, so it reads as a normal,
+     comfortably-sized button rather than a giant block filling the card. */
   .cv-btn {
     display: inline-flex;
     flex: none;
     align-items: center;
     justify-content: center;
-    align-self: center;
+    margin: auto;
     width: auto;
     max-width: 78%;
     text-align: center;
     text-decoration: none;
     font-weight: 800;
-    font-size: clamp(0.85rem, 1.05vw, 1rem);
+    font-size: clamp(0.95rem, 1.2vw, 1.1rem);
     color: #fff;
     background: #815e49;
     border-radius: 8px;
-    padding: 0.6rem 1.4rem;
+    padding: 0.85rem 1.9rem;
   }
   .cv-btn:hover { filter: brightness(1.12); }
 </style>
