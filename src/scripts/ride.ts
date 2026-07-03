@@ -259,8 +259,14 @@ class MapView {
     const pV = (hBudget + gap) / n;
     let P = Math.min(pH, pV, 320);
     P = Math.max(120, P);
-    let cardH = P - gap;
-    let cardW = R * cardH;
+    // Full-pitch height sets the WIDTH (cardW = R * baseH, unchanged), but the
+    // card itself is drawn a touch SHORTER (H_RATIO) so the run reads tighter
+    // and less empty. Cards stay pixel-uniform; the reclaimed height just
+    // becomes extra vertical gap between stops (never overlap).
+    const H_RATIO = 0.85;
+    const baseH = P - gap;
+    let cardW = R * baseH;
+    let cardH = baseH * H_RATIO;
     // Safety: never let the aspect-derived width overrun the horizontal band.
     const maxCardW = (wAvail - nm1 * P - 2 * gap) / 2;
     if (cardW > maxCardW) cardW = Math.max(150, maxCardW);

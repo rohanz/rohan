@@ -597,8 +597,9 @@ const socials: [string, string][] = [
   .card-about-bio .bio {
     margin: 0;
     flex: 1;
-    display: flex;
-    align-items: center;
+    /* Top-aligned: the paragraph starts just under the "BIO" label and flows
+       down, rather than being vertically centred in the box. */
+    display: block;
     font-size: clamp(0.72rem, 0.92vw, 0.98rem);
     line-height: 1.3;
     color: #2a2621;
@@ -611,9 +612,10 @@ const socials: [string, string][] = [
   /* Tech pills: fill the box, wrapping and vertically centred. */
   .chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; align-content: center; flex: 1; min-height: 0; gap: 0.36rem; }
   .chip { font-size: clamp(0.62rem, 0.85vw, 0.76rem); font-weight: 700; border-radius: 999px; padding: 0.26rem 0.62rem; background: #eee7db; color: #3a352b; }
-  /* Socials: two-column grid of chunky buttons that fill the box. */
-  .social-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; flex: 1; min-height: 0; align-content: center; }
-  .social-btn { display: flex; align-items: center; justify-content: center; text-decoration: none; font-weight: 700; font-size: clamp(0.74rem, 0.95vw, 0.9rem); color: #fff; background: #815e49; border-radius: 8px; padding: 0.6rem 0.5rem; }
+  /* Socials: 2×2 grid of chunky buttons that STRETCH to fill the box, so the
+     four links occupy the uniform card as fully as the other cards' content. */
+  .social-buttons { display: grid; grid-template-columns: 1fr 1fr; grid-auto-rows: 1fr; gap: 0.6rem; flex: 1; min-height: 0; }
+  .social-btn { display: flex; align-items: center; justify-content: center; text-decoration: none; font-weight: 700; font-size: clamp(0.9rem, 1.15vw, 1.12rem); color: #fff; background: #815e49; border-radius: 8px; padding: 0.7rem 0.6rem; }
   .social-btn:hover { filter: brightness(1.12); }
   /* CV: one big button that fills the box. */
   .cv-btn {
