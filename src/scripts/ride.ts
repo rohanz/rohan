@@ -953,21 +953,40 @@ class MapView {
     // DECELERATE into the stop — the Van Wijk arc is ~constant-velocity, so the
     // gentle default tail wasn't enough and the motion halted abruptly. Starts
     // from the preceding still pause, so the ease-IN keeps the start smooth too.
-    // About is trialing an even STRONGER, more gradual deceleration into the
-    // stop (power4.inOut) — still an inOut so the start off the pause stays
-    // smooth, just a longer/softer run-down at the tail. Music and projects
-    // stay on power2.inOut for now.
-    const revealEase = id === 'about' ? 'power4.inOut' : 'power2.inOut';
-    this.vanWijkTo(tl, park, 3.55, 1.0, revealEase);
+    // About (TRIAL) replaces the Van Wijk arc with a MONOTONIC coupled zoom+pan.
+    // The Van Wijk reveal OVERSHOOTS in scale for About: it zooms out PAST the
+    // parked scale (measured ~2.78 → dips to ~1.34 → eases back up to park ~1.56)
+    // before settling, because the arc's geometry pulls the viewport wide mid-path.
+    // About rides a DIAGONAL and its reveal-pan runs essentially ALONG that
+    // diagonal (near-zero perpendicular component), so — UNLIKE music/projects,
+    // whose reveal pans PERPENDICULAR to travel and would shear/"stretch" if a
+    // naive zoom+pan ran together — About can use a plain coupled tween with no
+    // stretch. Tweening the whole pose in one shot makes scale decrease
+    // MONOTONICALLY from ride scale to park (no dip, no overshoot: min scale ==
+    // parked scale), and a strong power4.out makes the motion visibly DECELERATE
+    // into the final frame — the long, soft run-down tail reads as a clear ease
+    // into rest. Slightly longer (1.1s) so the deceleration reads. Music and
+    // projects keep the Van Wijk reveal (power2.inOut) unchanged.
+    if (id === 'about') {
+      tl.to(
+        this.state,
+        { x: park.x, y: park.y, s: park.s, duration: 1.1, ease: 'power4.out', onUpdate: this.apply },
+        3.55,
+      );
+    } else {
+      this.vanWijkTo(tl, park, 3.55, 1.0, 'power2.inOut');
+    }
     // Set up the platform UI DURING the reveal (top-bar handoff, section title,
     // filter/more buttons, data-content visibility, and placeCards to position
     // the still-HIDDEN entries), so the structure is ready as the camera pulls
     // back. The entries themselves stay invisible here.
     tl.call(() => this.showUI(id), undefined, 3.7);
-    // Then, only AFTER the reveal has fully settled (3.55 + 1.0 = 4.55) plus a
-    // tiny beat so the platform reads as "settled, THEN populated", stagger the
-    // entries in one by one.
-    tl.call(() => this.cardsIn(id), undefined, 4.7);
+    // Then, only AFTER the reveal has fully settled plus a tiny beat so the
+    // platform reads as "settled, THEN populated", stagger the entries in one by
+    // one. Van Wijk reveal ends at 3.55 + 1.0 = 4.55 (music/projects → 4.7);
+    // About's longer monotonic reveal ends at 3.55 + 1.1 = 4.65, so its stagger
+    // is pushed to 4.85 to keep entries appearing only after the platform settles.
+    tl.call(() => this.cardsIn(id), undefined, id === 'about' ? 4.85 : 4.7);
 
     this.skippable(tl);
   }
