@@ -591,8 +591,9 @@ const socials: [string, string][] = [
     text-transform: uppercase;
     color: #6f6a60;
   }
-  /* Photo card: image fills the whole uniform box, edge to edge. */
-  .card-about-photo { padding: 0; }
+  /* Photo card: image sits inset within the uniform box with a thin frame,
+     rather than bleeding edge to edge. */
+  .card-about-photo { padding: 0.4rem; }
   .card-about-photo .photo {
     flex: 1;
     width: 100%;
@@ -600,6 +601,8 @@ const socials: [string, string][] = [
     min-height: 0;
     object-fit: cover;
     display: block;
+    border: 1.5px solid #2a2621;
+    border-radius: 6px;
   }
   /* Bio card: text-only now (photo split into its own card), sized up to fill
      the box comfortably. */
@@ -626,20 +629,28 @@ const socials: [string, string][] = [
   .social-buttons { display: grid; grid-template-columns: 1fr 1fr; grid-auto-rows: 1fr; gap: 0.6rem; flex: 1; min-height: 0; }
   .social-btn { display: flex; align-items: center; justify-content: center; text-decoration: none; font-weight: 700; font-size: clamp(0.9rem, 1.15vw, 1.12rem); color: #fff; background: #815e49; border-radius: 8px; padding: 0.7rem 0.6rem; }
   .social-btn:hover { filter: brightness(1.12); }
-  /* CV: one big button that fills the box. */
-  .cv-btn {
-    display: flex;
-    flex: 1;
+  /* CV: a normal, comfortably-sized button centred within the (still
+     uniform) box, rather than a giant block filling the whole card. */
+  .card-about-cv {
     align-items: center;
     justify-content: center;
+  }
+  .cv-btn {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    align-self: center;
+    width: auto;
+    max-width: 78%;
     text-align: center;
     text-decoration: none;
     font-weight: 800;
-    font-size: clamp(0.95rem, 1.3vw, 1.2rem);
+    font-size: clamp(0.85rem, 1.05vw, 1rem);
     color: #fff;
     background: #815e49;
     border-radius: 8px;
-    padding: 0.75rem 1rem;
+    padding: 0.6rem 1.4rem;
   }
   .cv-btn:hover { filter: brightness(1.12); }
 </style>
