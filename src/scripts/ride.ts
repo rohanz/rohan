@@ -251,10 +251,23 @@ class MapView {
     const targets = line
       ? this.fadeTargets(line)
       : Array.from(document.querySelectorAll('[data-was-faded]'));
+    // Restoring to full opacity (line === null) must leave NO inline opacity
+    // behind: several fade targets (line groups, ticks, stops) also carry
+    // CSS-driven hover/dim state, and a leftover inline `opacity: 1` would
+    // shadow that stylesheet rule forever. clearProps wipes the inline value
+    // once the restore tween settles so the CSS governs again. The fade-OUT
+    // path (opacity 0) intentionally keeps its inline value.
+    const restore = !line;
     targets.forEach((el) => {
       if (line) el.setAttribute('data-was-faded', '');
       else el.removeAttribute('data-was-faded');
-      gsap.to(el, { opacity, duration, ease: 'power1.inOut', overwrite: 'auto' });
+      gsap.to(el, {
+        opacity,
+        duration,
+        ease: 'power1.inOut',
+        overwrite: 'auto',
+        ...(restore ? { clearProps: 'opacity' } : {}),
+      });
     });
   }
 
@@ -693,7 +706,12 @@ class MapView {
       gsap.fromTo(
         dimmed,
         { opacity: 0.55 },
-        { opacity: 1, duration: 0.3, ease: 'power1.out', overwrite: 'auto' },
+        // clearProps drops the inline opacity once the ease-back settles, so the
+        // stylesheet's hover-dim rule (`.line-path { opacity: 0.55 }`) governs
+        // these paths again on the next map visit. Without it GSAP leaves an
+        // inline `opacity: 1` behind that permanently shadows the CSS, and the
+        // hover-dim silently stops working after a round-trip.
+        { opacity: 1, duration: 0.3, ease: 'power1.out', overwrite: 'auto', clearProps: 'opacity' },
       );
     }
 
