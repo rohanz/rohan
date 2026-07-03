@@ -90,6 +90,14 @@ class MapView {
     if (this.view !== 'map') this.placeCards();
   };
 
+  /** Rendered width of the docked left rail (0 if absent). The rail is a
+   *  fixed-width flush-left dock, so its width is the single constant that
+   *  every "clear the rail" calculation below anchors to — no more clamp
+   *  guesswork duplicated between CSS and JS. */
+  railWidth(): number {
+    return this.board ? this.board.getBoundingClientRect().width : 0;
+  }
+
   metrics() {
     const rect = this.stage.getBoundingClientRect();
     const k = Math.max(rect.width / VIEWBOX.w, rect.height / VIEWBOX.h);
@@ -126,19 +134,19 @@ class MapView {
       // Nudge the vertical center down slightly so the destination roundel
       // just above the topmost stop clears the top bar with margin instead
       // of getting clipped by the map stage's overflow boundary. The
-      // horizontal anchor (0.30) keeps the platform clear of the persistent
-      // left nav rail.
-      return { s, x: slice[0][0] - (toWorldX(0.3) - CX) / s, y: cy0 - 20 };
+      // horizontal anchor clears the docked left rail (+ a small margin).
+      const frac = Math.max(0.3, (this.railWidth() + 32) / rect.width);
+      return { s, x: slice[0][0] - (toWorldX(frac) - CX) / s, y: cy0 - 20 };
     }
     // axis 'h' (projects): anchor the leftmost stop so its card — centered on
-    // the stop (xPercent -50) — clears the left rail even when the rail is
-    // narrow and the cards are small; on wide screens this floors at 30%.
-    // The track sits at 42% down so the wrapped filter bar above never
-    // reaches the stops, ticks, or cards.
+    // the stop (xPercent -50) — clears the docked left rail even when the
+    // cards are small; on wide screens this floors at 30%. The track sits at
+    // 42% down so the wrapped filter bar above never reaches the stops,
+    // ticks, or cards.
     const s = rect.width / k / 900;
     const pitchPx = rect.width * 0.2222;
     const cardHalf = Math.max(150, pitchPx * 0.62) / 2;
-    const railRight = 28 + Math.min(230, Math.max(160, rect.width * 0.16));
+    const railRight = this.railWidth();
     const frac = Math.max(0.3, (railRight + 24 + cardHalf) / rect.width);
     return { s, x: slice[0][0] - (toWorldX(frac) - CX) / s, y: slice[0][1] - (toWorldY(0.42) - CY) / s };
   }
@@ -231,8 +239,7 @@ class MapView {
     const slice = stops.slice(fromStop, fromStop + stopsPerPage);
     const n = Math.max(1, slice.length);
 
-    const railW = Math.min(230, Math.max(160, rect.width * 0.16));
-    const railLeft = 28 + railW + 16; // clear the persistent left nav rail
+    const railLeft = this.railWidth() + 24; // clear the docked left rail
     const gap = 16;
     const marginR = 24;
     const marginV = 84;

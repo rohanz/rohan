@@ -291,10 +291,9 @@ const socials: [string, string][] = [
   .edge-btn:hover { filter: brightness(1.12); }
   .edge-btn[hidden] { display: none; }
   .edge-btn-right { right: 20px; }
-  /* Clears the persistent left rail. The rail narrows on small screens
-     (clamp(160px,16vw,230px)), so the button follows with a matching clamp
-     rather than a fixed 270px that would float far from a narrow rail. */
-  .edge-btn-left { left: clamp(200px, calc(28px + 16vw + 16px), 274px); }
+  /* Clears the docked left rail: anchored just right of the fixed rail width
+     (--rail-w), so it follows the rail at every breakpoint. */
+  .edge-btn-left { left: calc(var(--rail-w) + 20px); }
 
   /* On narrow viewports the right-edge paging button competes with the
      rightmost card for horizontal space, so drop the pair to the bottom
