@@ -252,6 +252,89 @@ class MapView {
     );
   }
 
+  /** Departure zoom-in: the exact time-reverse of settleReveal. Leaving a
+   *  platform, the camera goes from the parked pose up to ride scale at the
+   *  line's last tick as a UNIFORM two-phase move, so the SCALE change is never
+   *  accompanied by a cross-axis pan (which would read as the same "stretch"
+   *  the arrival reveal was fixed to avoid) — symmetric with the arrival.
+   *
+   *  The parked pose sits at a smaller scale AND a focal offset from the last
+   *  tick; that offset splits (relative to travel) into an ALONG part and a
+   *  PERPENDICULAR (content-framing) part. Panning the focal PERPENDICULAR to
+   *  travel WHILE the scale changes is what looked disjointed.
+   *
+   *  PHASE 1 (constant parked scale): pan the focal PERPENDICULAR-to-travel from
+   *  the parked pose onto the line — remove the card-framing offset — a uniform
+   *  pan, no zoom. PHASE 2 (pure zoom): zoom parked-scale → MAP_SCALE while
+   *  gliding the focal ALONG travel onto the last tick, with NO perpendicular
+   *  movement during the scale change. Ends EXACTLY at the last-tick focal at
+   *  MAP_SCALE so the ride that follows (which reads x/y from the sampler at
+   *  p=0 and holds scale at MAP_SCALE) is unchanged. Both phases ease to/from a
+   *  standstill (power2.inOut) so the phase junction has zero velocity on both
+   *  sides — no snap. `dir` only needs to give the travel AXIS; its sign is
+   *  irrelevant to the along/perpendicular split. */
+  zoomInToTick(
+    tl: gsap.core.Timeline,
+    tick: Point,
+    dir: Point,
+    at: number,
+    dur: number,
+  ) {
+    // Filled in phase 1's onStart from the live parked pose, then read by both
+    // phases: s0/x0/y0 = parked pose; mx/my = the on-line midpoint (parked pose
+    // with its perpendicular offset stripped, sharing the tick's cross-axis
+    // position but the parked focal's along position).
+    const c = { s0: 0, x0: 0, y0: 0, mx: 0, my: 0 };
+    const a = { e: 0 };
+    const b = { e: 0 };
+    const panDur = dur * 0.4;
+    const zoomDur = dur - panDur;
+    // PHASE 1 — remove the perpendicular framing offset at CONSTANT parked scale.
+    tl.to(
+      a,
+      {
+        e: 1,
+        duration: panDur,
+        ease: 'power2.inOut',
+        onStart: () => {
+          c.s0 = this.state.s;
+          c.x0 = this.state.x;
+          c.y0 = this.state.y;
+          const len = Math.hypot(dir[0], dir[1]) || 1;
+          const ux = dir[0] / len;
+          const uy = dir[1] / len;
+          const along = (c.x0 - tick[0]) * ux + (c.y0 - tick[1]) * uy;
+          c.mx = tick[0] + along * ux;
+          c.my = tick[1] + along * uy;
+        },
+        onUpdate: () => {
+          const e = a.e;
+          this.state.x = c.x0 + (c.mx - c.x0) * e;
+          this.state.y = c.y0 + (c.my - c.y0) * e;
+          this.apply();
+        },
+      },
+      at,
+    );
+    // PHASE 2 — pure zoom + along-travel glide onto the last tick (perp held).
+    tl.to(
+      b,
+      {
+        e: 1,
+        duration: zoomDur,
+        ease: 'power2.inOut',
+        onUpdate: () => {
+          const e = b.e;
+          this.state.s = c.s0 + (MAP_SCALE - c.s0) * e;
+          this.state.x = c.mx + (tick[0] - c.mx) * e;
+          this.state.y = c.my + (tick[1] - c.my) * e;
+          this.apply();
+        },
+      },
+      at + panDur,
+    );
+  }
+
   /** Everything that isn't `line`, its stops, or the grid. */
   fadeTargets(line: Line): Element[] {
     const others: Element[] = [];
@@ -976,12 +1059,14 @@ class MapView {
     });
     const homeDot = document.getElementById('home-dot');
     tl.call(() => this.setFades(null, 1, 0.8), undefined, 0.15);
-    // BEAT 1 — leave the platform: zoom up to ride scale onto the line's far end.
-    tl.to(
-      this.state,
-      { x: ridePts[0][0], y: ridePts[0][1], s: MAP_SCALE, duration: 0.7, ease: 'power2.inOut', onUpdate: this.apply },
-      0,
-    );
+    // BEAT 1 — leave the platform: a UNIFORM two-phase zoom-in up to ride scale
+    // onto the line's far end (the last tick). The exact time-reverse of the
+    // arrival settleReveal — first a constant-scale perpendicular pan that
+    // removes the card-framing offset, then a pure zoom that glides ALONG travel
+    // onto the last tick with NO cross-axis pan while the scale changes (no more
+    // stretch). Ends exactly at ridePts[0] @ MAP_SCALE so the ride below is
+    // unchanged. sampler.at(0).dir is the travel axis leaving the last tick.
+    this.zoomInToTick(tl, ridePts[0], sampler.at(0).dir, 0, 0.7);
     // BEAT 2 — RIDE platform → Home, decelerating into the Home stop.
     tl.to(prog, { p: 0.78, duration: 1.2, ease: 'power2.in', onUpdate: moveSample }, 0.8);
     tl.to(prog, { p: 1, duration: 0.9, ease: 'power3.out', onUpdate: moveSample }, 2.0);
@@ -1132,13 +1217,14 @@ class MapView {
     // the whole A → Home → B journey and PAUSES at the Home interchange instead of
     // zooming out to the map.
     //
-    // BEAT 1 — leave platform A: zoom up to ride scale onto A's far end, and
-    // reveal every line (so the new line we're about to ride is visible).
-    tl.to(
-      this.state,
-      { x: inPts[0][0], y: inPts[0][1], s: MAP_SCALE, duration: 0.6, ease: 'power2.inOut', onUpdate: this.apply },
-      0,
-    );
+    // BEAT 1 — leave platform A: a UNIFORM two-phase zoom-in up to ride scale
+    // onto A's far end (the last tick), then reveal every line (so the new line
+    // we're about to ride is visible). Same treatment as toMap()'s departure —
+    // the time-reverse of settleReveal: a constant-scale perpendicular pan that
+    // removes A's card-framing offset, then a pure zoom gliding ALONG travel
+    // onto the last tick with NO cross-axis pan while zooming. Ends exactly at
+    // inPts[0] @ MAP_SCALE so the ride below is unchanged.
+    this.zoomInToTick(tl, inPts[0], inSampler.at(0).dir, 0, 0.6);
     tl.call(() => this.setFades(null, 1, 0.6), undefined, 0.1);
     // BEAT 2 — RIDE A → Home, decelerating into the interchange stop.
     tl.to(progIn, { p: 1, duration: 1.3, ease: 'power2.inOut', onUpdate: moveIn }, 0.6);
