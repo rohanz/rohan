@@ -705,7 +705,7 @@ class MapView {
     this.skippable(tl);
   }
 
-  toMap(animate = true) {
+  toMap(animate = true, onArrive?: () => void) {
     if (this.busy || this.view === 'map') return;
     const line = lineById(this.view);
     this.busy = true;
@@ -713,6 +713,8 @@ class MapView {
     this.view = 'map';
     stopMusicPlayback(); // silence any preview before riding back to the map
     this.hideUI(!animate);
+
+    const homeG = this.stage.querySelector<SVGGElement>('g.home');
 
     const done = () => {
       this.stage.classList.remove('ride-active');
@@ -725,16 +727,22 @@ class MapView {
       if (bar) gsap.to(bar, { backgroundColor: '#000', duration: 0.4, ease: 'power1.out', overwrite: 'auto' });
       if (section) section.textContent = '';
       this.busy = false;
+      onArrive?.();
     };
 
     if (!animate || prefersReducedMotion()) {
       this.setFades(null, 1, 0.01);
-      Object.assign(this.state, { x: HOME[0], y: HOME[1], s: 1 });
+      Object.assign(this.state, this.mapPose());
       this.echo.k = 0;
       this.apply();
       done();
       return;
     }
+
+    // Home fades in at ARRIVAL (not with the rest of the map early in the
+    // ride): drop its data-was-faded so the generic setFades(null) restore
+    // skips it, keeping it hidden until the camera settles on Home.
+    homeG?.removeAttribute('data-was-faded');
 
     const ridePts = this.ridePath(line).reverse();
     const sampler = pathSampler(ridePts);
@@ -771,50 +779,41 @@ class MapView {
     tl.to(prog, { p: 1, duration: 0.9, ease: 'power3.out', onUpdate: moveSample }, 2.0);
     tl.to(
       this.state,
-      { x: HOME[0], y: HOME[1], s: 1, duration: 0.8, ease: 'power2.inOut', onUpdate: this.apply },
+      { ...this.mapPose(), duration: 0.8, ease: 'power2.inOut', onUpdate: this.apply },
       2.95,
     );
+    // Arrival: reveal Home with a soft fade so the dot AND label glide in as
+    // the camera settles, rather than snapping to full opacity. ride-active is
+    // dropped here (so the label is no longer force-hidden) with the group held
+    // at 0 first — no flash — then faded up. This is the only opacity tween on
+    // the home group and it fires after all camera motion, so it never rasters
+    // mid-ride.
+    if (homeG) {
+      tl.call(
+        () => {
+          gsap.set(homeG, { opacity: 0 });
+          this.stage.classList.remove('ride-active');
+          gsap.to(homeG, { opacity: 1, duration: 0.45, ease: 'power1.out', overwrite: 'auto' });
+        },
+        undefined,
+        3.55,
+      );
+    }
 
     this.skippable(tl);
   }
 
-  /** Platform → platform, via the persistent rail: an express pull-back to
-   *  the rest pose (no reverse ride, just a quick zoom-out) chained
-   *  straight into the normal ride to `id`. Used instead of toMap()+
-   *  toPlatform() so clicking another destination while already parked
-   *  doesn't require detouring through the map first. */
+  /** Platform → platform as one continuous journey: ride the leaving line in
+   *  reverse back to Home (the exact reverse-glide toMap() uses — same echo
+   *  blur, easing and Home settle), then "change lines" at Home and ride out
+   *  along the new line to its platform. Implemented by chaining toMap()'s
+   *  arrival straight into toPlatform(id), so the two rides share all their
+   *  motion, fade and top-bar handoff logic rather than duplicating it. */
   switchPlatform(id: LineId) {
     if (this.busy || this.view === 'map' || this.view === id) return;
-    const leaving = this.view;
-    this.busy = true;
-    stopMusicPlayback();
-    this.hideUI(true);
-    this.setFades(null, 1, 0.35);
-    document.querySelectorAll(`[data-destination="${leaving}"] circle, #home-dot`).forEach((el) => {
-      gsap.set(el, { attr: { fill: '#ffffff' } });
-    });
-    const bar = document.querySelector('.top-bar');
-    const section = document.getElementById('bar-section');
-    if (bar) gsap.to(bar, { backgroundColor: '#000', duration: 0.3, ease: 'power1.out', overwrite: 'auto' });
-    if (section) section.textContent = '';
-
-    gsap.to(this.state, {
-      x: HOME[0],
-      y: HOME[1],
-      s: 1,
-      duration: 0.7,
-      ease: 'power2.inOut',
-      overwrite: 'auto',
-      onUpdate: this.apply,
-      onComplete: () => {
-        this.stage.classList.remove('ride-active');
-        this.echo.k = 0;
-        this.apply();
-        this.view = 'map';
-        this.busy = false;
-        this.toPlatform(id);
-      },
-    });
+    // toMap() already collapses to an instant hop under reduced motion, and
+    // the chained toPlatform() does the same, so one call covers both modes.
+    this.toMap(true, () => this.toPlatform(id));
   }
 
   toPage(page: number) {
