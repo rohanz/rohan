@@ -963,14 +963,32 @@ class MapView {
     // naive zoom+pan ran together — About can use a plain coupled tween with no
     // stretch. Tweening the whole pose in one shot makes scale decrease
     // MONOTONICALLY from ride scale to park (no dip, no overshoot: min scale ==
-    // parked scale), and a strong power4.out makes the motion visibly DECELERATE
-    // into the final frame — the long, soft run-down tail reads as a clear ease
-    // into rest. Slightly longer (1.1s) so the deceleration reads. Music and
-    // projects keep the Van Wijk reveal (power2.inOut) unchanged.
+    // parked scale). The ease is a CUSTOM ASYMMETRIC "gentle-in, strong-out"
+    // curve, NOT power4.out. power4.out front-loaded the motion (velocity ~2.9 at
+    // 10% — a fast spike, then a crawl), which read as "the pan/zoom jumps to high
+    // speed immediately." Since the reveal follows a still pause, it should ease IN
+    // from rest to a MODERATE cruise (like a gentle power2.inOut start), hold
+    // roughly steady through the middle, then DECELERATE smoothly over a long tail
+    // into the stop. The velocity we want is v(p) ∝ p²(1−p)³: zero at both ends,
+    // v'(0)=0 (soft launch), an early-ish moderate peak (~0.4), and a pronounced
+    // run-down. Integrating and normalizing gives the closed-form eased-progress
+    // f(p) = 20p³ − 45p⁴ + 36p⁵ − 10p⁶, whose derivative 60·p²(1−p)³ ≥ 0 on [0,1]
+    // — so the tween stays strictly MONOTONIC (no overshoot). Measured start speed
+    // (~0.44 at 10%) matches a gentle power2.inOut start and is far below
+    // power4.out's spike (~2.9); the tail decelerates 0.53 → 0.05 → ~0 (75→90→97%).
+    // Slightly longer (1.1s) so the deceleration reads. Music and projects keep the
+    // Van Wijk reveal (power2.inOut) unchanged.
     if (id === 'about') {
       tl.to(
         this.state,
-        { x: park.x, y: park.y, s: park.s, duration: 1.1, ease: 'power4.out', onUpdate: this.apply },
+        {
+          x: park.x,
+          y: park.y,
+          s: park.s,
+          duration: 1.1,
+          ease: (p: number) => 20 * p ** 3 - 45 * p ** 4 + 36 * p ** 5 - 10 * p ** 6,
+          onUpdate: this.apply,
+        },
         3.55,
       );
     } else {
