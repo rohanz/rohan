@@ -101,19 +101,6 @@ const LAKE = 'M880,-1600 L2600,-1600 L2600,2000 L880,2000 L880,1310 L1030,1160 L
             stroke-linecap="round"
             stroke-linejoin="round"
           />
-          {line.nav && (
-            <path
-              class="hit-path"
-              data-ride-line={line.id}
-              data-href={line.nav.href}
-              d={filletPath(line.points)}
-              fill="none"
-              stroke="transparent"
-              stroke-width="26"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          )}
         </g>
       ))}
 
@@ -136,6 +123,27 @@ const LAKE = 'M880,-1600 L2600,-1600 L2600,2000 L880,2000 L880,1310 L1030,1160 L
         ))}
       </g>
       </g>
+      <!-- Interactive hover/click surfaces for the nav lines. Kept OUTSIDE
+           #lines-world (but still in the camera group, so they track the real
+           lines) because the motion-blur echo <use>s #lines-world: a cloned
+           hit-path would render on top of the real one and, since clones carry
+           no JS listeners, would swallow every hover — breaking the line
+           highlight/dim. Living here, only the real hit-paths receive events. -->
+      <g class="hit-lines">
+        {NAV_LINES.map((line) => (
+          <path
+            class="hit-path"
+            data-ride-line={line.id}
+            data-href={line.nav.href}
+            d={filletPath(line.points)}
+            fill="none"
+            stroke="transparent"
+            stroke-width="26"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        ))}
+      </g>
       <!-- Floating nav-line name labels. Live in the camera group (move with
            the map) but OUTSIDE #lines-world so the motion-blur echoes never
            duplicate them. Each sits over a clear stretch of its line, ahead of
@@ -144,9 +152,9 @@ const LAKE = 'M880,-1600 L2600,-1600 L2600,2000 L880,2000 L880,1310 L1030,1160 L
            hovered one (data-hl on #map-3d, set by BOTH the rail rows and the
            map hit-paths — map view only). Plain ink-black text, no halo. -->
       <g class="line-names" aria-hidden="true">
-        <text class="line-name line-name-music" x="560" y="150" fill="var(--ink)" text-anchor="middle" dominant-baseline="middle">Music</text>
-        <text class="line-name line-name-projects" x="150" y="380" fill="var(--ink)" text-anchor="middle" dominant-baseline="middle">Projects</text>
-        <text class="line-name line-name-about" x="460" y="480" fill="var(--ink)" text-anchor="middle" dominant-baseline="middle">About Me</text>
+        <text class="line-name line-name-music" x="625" y="235" fill="var(--ink)" text-anchor="middle" dominant-baseline="middle">Music</text>
+        <text class="line-name line-name-projects" x="175" y="470" fill="var(--ink)" text-anchor="middle" dominant-baseline="middle">Projects</text>
+        <text class="line-name line-name-about" x="540" y="520" fill="var(--ink)" text-anchor="middle" dominant-baseline="middle">About Me</text>
       </g>
     </g>
     <!-- Motion blur as filter-free echo taps: two unfiltered copies of the
