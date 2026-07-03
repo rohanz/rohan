@@ -105,9 +105,11 @@ const dests = NAV_LINES.map((l) => ({
     background: color-mix(in srgb, var(--line-hex) 14%, transparent);
   }
   .board-link.active .board-name { font-weight: 800; }
-  /* Legend swatches are short line segments, not dots */
-  .swatch { width: 32px; height: 9px; border-radius: 2px; flex: none; transition: transform 0.15s ease; background: var(--line-hex); }
-  .board-link:hover .swatch, .board-link:focus-visible .swatch { transform: scaleX(1.25); transform-origin: left; }
+  /* Legend swatches are short line segments, not dots. Hover simply makes the
+     bar LONGER (animating width, not scaleX) so it grows rightward with crisp
+     rounded caps and no scale distortion. */
+  .swatch { width: 32px; height: 9px; border-radius: 2px; flex: none; transition: width 0.15s ease; background: var(--line-hex); }
+  .board-link:hover .swatch, .board-link:focus-visible .swatch { width: 46px; }
   /* Home's row gets a mini version of the map's Home interchange capsule
      (white circle, dark ring) instead of a line-color bar. */
   .swatch-home {
@@ -118,5 +120,25 @@ const dests = NAV_LINES.map((l) => ({
     border: 3px solid #131313;
     box-sizing: border-box;
   }
-  .board-link:hover .swatch-home, .board-link:focus-visible .swatch-home { transform: none; }
+  /* Home's swatch is a fixed roundel — keep it at 16px on hover (the base
+     .swatch hover rule would otherwise stretch it). */
+  .board-link:hover .swatch-home, .board-link:focus-visible .swatch-home { width: 16px; }
+
+  /* Bidirectional hover sync: when a MAP line is hovered, #map-3d[data-hl]
+     is set, and the matching rail row should show the SAME visual it gets on
+     :hover (background tint + lengthened swatch). The rail (#station-board)
+     is NOT a descendant of #map-3d — both live under #main — so we key off a
+     :has() on the common #main ancestor rather than a descendant selector.
+     (This also fires when hovering the rail row itself, since ride.ts sets
+     data-hl from that source too — harmless, it just matches the :hover state.) */
+  :global(#main:has(#map-3d[data-hl='music'])) .board-link[data-line='music'],
+  :global(#main:has(#map-3d[data-hl='projects'])) .board-link[data-line='projects'],
+  :global(#main:has(#map-3d[data-hl='about'])) .board-link[data-line='about'] {
+    background: rgba(0, 0, 0, 0.07);
+  }
+  :global(#main:has(#map-3d[data-hl='music'])) .board-link[data-line='music'] .swatch,
+  :global(#main:has(#map-3d[data-hl='projects'])) .board-link[data-line='projects'] .swatch,
+  :global(#main:has(#map-3d[data-hl='about'])) .board-link[data-line='about'] .swatch {
+    width: 46px;
+  }
 </style>
