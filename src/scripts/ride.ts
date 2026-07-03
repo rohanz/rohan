@@ -812,17 +812,133 @@ class MapView {
     this.skippable(tl);
   }
 
-  /** Platform → platform as one continuous journey: ride the leaving line in
-   *  reverse back to Home (the exact reverse-glide toMap() uses — same echo
-   *  blur, easing and Home settle), then "change lines" at Home and ride out
-   *  along the new line to its platform. Implemented by chaining toMap()'s
-   *  arrival straight into toPlatform(id), so the two rides share all their
-   *  motion, fade and top-bar handoff logic rather than duplicating it. */
+  /** Platform → platform as ONE continuous train ride that PASSES THROUGH the
+   *  Home interchange WITHOUT zooming out to the map. The camera holds ride
+   *  scale (MAP_SCALE) the entire A→Home→B journey: it reverse-glides along the
+   *  leaving line into Home (Home pulses amber as it passes, like any stop),
+   *  then — without stopping or zooming out — continues straight out along the
+   *  new line to its platform. Scale only changes at the very ends (parked A →
+   *  ride scale at the start, ride scale → parked B at the arrival); it never
+   *  drops to the map rest scale mid-transition. Distinct from toMap(), which is
+   *  the explicit return-to-map that DOES zoom out and centre Home.
+   *  The top bar hands its colour from line A to line B across the pass. */
   switchPlatform(id: LineId) {
     if (this.busy || this.view === 'map' || this.view === id) return;
-    // toMap() already collapses to an instant hop under reduced motion, and
-    // the chained toPlatform() does the same, so one call covers both modes.
-    this.toMap(true, () => this.toPlatform(id));
+    const fromLine = lineById(this.view);
+    const toLine = lineById(id);
+    this.busy = true;
+    this.view = id;
+    this.page = 0;
+    stopMusicPlayback(); // silence the leaving line's preview before riding on
+    this.hideUI(false);
+    this.stage.classList.add('ride-active');
+    delete this.stage.dataset.hl;
+
+    const park = this.parkPose(toLine, 0);
+
+    if (prefersReducedMotion()) {
+      // Instant hop straight to the new platform (no journey).
+      this.setFades(null, 1, 0.01); // un-fade everything the old view had hidden
+      this.setFades(toLine, 0, 0.01); // then hide all but the new line
+      Object.assign(this.state, park);
+      this.apply();
+      this.showUI(id);
+      this.busy = false;
+      return;
+    }
+
+    // Reverse leg: leaving-line platform → Home, ending EXACTLY at Home.
+    const inPts = this.ridePath(fromLine).reverse();
+    if (inPts[inPts.length - 1][0] !== HOME[0] || inPts[inPts.length - 1][1] !== HOME[1]) {
+      inPts.push([HOME[0], HOME[1]]);
+    }
+    const inSampler = pathSampler(inPts);
+    // Outbound leg: Home → new-line platform (with its stop pulses).
+    const outPts = this.ridePath(toLine);
+    const outSampler = pathSampler(outPts);
+    const outStops = this.pulseStops(toLine, outSampler);
+    outStops.push({
+      d: outSampler.total,
+      el: document.querySelector(`[data-destination="${toLine.id}"] circle`),
+    });
+
+    const homeDot = document.getElementById('home-dot');
+    const PULSE_LEAD = 70;
+    const progIn = { p: 0 };
+    const progOut = { p: 0 };
+    let nextStop = 0;
+    let lastAt: Point = inPts[0];
+
+    // Both legs move ONLY the focal point (x/y); scale is untouched here so it
+    // holds at MAP_SCALE across the whole pass-through.
+    const move = (sampler: ReturnType<typeof pathSampler>, prog: { p: number }, pulse: boolean) => {
+      const { at, dir } = sampler.at(prog.p);
+      this.state.x = at[0];
+      this.state.y = at[1];
+      if (pulse) {
+        const dNow = prog.p * sampler.total;
+        while (nextStop < outStops.length && outStops[nextStop].d - PULSE_LEAD <= dNow) {
+          this.light(outStops[nextStop].el);
+          nextStop++;
+        }
+      }
+      const speedPx = Math.hypot(at[0] - lastAt[0], at[1] - lastAt[1]) * this.state.s;
+      this.echo.dx = -dir[0];
+      this.echo.dy = -dir[1];
+      this.echo.k = Math.min(speedPx / 22, 1);
+      this.apply();
+      lastAt = at;
+    };
+    const moveIn = () => move(inSampler, progIn, false);
+    const moveOut = () => move(outSampler, progOut, true);
+
+    const tl = gsap.timeline({
+      defaults: { overwrite: 'auto' },
+      onComplete: () => {
+        const dNow = outSampler.total + 1;
+        while (nextStop < outStops.length && outStops[nextStop].d - PULSE_LEAD <= dNow) {
+          this.light(outStops[nextStop].el);
+          nextStop++;
+        }
+        this.echo.k = 0;
+        this.apply();
+        this.showUI(id);
+        this.busy = false;
+      },
+    });
+
+    // 1. Zoom from the parked pose up to ride scale at the leaving platform, and
+    //    reveal every line (so the new line we're about to ride is visible).
+    tl.to(
+      this.state,
+      { x: inPts[0][0], y: inPts[0][1], s: MAP_SCALE, duration: 0.6, ease: 'power2.inOut', onUpdate: this.apply },
+      0,
+    );
+    tl.call(() => this.setFades(null, 1, 0.6), undefined, 0.1);
+    // 2. Reverse-glide into Home.
+    tl.to(progIn, { p: 1, duration: 1.35, ease: 'power2.inOut', onUpdate: moveIn }, 0.5);
+    // 3. Home pulses amber as we pass through the interchange, and the top bar
+    //    hands its colour/label from line A to line B mid-pass.
+    tl.call(() => this.light(homeDot), undefined, 1.6);
+    tl.call(
+      () => {
+        const bar = document.querySelector('.top-bar');
+        const section = document.getElementById('bar-section');
+        if (bar) gsap.to(bar, { backgroundColor: toLine.hex, duration: 0.5, ease: 'power1.inOut', overwrite: 'auto' });
+        if (section) section.textContent = toLine.nav!.name;
+      },
+      undefined,
+      1.7,
+    );
+    // 4. Without stopping or zooming out, continue out along the new line.
+    tl.to(progOut, { p: 0.8, duration: 1.35, ease: 'power2.in', onUpdate: moveOut }, 1.85);
+    tl.to(progOut, { p: 1, duration: 0.95, ease: 'power3.out', onUpdate: moveOut }, 3.2);
+    // 5. Fade everything but the new line as it arrives, then settle to its
+    //    parked pose (the only place scale leaves MAP_SCALE).
+    tl.call(() => this.setFades(toLine, 0, 0.7), undefined, 3.5);
+    tl.to(this.state, { ...park, duration: 0.8, ease: 'power2.inOut', onUpdate: this.apply }, 4.05);
+
+    this.skippable(tl);
   }
 
   toPage(page: number) {
