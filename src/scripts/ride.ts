@@ -171,25 +171,43 @@ class MapView {
     return { s, x: slice[0][0] - (toWorldX(frac) - CX) / s, y: slice[0][1] - (toWorldY(0.42) - CY) / s };
   }
 
-  /** Append an arrival settle whose ON-SCREEN x for `anchorX` (a world x)
-   *  approaches its rest value MONOTONICALLY — right-to-left, stopping AT rest,
-   *  never swinging past it and bouncing back.
+  /** The focal point the glide should END on so the arrival closes as a
+   *  pull-back zoom-out. For the 'h' and 'd' axes that's the parked focal itself:
+   *  the closing tween then only animates scale and the platform grows into frame
+   *  in place. The vertical ('v', music) line's parked focal sits far to the
+   *  RIGHT of the line (so the line rests just past the docked rail), so a pure
+   *  zoom-out toward it would sweep the line in from far off-screen-left, behind
+   *  the rail. Instead end its glide with the line's anchor ALREADY at its parked
+   *  SCREEN x at ride scale, so the closing settleMonotonic can HOLD that screen-x
+   *  while zooming out — the line stays pinned just past the rail and the map
+   *  pulls back around it, ticks always clear of the rail. */
+  arrivalFocal(line: Line, park: { x: number; y: number; s: number }): Point {
+    if (line.platform!.axis !== 'v') return [park.x, park.y];
+    const anchorX = Math.min(...line.platform!.stops.map((s) => s[0]));
+    // Solve glideEnd.x so the anchor's ride-scale viewbox-x
+    // (CX + MAP_SCALE·(anchorX − glideEnd.x)) equals its PARKED viewbox-x
+    // (CX + park.s·(anchorX − park.x)); the anchor lands exactly at rest.
+    return [anchorX - (park.s / MAP_SCALE) * (anchorX - park.x), park.y];
+  }
+
+  /** Append an arrival settle that HOLDS the on-screen x of `anchorX` (a world x)
+   *  constant — or moves it MONOTONICALLY to rest, right-to-left, stopping AT rest
+   *  and never swinging past it — while the camera zooms out.
    *
-   *  A plain `tl.to(this.state, {x, s})` tweens camera x and scale together, but
-   *  a point's screen x is `CX + s·(anchorX − x)` — a PRODUCT of two terms that
-   *  are each linear in the eased progress, i.e. a QUADRATIC in progress. When
-   *  the camera zooms OUT (Δs<0) while panning right (Δx>0) that quadratic is
-   *  convex and dips to an interior minimum BELOW both endpoints: the leftward
-   *  overshoot that swings the music ticks toward/behind the docked rail before
-   *  settling. No ease can remove it — the ease only re-times the traversal; the
-   *  interior minimum is crossed regardless.
+   *  A plain `tl.to(this.state, {x, s})` tweens camera x and scale together, but a
+   *  point's screen x is `CX + s·(anchorX − x)` — a PRODUCT of two terms each
+   *  linear in eased progress, i.e. a QUADRATIC. When the camera zooms OUT (Δs<0)
+   *  while panning right (Δx>0) that quadratic is convex and dips to an interior
+   *  minimum BELOW both endpoints: the leftward overshoot that swings the music
+   *  ticks toward/behind the docked rail before settling. No ease removes it.
    *
-   *  Instead we interpolate the anchor's screen x LINEARLY (in eased progress)
-   *  and back-solve the camera x each frame, so scale still eases s0→park.s but
-   *  the anchor glides monotonically to rest. Endpoints are identical to the old
-   *  tween (at e=1 the back-solved x is exactly park.x for any anchor), so the
-   *  parked pose is unchanged. Since the music line is vertical (all stops share
-   *  ~one world x), anchoring its leftmost stop makes every tick monotonic. */
+   *  Instead we interpolate the anchor's screen x LINEARLY (in eased progress) and
+   *  back-solve the camera x each frame, so scale still eases s0→park.s but the
+   *  anchor glides monotonically to rest. When the glide has already placed the
+   *  anchor AT its parked screen x (start == rest), the interpolation is constant
+   *  and the anchor holds dead-still — the line stays pinned just past the rail
+   *  while the map pulls back around it (a pure grow-into-view). Endpoints match
+   *  the old coupled tween exactly, so the parked pose is unchanged. */
   settleMonotonic(
     tl: gsap.core.Timeline,
     park: { x: number; y: number; s: number },
@@ -621,11 +639,38 @@ class MapView {
     });
   }
 
+  /** Flash a stop amber as the camera passes it. The pulse is deliberately SHORT
+   *  and sharp — a quick rise, no hold, a quick fall — so that even where stops
+   *  pass close together (the decelerating approach to a platform), each flash
+   *  has nearly decayed before the next begins: the stops read as a running
+   *  sequence of single flashes, not a lit-up cluster. `keep` holds the amber
+   *  (used for the Home tick while the camera pauses on it). */
   light(el: Element | null, keep = false) {
     if (!el) return;
     const t2 = gsap.timeline();
-    t2.to(el, { attr: { fill: AMBER }, duration: 0.3, ease: 'power1.out' });
-    if (!keep) t2.to(el, { attr: { fill: '#ffffff' }, duration: 0.18, ease: 'power1.in' }, '+=0.1');
+    t2.to(el, { attr: { fill: AMBER }, duration: 0.09, ease: 'power2.out' });
+    if (!keep) t2.to(el, { attr: { fill: '#ffffff' }, duration: 0.13, ease: 'power2.in' });
+  }
+
+  /** Returns a `pulse(el)` that flashes stops amber but never lets two overlap:
+   *  successive flashes are spaced at least GAP seconds apart, so a burst of
+   *  stops passed close together (the decelerating approach into a platform, or
+   *  the dense stretch near Home) reads as a crisp ONE-AT-A-TIME running sequence
+   *  instead of a lit-up cluster. The tiny timing slack vs the camera's exact
+   *  position is imperceptible for a brief flash. One sequencer is shared across
+   *  a whole ride (both legs of a pass-through) so the cadence stays global. */
+  pulseSequencer(): (el: Element | null) => void {
+    let last = -Infinity;
+    const GAP = 0.14;
+    return (el: Element | null) => {
+      if (!el) return;
+      const now = performance.now() / 1000;
+      const at = Math.max(now, last + GAP);
+      last = at;
+      const delay = at - now;
+      if (delay < 0.008) this.light(el);
+      else gsap.delayedCall(delay, () => this.light(el));
+    };
   }
 
   ridePath(line: Line): Point[] {
@@ -726,17 +771,25 @@ class MapView {
       return;
     }
 
-    // Prefix the ride path with the CURRENT camera focal so the sampler owns
-    // the camera's x/y for the ENTIRE ride — including the short hop onto the
-    // line. That lets the zoom-in tween animate ONLY scale, so the pan can
-    // OVERLAP the zoom's deceleration (the two now touch different state props
-    // and never fight) with no dead stop between "zoomed in" and "riding out".
+    // Prefix the ride path with the CURRENT camera focal (Home, the map rest
+    // pose) so the sampler owns the camera's x/y for the ENTIRE ride. The zoom-in
+    // beat then animates ONLY scale (Home held centred), and the ride beat drives
+    // x/y purely through the sampler — the two never write the same prop.
     const ridePts = this.ridePath(line);
     const startFocal: Point = [this.state.x, this.state.y];
-    const sampler = pathSampler([startFocal, ...ridePts]);
+    // Append a glide-END focal so the arrival can close as a PULL-BACK zoom-out
+    // (mirroring how toMap() appends HOME to end its glide exactly on Home). The
+    // glide owns x/y for the whole ride; landing it at the right spot lets the
+    // closing beat be dominated by SCALE, so the platform GROWS into frame as the
+    // camera pulls back rather than sliding into place while it zooms.
+    const glideEnd = this.arrivalFocal(line, park);
+    const sampler = pathSampler([startFocal, ...ridePts, glideEnd]);
     const stops = this.pulseStops(line, sampler);
+    // The destination roundel pulses when the camera passes the LINE END — i.e.
+    // at the arc distance of the last RIDE point — not sampler.total, which now
+    // sits at the appended glide-end focal one settle-segment further along.
     stops.push({
-      d: sampler.total,
+      d: sampler.cum[sampler.cum.length - 2],
       el: document.querySelector(`[data-destination="${line.id}"] circle`),
     });
     let nextStop = 0;
@@ -745,10 +798,11 @@ class MapView {
 
     const homeDot = document.getElementById('home-dot');
     // Lead distance: fire each stop's pulse this many world units before the
-    // camera actually reaches it, so the amber flash peaks as the camera
-    // passes rather than after (the ~0.3s fade-in in `light()` otherwise
-    // lags visibly behind the moving camera).
-    const PULSE_LEAD = 70;
+    // camera actually reaches it, so the amber flash peaks as the camera passes
+    // rather than after (the rise in `light()` otherwise lags the moving camera).
+    // Kept small so the now-short pulses stay locked to the stops and don't bunch.
+    const PULSE_LEAD = 46;
+    const pulse = this.pulseSequencer();
 
     const moveSample = () => {
       const { at, dir } = sampler.at(prog.p);
@@ -756,7 +810,7 @@ class MapView {
       this.state.y = at[1];
       const dNow = prog.p * sampler.total;
       while (nextStop < stops.length && stops[nextStop].d - PULSE_LEAD <= dNow) {
-        this.light(stops[nextStop].el);
+        pulse(stops[nextStop].el);
         nextStop++;
       }
       const speedPx = Math.hypot(at[0] - lastAt[0], at[1] - lastAt[1]) * this.state.s;
@@ -775,46 +829,61 @@ class MapView {
         // Flush any remaining stops as if we'd reached the very end.
         const dNow = sampler.total + 1;
         while (nextStop < stops.length && stops[nextStop].d - PULSE_LEAD <= dNow) {
-          this.light(stops[nextStop].el);
+          pulse(stops[nextStop].el);
           nextStop++;
         }
         this.echo.k = 0;
         this.apply();
-        this.showUI(id);
         this.busy = false;
       },
     });
-    // Zoom-in: SCALE ONLY. The camera's x/y is the sampler's job now, so this
-    // tween and the pan below can overlap without both writing x/y.
-    tl.to(this.state, { s: MAP_SCALE, duration: 0.8, ease: 'power2.inOut', onUpdate: this.apply }, 0.05);
-    // Fade the Home tick to amber mid-glide (rather than instantly on click)
-    // so it lights up AS the camera closes in on it.
-    tl.call(() => this.light(homeDot, true), undefined, 0.45);
+    // The ride is choreographed as discrete BEATS with deliberate pauses, so it
+    // reads like a train: pull into Home, stop, depart, cruise, pull into the
+    // platform, stop, then the platform grows into view.
+    //
+    // BEAT 1 — ZOOM IN ON HOME. Home is already the map's rest focal, so only the
+    // scale grows (1 → MAP_SCALE) with x/y pinned to Home: Home holds dead-centre
+    // and swells (the mirror of the go-home reveal). Eases to a standstill so the
+    // pause that follows has no jerk.
+    tl.to(this.state, { s: MAP_SCALE, duration: 0.6, ease: 'power2.inOut', onUpdate: this.apply }, 0);
+    // BEAT 2 — PAUSE ON HOME (~0.4s): a "stopped at the station" hold. Home pulses
+    // amber (it's a stop) and the motion-echo is cleared so the frame is still.
+    tl.call(() => { this.echo.k = 0; this.light(homeDot, true); this.apply(); }, undefined, 0.6);
+    // BEAT 3 — RIDE Home → platform. One eased glide: accelerates out of the Home
+    // pause, cruises, decelerates into the platform, pulsing each stop as it
+    // passes. The Home tick fades back to white just after departure. The sampler
+    // ends on the arrival focal, so the glide lands x/y ready for a pure zoom-out.
     tl.call(
-      () => {
-        if (homeDot) gsap.to(homeDot, { attr: { fill: '#ffffff' }, duration: 0.25, ease: 'power1.in' });
-      },
+      () => { if (homeDot) gsap.to(homeDot, { attr: { fill: '#ffffff' }, duration: 0.25, ease: 'power1.in' }); },
       undefined,
-      1.05,
+      1.15,
     );
-    // Ride pan — starts BEFORE the zoom finishes (0.4 < 0.85) so on-screen
-    // motion is continuous: the pan accelerates from rest UNDER the zoom's
-    // deceleration, so the camera never hits zero velocity between the two. A
-    // gentle `power1.in` (not `power2.in`) gives the pan enough early velocity
-    // to fill the moment the zoom's own velocity fades to zero.
-    tl.to(prog, { p: 0.78, duration: 2.0, ease: 'power1.in', onUpdate: moveSample }, 0.4);
-    tl.to(prog, { p: 1, duration: 1.0, ease: 'power3.out', onUpdate: moveSample }, 2.4);
+    tl.to(prog, { p: 1, duration: 2.2, ease: 'power2.inOut', onUpdate: moveSample }, 1.0);
+    // Fade every other line out so the platform is revealed as the camera arrives.
     tl.call(() => this.setFades(line, 0, 0.7), undefined, 2.7);
-    // Arrival settle. The vertical (music) line sits just past the docked rail,
-    // so its ticks are the ones at risk of swinging under the rail: use the
-    // monotonic settle (no leftward overshoot). Other axes park with content
-    // cards well clear of the rail, so a plain coupled tween is fine.
+    // BEAT 4 — PAUSE AT THE PLATFORM END (~0.35s): a still hold at ride scale,
+    // "stopped at the platform", before the reveal. Echo cleared.
+    tl.call(() => { this.echo.k = 0; this.apply(); }, undefined, 3.2);
+    // BEAT 5 — ZOOM-OUT REVEAL, mirroring toMap()'s return-to-Home. The glide
+    // already brought x/y to the arrival focal, so this beat is dominated by
+    // SCALE and the platform GROWS into frame as the camera eases back.
     if (line.platform!.axis === 'v') {
+      // Music: hold the line's anchor at its (already-reached) parked screen-x
+      // while scale eases MAP_SCALE → park.s — the line stays pinned just past
+      // the docked rail and the map pulls back around it. Monotonic, so the ticks
+      // never swing under the rail.
       const anchorX = Math.min(...line.platform!.stops.map((s) => s[0]));
-      this.settleMonotonic(tl, park, anchorX, 3.35);
+      this.settleMonotonic(tl, park, anchorX, 3.55);
     } else {
-      tl.to(this.state, { ...park, duration: 0.8, ease: 'power2.inOut', onUpdate: this.apply }, 3.35);
+      // 'h'/'d': the glide parked x/y on the parked focal, so this is a PURE
+      // zoom-out — only scale animates and the platform grows in place.
+      tl.to(this.state, { s: park.s, duration: 0.8, ease: 'power2.inOut', onUpdate: this.apply }, 3.55);
     }
+    // Reveal the platform + its cards AS the camera pulls back (into the
+    // zoom-out), so they grow into view with the settle rather than snapping in
+    // after all motion. apply() re-lays the cards every frame, so their screen
+    // positions track the changing scale while cardsIn() fades/slides them in.
+    tl.call(() => this.showUI(id), undefined, 3.7);
 
     this.skippable(tl);
   }
@@ -870,11 +939,23 @@ class MapView {
     const sampler = pathSampler(ridePts);
     const prog = { p: 0 };
     let lastAt: Point = ridePts[0];
+    // Pulse the line's stops amber as the RETURN glide passes them too (the same
+    // running sequence as the outbound ride, just in reverse) — Home still pulses
+    // separately when the camera pauses on it at the end.
+    const stops = this.pulseStops(line, sampler);
+    let nextStop = 0;
+    const PULSE_LEAD = 46;
+    const pulse = this.pulseSequencer();
 
     const moveSample = () => {
       const { at, dir } = sampler.at(prog.p);
       this.state.x = at[0];
       this.state.y = at[1];
+      const dNow = prog.p * sampler.total;
+      while (nextStop < stops.length && stops[nextStop].d - PULSE_LEAD <= dNow) {
+        pulse(stops[nextStop].el);
+        nextStop++;
+      }
       const speedPx = Math.hypot(at[0] - lastAt[0], at[1] - lastAt[1]) * this.state.s;
       this.echo.dx = -dir[0];
       this.echo.dy = -dir[1];
@@ -886,27 +967,39 @@ class MapView {
     const tl = gsap.timeline({
       defaults: { overwrite: 'auto' },
       onComplete: () => {
+        const dNow = sampler.total + 1;
+        while (nextStop < stops.length && stops[nextStop].d - PULSE_LEAD <= dNow) {
+          pulse(stops[nextStop].el);
+          nextStop++;
+        }
         this.echo.k = 0;
         this.apply();
         done();
       },
     });
+    const homeDot = document.getElementById('home-dot');
     tl.call(() => this.setFades(null, 1, 0.8), undefined, 0.15);
+    // BEAT 1 — leave the platform: zoom up to ride scale onto the line's far end.
     tl.to(
       this.state,
       { x: ridePts[0][0], y: ridePts[0][1], s: MAP_SCALE, duration: 0.7, ease: 'power2.inOut', onUpdate: this.apply },
       0,
     );
+    // BEAT 2 — RIDE platform → Home, decelerating into the Home stop.
     tl.to(prog, { p: 0.78, duration: 1.2, ease: 'power2.in', onUpdate: moveSample }, 0.8);
     tl.to(prog, { p: 1, duration: 0.9, ease: 'power3.out', onUpdate: moveSample }, 2.0);
-    // Closing settle: a PURE zoom-out. The glide already parked x/y exactly on
-    // Home (mapPose() is the plain HOME-centered pose), so this tween's x/y are
-    // no-ops and only `s` animates 2.8 → 1 — Home holds dead-still on screen
+    // BEAT 3 — PAUSE ON HOME (~0.4s): the liked "arrive at the station" beat, made
+    // explicit. Home pulses amber and the echo is cleared so the frame is still,
+    // matching the pause beats of the other transitions.
+    tl.call(() => { this.echo.k = 0; this.light(homeDot); this.apply(); }, undefined, 2.9);
+    // BEAT 4 — ZOOM-OUT to the wide map: a PURE zoom-out. The glide already parked
+    // x/y exactly on Home (mapPose() is the plain HOME-centred pose), so this
+    // tween's x/y are no-ops and only `s` animates 2.8 → 1 — Home holds dead-still
     // and simply grows to fill the frame, never sliding sideways.
     tl.to(
       this.state,
       { ...this.mapPose(), duration: 0.8, ease: 'power2.inOut', onUpdate: this.apply },
-      2.95,
+      3.3,
     );
     // Arrival: reveal the Home LABEL with a soft fade so it glides in as the
     // camera settles, rather than snapping. ride-active is dropped here (so the
@@ -922,23 +1015,24 @@ class MapView {
           gsap.to(homeLabel, { opacity: 1, duration: 0.45, ease: 'power1.out', overwrite: 'auto' });
         },
         undefined,
-        3.55,
+        3.7,
       );
     }
 
     this.skippable(tl);
   }
 
-  /** Platform → platform as ONE continuous train ride that PASSES THROUGH the
-   *  Home interchange WITHOUT zooming out to the map. The camera holds ride
-   *  scale (MAP_SCALE) the entire A→Home→B journey: it reverse-glides along the
-   *  leaving line into Home (Home pulses amber as it passes, like any stop),
-   *  then — without stopping or zooming out — continues straight out along the
-   *  new line to its platform. Scale only changes at the very ends (parked A →
-   *  ride scale at the start, ride scale → parked B at the arrival); it never
-   *  drops to the map rest scale mid-transition. Distinct from toMap(), which is
-   *  the explicit return-to-map that DOES zoom out and centre Home.
-   *  The top bar hands its colour from line A to line B across the pass. */
+  /** Platform → platform as one train ride that PASSES THROUGH the Home
+   *  interchange WITHOUT zooming out to the map. The camera holds ride scale
+   *  (MAP_SCALE) the entire A→Home→B journey: it reverse-glides along the leaving
+   *  line into Home, PAUSES on the interchange (Home pulses amber, like stopping
+   *  at a station — but the camera stays zoomed in, it does NOT drop to map
+   *  scale), then rides straight out along the new line to its platform. Scale
+   *  only changes at the very ends (parked A → ride scale at the start, ride scale
+   *  → parked B at the arrival reveal); it never drops to the map rest scale
+   *  mid-transition. Distinct from toMap(), which is the explicit return-to-map
+   *  that DOES zoom out and centre Home. The top bar hands its colour from line A
+   *  to line B across the interchange pause. */
   switchPlatform(id: LineId) {
     if (this.busy || this.view === 'map' || this.view === id) return;
     const fromLine = lineById(this.view);
@@ -970,34 +1064,48 @@ class MapView {
       inPts.push([HOME[0], HOME[1]]);
     }
     const inSampler = pathSampler(inPts);
-    // Outbound leg: Home → new-line platform (with its stop pulses).
+    // Stops of the LEAVING line, pulsed as the reverse leg passes them (A→Home).
+    const inStops = this.pulseStops(fromLine, inSampler);
+    // Outbound leg: Home → new-line platform (with its stop pulses). Append the
+    // arrival focal (mirroring toPlatform) so the outbound glide lands x/y where
+    // the arrival can close as a pull-back zoom-out reveal.
     const outPts = this.ridePath(toLine);
-    const outSampler = pathSampler(outPts);
+    const glideEnd = this.arrivalFocal(toLine, park);
+    const outSampler = pathSampler([...outPts, glideEnd]);
     const outStops = this.pulseStops(toLine, outSampler);
     outStops.push({
-      d: outSampler.total,
+      d: outSampler.cum[outSampler.cum.length - 2],
       el: document.querySelector(`[data-destination="${toLine.id}"] circle`),
     });
 
     const homeDot = document.getElementById('home-dot');
-    const PULSE_LEAD = 70;
+    const PULSE_LEAD = 46;
     const progIn = { p: 0 };
     const progOut = { p: 0 };
-    let nextStop = 0;
+    const nIn = { n: 0 };
+    const nOut = { n: 0 };
+    // One sequencer for the whole pass-through, so the A→Home and Home→B flashes
+    // form a single crisp one-at-a-time run.
+    const pulse = this.pulseSequencer();
     let lastAt: Point = inPts[0];
 
     // Both legs move ONLY the focal point (x/y); scale is untouched here so it
-    // holds at MAP_SCALE across the whole pass-through.
-    const move = (sampler: ReturnType<typeof pathSampler>, prog: { p: number }, pulse: boolean) => {
+    // holds at MAP_SCALE across the whole pass-through. Each leg pulses ITS OWN
+    // stops (leaving line on the way in, arriving line on the way out) with its
+    // own cursor, so stops flash in every direction of travel.
+    const move = (
+      sampler: ReturnType<typeof pathSampler>,
+      prog: { p: number },
+      stops: { d: number; el: Element | null }[],
+      cursor: { n: number },
+    ) => {
       const { at, dir } = sampler.at(prog.p);
       this.state.x = at[0];
       this.state.y = at[1];
-      if (pulse) {
-        const dNow = prog.p * sampler.total;
-        while (nextStop < outStops.length && outStops[nextStop].d - PULSE_LEAD <= dNow) {
-          this.light(outStops[nextStop].el);
-          nextStop++;
-        }
+      const dNow = prog.p * sampler.total;
+      while (cursor.n < stops.length && stops[cursor.n].d - PULSE_LEAD <= dNow) {
+        pulse(stops[cursor.n].el);
+        cursor.n++;
       }
       const speedPx = Math.hypot(at[0] - lastAt[0], at[1] - lastAt[1]) * this.state.s;
       this.echo.dx = -dir[0];
@@ -1006,37 +1114,42 @@ class MapView {
       this.apply();
       lastAt = at;
     };
-    const moveIn = () => move(inSampler, progIn, false);
-    const moveOut = () => move(outSampler, progOut, true);
+    const moveIn = () => move(inSampler, progIn, inStops, nIn);
+    const moveOut = () => move(outSampler, progOut, outStops, nOut);
 
     const tl = gsap.timeline({
       defaults: { overwrite: 'auto' },
       onComplete: () => {
+        while (nIn.n < inStops.length) pulse(inStops[nIn.n++].el);
         const dNow = outSampler.total + 1;
-        while (nextStop < outStops.length && outStops[nextStop].d - PULSE_LEAD <= dNow) {
-          this.light(outStops[nextStop].el);
-          nextStop++;
+        while (nOut.n < outStops.length && outStops[nOut.n].d - PULSE_LEAD <= dNow) {
+          pulse(outStops[nOut.n].el);
+          nOut.n++;
         }
         this.echo.k = 0;
         this.apply();
-        this.showUI(id);
         this.busy = false;
       },
     });
 
-    // 1. Zoom from the parked pose up to ride scale at the leaving platform, and
-    //    reveal every line (so the new line we're about to ride is visible).
+    // Same BEAT rhythm as the other transitions, but the camera holds ride scale
+    // the whole A → Home → B journey and PAUSES at the Home interchange instead of
+    // zooming out to the map.
+    //
+    // BEAT 1 — leave platform A: zoom up to ride scale onto A's far end, and
+    // reveal every line (so the new line we're about to ride is visible).
     tl.to(
       this.state,
       { x: inPts[0][0], y: inPts[0][1], s: MAP_SCALE, duration: 0.6, ease: 'power2.inOut', onUpdate: this.apply },
       0,
     );
     tl.call(() => this.setFades(null, 1, 0.6), undefined, 0.1);
-    // 2. Reverse-glide into Home.
-    tl.to(progIn, { p: 1, duration: 1.35, ease: 'power2.inOut', onUpdate: moveIn }, 0.5);
-    // 3. Home pulses amber as we pass through the interchange, and the top bar
-    //    hands its colour/label from line A to line B mid-pass.
-    tl.call(() => this.light(homeDot), undefined, 1.6);
+    // BEAT 2 — RIDE A → Home, decelerating into the interchange stop.
+    tl.to(progIn, { p: 1, duration: 1.3, ease: 'power2.inOut', onUpdate: moveIn }, 0.6);
+    // BEAT 3 — PAUSE ON HOME at ride scale (~0.45s): a "stopped at the interchange"
+    // hold (NOT a zoom-out). Home pulses amber, the echo is cleared, and the top
+    // bar hands its colour/label from line A to line B during the pause.
+    tl.call(() => { this.echo.k = 0; this.light(homeDot); this.apply(); }, undefined, 1.9);
     tl.call(
       () => {
         const bar = document.querySelector('.top-bar');
@@ -1045,22 +1158,27 @@ class MapView {
         if (section) section.textContent = toLine.nav!.name;
       },
       undefined,
-      1.7,
+      2.0,
     );
-    // 4. Without stopping or zooming out, continue out along the new line.
-    tl.to(progOut, { p: 0.8, duration: 1.35, ease: 'power2.in', onUpdate: moveOut }, 1.85);
-    tl.to(progOut, { p: 1, duration: 0.95, ease: 'power3.out', onUpdate: moveOut }, 3.2);
-    // 5. Fade everything but the new line as it arrives, then settle to its
-    //    parked pose (the only place scale leaves MAP_SCALE).
-    tl.call(() => this.setFades(toLine, 0, 0.7), undefined, 3.5);
-    // Same monotonic settle for the vertical (music) line so its ticks never
-    // swing under the docked rail when switching platforms into music.
+    // BEAT 4 — RIDE Home → platform B: accelerate out of the interchange, cruise,
+    // decelerate into B, pulsing B's stops as it passes.
+    tl.to(progOut, { p: 1, duration: 1.5, ease: 'power2.inOut', onUpdate: moveOut }, 2.35);
+    // Fade everything but the new line as B arrives.
+    tl.call(() => this.setFades(toLine, 0, 0.7), undefined, 3.45);
+    // BEAT 5 — PAUSE AT PLATFORM B (~0.35s): still hold at ride scale before the reveal.
+    tl.call(() => { this.echo.k = 0; this.apply(); }, undefined, 3.85);
+    // BEAT 6 — ZOOM-OUT REVEAL of B, mirroring toPlatform()'s arrival.
     if (toLine.platform!.axis === 'v') {
+      // Music: hold the anchor at its parked screen-x while zooming out (the
+      // outbound glide already placed it there) so the ticks never swing under
+      // the docked rail when switching platforms into music.
       const anchorX = Math.min(...toLine.platform!.stops.map((s) => s[0]));
-      this.settleMonotonic(tl, park, anchorX, 4.05);
+      this.settleMonotonic(tl, park, anchorX, 4.2);
     } else {
-      tl.to(this.state, { ...park, duration: 0.8, ease: 'power2.inOut', onUpdate: this.apply }, 4.05);
+      tl.to(this.state, { s: park.s, duration: 0.8, ease: 'power2.inOut', onUpdate: this.apply }, 4.2);
     }
+    // Reveal the new platform + cards as the camera pulls back.
+    tl.call(() => this.showUI(id), undefined, 4.35);
 
     this.skippable(tl);
   }
