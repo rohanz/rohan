@@ -978,8 +978,9 @@ class MapView {
     // power4.out's spike (~2.9); the tail decelerates 0.53 → 0.05 → ~0 (75→90→97%).
     // Slightly longer (1.1s) so the deceleration reads. Music and projects keep the
     // Van Wijk reveal (power2.inOut) unchanged.
-    // TEST KNOB: duration temporarily stretched to 3.5s (from 1.1s) so the custom
-    // ease shape is clearly visible for evaluation. Ease and monotonicity unchanged.
+    // Duration tuned to 2.0s (down from a 3.5s test value) so the custom ease
+    // shape still reads clearly without feeling sluggish. Ease and monotonicity
+    // unchanged.
     if (id === 'about') {
       tl.to(
         this.state,
@@ -987,7 +988,7 @@ class MapView {
           x: park.x,
           y: park.y,
           s: park.s,
-          duration: 3.5,
+          duration: 2.0,
           ease: (p: number) => 20 * p ** 3 - 45 * p ** 4 + 36 * p ** 5 - 10 * p ** 6,
           onUpdate: this.apply,
         },
@@ -1004,9 +1005,9 @@ class MapView {
     // Then, only AFTER the reveal has fully settled plus a tiny beat so the
     // platform reads as "settled, THEN populated", stagger the entries in one by
     // one. Van Wijk reveal ends at 3.55 + 1.0 = 4.55 (music/projects → 4.7);
-    // About's TEST KNOB reveal (3.5s) ends at 3.55 + 3.5 = 7.05, so its stagger
-    // is pushed to 7.2 to keep entries appearing only after the platform settles.
-    tl.call(() => this.cardsIn(id), undefined, id === 'about' ? 7.2 : 4.7);
+    // About's reveal (2.0s) ends at 3.55 + 2.0 = 5.55, so its stagger is pushed
+    // to 5.7 to keep entries appearing only after the platform settles.
+    tl.call(() => this.cardsIn(id), undefined, id === 'about' ? 5.7 : 4.7);
 
     this.skippable(tl);
   }
