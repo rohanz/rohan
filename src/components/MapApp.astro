@@ -516,8 +516,14 @@ const socials: [string, string][] = [
   #filter-bar {
     position: absolute;
     top: 78px;
-    left: 270px;
-    right: 20px;
+    /* Constrained to a narrow, centered block within the content region to
+       the RIGHT of the docked rail: a compact ~4-6-pills-per-row multi-row
+       band (there are ~30 tags) instead of one very long row. Centering via
+       margin-inline:auto between the rail edge and the viewport edge. */
+    left: var(--rail-w);
+    right: 0;
+    max-width: 440px;
+    margin-inline: auto;
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
