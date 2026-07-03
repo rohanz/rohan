@@ -618,8 +618,28 @@ class MapView {
     this.busy = true;
     this.view = id;
     this.page = 0;
+    // If we're launching from a HOVER (a line was highlighted, so the OTHER
+    // lines are dimmed to 0.55 via the `[data-hl]:not(.ride-active)` CSS),
+    // dropping data-hl + adding ride-active would snap those dimmed lines back
+    // to opacity 1 instantly (ride-active kills the CSS transition to avoid
+    // mid-ride raster flicker). Instead, ease them back up with a ONE-SHOT GSAP
+    // tween at the handoff so they glide to full opacity as the camera starts.
+    // This fires once and is done (~0.3s) long before setFades() later fades
+    // these same non-ridden lines out (at t≈2.7s), so the two never fight, and
+    // no CSS opacity/filter transition runs during the ride.
+    const wasHovered = !!this.stage.dataset.hl;
     this.stage.classList.add('ride-active');
     delete this.stage.dataset.hl;
+    if (wasHovered && animate && !prefersReducedMotion()) {
+      const dimmed = Array.from(
+        this.stage.querySelectorAll<SVGPathElement>('.line-group .line-path'),
+      ).filter((p) => !p.closest(`[data-line="${id}"]`));
+      gsap.fromTo(
+        dimmed,
+        { opacity: 0.55 },
+        { opacity: 1, duration: 0.3, ease: 'power1.out', overwrite: 'auto' },
+      );
+    }
 
     const park = this.parkPose(line, 0);
 
