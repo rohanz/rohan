@@ -171,57 +171,84 @@ class MapView {
     return { s, x: slice[0][0] - (toWorldX(frac) - CX) / s, y: slice[0][1] - (toWorldY(0.42) - CY) / s };
   }
 
-  /** Arrival settle for the music (vertical) line that moves the on-screen x of
-   *  `anchorX` (a world x) MONOTONICALLY to rest, right-to-left, stopping AT rest
-   *  and never swinging past it, while the camera zooms out from the last tick.
+  /** Arrival reveal: the zoom-out that lands the camera at the platform's parked
+   *  pose, split into two beats so the ZOOM itself is uniform — a pure
+   *  "grow in place" — and never reads as a stretch.
    *
-   *  A plain `tl.to(this.state, {x, s})` tweens camera x and scale together, but a
-   *  point's screen x is `CX + s·(anchorX − x)` — a PRODUCT of two terms each
-   *  linear in eased progress, i.e. a QUADRATIC. When the camera zooms OUT (Δs<0)
-   *  while panning right (Δx>0) that quadratic is convex and dips to an interior
-   *  minimum BELOW both endpoints: the leftward overshoot that swings the music
-   *  ticks toward/behind the docked rail before settling. No ease removes it.
+   *  The parked pose sits at both a smaller scale AND a focal offset from the
+   *  ride-end (last-tick) pose. That offset has two parts relative to the line's
+   *  travel direction: an ALONG-travel part and a PERPENDICULAR part. Panning the
+   *  focal PERPENDICULAR to travel WHILE the scale changes is what looked like a
+   *  non-uniform "stretch" (grid squares shearing into rectangles): near-focal and
+   *  far-focal regions appear to zoom by different amounts. A pan ALONG travel does
+   *  NOT — the About diagonal proves an along-travel pan reads as a natural reveal.
    *
-   *  Instead we interpolate the anchor's screen x LINEARLY (in eased progress) and
-   *  back-solve the camera x each frame, so scale still eases s0→park.s and y eases
-   *  y0→park.y (a coupled settle), but the anchor glides monotonically to rest —
-   *  the music line settles the SMALL last-tick → parked x/y offset into the
-   *  pull-back without its ticks ever dipping under the rail. Endpoints match the
-   *  plain coupled tween exactly, so the parked pose is unchanged. */
-  settleMonotonic(
+   *  So PHASE A zooms while moving the focal ONLY along the travel axis (the
+   *  perpendicular coordinate is held fixed): a clean scale change with no
+   *  cross-axis slide. PHASE B then applies the perpendicular framing offset at
+   *  CONSTANT (parked) scale — a uniform pan, which cannot stretch. Endpoints are
+   *  the parked pose exactly, so paging / return-to-map are unchanged.
+   *
+   *  Side benefit for music (vertical line, perpendicular = screen-x): holding the
+   *  focal's x on the line through the zoom pins the purple line at a fixed
+   *  screen-x while it grows, then the constant-scale pan glides it left to its
+   *  docked rest MONOTONICALLY — so its ticks never sweep under the docked rail
+   *  (this supersedes the old back-solved monotonic settle). */
+  settleReveal(
     tl: gsap.core.Timeline,
     park: { x: number; y: number; s: number },
-    anchorX: number,
+    dir: Point,
     at: number,
   ) {
-    const proxy = { e: 0 };
-    let s0 = 0;
-    let y0 = 0;
-    let vx0 = 0;
-    let vx1 = 0;
+    // Filled in phase A's onStart from the live ride-end pose, then read by both
+    // phases: s0/x0/y0 = ride-end pose; mx/my = the along-settled midpoint (the
+    // parked pose minus its perpendicular offset).
+    const c = { s0: 0, x0: 0, y0: 0, mx: 0, my: 0 };
+    const a = { e: 0 };
+    const b = { e: 0 };
+    // PHASE A — zoom + along-travel focal glide (perpendicular coordinate held).
     tl.to(
-      proxy,
+      a,
       {
         e: 1,
-        duration: 0.8,
+        duration: 0.75,
         ease: 'power2.inOut',
         onStart: () => {
-          s0 = this.state.s;
-          y0 = this.state.y;
-          vx0 = CX + s0 * (anchorX - this.state.x);
-          vx1 = CX + park.s * (anchorX - park.x);
+          c.s0 = this.state.s;
+          c.x0 = this.state.x;
+          c.y0 = this.state.y;
+          const len = Math.hypot(dir[0], dir[1]) || 1;
+          const ux = dir[0] / len;
+          const uy = dir[1] / len;
+          const along = (park.x - c.x0) * ux + (park.y - c.y0) * uy;
+          c.mx = c.x0 + along * ux;
+          c.my = c.y0 + along * uy;
         },
         onUpdate: () => {
-          const e = proxy.e;
-          const s = s0 + (park.s - s0) * e;
-          const vx = vx0 + (vx1 - vx0) * e;
-          this.state.s = s;
-          this.state.y = y0 + (park.y - y0) * e;
-          this.state.x = anchorX - (vx - CX) / s;
+          const e = a.e;
+          this.state.s = c.s0 + (park.s - c.s0) * e;
+          this.state.x = c.x0 + (c.mx - c.x0) * e;
+          this.state.y = c.y0 + (c.my - c.y0) * e;
           this.apply();
         },
       },
       at,
+    );
+    // PHASE B — apply the perpendicular framing offset at CONSTANT scale.
+    tl.to(
+      b,
+      {
+        e: 1,
+        duration: 0.5,
+        ease: 'power2.inOut',
+        onUpdate: () => {
+          const e = b.e;
+          this.state.x = c.mx + (park.x - c.mx) * e;
+          this.state.y = c.my + (park.y - c.my) * e;
+          this.apply();
+        },
+      },
+      at + 0.75,
     );
   }
 
@@ -843,24 +870,12 @@ class MapView {
     // BEAT 4 — PAUSE AT THE PLATFORM END (~0.35s): a still hold at ride scale,
     // "stopped at the platform", before the reveal. Echo cleared.
     tl.call(() => { this.echo.k = 0; this.apply(); }, undefined, 3.2);
-    // BEAT 5 — ZOOM-OUT REVEAL from the last tick: the exact TIME-REVERSE of
-    // toMap()'s opening beat (which zooms IN from the parked pose onto the last
-    // tick). A SINGLE coupled tween eases the camera from the last tick back to the
-    // parked pose — it zooms OUT while making the SMALL last-tick → parked x/y
-    // adjustment, blended into the pull-back. No backward ride at ride scale.
-    if (line.platform!.axis === 'v') {
-      // Music parks with its line far to the RIGHT (just past the docked rail), so
-      // a plain coupled zoom-out would swing the ticks convexly LEFT — toward/under
-      // the rail — before settling. settleMonotonic makes the same coupled settle
-      // but moves the anchor's screen-x MONOTONICALLY to rest, so the ticks never
-      // dip under the rail.
-      const anchorX = Math.min(...line.platform!.stops.map((s) => s[0]));
-      this.settleMonotonic(tl, park, anchorX, 3.55);
-    } else {
-      // 'h'/'d': park's content cards sit well clear of the rail, so a plain
-      // coupled tween is fine — the platform grows into frame as x/y settle.
-      tl.to(this.state, { ...park, duration: 0.8, ease: 'power2.inOut', onUpdate: this.apply }, 3.55);
-    }
+    // BEAT 5 — ZOOM-OUT REVEAL from the last tick back to the parked pose. The
+    // reveal is split so the SCALE change is a PURE grow-in-place along the travel
+    // axis and the content-framing offset is a separate constant-scale pan — no
+    // cross-axis slide while zooming (see settleReveal). No backward ride at ride
+    // scale; `sampler.at(1).dir` is the line's travel direction at the last tick.
+    this.settleReveal(tl, park, sampler.at(1).dir, 3.55);
     // Reveal the platform + its cards AS the camera pulls back (into the
     // zoom-out), so they grow into view with the settle rather than snapping in
     // after all motion. apply() re-lays the cards every frame, so their screen
@@ -1149,14 +1164,9 @@ class MapView {
     // BEAT 5 — PAUSE AT PLATFORM B (~0.35s): still hold at ride scale before the reveal.
     tl.call(() => { this.echo.k = 0; this.apply(); }, undefined, 3.85);
     // BEAT 6 — ZOOM-OUT REVEAL of B from its last tick, mirroring toPlatform()'s
-    // arrival: a single coupled settle from the last tick back to the parked pose.
-    if (toLine.platform!.axis === 'v') {
-      // Music: monotonic settle so the ticks never swing under the docked rail.
-      const anchorX = Math.min(...toLine.platform!.stops.map((s) => s[0]));
-      this.settleMonotonic(tl, park, anchorX, 4.2);
-    } else {
-      tl.to(this.state, { ...park, duration: 0.8, ease: 'power2.inOut', onUpdate: this.apply }, 4.2);
-    }
+    // arrival: a pure grow-in-place zoom along the travel axis, then a
+    // constant-scale pan for the content-framing offset (see settleReveal).
+    this.settleReveal(tl, park, outSampler.at(1).dir, 4.2);
     // Reveal the new platform + cards as the camera pulls back.
     tl.call(() => this.showUI(id), undefined, 4.35);
 
