@@ -953,7 +953,12 @@ class MapView {
     // DECELERATE into the stop — the Van Wijk arc is ~constant-velocity, so the
     // gentle default tail wasn't enough and the motion halted abruptly. Starts
     // from the preceding still pause, so the ease-IN keeps the start smooth too.
-    this.vanWijkTo(tl, park, 3.55, 1.0, 'power2.inOut');
+    // About is trialing an even STRONGER, more gradual deceleration into the
+    // stop (power4.inOut) — still an inOut so the start off the pause stays
+    // smooth, just a longer/softer run-down at the tail. Music and projects
+    // stay on power2.inOut for now.
+    const revealEase = id === 'about' ? 'power4.inOut' : 'power2.inOut';
+    this.vanWijkTo(tl, park, 3.55, 1.0, revealEase);
     // Set up the platform UI DURING the reveal (top-bar handoff, section title,
     // filter/more buttons, data-content visibility, and placeCards to position
     // the still-HIDDEN entries), so the structure is ready as the camera pulls
