@@ -30,7 +30,7 @@ const VW_RHO = 1.4;
 // overshoots the parked scale (unlike the Van Wijk arc).
 const REVEAL_EASE = (p: number): number => 10 * p ** 3 - 15 * p ** 4 + 6 * p ** 5;
 // One shared duration for ALL three platform reveals (about / projects / music).
-const REVEAL_DUR = 1.25;
+const REVEAL_DUR = 1.1;
 // The camera is visually AT REST by ~this fraction of REVEAL_DUR (≈99% of the
 // move done), so the entries fade in there — the moment it settles — not after
 // the tween technically ends.
@@ -694,6 +694,28 @@ class MapView {
     );
   }
 
+  /** Warm the music-row canvases EARLY (mid-ride). Each row's ResizeObserver
+   *  re-sizes its waveform/vectorscope/VU backing stores and repaints the instant
+   *  the music platform becomes measurable — ~12 canvases in one frame, a ~50ms
+   *  hitch. Triggering it while the camera is still moving fast masks that work so
+   *  it doesn't land as a "click" on the slow reveal. Everything is kept invisible
+   *  (autoAlpha 0) until the normal showUI()/cardsIn() beats populate it. */
+  primeMusic() {
+    if (!this.ui) return;
+    this.ui.hidden = false;
+    // Visible ⇒ real CSS width ⇒ the rows' ResizeObserver fires + sizes canvases.
+    const sec = this.ui.querySelector<HTMLElement>('[data-content="music"]');
+    if (sec) sec.hidden = false;
+    gsap.set(
+      [
+        ...this.cardsFor('music'),
+        ...Array.from(this.ui.querySelectorAll<HTMLElement>('[data-divider="music"]')),
+      ],
+      { autoAlpha: 0 },
+    );
+    gsap.set(['#more-next', '#more-prev', '#filter-bar'], { autoAlpha: 0 });
+  }
+
   cardsIn(id: LineId) {
     const line = lineById(id);
     const axis = line.platform!.axis;
@@ -971,6 +993,8 @@ class MapView {
       1.15,
     );
     tl.to(prog, { p: 1, duration: 2.2, ease: 'power2.inOut', onUpdate: moveSample }, 1.0);
+    // Warm the music canvases mid-ride (masked by fast motion) — see primeMusic.
+    if (id === 'music') tl.call(() => this.primeMusic(), undefined, 1.3);
     // Fade every other line out so the platform is revealed as the camera arrives.
     tl.call(() => this.setFades(line, 0, 0.7), undefined, 2.7);
     // Clear the echo/motion-blur exactly as the ride reaches the last tick (3.2s),
@@ -1290,6 +1314,8 @@ class MapView {
     // BEAT 4 — RIDE Home → platform B: accelerate out of the interchange, cruise,
     // decelerate into B, pulsing B's stops as it passes.
     tl.to(progOut, { p: 1, duration: 1.5, ease: 'power2.inOut', onUpdate: moveOut }, 2.35);
+    // Warm the music canvases mid-ride (masked by fast motion) — see primeMusic.
+    if (id === 'music') tl.call(() => this.primeMusic(), undefined, 2.6);
     // Fade everything but the new line as B arrives.
     tl.call(() => this.setFades(toLine, 0, 0.7), undefined, 3.45);
     // Clear the echo/motion-blur exactly as B's ride reaches the last tick (3.85s),
