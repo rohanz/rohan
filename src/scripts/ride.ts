@@ -31,6 +31,10 @@ const VW_RHO = 1.4;
 const REVEAL_EASE = (p: number): number => 20 * p ** 3 - 45 * p ** 4 + 36 * p ** 5 - 10 * p ** 6;
 // One shared duration for ALL three platform reveals (about / projects / music).
 const REVEAL_DUR = 1.25;
+// REVEAL_EASE has a long flat tail, so the camera is visually AT REST by ~this
+// fraction of REVEAL_DUR (≈99% of the move done). The entries fade in there — the
+// moment it settles — rather than after the tween technically ends.
+const REVEAL_SETTLE = 0.85;
 const AMBER = '#f9c25e';
 const CX = VIEWBOX.w / 2;
 const CY = VIEWBOX.h / 2;
@@ -985,16 +989,14 @@ class MapView {
     const REVEAL_AT = 3.55;
     if (id === 'music') this.vanWijkTo(tl, park, REVEAL_AT, REVEAL_DUR, REVEAL_EASE);
     else this.revealTo(tl, park, REVEAL_AT);
-    const revealEnd = REVEAL_AT + REVEAL_DUR;
     // Set up the platform UI DURING the reveal (top-bar handoff, section title,
     // filter/more buttons, data-content visibility, and placeCards to position
     // the still-HIDDEN entries), so the structure is ready as the camera pulls
     // back. The entries themselves stay invisible here.
     tl.call(() => this.showUI(id), undefined, 3.7);
-    // Then, only AFTER the reveal has fully settled plus a tiny beat so the
-    // platform reads as "settled, THEN populated", stagger the entries in one by
-    // one. Reveal ends at revealEnd (3.55 + REVEAL_DUR); stagger is just past it.
-    tl.call(() => this.cardsIn(id), undefined, revealEnd + 0.15);
+    // Stagger the entries in RIGHT as the camera comes to rest (REVEAL_SETTLE of
+    // the way through the reveal — see REVEAL_SETTLE).
+    tl.call(() => this.cardsIn(id), undefined, REVEAL_AT + REVEAL_DUR * REVEAL_SETTLE);
 
     this.skippable(tl);
   }
@@ -1297,12 +1299,10 @@ class MapView {
     const REVEAL_AT = 4.2;
     if (id === 'music') this.vanWijkTo(tl, park, REVEAL_AT, REVEAL_DUR, REVEAL_EASE);
     else this.revealTo(tl, park, REVEAL_AT);
-    const revealEnd = REVEAL_AT + REVEAL_DUR;
     // Set up the new platform UI during the reveal (entries stay hidden).
     tl.call(() => this.showUI(id), undefined, 4.35);
-    // Stagger the entries in one by one only after the reveal settles
-    // (4.2 + REVEAL_DUR) plus a tiny beat.
-    tl.call(() => this.cardsIn(id), undefined, revealEnd + 0.15);
+    // Stagger the entries in RIGHT as the camera comes to rest (REVEAL_SETTLE).
+    tl.call(() => this.cardsIn(id), undefined, REVEAL_AT + REVEAL_DUR * REVEAL_SETTLE);
 
     this.skippable(tl);
   }
