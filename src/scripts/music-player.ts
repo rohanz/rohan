@@ -864,6 +864,19 @@ function onResize(): void {
   );
 }
 
+/** Force every music row to size its canvases + paint an idle frame NOW,
+ *  synchronously, instead of waiting for the async ResizeObserver that fires when
+ *  the platform first becomes visible. The ride engine calls this mid-ride (see
+ *  primeMusic) so the ~50ms of canvas allocation/first-paint is masked by fast
+ *  motion rather than hitching the slow reveal. Reads getBoundingClientRect,
+ *  which forces layout, so the just-revealed rows report their real widths. */
+export function warmMusicMeters(): void {
+  players.forEach((p) => {
+    p.resizeWaveCanvas();
+    p.resizeMeters();
+  });
+}
+
 function initMusicPlayer(): void {
   const rows = Array.from(document.querySelectorAll<HTMLElement>('#platform-ui [data-card="music"]'));
   if (!rows.length) return;

@@ -13,7 +13,7 @@
 import gsap from 'gsap';
 import { HOME, VIEWBOX, lineById, type LineId, type Line, type Point } from '../data/system';
 import { filletPoints } from '../lib/fillet';
-import { stopMusicPlayback } from './music-player';
+import { stopMusicPlayback, warmMusicMeters } from './music-player';
 
 const MAP_SCALE = 2.8; // zoom while riding
 // Van Wijk & Nuij (2003) curvature constant for the combined zoom+pan swoop.
@@ -703,7 +703,6 @@ class MapView {
   primeMusic() {
     if (!this.ui) return;
     this.ui.hidden = false;
-    // Visible ⇒ real CSS width ⇒ the rows' ResizeObserver fires + sizes canvases.
     const sec = this.ui.querySelector<HTMLElement>('[data-content="music"]');
     if (sec) sec.hidden = false;
     gsap.set(
@@ -714,6 +713,10 @@ class MapView {
       { autoAlpha: 0 },
     );
     gsap.set(['#more-next', '#more-prev', '#filter-bar'], { autoAlpha: 0 });
+    // Now that the rows are visible (real width), size + first-paint their canvases
+    // SYNCHRONOUSLY here — not via the async ResizeObserver, which would defer the
+    // work back onto the reveal frame.
+    warmMusicMeters();
   }
 
   cardsIn(id: LineId) {
