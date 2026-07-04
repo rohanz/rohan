@@ -30,7 +30,7 @@ const VW_RHO = 1.4;
 // overshoots the parked scale (unlike the Van Wijk arc).
 const REVEAL_EASE = (p: number): number => 10 * p ** 3 - 15 * p ** 4 + 6 * p ** 5;
 // One shared duration for ALL three platform reveals (about / projects / music).
-const REVEAL_DUR = 1.25;
+const REVEAL_DUR = 1.1;
 // The camera is visually AT REST by ~this fraction of REVEAL_DUR (≈99% of the
 // move done), so the entries fade in there — the moment it settles — not after
 // the tween technically ends.
