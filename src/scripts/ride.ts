@@ -973,10 +973,12 @@ class MapView {
     tl.to(prog, { p: 1, duration: 2.2, ease: 'power2.inOut', onUpdate: moveSample }, 1.0);
     // Fade every other line out so the platform is revealed as the camera arrives.
     tl.call(() => this.setFades(line, 0, 0.7), undefined, 2.7);
-    // BEAT 4 — PAUSE AT THE PLATFORM END (~0.35s): a still hold at ride scale,
-    // "stopped at the platform", before the reveal. Echo cleared.
+    // Clear the echo/motion-blur exactly as the ride reaches the last tick (3.2s),
+    // which is where the reveal picks up — no held pause between them (the ride
+    // decelerates to ~0 velocity into the tick and the reveal soft-launches from
+    // ~0, so the handoff stays smooth).
     tl.call(() => { this.echo.k = 0; this.apply(); }, undefined, 3.2);
-    // BEAT 5 — REVEAL from the last tick (ride scale) to the parked pose over
+    // BEAT 4 — REVEAL from the last tick (ride scale) to the parked pose over
     // REVEAL_DUR with REVEAL_EASE (the finalized "About feel": monotonic scale,
     // soft launch → long decelerating tail into rest). about/projects use the
     // straight coupled `revealTo` (their pan runs ALONG travel → clean). MUSIC
@@ -986,14 +988,14 @@ class MapView {
     // time-mirror of its clean go-home zoom-in (which is symmetric + monotonic),
     // so pan and zoom move together as ONE arc with no overshoot and the stops
     // stay clear. Same REVEAL_EASE / REVEAL_DUR feel.
-    const REVEAL_AT = 3.55;
+    const REVEAL_AT = 3.2;
     if (id === 'music') this.vanWijkTo(tl, park, REVEAL_AT, REVEAL_DUR, REVEAL_EASE);
     else this.revealTo(tl, park, REVEAL_AT);
     // Set up the platform UI DURING the reveal (top-bar handoff, section title,
     // filter/more buttons, data-content visibility, and placeCards to position
     // the still-HIDDEN entries), so the structure is ready as the camera pulls
     // back. The entries themselves stay invisible here.
-    tl.call(() => this.showUI(id), undefined, 3.7);
+    tl.call(() => this.showUI(id), undefined, REVEAL_AT + 0.15);
     // Stagger the entries in RIGHT as the camera comes to rest (REVEAL_SETTLE of
     // the way through the reveal — see REVEAL_SETTLE).
     tl.call(() => this.cardsIn(id), undefined, REVEAL_AT + REVEAL_DUR * REVEAL_SETTLE);
@@ -1290,17 +1292,18 @@ class MapView {
     tl.to(progOut, { p: 1, duration: 1.5, ease: 'power2.inOut', onUpdate: moveOut }, 2.35);
     // Fade everything but the new line as B arrives.
     tl.call(() => this.setFades(toLine, 0, 0.7), undefined, 3.45);
-    // BEAT 5 — PAUSE AT PLATFORM B (~0.35s): still hold at ride scale before the reveal.
+    // Clear the echo/motion-blur exactly as B's ride reaches the last tick (3.85s),
+    // where the reveal picks up — no held pause between them.
     tl.call(() => { this.echo.k = 0; this.apply(); }, undefined, 3.85);
-    // BEAT 6 — REVEAL of B, same as toPlatform()'s arrival (same REVEAL_EASE /
+    // BEAT 5 — REVEAL of B, same as toPlatform()'s arrival (same REVEAL_EASE /
     // REVEAL_DUR feel): straight coupled `revealTo` for about/projects, and
     // `vanWijkTo` for music (time-mirror of its clean go-home zoom-in — one arc,
     // no overshoot, stops clear).
-    const REVEAL_AT = 4.2;
+    const REVEAL_AT = 3.85;
     if (id === 'music') this.vanWijkTo(tl, park, REVEAL_AT, REVEAL_DUR, REVEAL_EASE);
     else this.revealTo(tl, park, REVEAL_AT);
     // Set up the new platform UI during the reveal (entries stay hidden).
-    tl.call(() => this.showUI(id), undefined, 4.35);
+    tl.call(() => this.showUI(id), undefined, REVEAL_AT + 0.15);
     // Stagger the entries in RIGHT as the camera comes to rest (REVEAL_SETTLE).
     tl.call(() => this.cardsIn(id), undefined, REVEAL_AT + REVEAL_DUR * REVEAL_SETTLE);
 
