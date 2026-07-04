@@ -30,7 +30,7 @@ const VW_RHO = 1.4;
 // the Van Wijk arc it does NOT zoom past the parked scale and ease back.
 const REVEAL_EASE = (p: number): number => 20 * p ** 3 - 45 * p ** 4 + 36 * p ** 5 - 10 * p ** 6;
 // One shared duration for ALL three platform reveals (about / projects / music).
-const REVEAL_DUR = 1.0;
+const REVEAL_DUR = 1.25;
 const AMBER = '#f9c25e';
 const CX = VIEWBOX.w / 2;
 const CY = VIEWBOX.h / 2;
@@ -972,14 +972,18 @@ class MapView {
     // BEAT 4 — PAUSE AT THE PLATFORM END (~0.35s): a still hold at ride scale,
     // "stopped at the platform", before the reveal. Echo cleared.
     tl.call(() => { this.echo.k = 0; this.apply(); }, undefined, 3.2);
-    // BEAT 5 — REVEAL from the last tick (ride scale) to the parked pose as ONE
-    // MONOTONIC coupled tween (the finalized "About feel"), shared by all three
-    // platforms: the whole camera pose eases from the still platform pause to the
-    // parked pose over REVEAL_DUR with REVEAL_EASE — scale decreases strictly
-    // monotonically to park (no overshoot), soft-launching then decelerating over
-    // a long tail into rest.
+    // BEAT 5 — REVEAL from the last tick (ride scale) to the parked pose over
+    // REVEAL_DUR with REVEAL_EASE (the finalized "About feel": monotonic scale,
+    // soft launch → long decelerating tail into rest). about/projects use the
+    // straight coupled `revealTo` (their pan runs ALONG travel → clean). MUSIC
+    // parks with the line ~273 units to the side, so a straight coupled tween
+    // sweeps the vertical line's ON-SCREEN position PAST its resting spot mid-
+    // reveal (ticks duck behind the rail / title bar, reads as an overshoot).
+    // `vanWijkTo` keeps the line's on-screen path monotonic + rail-clear the whole
+    // way as ONE motion; same REVEAL_EASE / REVEAL_DUR feel.
     const REVEAL_AT = 3.55;
-    this.revealTo(tl, park, REVEAL_AT);
+    if (id === 'music') this.vanWijkTo(tl, park, REVEAL_AT, REVEAL_DUR, REVEAL_EASE);
+    else this.revealTo(tl, park, REVEAL_AT);
     const revealEnd = REVEAL_AT + REVEAL_DUR;
     // Set up the platform UI DURING the reveal (top-bar handoff, section title,
     // filter/more buttons, data-content visibility, and placeCards to position
@@ -1285,12 +1289,13 @@ class MapView {
     tl.call(() => this.setFades(toLine, 0, 0.7), undefined, 3.45);
     // BEAT 5 — PAUSE AT PLATFORM B (~0.35s): still hold at ride scale before the reveal.
     tl.call(() => { this.echo.k = 0; this.apply(); }, undefined, 3.85);
-    // BEAT 6 — REVEAL of B from its last tick, mirroring toPlatform()'s arrival:
-    // the SAME finalized "About feel" — a MONOTONIC coupled tween to B's parked
-    // pose with REVEAL_EASE over REVEAL_DUR (no overshoot, decelerating into
-    // rest), shared by all three platforms.
+    // BEAT 6 — REVEAL of B, same as toPlatform()'s arrival (same REVEAL_EASE /
+    // REVEAL_DUR feel): the straight coupled `revealTo` for about/projects, and
+    // `vanWijkTo` for music so its vertical line's on-screen path stays monotonic
+    // and rail-clear through the reveal instead of ducking behind the chrome.
     const REVEAL_AT = 4.2;
-    this.revealTo(tl, park, REVEAL_AT);
+    if (id === 'music') this.vanWijkTo(tl, park, REVEAL_AT, REVEAL_DUR, REVEAL_EASE);
+    else this.revealTo(tl, park, REVEAL_AT);
     const revealEnd = REVEAL_AT + REVEAL_DUR;
     // Set up the new platform UI during the reveal (entries stay hidden).
     tl.call(() => this.showUI(id), undefined, 4.35);
