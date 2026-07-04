@@ -21,6 +21,19 @@ const MAP_SCALE = 2.8; // zoom while riding
 // more direct blend. 1.4 gives a natural single gesture while keeping the music
 // line's arc clear of the docked rail (verified — see vanWijkTo).
 const VW_RHO = 1.4;
+// The ARRIVAL-reveal shape shared by all three platforms (the "About feel").
+// A MONOTONIC coupled tween of the whole camera pose to the parked pose, with a
+// custom asymmetric ease: gentle soft launch (v'(0)=0), a moderate steady
+// middle, and a long smooth deceleration to a full stop. The eased-progress is
+// f(p)=20p³−45p⁴+36p⁵−10p⁶, whose derivative 60·p²(1−p)³ ≥ 0 on [0,1] — so the
+// tween is strictly monotonic (scale never overshoots the parked scale). Unlike
+// the Van Wijk arc it does NOT zoom past the parked scale and ease back. See
+// revealTo / revealMusic for how the perpendicular-pan shear is kept out.
+const REVEAL_EASE = (p: number): number => 20 * p ** 3 - 45 * p ** 4 + 36 * p ** 5 - 10 * p ** 6;
+const REVEAL_DUR = 1.5;
+// Music-only: the constant-scale perpendicular "settle" that slides the parked
+// line to its rail-cleared framed x AFTER the pure zoom (see revealMusic).
+const MUSIC_PERP_DUR = 0.6;
 const AMBER = '#f9c25e';
 const CX = VIEWBOX.w / 2;
 const CY = VIEWBOX.h / 2;
@@ -311,6 +324,76 @@ class MapView {
       },
       at,
     );
+  }
+
+  /** The ARRIVAL reveal shared by ABOUT and PROJECTS: one MONOTONIC coupled
+   *  tween of the whole camera pose (x, y, s) from the live ride-end pose to the
+   *  parked pose, using REVEAL_EASE over REVEAL_DUR. Scale decreases strictly
+   *  monotonically to park (no dip, no overshoot); the motion eases in from the
+   *  preceding still pause and decelerates over a long tail into rest.
+   *
+   *  Safe (no shear) only when the reveal's pan is ALONG the direction of travel
+   *  — i.e. the PERPENDICULAR-to-travel component of the pan is small. About's
+   *  pan runs along its 45° diagonal (perpendicular ≈37) and projects' along its
+   *  horizontal run (perpendicular ≈41), so both are clean. MUSIC's reveal pans
+   *  ~273 PERPENDICULAR to travel and must NOT use this — see revealMusic. */
+  revealTo(
+    tl: gsap.core.Timeline,
+    end: { x: number; y: number; s: number },
+    at: number,
+    dur: number = REVEAL_DUR,
+  ) {
+    tl.to(
+      this.state,
+      { x: end.x, y: end.y, s: end.s, duration: dur, ease: REVEAL_EASE, onUpdate: this.apply },
+      at,
+    );
+  }
+
+  /** MUSIC's arrival reveal. Music parks with the line pushed ~273 world units
+   *  to one side (so the vertical run clears the docked rail and the cards are
+   *  centred in the content band). That framing offset is PERPENDICULAR to the
+   *  (vertical) travel, so folding it into the About-style coupled tween would
+   *  pan sideways WHILE zooming — the exact motion that reads as a shear/stretch.
+   *
+   *  So the reveal is DECOUPLED into two clean, shear-free moves:
+   *   1. A pure monotonic ZOOM with the focal held ON the line (x unchanged) and
+   *      only the ALONG-travel (vertical) focal pan + scale moving — same
+   *      REVEAL_EASE / REVEAL_DUR / decelerate-into-rest as About. Because the
+   *      focal's perpendicular (x) component never moves during the scale change,
+   *      there is NO stretch, and the line stays centred (well clear of the rail)
+   *      the whole zoom.
+   *   2. A short CONSTANT-scale perpendicular pan that slides the (now parked-
+   *      scale) line to its framed, rail-cleared x. A pan at fixed scale is a
+   *      pure translation — no zoom, so no shear — and it happens at park scale
+   *      where the on-screen travel is small and always clears the rail.
+   *
+   *  This gives music About's zoom feel (custom ease, 1.5s, monotonic, no
+   *  overshoot) with the perpendicular framing handled outside the zoom. Returns
+   *  the time at which the whole reveal (zoom + settle) has come to rest. */
+  revealMusic(
+    tl: gsap.core.Timeline,
+    end: { x: number; y: number; s: number },
+    at: number,
+  ): number {
+    // Phase 1 — pure monotonic zoom: tween y + s only, leaving x (the focal's
+    // perpendicular component, sitting on the line) untouched so no sideways
+    // motion accompanies the scale change.
+    tl.to(
+      this.state,
+      { y: end.y, s: end.s, duration: REVEAL_DUR, ease: REVEAL_EASE, onUpdate: this.apply },
+      at,
+    );
+    // Phase 2 — constant-scale perpendicular settle to the framed x. Starts as the
+    // zoom's long tail is essentially done (REVEAL_EASE has ~99% of the scale
+    // change complete well before REVEAL_DUR), so it reads as one continuous
+    // gesture while keeping perpendicular focal motion out of the scale window.
+    tl.to(
+      this.state,
+      { x: end.x, duration: MUSIC_PERP_DUR, ease: 'power2.inOut', onUpdate: this.apply },
+      at + REVEAL_DUR,
+    );
+    return at + REVEAL_DUR + MUSIC_PERP_DUR;
   }
 
   /** Everything that isn't `line`, its stops, or the grid. */
@@ -945,58 +1028,21 @@ class MapView {
     // "stopped at the platform", before the reveal. Echo cleared.
     tl.call(() => { this.echo.k = 0; this.apply(); }, undefined, 3.2);
     // BEAT 5 — REVEAL from the last tick (ride scale) to the parked pose as ONE
-    // combined Van Wijk zoom+pan swoop: scale AND focal move together throughout,
-    // a single smooth arc with no stretch and no two-step (see vanWijkTo). No
-    // backward ride at ride scale; ends exactly at the parked pose. The reveal
-    // TERMINATES at a stationary resting pose, so it uses a stronger ease
-    // (power2.inOut/Cubic, not the default power1.inOut/Quad) to visibly
-    // DECELERATE into the stop — the Van Wijk arc is ~constant-velocity, so the
-    // gentle default tail wasn't enough and the motion halted abruptly. Starts
-    // from the preceding still pause, so the ease-IN keeps the start smooth too.
-    // About (TRIAL) replaces the Van Wijk arc with a MONOTONIC coupled zoom+pan.
-    // The Van Wijk reveal OVERSHOOTS in scale for About: it zooms out PAST the
-    // parked scale (measured ~2.78 → dips to ~1.34 → eases back up to park ~1.56)
-    // before settling, because the arc's geometry pulls the viewport wide mid-path.
-    // About rides a DIAGONAL and its reveal-pan runs essentially ALONG that
-    // diagonal (near-zero perpendicular component), so — UNLIKE music/projects,
-    // whose reveal pans PERPENDICULAR to travel and would shear/"stretch" if a
-    // naive zoom+pan ran together — About can use a plain coupled tween with no
-    // stretch. Tweening the whole pose in one shot makes scale decrease
-    // MONOTONICALLY from ride scale to park (no dip, no overshoot: min scale ==
-    // parked scale). The ease is a CUSTOM ASYMMETRIC "gentle-in, strong-out"
-    // curve, NOT power4.out. power4.out front-loaded the motion (velocity ~2.9 at
-    // 10% — a fast spike, then a crawl), which read as "the pan/zoom jumps to high
-    // speed immediately." Since the reveal follows a still pause, it should ease IN
-    // from rest to a MODERATE cruise (like a gentle power2.inOut start), hold
-    // roughly steady through the middle, then DECELERATE smoothly over a long tail
-    // into the stop. The velocity we want is v(p) ∝ p²(1−p)³: zero at both ends,
-    // v'(0)=0 (soft launch), an early-ish moderate peak (~0.4), and a pronounced
-    // run-down. Integrating and normalizing gives the closed-form eased-progress
-    // f(p) = 20p³ − 45p⁴ + 36p⁵ − 10p⁶, whose derivative 60·p²(1−p)³ ≥ 0 on [0,1]
-    // — so the tween stays strictly MONOTONIC (no overshoot). Measured start speed
-    // (~0.44 at 10%) matches a gentle power2.inOut start and is far below
-    // power4.out's spike (~2.9); the tail decelerates 0.53 → 0.05 → ~0 (75→90→97%).
-    // Slightly longer (1.1s) so the deceleration reads. Music and projects keep the
-    // Van Wijk reveal (power2.inOut) unchanged.
-    // Duration tuned to 1.5s (down from a 2.0s value, itself down from a 3.5s
-    // test value) so the custom ease shape still reads clearly without feeling
-    // sluggish. Ease and monotonicity unchanged.
-    if (id === 'about') {
-      tl.to(
-        this.state,
-        {
-          x: park.x,
-          y: park.y,
-          s: park.s,
-          duration: 1.5,
-          ease: (p: number) => 20 * p ** 3 - 45 * p ** 4 + 36 * p ** 5 - 10 * p ** 6,
-          onUpdate: this.apply,
-        },
-        3.55,
-      );
-    } else {
-      this.vanWijkTo(tl, park, 3.55, 1.0, 'power2.inOut');
-    }
+    // MONOTONIC coupled tween (the finalized "About feel"): the whole camera pose
+    // eases from the still platform pause to the parked pose over REVEAL_DUR with
+    // REVEAL_EASE — scale decreases strictly monotonically to park (no dip, no
+    // overshoot), soft-launching then decelerating over a long tail into rest.
+    // All three platforms share this feel; the ONLY difference is how music keeps
+    // its large perpendicular framing offset out of the zoom (see revealMusic):
+    //   - about / projects: pan is ALONG travel (perpendicular ≈37 / ≈41) → the
+    //     plain coupled revealTo is already stretch-free.
+    //   - music: pan is ~273 PERPENDICULAR to travel → revealMusic decouples it
+    //     into a pure zoom (focal held on the line) + a constant-scale settle.
+    const REVEAL_AT = 3.55;
+    const revealEnd =
+      id === 'music'
+        ? this.revealMusic(tl, park, REVEAL_AT)
+        : (this.revealTo(tl, park, REVEAL_AT), REVEAL_AT + REVEAL_DUR);
     // Set up the platform UI DURING the reveal (top-bar handoff, section title,
     // filter/more buttons, data-content visibility, and placeCards to position
     // the still-HIDDEN entries), so the structure is ready as the camera pulls
@@ -1004,11 +1050,9 @@ class MapView {
     tl.call(() => this.showUI(id), undefined, 3.7);
     // Then, only AFTER the reveal has fully settled plus a tiny beat so the
     // platform reads as "settled, THEN populated", stagger the entries in one by
-    // one. Van Wijk reveal ends at 3.55 + 1.0 = 4.55 (music/projects → 4.7);
-    // About's reveal (1.5s) ends at 3.55 + 1.5 = 5.05, so its stagger is pushed
-    // to 5.2 (just after settle) to keep entries appearing only after the
-    // platform settles.
-    tl.call(() => this.cardsIn(id), undefined, id === 'about' ? 5.2 : 4.7);
+    // one. Reveal ends at revealEnd (about/projects 5.05; music 5.65 incl. the
+    // perpendicular settle); the stagger is nudged just past it.
+    tl.call(() => this.cardsIn(id), undefined, revealEnd + 0.15);
 
     this.skippable(tl);
   }
@@ -1305,16 +1349,21 @@ class MapView {
     // BEAT 5 — PAUSE AT PLATFORM B (~0.35s): still hold at ride scale before the reveal.
     tl.call(() => { this.echo.k = 0; this.apply(); }, undefined, 3.85);
     // BEAT 6 — REVEAL of B from its last tick, mirroring toPlatform()'s arrival:
-    // ONE combined Van Wijk zoom+pan swoop from ride scale to B's parked pose —
-    // scale AND focal move together as a single smooth arc (see vanWijkTo). Like
-    // toPlatform()'s reveal, this ENDS AT A RESTING STOP, so it uses the stronger
-    // power2.inOut ease to decelerate visibly into rest rather than halting abruptly.
-    this.vanWijkTo(tl, park, 4.2, 1.0, 'power2.inOut');
+    // the SAME finalized "About feel" — a MONOTONIC coupled tween to B's parked
+    // pose with REVEAL_EASE over REVEAL_DUR (no overshoot, decelerating into
+    // rest). Music decouples its perpendicular framing offset out of the zoom via
+    // revealMusic, exactly as on the map→page arrival; about/projects use the
+    // plain coupled revealTo (their pans run along travel → already stretch-free).
+    const REVEAL_AT = 4.2;
+    const revealEnd =
+      id === 'music'
+        ? this.revealMusic(tl, park, REVEAL_AT)
+        : (this.revealTo(tl, park, REVEAL_AT), REVEAL_AT + REVEAL_DUR);
     // Set up the new platform UI during the reveal (entries stay hidden).
     tl.call(() => this.showUI(id), undefined, 4.35);
-    // Stagger the entries in one by one only after the reveal settles
-    // (4.2 + 1.0 = 5.2) plus a tiny settle beat.
-    tl.call(() => this.cardsIn(id), undefined, 5.35);
+    // Stagger the entries in one by one only after the reveal settles (about/
+    // projects 5.7; music 6.3 incl. the perpendicular settle) plus a tiny beat.
+    tl.call(() => this.cardsIn(id), undefined, revealEnd + 0.15);
 
     this.skippable(tl);
   }
