@@ -22,19 +22,19 @@ const MAP_SCALE = 2.8; // zoom while riding
 // line's arc clear of the docked rail (verified — see vanWijkTo).
 const VW_RHO = 1.4;
 // The ARRIVAL-reveal shape shared by all three platforms (the "About feel").
-// A MONOTONIC coupled tween of the whole camera pose to the parked pose, with a
-// custom asymmetric ease: gentle soft launch (v'(0)=0), a moderate steady
-// middle, and a long smooth deceleration to a full stop. The eased-progress is
-// f(p)=20p³−45p⁴+36p⁵−10p⁶, whose derivative 60·p²(1−p)³ ≥ 0 on [0,1] — so the
-// tween is strictly monotonic (scale never overshoots the parked scale). Unlike
-// the Van Wijk arc it does NOT zoom past the parked scale and ease back.
-const REVEAL_EASE = (p: number): number => 20 * p ** 3 - 45 * p ** 4 + 36 * p ** 5 - 10 * p ** 6;
+// A MONOTONIC coupled tween of the whole camera pose to the parked pose: gentle
+// soft launch (v'(0)=0), decelerating to a full stop, but WITHOUT a long dead
+// tail (the motion is spread evenly enough that the final stretch still does real
+// work rather than creeping imperceptibly). Smootherstep f(p)=10p³−15p⁴+6p⁵, whose
+// derivative 30·p²(1−p)² ≥ 0 on [0,1] — strictly monotonic, so the scale never
+// overshoots the parked scale (unlike the Van Wijk arc).
+const REVEAL_EASE = (p: number): number => 10 * p ** 3 - 15 * p ** 4 + 6 * p ** 5;
 // One shared duration for ALL three platform reveals (about / projects / music).
 const REVEAL_DUR = 1.25;
-// REVEAL_EASE has a long flat tail, so the camera is visually AT REST by ~this
-// fraction of REVEAL_DUR (≈99% of the move done). The entries fade in there — the
-// moment it settles — rather than after the tween technically ends.
-const REVEAL_SETTLE = 0.85;
+// The camera is visually AT REST by ~this fraction of REVEAL_DUR (≈99% of the
+// move done), so the entries fade in there — the moment it settles — not after
+// the tween technically ends.
+const REVEAL_SETTLE = 0.9;
 const AMBER = '#f9c25e';
 const CX = VIEWBOX.w / 2;
 const CY = VIEWBOX.h / 2;
