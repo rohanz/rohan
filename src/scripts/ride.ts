@@ -31,6 +31,9 @@ const VW_RHO = 1.4;
 const REVEAL_EASE = (p: number): number => 20 * p ** 3 - 45 * p ** 4 + 36 * p ** 5 - 10 * p ** 6;
 // One shared duration for ALL three platform reveals (about / projects / music).
 const REVEAL_DUR = 1.25;
+// Music-only: the constant-scale perpendicular "settle" that slides the parked
+// line to its rail-cleared framed x AFTER the pure zoom (see revealMusic).
+const MUSIC_PERP_DUR = 0.55;
 const AMBER = '#f9c25e';
 const CX = VIEWBOX.w / 2;
 const CY = VIEWBOX.h / 2;
@@ -339,6 +342,39 @@ class MapView {
       { x: end.x, y: end.y, s: end.s, duration: dur, ease: REVEAL_EASE, onUpdate: this.apply },
       at,
     );
+  }
+
+  /** MUSIC's arrival reveal. Music parks with the vertical line pushed ~273 world
+   *  units to one side (so the run clears the docked rail and the rows are centred
+   *  in the content band). That offset is PERPENDICULAR to the vertical travel, so
+   *  ANY single tween that moves it while the scale changes makes an on-screen
+   *  point overshoot off-frame: a coupled tween sweeps the line left behind the
+   *  rail (and the top stop up behind the title bar); a Van Wijk arc keeps the
+   *  rail clear but its scale overshoot still pushes the top stop behind the title
+   *  bar. So the reveal is DECOUPLED into two shear-free, overshoot-free moves:
+   *   1. a PURE monotonic zoom (focal held on the line: only along-travel y + scale
+   *      move) — REVEAL_EASE / REVEAL_DUR, same feel as About, line stays centred
+   *      and clear of both the rail and the title bar the whole zoom;
+   *   2. a short CONSTANT-scale slide to the framed x — a pure translation (no
+   *      zoom → no shear/overshoot) at park scale where the on-screen travel is
+   *      small and always clears the rail.
+   *  Returns the time the whole reveal (zoom + slide) comes to rest. */
+  revealMusic(
+    tl: gsap.core.Timeline,
+    end: { x: number; y: number; s: number },
+    at: number,
+  ): number {
+    tl.to(
+      this.state,
+      { y: end.y, s: end.s, duration: REVEAL_DUR, ease: REVEAL_EASE, onUpdate: this.apply },
+      at,
+    );
+    tl.to(
+      this.state,
+      { x: end.x, duration: MUSIC_PERP_DUR, ease: 'power2.inOut', onUpdate: this.apply },
+      at + REVEAL_DUR,
+    );
+    return at + REVEAL_DUR + MUSIC_PERP_DUR;
   }
 
   /** Everything that isn't `line`, its stops, or the grid. */
@@ -978,13 +1014,14 @@ class MapView {
     // straight coupled `revealTo` (their pan runs ALONG travel → clean). MUSIC
     // parks with the line ~273 units to the side, so a straight coupled tween
     // sweeps the vertical line's ON-SCREEN position PAST its resting spot mid-
-    // reveal (ticks duck behind the rail / title bar, reads as an overshoot).
-    // `vanWijkTo` keeps the line's on-screen path monotonic + rail-clear the whole
-    // way as ONE motion; same REVEAL_EASE / REVEAL_DUR feel.
+    // reveal (ticks duck behind the rail / title bar). `revealMusic` decouples it
+    // into a pure zoom + a constant-scale slide so nothing overshoots off-frame;
+    // same REVEAL_EASE / REVEAL_DUR feel.
     const REVEAL_AT = 3.55;
-    if (id === 'music') this.vanWijkTo(tl, park, REVEAL_AT, REVEAL_DUR, REVEAL_EASE);
-    else this.revealTo(tl, park, REVEAL_AT);
-    const revealEnd = REVEAL_AT + REVEAL_DUR;
+    const revealEnd =
+      id === 'music'
+        ? this.revealMusic(tl, park, REVEAL_AT)
+        : (this.revealTo(tl, park, REVEAL_AT), REVEAL_AT + REVEAL_DUR);
     // Set up the platform UI DURING the reveal (top-bar handoff, section title,
     // filter/more buttons, data-content visibility, and placeCards to position
     // the still-HIDDEN entries), so the structure is ready as the camera pulls
@@ -1290,13 +1327,13 @@ class MapView {
     // BEAT 5 — PAUSE AT PLATFORM B (~0.35s): still hold at ride scale before the reveal.
     tl.call(() => { this.echo.k = 0; this.apply(); }, undefined, 3.85);
     // BEAT 6 — REVEAL of B, same as toPlatform()'s arrival (same REVEAL_EASE /
-    // REVEAL_DUR feel): the straight coupled `revealTo` for about/projects, and
-    // `vanWijkTo` for music so its vertical line's on-screen path stays monotonic
-    // and rail-clear through the reveal instead of ducking behind the chrome.
+    // REVEAL_DUR feel): straight coupled `revealTo` for about/projects, and the
+    // decoupled `revealMusic` for music so nothing overshoots behind the chrome.
     const REVEAL_AT = 4.2;
-    if (id === 'music') this.vanWijkTo(tl, park, REVEAL_AT, REVEAL_DUR, REVEAL_EASE);
-    else this.revealTo(tl, park, REVEAL_AT);
-    const revealEnd = REVEAL_AT + REVEAL_DUR;
+    const revealEnd =
+      id === 'music'
+        ? this.revealMusic(tl, park, REVEAL_AT)
+        : (this.revealTo(tl, park, REVEAL_AT), REVEAL_AT + REVEAL_DUR);
     // Set up the new platform UI during the reveal (entries stay hidden).
     tl.call(() => this.showUI(id), undefined, 4.35);
     // Stagger the entries in one by one only after the reveal settles
