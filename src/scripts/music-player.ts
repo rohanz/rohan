@@ -329,20 +329,6 @@ class RowPlayer {
   }
 
   // -- spectrum ------------------------------------------------------------
-  drawFrequencyGrid(): void {
-    if (!this.freqCtx) return;
-    const ctx = this.freqCtx;
-    ctx.strokeStyle = accent(0.1);
-    ctx.lineWidth = 1;
-    for (let i = 1; i < 4; i++) {
-      const y = Math.round((this.freqH / 4) * i) + 0.5;
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(this.freqW, y);
-      ctx.stroke();
-    }
-  }
-
   drawFrequencyCurve(levels: ArrayLike<number>, alpha = 1, highlightLevels: Float32Array | null = null): void {
     if (!this.freqCtx) return;
     const ctx = this.freqCtx;
@@ -367,7 +353,6 @@ class RowPlayer {
     const yFor = (value: number) => baseline - Math.max(0, Math.min(1, value)) * (freqH - topPad);
 
     ctx.clearRect(0, 0, freqW, freqH);
-    this.drawFrequencyGrid();
 
     const points = smoothLevels.map((value, index) => ({ x: xFor(index), y: yFor(value) }));
 

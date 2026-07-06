@@ -382,8 +382,9 @@ const socials: [string, string][] = [
      waveform-play-btn (not a text pill). Sits at the end of the row. */
   .row-play {
     flex: none;
-    width: min(clamp(56px, 4vw, 72px), var(--viz-max-h));
-    height: min(clamp(56px, 4vw, 72px), var(--viz-max-h));
+    /* One grid square, so the button reads as sitting on a grid cell. */
+    width: var(--grid, 64px);
+    height: var(--grid, 64px);
     padding: 0;
     display: flex;
     align-items: center;
@@ -405,7 +406,8 @@ const socials: [string, string][] = [
      into whatever the fixed-size cover/play/meters leave over — mirroring
      the original's behavior in its own narrow window (769–1180px), where
      the wave is the flexible element. */
-  .row-wave { flex: 1 1 auto; min-width: 100px; max-width: clamp(270px, 22vw, 380px); height: min(clamp(56px, 4vw, 72px), var(--viz-max-h)); display: block; }
+  /* Waveform spans two grid squares wide, one tall. */
+  .row-wave { flex: none; width: calc(var(--grid, 64px) * 2); height: var(--grid, 64px); display: block; }
   .row-meters { display: flex; gap: 0.6rem; align-items: center; flex: none; }
   /* Position: relative + an absolutely-positioned label keeps the label out
      of the flow, so the group's box is exactly the canvas's box — nothing
@@ -439,20 +441,24 @@ const socials: [string, string][] = [
      short screens; widths shrink in lock-step (calc keeps each canvas's native
      aspect ratio — freq 282:110≈2.56, vec 1:1, vu 141:100≈1.41 — so the
      WebAudio drawings, which read their own rendered box, stay undistorted). */
+  /* Freq analyser: 3 squares wide × 2 tall. */
   .row-freq {
     display: block;
-    width: min(clamp(220px, 20vw, 340px), calc(var(--viz-max-h) * 2.56));
-    height: min(clamp(110px, 7.3vw, 140px), var(--viz-max-h));
+    width: calc(var(--grid, 64px) * 3);
+    height: calc(var(--grid, 64px) * 2);
   }
+  /* Vectorscope: 2 × 2 squares, so its centre cross lands on a grid intersection
+     and its edges on grid lines. */
   .row-vec {
     display: block;
-    width: min(clamp(96px, 10vw, 140px), var(--viz-max-h));
-    height: min(clamp(96px, 10vw, 140px), var(--viz-max-h));
+    width: calc(var(--grid, 64px) * 2);
+    height: calc(var(--grid, 64px) * 2);
   }
+  /* VU: 2 squares wide × 2 tall. */
   .row-vu {
     display: block;
-    width: min(clamp(120px, 12vw, 180px), calc(var(--viz-max-h) * 1.41));
-    height: min(clamp(100px, 7vw, 130px), var(--viz-max-h));
+    width: calc(var(--grid, 64px) * 2);
+    height: calc(var(--grid, 64px) * 2);
   }
 
   /* Grid-line dividers: thin ink lines that read as the map's own grid
@@ -500,20 +506,24 @@ const socials: [string, string][] = [
     background: #fff;
     border-radius: 12px;
     overflow: hidden;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.22);
-    /* Pure composited transform: always-on translateZ(0) keeps this element
-       on its own GPU layer whether or not it's hovered, so hovering never
-       toggles compositing (which otherwise causes a one-frame subpixel
-       snap in the text below as font rasterization switches paths). */
-    transform: translateZ(0) scale(1);
-    transform-origin: center center;
+    /* No drop shadow — a hairline border gives just enough edge definition on the
+       map background without the heavy lifted look. */
+    border: 1px solid rgba(26, 26, 26, 0.12);
+    /* PERSISTENT GPU layer (will-change) so the hover scale is one clean, smooth
+       grow with no snap: without it, the first hover frame CREATES the layer and
+       re-rasterizes the text (subpixel→grayscale AA), nudging it ~1px before the
+       scale even starts — the "shift" you feel. Promoting up front means the text
+       is already in its composited form at rest, so scaling just grows it as a
+       unit. The catch is a persistent layer at a FRACTIONAL screen position blurs;
+       placeCards() therefore pixel-snaps project cards to integer left/top.
+       Border darkens alongside as a second, non-compositing cue. */
     will-change: transform;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    transition: transform 0.16s ease, border-color 0.16s ease;
   }
   .card-project:hover .card-inner,
   .card-project:focus-visible .card-inner {
-    transform: translateZ(0) scale(1.04);
-    box-shadow: 0 20px 46px rgba(0, 0, 0, 0.32);
+    transform: scale(1.04);
+    border-color: rgba(26, 26, 26, 0.4);
   }
   /* height is set inline by placeCards() to track the card's own (dynamic,
      now ~62% of the stop pitch) width; this is just a pre-JS fallback. */
@@ -531,7 +541,21 @@ const socials: [string, string][] = [
     overflow: hidden;
   }
   .card-project .tags { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.22rem; }
-  .card-project .tags li { font-size: clamp(0.5rem, 0.56vw, 0.58rem); font-weight: 700; color: #d13d59; border: 1.1px solid #d13d59; border-radius: 999px; padding: 0.08rem 0.4rem; }
+  /* Match the .filter-tag pills above exactly (font, weight, colour, white fill,
+     border, squared 3px corners, lowercase) — just a smaller font to fit the
+     card — so the two tag sets read as one system. */
+  .card-project .tags li {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-weight: 500;
+    font-size: clamp(0.5rem, 0.56vw, 0.58rem);
+    text-transform: lowercase;
+    white-space: nowrap;
+    color: #4a453c;
+    background: rgba(255, 255, 255, 0.92);
+    border: 1px solid rgba(26, 26, 26, 0.2);
+    border-radius: 3px;
+    padding: 0.22rem 0.5rem;
+  }
 
   /* Filter bar: pinned in the band between the top bar and the platform
      track, projects view only (toggled in showUI/hideUI). Wraps into
@@ -546,13 +570,14 @@ const socials: [string, string][] = [
   #filter-bar {
     position: absolute;
     top: 78px;
-    /* Constrained to a narrow, centered block within the content region to
-       the RIGHT of the docked rail: a compact ~4-6-pills-per-row multi-row
-       band (there are ~30 tags) instead of one very long row. Centering via
+    /* A centered block within the content region to the RIGHT of the docked
+       rail, sized so the full ~31-tag set falls into ~4 tidy rows (roughly
+       8 pills/row) rather than a tall 6-row stack — wider and shorter reads
+       neater and stays well clear of the track below. Centering via
        margin-inline:auto between the rail edge and the viewport edge. */
     left: var(--rail-w);
     right: 0;
-    max-width: 540px;
+    max-width: 680px;
     margin-inline: auto;
     display: flex;
     flex-wrap: wrap;
