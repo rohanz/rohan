@@ -82,9 +82,23 @@ class MapView {
 
   state = { x: HOME[0], y: HOME[1], s: 1 };
   echo = { dx: 0, dy: 0, k: 0 };
+  /** Memoized {@link metrics} result. The stage (#map-3d) is a viewport-sized
+   *  100%×100% box, and the camera transform lives on inner <g> elements — so
+   *  the stage's own rect is invariant during a ride and only changes on window
+   *  resize (or a late font/photo reflow). Caching it keeps metrics() out of the
+   *  per-frame render loop, where it was forcing a synchronous layout on EVERY
+   *  worldToScreen() call inside placeCards() — O(cards) forced reflows per frame,
+   *  the ~33ms hitch on the canvas-heavy /music page. Invalidated (set to null)
+   *  wherever the stage box can genuinely change, all of which are outside the
+   *  per-frame loop: the resize handler, fonts.ready, and the bio-photo load. */
+  _metrics: { rect: DOMRect; k: number; cropX: number; cropY: number } | null = null;
   view: ViewId = 'map';
   page = 0;
   busy = false;
+  /** Fired whenever a ride settles (busy → false). The hover handlers use it to
+   *  re-apply the highlight for whatever the pointer is resting on once the map
+   *  stops animating — hover is suppressed DURING a ride to avoid flicker. */
+  onSettle?: () => void;
   /** Projects filter: indices (into cardsFor('projects')) of cards that
    *  match the active filter pill, in original order. Display slot j on
    *  the current page maps to card `order[page * perPage + j]`. Other
@@ -118,14 +132,15 @@ class MapView {
   }
 
   metrics() {
+    if (this._metrics) return this._metrics;
     const rect = this.stage.getBoundingClientRect();
     const k = Math.max(rect.width / VIEWBOX.w, rect.height / VIEWBOX.h);
-    return {
+    return (this._metrics = {
       rect,
       k,
       cropX: (VIEWBOX.w * k - rect.width) / 2,
       cropY: (VIEWBOX.h * k - rect.height) / 2,
-    };
+    });
   }
 
   /** Camera rest pose for the map view. Home sits at the TRUE viewport center
@@ -497,7 +512,13 @@ class MapView {
     if (this.view === 'map') return;
     const line = lineById(this.view);
     const p = line.platform!;
-    const { rect } = this.metrics();
+    const { rect, k } = this.metrics();
+    // Expose the live on-screen size of ONE map grid square (50 world units at
+    // the current camera scale) as a CSS var, so the platform visuals — the
+    // music waveform/analysers especially — can size themselves in whole grid
+    // squares (calc(var(--grid) * N)) and stay locked to the map grid as the
+    // viewport (and thus the parked zoom) changes.
+    this.ui?.style.setProperty('--grid', `${(50 * this.state.s * k).toFixed(3)}px`);
     const cards = this.cardsFor(this.view);
     const order = this.orderFor(this.view);
     const per = this.perPageFor(this.view);
@@ -555,8 +576,13 @@ class MapView {
       }
       const [sx, sy] = this.worldToScreen(p.stops[from + j]);
       if (p.axis === 'h') {
-        card.style.left = `${sx}px`;
-        card.style.top = `${sy + 0.055 * rect.height}px`;
+        // Pixel-snap to integers: project cards carry will-change:transform (a
+        // persistent GPU layer, so the hover scale-up has no compositing snap),
+        // and a persistent layer at a fractional offset renders blurry. Rounding
+        // keeps them crisp at rest. Any sub-pixel jitter this adds is only during
+        // the reveal pan (cards are still fading in), invisible once settled.
+        card.style.left = `${Math.round(sx)}px`;
+        card.style.top = `${Math.round(sy + 0.055 * rect.height)}px`;
       } else {
         card.style.left = `${sx + 0.04 * rect.width}px`;
         card.style.top = `${sy}px`;
@@ -686,9 +712,14 @@ class MapView {
     const hideDivs = Array.from(
       document.querySelectorAll<HTMLElement>(`#platform-ui [data-divider="${id}"]`),
     );
-    gsap.set([...hideCards, ...hideDivs], { autoAlpha: 0 });
+    gsap.set([...hideCards, ...hideDivs, ...(id === 'projects' && filterBar ? [filterBar] : [])], {
+      autoAlpha: 0,
+    });
+    // The more-page buttons frame the platform, so they come up with the reveal.
+    // The filter bar, though, is held hidden here and faded in WITH the project
+    // entries (see cardsIn) so the pills and cards arrive together, not ahead.
     gsap.fromTo(
-      ['#more-next', '#more-prev', '#filter-bar'],
+      ['#more-next', '#more-prev'],
       { autoAlpha: 0 },
       { autoAlpha: 1, duration: 0.4, ease: 'power1.out', overwrite: 'auto' },
     );
@@ -697,6 +728,20 @@ class MapView {
   cardsIn(id: LineId) {
     const line = lineById(id);
     const axis = line.platform!.axis;
+    // Fade the filter pills in together with the project entries, but ONLY on the
+    // platform's first reveal — when showUI is holding the bar at autoAlpha 0.
+    // Filter clicks and paging also re-run cardsIn (to re-stagger the cards), and
+    // the bar is already visible then, so re-fading it flashed the pills out and
+    // back in. Gating on the current opacity skips that on re-renders.
+    if (id === 'projects') {
+      const filterBar = document.getElementById('filter-bar');
+      if (filterBar && parseFloat(getComputedStyle(filterBar).opacity) < 0.5)
+        gsap.fromTo(
+          filterBar,
+          { autoAlpha: 0 },
+          { autoAlpha: 1, duration: 0.5, ease: 'power1.out', overwrite: 'auto' },
+        );
+    }
     const onPage = this.cardsFor(id).filter((c) => c.style.display !== 'none');
     const dividers = Array.from(
       document.querySelectorAll<HTMLElement>(`#platform-ui [data-divider="${id}"]`),
@@ -718,8 +763,20 @@ class MapView {
     } else {
       gsap.set(onPage, { yPercent: -50, xPercent: 0 });
     }
+    // About ('d'): each stop carries a left+right pair. The DOM order is
+    // right-then-left per stop, so reorder the STAGGER to run left→right within
+    // each stop, top stop first (stop 1 L,R → stop 2 L,R → …). The per-card
+    // initial-state gsap.set above is order-independent, so only this sequence
+    // changes.
+    const staggerCards =
+      axis === 'd'
+        ? onPage
+            .map((card, i) => ({ card, stop: Math.floor(i / 2), left: card.dataset.side === 'left' }))
+            .sort((a, b) => a.stop - b.stop || Number(b.left) - Number(a.left))
+            .map((o) => o.card)
+        : onPage;
     gsap.fromTo(
-      onPage,
+      staggerCards,
       axis === 'h' ? { autoAlpha: 0, y: 22 } : { autoAlpha: 0, x: 26 },
       {
         autoAlpha: 1,
@@ -762,25 +819,15 @@ class MapView {
     if (!keep) t2.to(el, { attr: { fill: '#ffffff' }, duration: 0.13, ease: 'power2.in' });
   }
 
-  /** Returns a `pulse(el)` that flashes stops amber but never lets two overlap:
-   *  successive flashes are spaced at least GAP seconds apart, so a burst of
-   *  stops passed close together (the decelerating approach into a platform, or
-   *  the dense stretch near Home) reads as a crisp ONE-AT-A-TIME running sequence
-   *  instead of a lit-up cluster. The tiny timing slack vs the camera's exact
-   *  position is imperceptible for a brief flash. One sequencer is shared across
-   *  a whole ride (both legs of a pass-through) so the cadence stays global. */
-  pulseSequencer(): (el: Element | null) => void {
-    let last = -Infinity;
-    const GAP = 0.14;
-    return (el: Element | null) => {
-      if (!el) return;
-      const now = performance.now() / 1000;
-      const at = Math.max(now, last + GAP);
-      last = at;
-      const delay = at - now;
-      if (delay < 0.008) this.light(el);
-      else gsap.delayedCall(delay, () => this.light(el));
-    };
+  /** The single consistent amber pulse — fade in, fade out — used ONLY for a
+   *  journey's endpoints (Home + the destination roundel), in both directions.
+   *  Intermediate ticks no longer pulse. */
+  pulseStop(el: Element | null) {
+    if (!el) return;
+    gsap
+      .timeline()
+      .to(el, { attr: { fill: AMBER }, duration: 0.22, ease: 'power2.out' })
+      .to(el, { attr: { fill: '#ffffff' }, duration: 0.4, ease: 'power2.in' });
   }
 
   ridePath(line: Line): Point[] {
@@ -809,32 +856,6 @@ class MapView {
     return forward ? clipped : clipped.slice().reverse();
   }
 
-  pulseStops(line: Line, sampler: ReturnType<typeof pathSampler>): { d: number; el: Element | null }[] {
-    const pts = sampler.pts;
-    const cum = sampler.cum;
-    const arc = (q: Point) => {
-      let best = { d: 0, off: Infinity };
-      for (let i = 0; i < pts.length - 1; i++) {
-        const [x1, y1] = pts[i];
-        const [x2, y2] = pts[i + 1];
-        const dx = x2 - x1;
-        const dy = y2 - y1;
-        const len2 = dx * dx + dy * dy || 1;
-        const t = Math.min(1, Math.max(0, ((q[0] - x1) * dx + (q[1] - y1) * dy) / len2));
-        const off = Math.hypot(x1 + dx * t - q[0], y1 + dy * t - q[1]);
-        if (off < best.off) best = { d: cum[i] + Math.sqrt(len2) * t, off };
-      }
-      return best;
-    };
-    return [...line.ticks, ...(line.platform?.stops ?? [])]
-      .map((t) => ({ p: arc(t), at: t }))
-      .filter(({ p }) => p.off < 8 && p.d > 20)
-      .sort((a, b) => a.p.d - b.p.d)
-      .map(({ p, at }) => ({
-        d: p.d,
-        el: document.querySelector(`circle[data-at="${at[0]},${at[1]}"]`),
-      }));
-  }
 
   toPlatform(id: LineId, animate = true) {
     if (this.busy || this.view !== 'map') return;
@@ -866,7 +887,25 @@ class MapView {
         // these paths again on the next map visit. Without it GSAP leaves an
         // inline `opacity: 1` behind that permanently shadows the CSS, and the
         // hover-dim silently stops working after a round-trip.
-        { opacity: 1, duration: 0.3, ease: 'power1.out', overwrite: 'auto', clearProps: 'opacity' },
+        { opacity: 1, duration: 0.4, ease: 'power1.out', overwrite: 'auto', clearProps: 'opacity' },
+      );
+      // Fade the CLICKED line's glow off over the same beat, so the highlight
+      // dissolves gradually instead of snapping when ride-active drops the CSS
+      // drop-shadow. Inline GSAP filter overrides ride-active's `filter: none`;
+      // clearProps hands control back to the stylesheet once it settles.
+      const ridden = Array.from(
+        this.stage.querySelectorAll<SVGPathElement>(`[data-line="${id}"] .line-path`),
+      );
+      gsap.fromTo(
+        ridden,
+        { filter: `drop-shadow(0 0 1.2px ${line.hex})` },
+        {
+          filter: `drop-shadow(0 0 0px ${line.hex})`,
+          duration: 0.4,
+          ease: 'power1.out',
+          overwrite: 'auto',
+          clearProps: 'filter',
+        },
       );
     }
 
@@ -897,34 +936,18 @@ class MapView {
     // closing beat (BEAT 5) zooms OUT from there, blending the SMALL last-tick →
     // parked-focal x/y offset INTO the pull-back — the time-reverse of clicking Home.
     const sampler = pathSampler([startFocal, ...ridePts]);
-    const stops = this.pulseStops(line, sampler);
-    // The destination roundel pulses when the camera reaches the LINE END, which
-    // is now the final sampler point.
-    stops.push({
-      d: sampler.total,
-      el: document.querySelector(`[data-destination="${line.id}"] circle`),
-    });
-    let nextStop = 0;
+    // The destination roundel pulses ONLY on arrival (see the 3.2s call below);
+    // intermediate ticks no longer flash as the camera passes.
+    const destRoundel = document.querySelector(`[data-destination="${line.id}"] circle`);
     let lastAt: Point = startFocal;
     const prog = { p: 0 };
 
     const homeDot = document.getElementById('home-dot');
-    // Lead distance: fire each stop's pulse this many world units before the
-    // camera actually reaches it, so the amber flash peaks as the camera passes
-    // rather than after (the rise in `light()` otherwise lags the moving camera).
-    // Kept small so the now-short pulses stay locked to the stops and don't bunch.
-    const PULSE_LEAD = 46;
-    const pulse = this.pulseSequencer();
 
     const moveSample = () => {
       const { at, dir } = sampler.at(prog.p);
       this.state.x = at[0];
       this.state.y = at[1];
-      const dNow = prog.p * sampler.total;
-      while (nextStop < stops.length && stops[nextStop].d - PULSE_LEAD <= dNow) {
-        pulse(stops[nextStop].el);
-        nextStop++;
-      }
       const speedPx = Math.hypot(at[0] - lastAt[0], at[1] - lastAt[1]) * this.state.s;
       this.echo.dx = -dir[0];
       this.echo.dy = -dir[1];
@@ -936,14 +959,6 @@ class MapView {
     const tl = gsap.timeline({
       defaults: { overwrite: 'auto' },
       onComplete: () => {
-        // Floating-point guard: the progress tween may land at p fractionally
-        // short of 1, leaving a trailing stop (often the final one) unlit.
-        // Flush any remaining stops as if we'd reached the very end.
-        const dNow = sampler.total + 1;
-        while (nextStop < stops.length && stops[nextStop].d - PULSE_LEAD <= dNow) {
-          pulse(stops[nextStop].el);
-          nextStop++;
-        }
         this.echo.k = 0;
         this.apply();
         this.busy = false;
@@ -959,17 +974,14 @@ class MapView {
     // pause that follows has no jerk.
     tl.to(this.state, { s: MAP_SCALE, duration: 0.6, ease: 'power2.inOut', onUpdate: this.apply }, 0);
     // BEAT 2 — PAUSE ON HOME (~0.4s): a "stopped at the station" hold. Home pulses
-    // amber (it's a stop) and the motion-echo is cleared so the frame is still.
-    tl.call(() => { this.echo.k = 0; this.light(homeDot, true); this.apply(); }, undefined, 0.6);
+    // amber (fade in, fade out — the journey's origin endpoint) and the motion-echo
+    // is cleared so the frame is still.
+    tl.call(() => { this.echo.k = 0; this.pulseStop(homeDot); this.apply(); }, undefined, 0.6);
     // BEAT 3 — RIDE Home → platform. One eased glide: accelerates out of the Home
-    // pause, cruises, decelerates into the platform, pulsing each stop as it
-    // passes. The Home tick fades back to white just after departure. The ride ends
-    // at the platform's LAST TICK; the zoom-out that follows settles to the park pose.
-    tl.call(
-      () => { if (homeDot) gsap.to(homeDot, { attr: { fill: '#ffffff' }, duration: 0.25, ease: 'power1.in' }); },
-      undefined,
-      1.15,
-    );
+    // pause, cruises, decelerates into the platform. Intermediate ticks no longer
+    // pulse; only the endpoints (Home at departure, the destination roundel on
+    // arrival) flash. The ride ends at the platform's LAST TICK; the zoom-out that
+    // follows settles to the park pose.
     tl.to(prog, { p: 1, duration: 2.2, ease: 'power2.inOut', onUpdate: moveSample }, 1.0);
     // Fade every other line out so the platform is revealed as the camera arrives.
     tl.call(() => this.setFades(line, 0, 0.7), undefined, 2.7);
@@ -978,6 +990,8 @@ class MapView {
     // decelerates to ~0 velocity into the tick and the reveal soft-launches from
     // ~0, so the handoff stays smooth).
     tl.call(() => { this.echo.k = 0; this.apply(); }, undefined, 3.2);
+    // The destination roundel pulses amber as the camera arrives at the line end.
+    tl.call(() => this.pulseStop(destRoundel), undefined, 3.2);
     // BEAT 4 — REVEAL from the last tick (ride scale) to the parked pose over
     // REVEAL_DUR with REVEAL_EASE (the finalized "About feel": monotonic scale,
     // soft launch → long decelerating tail into rest). about/projects use the
@@ -1028,6 +1042,7 @@ class MapView {
       if (bar) gsap.to(bar, { backgroundColor: '#000', duration: 0.4, ease: 'power1.out', overwrite: 'auto' });
       if (section) section.textContent = '';
       this.busy = false;
+      this.onSettle?.();
       onArrive?.();
     };
 
@@ -1054,23 +1069,15 @@ class MapView {
     const sampler = pathSampler(ridePts);
     const prog = { p: 0 };
     let lastAt: Point = ridePts[0];
-    // Pulse the line's stops amber as the RETURN glide passes them too (the same
-    // running sequence as the outbound ride, just in reverse) — Home still pulses
-    // separately when the camera pauses on it at the end.
-    const stops = this.pulseStops(line, sampler);
-    let nextStop = 0;
-    const PULSE_LEAD = 46;
-    const pulse = this.pulseSequencer();
+    // Only the two endpoints pulse: the destination roundel as the RETURN glide
+    // departs, and Home when the camera arrives on it at the end. Intermediate
+    // ticks no longer flash.
+    const destRoundel = document.querySelector(`[data-destination="${line.id}"] circle`);
 
     const moveSample = () => {
       const { at, dir } = sampler.at(prog.p);
       this.state.x = at[0];
       this.state.y = at[1];
-      const dNow = prog.p * sampler.total;
-      while (nextStop < stops.length && stops[nextStop].d - PULSE_LEAD <= dNow) {
-        pulse(stops[nextStop].el);
-        nextStop++;
-      }
       const speedPx = Math.hypot(at[0] - lastAt[0], at[1] - lastAt[1]) * this.state.s;
       this.echo.dx = -dir[0];
       this.echo.dy = -dir[1];
@@ -1089,11 +1096,6 @@ class MapView {
       delay: 0.35,
       defaults: { overwrite: 'auto' },
       onComplete: () => {
-        const dNow = sampler.total + 1;
-        while (nextStop < stops.length && stops[nextStop].d - PULSE_LEAD <= dNow) {
-          pulse(stops[nextStop].el);
-          nextStop++;
-        }
         this.echo.k = 0;
         this.apply();
         done();
@@ -1107,21 +1109,28 @@ class MapView {
     // single smooth arc (no two-step, no stretch). Ends exactly at ridePts[0] @
     // MAP_SCALE so the ride below is unchanged.
     this.vanWijkTo(tl, { x: ridePts[0][0], y: ridePts[0][1], s: MAP_SCALE }, 0, 0.7);
-    // BEAT 2 — RIDE platform → Home, decelerating into the Home stop.
+    // BEAT 2 — RIDE platform → Home, decelerating into the Home stop. The
+    // destination roundel pulses amber as the ride departs from it.
+    tl.call(() => this.pulseStop(destRoundel), undefined, 0.8);
     tl.to(prog, { p: 0.78, duration: 1.2, ease: 'power2.in', onUpdate: moveSample }, 0.8);
-    tl.to(prog, { p: 1, duration: 0.9, ease: 'power3.out', onUpdate: moveSample }, 2.0);
-    // BEAT 3 — PAUSE ON HOME (~0.4s): the liked "arrive at the station" beat, made
-    // explicit. Home pulses amber and the echo is cleared so the frame is still,
-    // matching the pause beats of the other transitions.
-    tl.call(() => { this.echo.k = 0; this.light(homeDot); this.apply(); }, undefined, 2.9);
-    // BEAT 4 — ZOOM-OUT to the wide map: a PURE zoom-out. The glide already parked
-    // x/y exactly on Home (mapPose() is the plain HOME-centred pose), so this
-    // tween's x/y are no-ops and only `s` animates 2.8 → 1 — Home holds dead-still
-    // and simply grows to fill the frame, never sliding sideways.
+    // Arrive with a crisp ease-out (power2, 0.7s) rather than a long power3 tail:
+    // power3.out spent its last ~0.3s creeping imperceptibly onto Home, so the
+    // camera visually PARKED ~2.6s while the pulse/zoom-out (pinned to the tween's
+    // technical end at 2.9s) hadn't fired yet — a dead beat on Home. Landing at
+    // 2.6s and firing the arrival beats there removes it.
+    tl.to(prog, { p: 1, duration: 0.7, ease: 'power2.out', onUpdate: moveSample }, 2.0);
+    // BEAT 3 — ARRIVE at Home (2.6s): pulse Home amber and clear the echo the
+    // instant the ride lands — no dwell before the pulse.
+    tl.call(() => { this.echo.k = 0; this.pulseStop(homeDot); this.apply(); }, undefined, 2.6);
+    // BEAT 4 — ZOOM-OUT to the wide map: a PURE zoom-out, launching the moment the
+    // ride reaches Home (2.6s, no hold). The glide already parked x/y exactly on
+    // Home (mapPose() is the plain HOME-centred pose), so this tween's x/y are
+    // no-ops and only `s` animates 2.8 → 1 — Home holds dead-still and simply grows
+    // to fill the frame, never sliding sideways.
     tl.to(
       this.state,
       { ...this.mapPose(), duration: 0.8, ease: 'power2.inOut', onUpdate: this.apply },
-      3.3,
+      2.6,
     );
     // Arrival: reveal the Home LABEL with a soft fade so it glides in as the
     // camera settles, rather than snapping. ride-active is dropped here (so the
@@ -1137,7 +1146,7 @@ class MapView {
           gsap.to(homeLabel, { opacity: 1, duration: 0.45, ease: 'power1.out', overwrite: 'auto' });
         },
         undefined,
-        3.7,
+        3.0,
       );
     }
 
@@ -1187,48 +1196,25 @@ class MapView {
       inPts.push([HOME[0], HOME[1]]);
     }
     const inSampler = pathSampler(inPts);
-    // Stops of the LEAVING line, pulsed as the reverse leg passes them (A→Home).
-    const inStops = this.pulseStops(fromLine, inSampler);
-    // Outbound leg: Home → new-line platform (with its stop pulses). The ride ends
-    // at the platform's LAST TICK — no appended parked focal — so the arrival stops
-    // dead at the last tick and BEAT 6 zooms out from there (no backward bounce).
+    // Outbound leg: Home → new-line platform. The ride ends at the platform's LAST
+    // TICK — no appended parked focal — so the arrival stops dead at the last tick
+    // and BEAT 6 zooms out from there (no backward bounce).
     const outPts = this.ridePath(toLine);
     const outSampler = pathSampler(outPts);
-    const outStops = this.pulseStops(toLine, outSampler);
-    outStops.push({
-      d: outSampler.total,
-      el: document.querySelector(`[data-destination="${toLine.id}"] circle`),
-    });
 
     const homeDot = document.getElementById('home-dot');
-    const PULSE_LEAD = 46;
     const progIn = { p: 0 };
     const progOut = { p: 0 };
-    const nIn = { n: 0 };
-    const nOut = { n: 0 };
-    // One sequencer for the whole pass-through, so the A→Home and Home→B flashes
-    // form a single crisp one-at-a-time run.
-    const pulse = this.pulseSequencer();
     let lastAt: Point = inPts[0];
 
     // Both legs move ONLY the focal point (x/y); scale is untouched here so it
-    // holds at MAP_SCALE across the whole pass-through. Each leg pulses ITS OWN
-    // stops (leaving line on the way in, arriving line on the way out) with its
-    // own cursor, so stops flash in every direction of travel.
-    const move = (
-      sampler: ReturnType<typeof pathSampler>,
-      prog: { p: number },
-      stops: { d: number; el: Element | null }[],
-      cursor: { n: number },
-    ) => {
+    // holds at MAP_SCALE across the whole pass-through. Intermediate ticks no
+    // longer pulse — only the three endpoints (A's roundel at departure, Home at
+    // the interchange, B's roundel on arrival) flash amber.
+    const move = (sampler: ReturnType<typeof pathSampler>, prog: { p: number }) => {
       const { at, dir } = sampler.at(prog.p);
       this.state.x = at[0];
       this.state.y = at[1];
-      const dNow = prog.p * sampler.total;
-      while (cursor.n < stops.length && stops[cursor.n].d - PULSE_LEAD <= dNow) {
-        pulse(stops[cursor.n].el);
-        cursor.n++;
-      }
       const speedPx = Math.hypot(at[0] - lastAt[0], at[1] - lastAt[1]) * this.state.s;
       this.echo.dx = -dir[0];
       this.echo.dy = -dir[1];
@@ -1236,8 +1222,8 @@ class MapView {
       this.apply();
       lastAt = at;
     };
-    const moveIn = () => move(inSampler, progIn, inStops, nIn);
-    const moveOut = () => move(outSampler, progOut, outStops, nOut);
+    const moveIn = () => move(inSampler, progIn);
+    const moveOut = () => move(outSampler, progOut);
 
     const tl = gsap.timeline({
       // DEPARTURE SEQUENCING: hideUI() above starts a ~0.3s fade-out of platform
@@ -1248,12 +1234,6 @@ class MapView {
       delay: 0.35,
       defaults: { overwrite: 'auto' },
       onComplete: () => {
-        while (nIn.n < inStops.length) pulse(inStops[nIn.n++].el);
-        const dNow = outSampler.total + 1;
-        while (nOut.n < outStops.length && outStops[nOut.n].d - PULSE_LEAD <= dNow) {
-          pulse(outStops[nOut.n].el);
-          nOut.n++;
-        }
         this.echo.k = 0;
         this.apply();
         this.busy = false;
@@ -1261,22 +1241,54 @@ class MapView {
     });
 
     // Same BEAT rhythm as the other transitions, but the camera holds ride scale
-    // the whole A → Home → B journey and PAUSES at the Home interchange instead of
-    // zooming out to the map.
+    // the whole A → Home → B journey and PASSES STRAIGHT THROUGH the Home
+    // interchange (no pause, no zoom-out) — an express run from A to B.
     //
     // BEAT 1 — leave platform A: ONE combined Van Wijk zoom+pan swoop up to ride
     // scale onto A's far end (the last tick), then reveal every line (so the new
     // line we're about to ride is visible). Same treatment as toMap()'s departure
     // — scale AND focal move together as a single smooth arc (no two-step, no
     // stretch). Ends exactly at inPts[0] @ MAP_SCALE so the ride below is unchanged.
-    this.vanWijkTo(tl, { x: inPts[0][0], y: inPts[0][1], s: MAP_SCALE }, 0, 0.6);
+    this.vanWijkTo(tl, { x: inPts[0][0], y: inPts[0][1], s: MAP_SCALE }, 0, 0.7);
+    // A's roundel pulses amber as the ride departs platform A — fired at the
+    // ride-start (0.6s, once the Van Wijk swoop has lifted the camera to ride
+    // scale), NOT at t=0. Firing it at 0 made the pulse flash before the camera
+    // had moved, reading as "early" versus go-home (toMap), whose origin pulse
+    // likewise fires at its ride-start. Both now pulse the origin as the ride
+    // actually departs.
+    tl.call(
+      () => this.pulseStop(document.querySelector(`[data-destination="${fromLine.id}"] circle`)),
+      undefined,
+      0.8,
+    );
     tl.call(() => this.setFades(null, 1, 0.6), undefined, 0.1);
-    // BEAT 2 — RIDE A → Home, decelerating into the interchange stop.
-    tl.to(progIn, { p: 1, duration: 1.3, ease: 'power2.inOut', onUpdate: moveIn }, 0.6);
-    // BEAT 3 — PAUSE ON HOME at ride scale (~0.45s): a "stopped at the interchange"
-    // hold (NOT a zoom-out). Home pulses amber, the echo is cleared, and the top
-    // bar hands its colour/label from line A to line B during the pause.
-    tl.call(() => { this.echo.k = 0; this.light(homeDot); this.apply(); }, undefined, 1.9);
+    // The A→Home and Home→B legs are split by DISTANCE, not given equal fixed
+    // times. The Home→B leg can be far longer than A→Home (e.g. Projects sits well
+    // past the interchange, ~2.5× the Music→Home distance), and equal durations
+    // would make the camera LURCH — jump speed — as it crossed Home. Dividing a
+    // fixed total ride time between the legs in proportion to their path length
+    // holds the cruise speed constant across the interchange: with tIn ∝ dIn and
+    // tOut ∝ dOut, power2.in's exit velocity (3·dIn/tIn) equals power2.out's entry
+    // velocity (3·dOut/tOut), so the pass-through is one continuous sweep that
+    // simply peaks at Home. Self-corrects for every page pair.
+    const RIDE_TIME = 2.8; // total A → Home → B, matching the old 1.3 + 1.5
+    const dTot = inSampler.total + outSampler.total || 1;
+    const tIn = RIDE_TIME * (inSampler.total / dTot);
+    const tOut = RIDE_TIME * (outSampler.total / dTot);
+    const rideStart = 0.8; // BEAT 1 (vanWijk departure) runs 0 → 0.7, then a 0.1s settle — matches toMap's departure exactly so the origin pulse lands at the same 0.8s in both
+    const junctionAt = rideStart + tIn; // camera crosses Home here
+    const rideEnd = junctionAt + tOut; // arrives at B's last tick
+
+    // BEAT 2 — RIDE A → Home. Accelerates out of A and stays fast INTO the
+    // interchange (power2.in, no decel) so the camera runs THROUGH Home rather
+    // than braking for it.
+    tl.to(progIn, { p: 1, duration: tIn, ease: 'power2.in', onUpdate: moveIn }, rideStart);
+    // BEAT 3 — PASS THROUGH HOME at ride scale (no pause): Home flashes amber as
+    // the camera sweeps past. The echo/motion-blur is left UNTOUCHED so it carries
+    // through the interchange (speed-derived, it stays up because the camera never
+    // slows), and the top bar hands its colour/label from line A to line B on the
+    // fly. No echo.k=0, no apply() freeze — the ride keeps flowing.
+    tl.call(() => this.pulseStop(homeDot), undefined, junctionAt);
     tl.call(
       () => {
         const bar = document.querySelector('.top-bar');
@@ -1285,21 +1297,30 @@ class MapView {
         if (section) section.textContent = toLine.nav!.name;
       },
       undefined,
-      2.0,
+      junctionAt,
     );
-    // BEAT 4 — RIDE Home → platform B: accelerate out of the interchange, cruise,
-    // decelerate into B, pulsing B's stops as it passes.
-    tl.to(progOut, { p: 1, duration: 1.5, ease: 'power2.inOut', onUpdate: moveOut }, 2.35);
+    // BEAT 4 — RIDE Home → platform B: carries the interchange speed (power2.out,
+    // no re-acceleration from a standstill) and decelerates into B (B's roundel
+    // pulses on arrival). Starts the INSTANT BEAT 2 ends — no gap and, because the
+    // leg times are distance-proportional, no speed step: one continuous express
+    // run past the interchange.
+    tl.to(progOut, { p: 1, duration: tOut, ease: 'power2.out', onUpdate: moveOut }, junctionAt);
     // Fade everything but the new line as B arrives.
-    tl.call(() => this.setFades(toLine, 0, 0.7), undefined, 3.45);
-    // Clear the echo/motion-blur exactly as B's ride reaches the last tick (3.85s),
-    // where the reveal picks up — no held pause between them.
-    tl.call(() => { this.echo.k = 0; this.apply(); }, undefined, 3.85);
+    tl.call(() => this.setFades(toLine, 0, 0.7), undefined, rideEnd - 0.4);
+    // Clear the echo/motion-blur exactly as B's ride reaches the last tick, where
+    // the reveal picks up — no held pause between them.
+    tl.call(() => { this.echo.k = 0; this.apply(); }, undefined, rideEnd);
+    // B's roundel pulses amber as the pass-through arrives at platform B.
+    tl.call(
+      () => this.pulseStop(document.querySelector(`[data-destination="${toLine.id}"] circle`)),
+      undefined,
+      rideEnd,
+    );
     // BEAT 5 — REVEAL of B, same as toPlatform()'s arrival (same REVEAL_EASE /
     // REVEAL_DUR feel): straight coupled `revealTo` for about/projects, and
     // `vanWijkTo` for music (time-mirror of its clean go-home zoom-in — one arc,
     // no overshoot, stops clear).
-    const REVEAL_AT = 3.85;
+    const REVEAL_AT = rideEnd;
     if (id === 'music') this.vanWijkTo(tl, park, REVEAL_AT, REVEAL_DUR, REVEAL_EASE);
     else this.revealTo(tl, park, REVEAL_AT);
     // Set up the new platform UI during the reveal (entries stay hidden).
@@ -1422,12 +1443,32 @@ function init() {
   if (!document.getElementById('transit-map')) return;
   mv = new MapView();
 
+  // Track what the pointer is over, but only WRITE the highlight (data-hl) when
+  // the map is idle on the map view. During a ride the map animates under a
+  // stationary pointer, so mouseenter/mouseleave fire rapidly as lines sweep past
+  // — writing data-hl then flickered the rail/labels/glow (the rail's :has()
+  // rules have no .ride-active guard). onSettle re-runs syncHover when the ride
+  // ends, so a pointer already resting on a line lights up cleanly right after.
+  let hoverLine: string | null = null;
+  const syncHover = () => {
+    if (!mv) return;
+    // The Home rail link carries data-line="map"; it's not a highlightable
+    // destination, so hovering it must NOT set data-hl — which would dim the Home
+    // label (and everything else) via the `[data-hl] .home-label` rule.
+    if (hoverLine && hoverLine !== 'map' && !mv.busy && mv.view === 'map')
+      mv.stage.dataset.hl = hoverLine;
+    else delete mv.stage.dataset.hl;
+  };
+  mv.onSettle = syncHover;
+
   const bind = (el: Element, lineId: string | null) => {
     el.addEventListener('mouseenter', () => {
-      if (mv && mv.view === 'map' && lineId) mv.stage.dataset.hl = lineId;
+      hoverLine = lineId;
+      syncHover();
     });
     el.addEventListener('mouseleave', () => {
-      if (mv) delete mv.stage.dataset.hl;
+      hoverLine = null;
+      syncHover();
     });
     el.addEventListener('click', (e) => {
       if (!lineId) return;
@@ -1464,7 +1505,12 @@ function init() {
   });
 
   window.addEventListener('resize', () => {
-    if (!mv || mv.busy) return;
+    if (!mv) return;
+    // The stage box changed — drop the memoized metrics so the next read
+    // recomputes against the new viewport (runs even while busy, so an
+    // in-flight ride re-measures on its next frame).
+    mv._metrics = null;
+    if (mv.busy) return;
     if (mv.view !== 'map') {
       Object.assign(mv.state, mv.parkPose(lineById(mv.view), mv.page));
       mv.apply();
@@ -1481,7 +1527,10 @@ function init() {
   // placement once fonts settle so any font-driven reflow (line count,
   // card height) is reflected.
   document.fonts?.ready.then(() => {
-    if (mv && mv.view !== 'map' && !mv.busy) mv.placeCards();
+    if (mv && mv.view !== 'map' && !mv.busy) {
+      mv._metrics = null;
+      mv.placeCards();
+    }
   });
 
   // The about platform's vertical card-stacking (placeCards()'s 'd' branch,
@@ -1494,7 +1543,10 @@ function init() {
     bioPhoto.addEventListener(
       'load',
       () => {
-        if (mv && mv.view !== 'map' && !mv.busy) mv.placeCards();
+        if (mv && mv.view !== 'map' && !mv.busy) {
+          mv._metrics = null;
+          mv.placeCards();
+        }
       },
       { once: true },
     );
