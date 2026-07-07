@@ -131,11 +131,12 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
       /* top is set from the banner's edge by article.ts; this is the pre-JS
          default (header + page-body padding) to avoid a first-paint jump. */
       top: 11rem;
-      /* End the rail ~70% down the viewport so the prev/next nav (pinned to the
-         bottom via margin-top:auto) holds ONE fixed spot regardless of the TOC's
-         length — it never shifts when you page between projects. Mirrors the
-         original site's 70vh sidebar column. */
-      bottom: 30vh;
+      /* End the rail a small fixed margin above the viewport bottom so the
+         prev/next nav (pinned to the bottom via margin-top:auto) holds ONE fixed
+         spot regardless of the TOC's length — it never shifts when you page
+         between projects — while sitting low enough to leave the section list
+         maximum room on short screens. */
+      bottom: 2.5rem;
       /* Track the centered article column so the rail keeps a constant, tight
          offset from the body instead of drifting to the far margin on wide
          screens (the article is 760px wide and centered). */
