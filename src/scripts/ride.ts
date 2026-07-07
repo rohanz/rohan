@@ -121,15 +121,31 @@ class MapView {
   _metrics: { rect: DOMRect; k: number; cropX: number; cropY: number } | null = null;
   view: ViewId = 'map';
   page = 0;
-  busy = false;
+  _busy = false;
+  /** The in-flight ride timeline, tracked so dispose() can kill it when the page
+   *  is navigated away (otherwise its deferred callbacks corrupt the next page). */
+  active: gsap.core.Timeline | null = null;
   /** True only while a projects page-turn pan is animating. placeProjectPaging
    *  skips re-positioning the paging buttons during this window so they stay put
    *  (faded out) instead of drifting across with the camera. */
   pagingPan = false;
-  /** Fired whenever a ride settles (busy → false). The hover handlers use it to
-   *  re-apply the highlight for whatever the pointer is resting on once the map
-   *  stops animating — hover is suppressed DURING a ride to avoid flicker. */
+  /** Fired whenever a ride settles (busy → false). Used to re-apply hover
+   *  highlight once the map stops animating (hover is suppressed DURING a ride to
+   *  avoid flicker) AND to reconcile the view with the URL target — draining any
+   *  navigation intent (rail click / back-forward) that arrived mid-ride. */
   onSettle?: () => void;
+  /** `busy` is an accessor so that EVERY ride completion (not just toMap's) fires
+   *  onSettle exactly once on the true→false edge. This is the single choke point
+   *  the navigation reconciler hangs off — without it, intents that land mid-ride
+   *  are silently dropped and the URL desyncs from the view. */
+  get busy(): boolean {
+    return this._busy;
+  }
+  set busy(v: boolean) {
+    const settled = this._busy && !v;
+    this._busy = v;
+    if (settled) this.onSettle?.();
+  }
   /** Projects filter: indices (into cardsFor('projects')) of cards that
    *  match the active filter pill, in original order. Display slot j on
    *  the current page maps to card `order[page * perPage + j]`. Other
@@ -1199,8 +1215,7 @@ class MapView {
       const section = document.getElementById('bar-section');
       if (bar) gsap.to(bar, { backgroundColor: '#000', duration: 0.4, ease: 'power1.out', overwrite: 'auto' });
       if (section) section.textContent = '';
-      this.busy = false;
-      this.onSettle?.();
+      this.busy = false; // the setter fires onSettle (hover re-sync + reconcile)
       onArrive?.();
     };
 
@@ -1571,19 +1586,46 @@ class MapView {
   }
 
   skippable(tl: gsap.core.Timeline) {
+    // Track the in-flight ride so dispose() (on navigation away) can kill it.
+    this.active = tl;
     const skip = () => tl.progress(1);
     const off = () => {
       window.removeEventListener('pointerdown', skip);
       window.removeEventListener('keydown', skip);
+      if (this.active === tl) this.active = null;
     };
     setTimeout(() => window.addEventListener('pointerdown', skip, { once: true }), 150);
     window.addEventListener('keydown', skip, { once: true });
     tl.then(off);
   }
+
+  /** Tear the engine down before the page is swapped out (astro:before-swap).
+   *  A ride's GSAP timeline is NOT bound to the DOM: left alive across a
+   *  ClientRouter navigation, its still-pending `tl.call(showUI/cardsIn)` beats
+   *  fire ~seconds later and run document.querySelector against the NEXT page,
+   *  corrupting it (the "empty/stale platform" after back-forward). Killing the
+   *  timeline stops those scheduled callbacks. */
+  dispose() {
+    this.active?.kill();
+    this.active = null;
+  }
 }
 
 // ---------------------------------------------------------------------------
 let mv: MapView | null = null;
+
+// The URL is the single source of truth for which view should be showing.
+// `target` mirrors it; `reconcile()` drives the (async, animated) view toward it.
+// Every navigation entry point — rail click, browser back/forward (popstate),
+// initial load — sets `target` and calls reconcile(); it is also called on every
+// ride settle (via onSettle). A nav intent that arrives mid-ride is therefore
+// never dropped: it updates `target`, and the reconciler lands it once the
+// in-flight ride finishes. This is what keeps the URL and the visible view in
+// lock-step through interrupts, spam, and history navigation.
+let target: ViewId = 'map';
+// Guards the once-only binding of window-level listeners (popstate/resize) that
+// must survive ClientRouter swaps; init() re-runs per page-load.
+let globalBound = false;
 
 function urlFor(view: ViewId): string {
   return view === 'map' ? '/' : `/${view}`;
@@ -1597,13 +1639,29 @@ function viewFromPath(path: string): ViewId {
   return 'map';
 }
 
-function go(view: ViewId, push = true) {
+/** Drive one transition toward `target`. No-op while a ride is in flight — the
+ *  settle hook calls this again when the ride completes, so it converges. Each
+ *  ride method sets `mv.view = target` at its start, so after a single completed
+ *  transition `view === target` and reconcile() stops (unless `target` moved
+ *  again meanwhile, in which case it takes one more step). */
+function reconcile() {
   if (!mv || mv.busy) return;
-  if (mv.view === view) return;
-  if (push) history.pushState({ view }, '', urlFor(view));
-  if (view === 'map') mv.toMap();
-  else if (mv.view === 'map') mv.toPlatform(view);
-  else mv.switchPlatform(view);
+  const want = target;
+  if (mv.view === want) return;
+  if (want === 'map') mv.toMap();
+  else if (mv.view === 'map') mv.toPlatform(want);
+  else mv.switchPlatform(want);
+}
+
+/** User-initiated navigation (rail click). Records the intent as the new target,
+ *  reflects it in the URL, and reconciles — immediately if idle, or on settle if
+ *  a ride is running (so the click is honored rather than swallowed). */
+function go(view: ViewId) {
+  if (!mv || target === view) return;
+  target = view;
+  if (viewFromPath(location.pathname) !== view)
+    history.pushState({ view }, '', urlFor(view));
+  reconcile();
 }
 
 function init() {
@@ -1626,7 +1684,12 @@ function init() {
       mv.stage.dataset.hl = hoverLine;
     else delete mv.stage.dataset.hl;
   };
-  mv.onSettle = syncHover;
+  // On every ride settle: re-apply hover for whatever the pointer rests on, then
+  // reconcile the view with the URL — landing any nav intent that arrived mid-ride.
+  mv.onSettle = () => {
+    syncHover();
+    reconcile();
+  };
 
   const bind = (el: Element, lineId: string | null) => {
     el.addEventListener('mouseenter', () => {
@@ -1659,35 +1722,41 @@ function init() {
     if (btn) mv?.applyFilter(btn.dataset.filter ?? 'all');
   });
 
-  window.addEventListener('popstate', () => {
-    if (!mv) return;
-    const target = viewFromPath(location.pathname);
-    if (target === mv.view) return;
-    if (target === 'map') mv.toMap();
-    else if (mv.view === 'map') mv.toPlatform(target);
-    else {
-      mv.toMap(false);
-      mv.toPlatform(target, false);
-    }
-  });
+  // Window-level listeners reference the module `mv`, so they stay correct across
+  // ClientRouter swaps (mv is rebuilt each init). Bind them ONCE — init() re-runs
+  // on every MapApp page-load, and re-adding them each time would leak handlers.
+  if (!globalBound) {
+    globalBound = true;
 
-  window.addEventListener('resize', () => {
-    if (!mv) return;
-    // The stage box changed — drop the memoized metrics so the next read
-    // recomputes against the new viewport (runs even while busy, so an
-    // in-flight ride re-measures on its next frame).
-    mv._metrics = null;
-    if (mv.busy) return;
-    if (mv.view !== 'map') {
-      Object.assign(mv.state, mv.parkPose(lineById(mv.view), mv.page));
-      mv.apply();
-    } else {
-      // Keep Home centered in the visible region as the rail width / viewport
-      // changes.
-      Object.assign(mv.state, mv.mapPose());
-      mv.apply();
-    }
-  });
+    // Back/forward: the browser has already changed the URL and it cannot be
+    // vetoed, so adopt it as the target and reconcile. If a ride is in flight the
+    // reconciler lands it on settle — the view always converges to the URL rather
+    // than desyncing (the old handler called ride methods that no-op'd while busy,
+    // stranding the header/cards on the wrong view — the "empty platform" bug).
+    window.addEventListener('popstate', () => {
+      if (!mv) return;
+      target = viewFromPath(location.pathname);
+      reconcile();
+    });
+
+    window.addEventListener('resize', () => {
+      if (!mv) return;
+      // The stage box changed — drop the memoized metrics so the next read
+      // recomputes against the new viewport (runs even while busy, so an
+      // in-flight ride re-measures on its next frame).
+      mv._metrics = null;
+      if (mv.busy) return;
+      if (mv.view !== 'map') {
+        Object.assign(mv.state, mv.parkPose(lineById(mv.view), mv.page));
+        mv.apply();
+      } else {
+        // Keep Home centered in the visible region as the rail width / viewport
+        // changes.
+        Object.assign(mv.state, mv.mapPose());
+        mv.apply();
+      }
+    });
+  }
 
   // A direct-entry parked view (see below) lays out its cards synchronously
   // at page-load time, which can race ahead of web-font loading — re-run
@@ -1720,6 +1789,9 @@ function init() {
   }
 
   const initial = (document.body.dataset.initialView ?? 'map') as ViewId;
+  // Seed the reconciler's target with the view we're loading into, so the first
+  // settle doesn't see a stale 'map' target and ride away from a direct entry.
+  target = initial;
   if (initial !== 'map') {
     history.replaceState({ view: initial }, '', urlFor(initial));
     mv.toPlatform(initial, false);
@@ -1738,3 +1810,13 @@ function init() {
 }
 
 document.addEventListener('astro:page-load', init);
+
+// Before the ClientRouter swaps the DOM out (rail nav never reaches here — it's
+// preventDefaulted — but back/forward and card→article do), kill any in-flight
+// ride so its deferred callbacks can't fire against the incoming page, and drop
+// the stale instance so lingering window handlers (popstate/resize) no-op until
+// the next init rebuilds it. Registered once, at module scope.
+document.addEventListener('astro:before-swap', () => {
+  mv?.dispose();
+  mv = null;
+});
