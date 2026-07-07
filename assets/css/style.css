@@ -1715,6 +1715,7 @@ body {
 }
 
 .bqst-asset-card {
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -1748,6 +1749,25 @@ body {
     margin: 0 0 0.65rem;
     border-radius: 0;
     box-shadow: none;
+}
+
+.bqst-asset-card .article-image-button {
+    position: static;
+    width: min(72%, 150px);
+    margin: 0 auto 0.65rem;
+}
+
+.bqst-asset-card .article-image-button img {
+    width: 100%;
+    margin: 0;
+}
+
+.bqst-asset-card .article-image-button::after {
+    right: 0.45rem;
+    bottom: 2.05rem;
+    max-width: calc(100% - 0.7rem);
+    padding: 0.28rem 0.4rem;
+    font-size: 0.62rem;
 }
 
 .article-stat-grid {
