@@ -45,6 +45,19 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
             ))}
           </ol>
         </div>
+        <div class="toc-nav">
+          {prev && (
+            <a class="toc-nav-link" href={`/projects/${prev.slug}`} data-astro-prefetch="hover">
+              <span class="nav-arrow">‹</span> prev
+            </a>
+          )}
+          <a class="toc-nav-link" href="/projects">all projects</a>
+          {next && (
+            <a class="toc-nav-link" href={`/projects/${next.slug}`} data-astro-prefetch="hover">
+              next <span class="nav-arrow">›</span>
+            </a>
+          )}
+        </div>
       </nav>
     )}
 
@@ -77,7 +90,21 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
 
   .article :global(h2) { font-size: 1.5rem; font-weight: 800; margin-top: 2.4rem; scroll-margin-top: 90px; }
   .article :global(h3) { font-size: 1.2rem; font-weight: 700; margin-top: 1.6rem; }
-  .article :global(img) { border-radius: var(--radius); margin: 1.5rem 0; box-shadow: 0 6px 24px rgba(0,0,0,0.08); cursor: zoom-in; }
+  /* Images: centred, not left-aligned. Ones narrower than the column keep their
+     natural size and sit centred; wide ones cap at the column width. */
+  .article :global(img) {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    margin: 1.5rem auto;
+    border-radius: var(--radius);
+    box-shadow: 0 6px 24px rgba(0,0,0,0.08);
+    cursor: zoom-in;
+  }
+  /* Code blocks WRAP to the column instead of scrolling horizontally (matches the
+     original site — long lines fold rather than forcing a scrollbar). */
+  .article :global(pre) { max-width: 100%; box-sizing: border-box; overflow-x: auto; }
+  .article :global(pre code) { white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; }
   .article :global(.article-banner) { cursor: zoom-in; }
   .article :global(a:not(.try-it-btn):not(.support-btn)) { color: var(--line-projects); }
   .article :global(table) { border-collapse: collapse; width: 100%; margin: 1.5rem 0; font-size: 0.92rem; }
@@ -94,24 +121,31 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
   .train-toc { display: none; }
   @media (min-width: 1000px) {
     .train-toc {
-      display: block;
+      /* A full-height flex column: the section list sits at the top and the
+         prev/all-projects/next nav is pinned to the BOTTOM (margin-top:auto), so
+         it holds a fixed spot on screen regardless of the TOC's length — like the
+         original site's sidebar. */
+      display: flex;
+      flex-direction: column;
       position: fixed;
       /* top is set from the banner's edge by article.ts; this is the pre-JS
          default (header + page-body padding) to avoid a first-paint jump. */
       top: 11rem;
+      /* End the rail ~70% down the viewport so the prev/next nav (pinned to the
+         bottom via margin-top:auto) holds ONE fixed spot regardless of the TOC's
+         length — it never shifts when you page between projects. Mirrors the
+         original site's 70vh sidebar column. */
+      bottom: 30vh;
       /* Track the centered article column so the rail keeps a constant, tight
          offset from the body instead of drifting to the far margin on wide
          screens (the article is 760px wide and centered). */
       left: max(1.25rem, calc(50vw - 608px));
       width: 216px;
-      max-height: calc(100vh - 9.5rem);
-      overflow-y: auto;
-      scrollbar-width: none;
       z-index: 5;
     }
-    .train-toc::-webkit-scrollbar { display: none; }
   }
-  .train-toc .toc-inner { position: relative; }
+  .train-toc .toc-inner { position: relative; flex: 0 1 auto; min-height: 0; overflow-y: auto; scrollbar-width: none; }
+  .train-toc .toc-inner::-webkit-scrollbar { display: none; }
   .train-toc :global(.toc-rail) { position: absolute; top: 0; left: 0; width: 44px; pointer-events: none; }
   .train-toc :global(.toc-rail path) {
     fill: none; stroke: var(--line-projects); stroke-width: 3.2;
@@ -135,7 +169,36 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
   .train-toc a:hover .toc-label { color: var(--ink); }
   .train-toc a.is-current .toc-label { color: var(--ink); }
 
+  /* Prev / all projects / next, in the left rail (desktop) — mirrors the original
+     site's minimal sidebar nav (three lowercase links, dimmed until hover). The
+     bottom .stop-nav is hidden on desktop and kept only for narrow screens where
+     the rail itself is hidden. */
+  .toc-nav {
+    margin-top: auto;
+    padding-top: 1.2rem;
+    /* No left padding here — each link already gets 32px from `.train-toc a`, so
+       adding more would push the nav 32px right of the TOC labels (misaligned). */
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  }
+  /* Match the TOC section links exactly (size/weight/colour come from .train-toc a);
+     no extra dimming, so the nav reads as the same family, just lowercased. */
+  .toc-nav-link {
+    text-decoration: none;
+    text-transform: lowercase;
+    transition: color 0.2s ease;
+  }
+  /* Darken to ink on hover, exactly like a TOC section link. Scoped under
+     `.train-toc a` so it out-specifies the base `.train-toc a { color: muted }`
+     rule (which includes the `a` element selector and would otherwise win). */
+  .train-toc a.toc-nav-link:hover { color: var(--ink); }
+  .toc-nav-link .nav-arrow { font-weight: 700; font-size: 1.1rem; }
+
   .stop-nav { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid rgba(0,0,0,0.1); flex-wrap: wrap; }
+  @media (min-width: 1000px) { .stop-nav { display: none; } }
   .stop-nav a { text-decoration: none; font-weight: 700; color: var(--line-projects); display: flex; flex-direction: column; gap: 0.15rem; }
   .stop-nav a span { color: var(--muted); font-weight: 500; font-size: 0.85rem; }
   .stop-nav .next { text-align: right; }
@@ -149,7 +212,62 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
   body.page-projects .station-here { display: none; }
 
   /* Legacy classes carried over from the old site's markdown bodies. */
-  .gloss-term { border-bottom: 1px dotted var(--muted); cursor: help; }
+  .gloss-term { border-bottom: 1px dotted var(--line-projects); cursor: help; }
+  .gloss-term:hover, .gloss-term:focus-visible { border-bottom-style: solid; outline: none; }
+  /* Floating glossary tooltip (positioned by article.ts). */
+  .gloss-tooltip {
+    position: fixed;
+    z-index: 3200;
+    max-width: min(300px, 82vw);
+    padding: 0.62rem 0.78rem;
+    /* Warm cream card with ink text and a hairline in the section's red — matches
+       the light theme (the original's light-theme tooltip), not a stark black box. */
+    background: #fbf7ee;
+    color: #1a1a1a;
+    border: 1px solid rgba(209, 61, 89, 0.22);
+    font-size: 0.85rem;
+    font-weight: 500;
+    line-height: 1.45;
+    border-radius: 8px;
+    box-shadow: 0 10px 28px rgba(62, 39, 35, 0.18);
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(2px);
+    transition: opacity 0.14s ease, transform 0.14s ease;
+  }
+  .gloss-tooltip.is-visible { opacity: 1; transform: translateY(0); }
+
+  /* Zoomable image wrapper: sizes to the image and centres it (narrow images sit
+     centred, not left-aligned), with a "click to expand" hint bottom-right. */
+  .article-zoom {
+    position: relative;
+    display: block;
+    width: fit-content;
+    max-width: 100%;
+    margin: 1.5rem auto;
+    cursor: zoom-in;
+  }
+  .article-zoom img { margin: 0 !important; }
+  /* Portrait / phone screenshots: kept narrow and centred, not stretched full-width. */
+  .article-zoom.is-portrait { max-width: 360px; }
+  .article-zoom::after {
+    content: attr(data-hint);
+    position: absolute;
+    right: 0.7rem;
+    bottom: 1rem;
+    padding: 0.32rem 0.5rem;
+    border: 1px solid rgba(26, 26, 26, 0.14);
+    border-radius: 5px;
+    background: rgba(251, 247, 238, 0.92);
+    color: #6f6a60;
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-size: 0.72rem;
+    font-weight: 600;
+    pointer-events: none;
+    opacity: 0.9;
+    transition: opacity 0.18s ease, background 0.18s ease;
+  }
+  .article-zoom:hover::after { opacity: 1; background: #fff; }
   .try-it-btn, .support-btn {
     display: inline-block; text-decoration: none; font-weight: 700;
     padding: 0.5rem 1.1rem; border-radius: 999px; margin: 0.25rem 0.5rem 0.25rem 0;
@@ -182,9 +300,13 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
 
   /* ============ Interactive widget styling (light theme) ============ */
   :root {
-    --w-accent: #f9c25e;
-    --w-accent-glow: rgba(249,194,94,0.45);
-    --w-card: #ffffff;
+    /* Widget/visual accent = the projects line red (not amber — amber is reserved
+       for the map's stop-lighting; the article's plots, meters and highlighted
+       values read in the section's own colour). */
+    --w-accent: #d13d59;
+    --w-accent-glow: rgba(209,61,89,0.4);
+    /* Widget cards read as the page's cream paper, not stark white. */
+    --w-card: #e8e4db;
     --w-border: rgba(0,0,0,0.12);
     --w-ink: #1a1a1a;
     --w-muted: #6f6a60;
@@ -209,14 +331,14 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
   .bqst-lab, .bqst-audio-demo {
     box-sizing: border-box; max-width: 100%; margin: 1.6rem 0 2rem;
     border: 1px solid var(--w-border); border-radius: 12px;
-    background: linear-gradient(135deg, rgba(249,194,94,0.08), transparent 42%), var(--w-card);
+    background: linear-gradient(135deg, rgba(209,61,89,0.06), transparent 42%), var(--w-card);
     overflow: hidden;
   }
   .bqst-lab-header, .bqst-audio-demo-header {
     display: flex; justify-content: space-between; gap: 1rem; align-items: baseline;
     padding: 0.9rem 1rem 0.75rem; border-bottom: 1px solid var(--w-border);
   }
-  .bqst-lab-kicker { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: 700; color: #b8802a; font-size: 1rem; }
+  .bqst-lab-kicker { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: 700; color: var(--line-projects); font-size: 1rem; }
   .bqst-lab-meta { color: var(--w-muted); font-size: 0.82rem; }
 
   .bqst-interactive-row { display: grid; grid-template-columns: 176px minmax(0, 1fr); align-items: center; gap: 0.4rem; padding: 0.6rem 0.9rem 0 0.3rem; }
@@ -239,12 +361,12 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
   .bqst-mini-knob {
     --bqst-knob-angle: 0deg; width: 114px; height: 114px; border-radius: 999px;
     background: url('/assets/images/projects/bqst/knob-large-cream.webp') center / 128% no-repeat;
-    box-shadow: 0 4px 14px rgba(0,0,0,0.18); position: relative;
+    position: relative;
     transform: rotate(var(--bqst-knob-angle)); transform-origin: center;
   }
   .bqst-mini-knob span { display: none; }
   .bqst-drive-control label { display: grid; justify-items: center; gap: 0.1rem; text-align: center; }
-  .bqst-drive-control label span { color: #b8802a; font-weight: 700; line-height: 1; }
+  .bqst-drive-control label span { color: var(--line-projects); font-weight: 700; line-height: 1; }
   .bqst-drive-control label strong { color: var(--w-ink); font-size: 1.12rem; font-weight: 700; line-height: 1; }
   .bqst-drive-control input[type="range"] { position: absolute; opacity: 0; pointer-events: none; width: 1px; height: 1px; }
   .bqst-visual-canvas { box-sizing: border-box; display: block; max-width: 100%; width: 100%; height: 340px; }
@@ -262,7 +384,7 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
   .bqst-audio-controls { display: flex; align-items: center; gap: 0.85rem; }
   .bqst-audio-play {
     width: 58px; height: 58px; border-radius: 999px; border: 2px solid var(--w-accent);
-    background: transparent; color: #b8802a; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+    background: transparent; color: var(--line-projects); cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
     font-size: 1rem; font-weight: 700; transition: background 180ms ease, color 180ms ease, box-shadow 180ms ease; flex-shrink: 0;
   }
   .bqst-audio-play:hover { background: var(--w-accent); color: #1a1a1a; box-shadow: 0 0 22px var(--w-accent-glow); }
@@ -278,13 +400,13 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
   .bqst-audio-toggle button.is-active { background: var(--w-accent); color: #1a1a1a; box-shadow: 0 0 18px var(--w-accent-glow); }
   .bqst-audio-wave {
     position: relative; height: 68px; border: 1px solid var(--w-border); border-radius: 8px; overflow: hidden;
-    background: linear-gradient(180deg, rgba(249,194,94,0.08), rgba(249,194,94,0.03));
+    background: linear-gradient(180deg, rgba(209,61,89,0.06), rgba(209,61,89,0.02));
   }
   .bqst-audio-wave canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
   .bqst-audio-wave span { position: absolute; inset: 50% 0 auto; height: 1px; background: rgba(0,0,0,0.16); }
   .bqst-audio-wave i {
     position: absolute; top: 0; bottom: 0; left: 0; width: 0; display: block; pointer-events: none;
-    background: linear-gradient(90deg, rgba(249,194,94,0.26), rgba(249,194,94,0.06));
+    background: linear-gradient(90deg, rgba(209,61,89,0.22), rgba(209,61,89,0.05));
     border-right: 2px solid var(--w-accent); will-change: width;
   }
 

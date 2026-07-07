@@ -39,6 +39,33 @@ const AMBER = '#f9c25e';
 const CX = VIEWBOX.w / 2;
 const CY = VIEWBOX.h / 2;
 
+// Music-row visuals, laid out onto the map grid. Music stops sit at world x=600
+// on the 50-unit (one-square) grid; each visual is CENTRED on the grid column at
+// `wx` (all multiples of 50 → true intersections), to the right of the title
+// block. `sq` = the visual's on-screen width in grid squares, used only to know
+// when it collides with the header / runs off the right edge. Order + columns
+// chosen so nothing overlaps at aspect-true sizes (play 0.6, wave 2, freq 3,
+// stereo 1.5, vu 1.6 squares wide).
+// Music-row visuals, packed left→right onto the map grid. `sqW` = the visual's
+// on-screen width in grid squares; `gapBefore` = the minimum gap (in squares) to
+// leave before it. The packer (placeMusicViz) starts just right of the title
+// block and centres each visual on the next grid intersection that honours its
+// gap — so every visual sits on the grid, the row packs with no holes, and when
+// space runs out the widest at-rest-blank one (freq) is the first to drop.
+const MUSIC_VIZ: { sel: string; sqW: number }[] = [
+  { sel: '.row-play', sqW: 0.6 },
+  { sel: '.meter-group-wave', sqW: 2 },
+  { sel: '.meter-group-freq', sqW: 3 },
+  { sel: '.meter-group-stereo', sqW: 1.3 },
+  { sel: '.meter-group-vu', sqW: 1.6 },
+];
+// Minimum gap (in grid squares) the packer leaves between adjacent visuals.
+const MUSIC_VIZ_GAP = 0.3;
+// Order in which visuals are shed when a row is too narrow for the full set:
+// freq first (widest, blank at rest), then the stereo scope, then VU. Play and
+// the waveform are never dropped.
+const MUSIC_VIZ_DROP = ['.meter-group-freq', '.meter-group-stereo', '.meter-group-vu'];
+
 type ViewId = 'map' | LineId;
 
 function prefersReducedMotion(): boolean {
@@ -95,6 +122,10 @@ class MapView {
   view: ViewId = 'map';
   page = 0;
   busy = false;
+  /** True only while a projects page-turn pan is animating. placeProjectPaging
+   *  skips re-positioning the paging buttons during this window so they stay put
+   *  (faded out) instead of drifting across with the camera. */
+  pagingPan = false;
   /** Fired whenever a ride settles (busy → false). The hover handlers use it to
    *  re-apply the highlight for whatever the pointer is resting on once the map
    *  stops animating — hover is suppressed DURING a ride to avoid flicker. */
@@ -435,10 +466,11 @@ class MapView {
     // height on a wide viewport. Above ~1280px all three stops (six cards)
     // show at once; narrower screens page down to two stops, then one, so the
     // shared card box always stays large enough for the fullest card.
-    const widthStops = w >= 1280 ? 3 : w >= 1000 ? 2 : 1;
-    // Vertical guard: a stop-pitch below ~200px screen px squashes the bio, so
-    // short viewports drop a stop-pair even when the width could carry it.
-    const minPitch = 200;
+    const widthStops = w >= 980 ? 3 : w >= 720 ? 2 : 1;
+    // Vertical guard: keep enough stop-pitch that the cards (and their content,
+    // which scales with the card via aboutGeom) stay legible. Lowered so all three
+    // stops scale down onto one screen on ordinary laptops instead of paging.
+    const minPitch = 150;
     const heightStops = Math.max(1, Math.floor((h - 168 + 16) / minPitch));
     const stops = Math.min(3, widthStops, heightStops);
     return stops * 2;
@@ -518,7 +550,8 @@ class MapView {
     // music waveform/analysers especially — can size themselves in whole grid
     // squares (calc(var(--grid) * N)) and stay locked to the map grid as the
     // viewport (and thus the parked zoom) changes.
-    this.ui?.style.setProperty('--grid', `${(50 * this.state.s * k).toFixed(3)}px`);
+    const gridPx = 50 * this.state.s * k;
+    this.ui?.style.setProperty('--grid', `${gridPx.toFixed(3)}px`);
     const cards = this.cardsFor(this.view);
     const order = this.orderFor(this.view);
     const per = this.perPageFor(this.view);
@@ -570,25 +603,136 @@ class MapView {
         const gap = 16;
         card.style.width = `${about.cardW}px`;
         card.style.height = `${about.cardH}px`;
+        // Scale the card's CONTENT (fonts, pill padding, label gap) with the card
+        // height so it never clips or overlaps the label when the diagonal shrinks
+        // to fit all three stops on a small screen. Reference 210 leaves clear
+        // margin for the fullest card (bio / 16-pill tech stack); caps at 1 so
+        // large screens are unchanged.
+        card.style.setProperty('--about-scale', String(Math.min(1, about.cardH / 210)));
         card.style.left = `${onLeft ? sx - gap : sx + gap}px`;
         card.style.top = `${sy}px`;
         continue;
       }
       const [sx, sy] = this.worldToScreen(p.stops[from + j]);
       if (p.axis === 'h') {
-        // Pixel-snap to integers: project cards carry will-change:transform (a
-        // persistent GPU layer, so the hover scale-up has no compositing snap),
-        // and a persistent layer at a fractional offset renders blurry. Rounding
-        // keeps them crisp at rest. Any sub-pixel jitter this adds is only during
-        // the reveal pan (cards are still fading in), invisible once settled.
+        // Pixel-snap project cards to integer left/top so their text sits crisp at
+        // rest. Any sub-pixel jitter this rounding avoids only ever showed during
+        // the reveal pan (cards still fading in), invisible once settled.
         card.style.left = `${Math.round(sx)}px`;
         card.style.top = `${Math.round(sy + 0.055 * rect.height)}px`;
       } else {
-        card.style.left = `${sx + 0.04 * rect.width}px`;
+        // axis 'v' (music): the row anchors just right of the vertical line; its
+        // play→VU cluster is then positioned element-by-element onto the map's
+        // grid intersections (see placeMusicViz).
+        const rowLeft = sx + 0.04 * rect.width;
+        card.style.left = `${rowLeft}px`;
         card.style.top = `${sy}px`;
+        if (this.view === 'music') {
+          this.placeMusicViz(card, p.stops[from + j][1], rowLeft, gridPx);
+        }
       }
     }
     this.placeDividers(line);
+    if (this.view === 'projects' && cardWidth !== null) {
+      this.placeProjectPaging(p, cardWidth, order, from, per);
+    }
+  }
+
+  /** Anchor the "More projects →" button just past the RIGHT edge of the current
+   *  page's card cluster, instead of pinning it to the far viewport edge — so it
+   *  hugs the cards like the left "← Back" button hugs the docked rail, reading as
+   *  symmetric rather than stranded out at the right margin. Desktop only; the
+   *  mobile layout (buttons in the bottom corners) is left to CSS. */
+  placeProjectPaging(p: NonNullable<Line['platform']>, cardWidth: number, order: number[], from: number, per: number) {
+    const more = document.getElementById('more-next');
+    const back = document.getElementById('more-prev');
+    if (!more) return;
+    if (window.innerWidth <= 768 || this.pagingPan) {
+      // Mobile layout is CSS-driven; and while a page-turn pan is running the
+      // buttons are faded out and must NOT be re-positioned (else they'd drift).
+      if (window.innerWidth <= 768) {
+        more.style.left = '';
+        more.style.right = '';
+      }
+      return;
+    }
+    let count = 0;
+    for (let j = 0; j < per; j++) if (order[from + j] !== undefined) count++;
+    const firstStop = p.stops[from];
+    const lastStop = p.stops[from + Math.max(0, count - 1)];
+    if (!firstStop || !lastStop) return;
+    // Mirror the LEFT spacing exactly: measure how far the "← Back" button's RIGHT
+    // edge stands in front of the first card (Back is pinned at railWidth+20, so
+    // its width matters — using its left edge overshoots on wide screens), then
+    // give "More →" that same gap past the last card so the two read symmetric.
+    const backW = back && back.getBoundingClientRect().width > 0 ? back.getBoundingClientRect().width : 95;
+    const firstCardLeft = this.worldToScreen(firstStop)[0] - cardWidth / 2;
+    const gap = Math.max(16, firstCardLeft - (this.railWidth() + 20 + backW));
+    const rightEdge = this.worldToScreen(lastStop)[0] + cardWidth / 2;
+    more.style.right = 'auto';
+    more.style.left = `${Math.round(rightEdge + gap)}px`;
+  }
+
+  /** Pack a music row's visuals onto the map grid, left→right from just past the
+   *  title block: play button, waveform, freq, stereo, VU — each CENTRED on a grid
+   *  intersection (sizes stay aspect-true in CSS; vertical centring is CSS too,
+   *  top:50% on the row's own grid line). When the row is too narrow for the full
+   *  set the survivors RE-PACK left (no hole), shedding in priority order: freq
+   *  first (widest, blank at rest), then the stereo scope, then VU — play and the
+   *  waveform always stay. */
+  placeMusicViz(card: HTMLElement, stopY: number, rowLeft: number, gridPx: number) {
+    const iw = window.innerWidth;
+    // Right edge of the title/artist/links header block (kept free-flowing).
+    const headerRight = rowLeft + Math.min(380, Math.max(290, 0.21 * iw));
+    // Anchor ONCE: the first grid intersection a hair past the header. Every visual
+    // then sits at a fixed WHOLE-square offset from this anchor, so all centres land
+    // on grid intersections with deterministic spacing — no per-element rounding that
+    // could compound and shove the right-most meter off the edge.
+    const sx = this.worldToScreen([600, stopY])[0];
+    const anchor = sx + Math.ceil((headerRight + 0.3 * gridPx - sx) / gridPx) * gridPx;
+
+    // Integer square offsets for a given (ordered) subset: each visual clears the
+    // previous by MUSIC_VIZ_GAP, rounded up to a whole square so it stays on-grid.
+    const layoutFor = (skip: Set<string>): Map<string, number> => {
+      const out = new Map<string, number>();
+      let off = 0;
+      let prevHalf: number | null = null;
+      for (const v of MUSIC_VIZ) {
+        if (skip.has(v.sel)) continue;
+        const half = v.sqW / 2;
+        if (prevHalf !== null) off += Math.ceil(prevHalf + MUSIC_VIZ_GAP + half);
+        out.set(v.sel, off);
+        prevHalf = half;
+      }
+      return out;
+    };
+    const rightEdge = (layout: Map<string, number>): number => {
+      let max = 0;
+      for (const v of MUSIC_VIZ) {
+        const off = layout.get(v.sel);
+        if (off != null) max = Math.max(max, anchor + (off + v.sqW / 2) * gridPx);
+      }
+      return max;
+    };
+    // Widest set that fits; otherwise shed one visual at a time in MUSIC_VIZ_DROP
+    // order and re-lay-out the survivors (they pack left, so no hole appears).
+    const skip = new Set<string>();
+    let layout = layoutFor(skip);
+    for (let i = 0; i < MUSIC_VIZ_DROP.length && rightEdge(layout) > iw - 8; i++) {
+      skip.add(MUSIC_VIZ_DROP[i]);
+      layout = layoutFor(skip);
+    }
+    for (const v of MUSIC_VIZ) {
+      const el = card.querySelector<HTMLElement>(v.sel);
+      if (!el) continue;
+      const off = layout.get(v.sel);
+      if (off == null) {
+        el.style.display = 'none';
+        continue;
+      }
+      el.style.display = '';
+      el.style.left = `${anchor + off * gridPx - rowLeft}px`;
+    }
   }
 
   /** Position [data-divider] elements on the grid lines that fall at the
@@ -715,14 +859,10 @@ class MapView {
     gsap.set([...hideCards, ...hideDivs, ...(id === 'projects' && filterBar ? [filterBar] : [])], {
       autoAlpha: 0,
     });
-    // The more-page buttons frame the platform, so they come up with the reveal.
-    // The filter bar, though, is held hidden here and faded in WITH the project
-    // entries (see cardsIn) so the pills and cards arrive together, not ahead.
-    gsap.fromTo(
-      ['#more-next', '#more-prev'],
-      { autoAlpha: 0 },
-      { autoAlpha: 1, duration: 0.4, ease: 'power1.out', overwrite: 'auto' },
-    );
+    // Hold the paging buttons hidden through the reveal; cardsIn fades them in
+    // only AFTER the last card has staggered in, so "More projects →" never shows
+    // before the page's cards are all there.
+    gsap.set(['#more-next', '#more-prev'], { autoAlpha: 0 });
   }
 
   cardsIn(id: LineId) {
@@ -775,6 +915,23 @@ class MapView {
             .sort((a, b) => a.stop - b.stop || Number(b.left) - Number(a.left))
             .map((o) => o.card)
         : onPage;
+    // Paging buttons: fade in TOGETHER with the last card (so the entrance reads
+    // as one continuous beat), but hold them un-clickable (pointer-events:none)
+    // until the whole stagger has finished — a click mid-animation would kick off
+    // another page-turn over the still-settling one and glitch. Only the buttons
+    // updateMoreButtons left visible on this page are touched.
+    const btns = ['#more-next', '#more-prev']
+      .map((s) => document.querySelector<HTMLElement>(s))
+      .filter((b): b is HTMLElement => !!b && !b.hidden);
+    btns.forEach((b) => (b.style.pointerEvents = 'none'));
+    const lastCardDelay = Math.max(0, (staggerCards.length - 1) * 0.15);
+    gsap.to(btns, {
+      autoAlpha: 1,
+      duration: 0.45,
+      delay: lastCardDelay,
+      ease: 'power2.out',
+      overwrite: 'auto',
+    });
     gsap.fromTo(
       staggerCards,
       axis === 'h' ? { autoAlpha: 0, y: 22 } : { autoAlpha: 0, x: 26 },
@@ -788,6 +945,7 @@ class MapView {
         stagger: 0.15,
         ease: 'power2.out',
         overwrite: 'auto',
+        onComplete: () => btns.forEach((b) => (b.style.pointerEvents = '')),
       },
     );
   }
@@ -1289,16 +1447,10 @@ class MapView {
     // slows), and the top bar hands its colour/label from line A to line B on the
     // fly. No echo.k=0, no apply() freeze — the ride keeps flowing.
     tl.call(() => this.pulseStop(homeDot), undefined, junctionAt);
-    tl.call(
-      () => {
-        const bar = document.querySelector('.top-bar');
-        const section = document.getElementById('bar-section');
-        if (bar) gsap.to(bar, { backgroundColor: toLine.hex, duration: 0.5, ease: 'power1.inOut', overwrite: 'auto' });
-        if (section) section.textContent = toLine.nav!.name;
-      },
-      undefined,
-      junctionAt,
-    );
+    // The top bar keeps the ORIGIN line's colour and title for the whole journey;
+    // both hand off to the destination only on ARRIVAL (showUI at the reveal,
+    // below) — exactly like a map→page trip, where the bar changes when you get
+    // there rather than as you pass through the interchange.
     // BEAT 4 — RIDE Home → platform B: carries the interchange speed (power2.out,
     // no re-acceleration from a standstill) and decelerates into B (B's roundel
     // pulses on arrival). Starts the INSTANT BEAT 2 ends — no gap and, because the
@@ -1339,18 +1491,33 @@ class MapView {
     if (page < 0 || page >= pages) return;
     this.busy = true;
     const visible = this.cardsFor(id).filter((c) => c.style.display !== 'none');
-    gsap.to(visible, { autoAlpha: 0, duration: 0.2, ease: 'power1.in' });
+    const more = document.getElementById('more-next');
+    const back = document.getElementById('more-prev');
+    // Fade the outgoing cards AND the paging buttons out together, so a button
+    // never slides across the screen with the camera pan (it stays invisible
+    // through the whole transition and only re-appears at its new resting spot).
+    gsap.to([...visible, more, back].filter(Boolean), {
+      autoAlpha: 0,
+      duration: 0.2,
+      ease: 'power1.in',
+      overwrite: 'auto',
+    });
     const park = this.parkPose(line, page);
+    this.pagingPan = true;
     gsap.to(this.state, {
       ...park,
       duration: 0.65,
       ease: 'power2.inOut',
       onUpdate: this.apply,
       onComplete: () => {
+        this.pagingPan = false;
         this.page = page;
         this.placeCards();
-        this.cardsIn(id);
         this.updateMoreButtons();
+        // cardsIn (above) fades the paging buttons back in once the last card has
+        // landed — the buttons were faded out at the start of the turn and stay
+        // hidden through the pan, so they re-appear only with the finished page.
+        this.cardsIn(id);
         this.busy = false;
       },
     });
@@ -1564,6 +1731,10 @@ function init() {
     Object.assign(mv.state, mv.mapPose());
     mv.apply();
   }
+
+  // The camera pose is now applied (both branches above call apply()), so reveal
+  // the map — it was held hidden so the pre-script identity paint never shows.
+  document.querySelector('.map-wrap')?.classList.add('map-ready');
 }
 
 document.addEventListener('astro:page-load', init);

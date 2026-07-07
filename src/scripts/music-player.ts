@@ -428,8 +428,9 @@ class RowPlayer {
 
   drawFreqIdle(): void {
     if (!this.freqCtx) return;
+    // Idle = blank: the internal frequency gridlines were removed, so clearing
+    // is the whole idle state (bars fade in from silence when playback starts).
     this.freqCtx.clearRect(0, 0, this.freqW, this.freqH);
-    this.drawFrequencyGrid();
     this.freqSmoothed.fill(0);
     this.freqHighlights.fill(0);
     this.freqHighlightTargets.fill(0);
@@ -852,7 +853,17 @@ function onResize(): void {
 function initMusicPlayer(): void {
   const rows = Array.from(document.querySelectorAll<HTMLElement>('#platform-ui [data-card="music"]'));
   if (!rows.length) return;
-  players = rows.map((row) => new RowPlayer(row));
+  // Construct each row's player independently so one row's failure can't abort
+  // the rest: a single throw inside a `rows.map(...)` would leave every later
+  // row without a player (dead play button, unpainted meters).
+  players = [];
+  for (const row of rows) {
+    try {
+      players.push(new RowPlayer(row));
+    } catch (err) {
+      console.error('Music row failed to initialise', err);
+    }
+  }
   if (!resizeBound) {
     window.addEventListener('resize', onResize);
     resizeBound = true;

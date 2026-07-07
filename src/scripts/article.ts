@@ -57,6 +57,32 @@ function initLightbox(article: HTMLElement) {
     close();
   };
 
+  // Wrap each zoomable image in a sizing box that centres it (narrow images stay
+  // their own width, centred, rather than left-aligned) and carries a "click to
+  // expand" hint pill in the bottom-right — matching the original site.
+  const wrapped: HTMLElement[] = [];
+  article.querySelectorAll<HTMLImageElement>('img').forEach((img) => {
+    if (img.closest('.bqst-asset-card') || img.closest('.article-zoom')) return;
+    const box = document.createElement('span');
+    box.className = 'article-zoom';
+    box.dataset.hint = 'click to expand';
+    img.parentNode?.insertBefore(box, img);
+    box.appendChild(img);
+    wrapped.push(box);
+    // Portrait shots (e.g. phone screenshots) are held to a narrow, centred width
+    // instead of being stretched to fill the whole column. Classify as robustly as
+    // possible: immediately, on load, AND after decode() — on a client-side page
+    // swap a cached image can be `complete` but not yet measurable, and its `load`
+    // never fires, so decode() is what catches it (otherwise it stays full-width).
+    const classify = () => {
+      if (img.naturalWidth && img.naturalHeight > img.naturalWidth * 1.3)
+        box.classList.add('is-portrait');
+    };
+    classify();
+    img.addEventListener('load', classify);
+    img.decode?.().then(classify).catch(() => {});
+  });
+
   article.addEventListener('click', onArticleClick);
   overlay.addEventListener('click', onOverlayClick);
   document.addEventListener('keydown', onKeydown);
@@ -67,6 +93,12 @@ function initLightbox(article: HTMLElement) {
     overlay.removeEventListener('click', onOverlayClick);
     document.removeEventListener('keydown', onKeydown);
     overlay.remove();
+    // Unwrap so a re-init (client nav back to this page) doesn't double-wrap.
+    wrapped.forEach((box) => {
+      const img = box.querySelector('img');
+      if (img && box.parentNode) box.parentNode.insertBefore(img, box);
+      box.remove();
+    });
   });
 }
 
@@ -300,12 +332,113 @@ function initToc(article: HTMLElement) {
   });
 }
 
+// Glossary terms (.gloss-term[data-gloss]) — show the definition in a floating
+// tooltip on hover/focus (desktop) or tap (touch). Anchors above the specific
+// line fragment under the cursor (so a wrapped term positions per word), flips
+// below when there's no room, and clamps to the viewport.
+function initGlossary(article: HTMLElement) {
+  const terms = Array.from(article.querySelectorAll<HTMLElement>('.gloss-term'));
+  if (!terms.length) return;
+
+  const tip = document.createElement('div');
+  tip.className = 'gloss-tooltip';
+  tip.setAttribute('role', 'tooltip');
+  document.body.appendChild(tip);
+
+  let active: HTMLElement | null = null;
+  const touchLike = window.matchMedia('(hover: none), (pointer: coarse)').matches;
+
+  const show = (term: HTMLElement, clientY?: number) => {
+    const text = term.dataset.gloss;
+    if (!text) return;
+    active = term;
+    tip.textContent = text;
+    tip.classList.add('is-visible');
+    const rects = Array.from(term.getClientRects());
+    let rect = term.getBoundingClientRect();
+    if (rects.length) {
+      rect = rects[0];
+      if (clientY != null) {
+        let best = rects[0];
+        let bd = Infinity;
+        for (const r of rects) {
+          if (clientY >= r.top && clientY <= r.bottom) {
+            best = r;
+            break;
+          }
+          const d = Math.min(Math.abs(clientY - r.top), Math.abs(clientY - r.bottom));
+          if (d < bd) {
+            bd = d;
+            best = r;
+          }
+        }
+        rect = best;
+      }
+    }
+    const tr = tip.getBoundingClientRect();
+    const margin = 12;
+    const gap = 10;
+    let left = rect.left + rect.width / 2 - tr.width / 2;
+    left = Math.max(margin, Math.min(left, window.innerWidth - tr.width - margin));
+    let top = rect.top - tr.height - gap;
+    if (top < margin) top = rect.bottom + gap;
+    tip.style.left = `${Math.round(left)}px`;
+    tip.style.top = `${Math.round(top)}px`;
+  };
+  const hide = () => {
+    active = null;
+    tip.classList.remove('is-visible');
+  };
+
+  const onEnter = (e: Event) => {
+    const t = (e.target as HTMLElement).closest<HTMLElement>('.gloss-term');
+    if (t) show(t, (e as MouseEvent).clientY);
+  };
+  if (touchLike) {
+    const onTap = (e: Event) => {
+      const t = (e.target as HTMLElement).closest<HTMLElement>('.gloss-term');
+      if (t) {
+        e.preventDefault();
+        if (active === t) hide();
+        else show(t, (e as MouseEvent).clientY);
+      } else hide();
+    };
+    document.addEventListener('click', onTap);
+    cleanups.push(() => document.removeEventListener('click', onTap));
+  } else {
+    terms.forEach((t) => {
+      if (!t.hasAttribute('tabindex')) t.tabIndex = 0;
+      t.addEventListener('mouseenter', onEnter);
+      t.addEventListener('mouseleave', hide);
+      t.addEventListener('focus', onEnter);
+      t.addEventListener('blur', hide);
+    });
+    cleanups.push(() =>
+      terms.forEach((t) => {
+        t.removeEventListener('mouseenter', onEnter);
+        t.removeEventListener('mouseleave', hide);
+        t.removeEventListener('focus', onEnter);
+        t.removeEventListener('blur', hide);
+      }),
+    );
+  }
+  const dismiss = () => active && hide();
+  window.addEventListener('scroll', dismiss, { passive: true });
+  window.addEventListener('resize', dismiss);
+  cleanups.push(() => {
+    window.removeEventListener('scroll', dismiss);
+    window.removeEventListener('resize', dismiss);
+    tip.remove();
+  });
+}
+
 function init() {
   cleanup();
   const article = document.querySelector<HTMLElement>('.article');
   if (!article) return;
   initLightbox(article);
   initToc(article);
+  initGlossary(article);
 }
 
 function cleanup() {

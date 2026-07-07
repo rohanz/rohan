@@ -17,8 +17,12 @@ const { title, description, lineId, hex, signName, ogImage } = Astro.props;
   <div id="page-shell">
     <MapBackdrop lineId={lineId} />
     <header class="sign-header" style={`background:${hex}; --sign-vt: sign-${lineId};`}>
-      <h1>{signName}</h1>
-      <a class="back" href="/">back to map</a>
+      <a class="logo" href="/" aria-label="rohan.jk — home">
+        <img src="/logo.svg" width="34" height="34" alt="" />
+        <span class="logo-name">rohan.jk</span>
+        <span class="logo-sub">system map</span>
+      </a>
+      <h1 class="sign-title">{signName}</h1>
     </header>
     <main id="main" class="page-body">
       <span class="spine" style={`background:${hex}`} aria-hidden="true">

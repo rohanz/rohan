@@ -36,14 +36,22 @@ img { max-width: 100%; display: block; }
 
 /* Full-width station-sign header shared by inner pages */
 .sign-header {
+  position: relative;
   color: #fff;
-  padding: 1.4rem clamp(1rem, 4vw, 3rem);
+  padding: 1.15rem clamp(1rem, 4vw, 3rem);
   display: flex; align-items: center; justify-content: space-between; gap: 1rem;
   view-transition-name: var(--sign-vt);
 }
-.sign-header h1 { margin: 0; font-size: clamp(1.6rem, 5vw, 2.6rem); font-weight: 800; letter-spacing: -0.01em; }
-.sign-header .back { color: #fff; text-decoration: none; font-weight: 600; font-size: 0.95rem; opacity: 0.92; }
-.sign-header .back:hover { text-decoration: underline; }
+/* Left: the rohan.jk mark (same as the map header) — white logo, no box. */
+.sign-header .logo { display: flex; align-items: baseline; gap: 0.7rem; color: #fff; text-decoration: none; }
+.sign-header .logo img { filter: brightness(0) invert(1); align-self: center; }
+.sign-header .logo-name { font-weight: 800; font-size: 1.7rem; letter-spacing: 0.005em; }
+.sign-header .logo-sub { font-weight: 300; font-size: 1.35rem; color: rgba(255,255,255,0.82); }
+/* Centre: the page/project title, centred on the bar as a whole. */
+.sign-header .sign-title {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  margin: 0; font-size: 1.5rem; font-weight: 700; letter-spacing: -0.01em; white-space: nowrap;
+}
 
 /* Line-color spine running down the content */
 .spine {
@@ -111,6 +119,6 @@ body.page { background: #e4e1d8; }
 /* Poster typography: every title and subheader carries the transit signage
    face (Helvetica), matching the map labels and Legend panel. */
 h1, h2, h3, h4,
-.sign-header, .sign-header h1, .sign-header .back {
+.sign-header, .sign-header .sign-title, .sign-header .logo {
   font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }

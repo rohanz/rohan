@@ -4,7 +4,7 @@
 // light branch, with the site's pastel palette swapped in for the old accents.
 
 // ---- palette (this site) ----
-const AMBER = '#f9c25e'; // cream / accent
+const AMBER = '#f9c25e'; // cream / accent — series colour inside diagrams
 const RED = '#d13d59'; // grit / projects line
 const MUTED = '#8a8578'; // dry / reference
 const AMBER_RGB = '249,194,94';
