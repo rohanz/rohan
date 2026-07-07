@@ -56,7 +56,7 @@ export const LINES: Line[] = [
     hex: CTA.purple,
     nav: { href: '/music', name: 'Music' },
     points: [
-      [-1600, 560],
+      [-1520, 560],
       [240, 560],
       [420, 380],
       [600, 200],
@@ -78,7 +78,13 @@ export const LINES: Line[] = [
         [600, 100],
       ],
     },
+    // Left leg terminates under the projects corridor (its stops span x -1400..0);
+    // the other end is the off-top destination roundel [600,-300].
+    terminals: [[-1520, 560]],
     ticks: [
+      [-1200, 560],
+      [-900, 560],
+      [-600, 560],
       [-300, 560],
       [160, 560],
       [480, 320],
@@ -130,7 +136,7 @@ export const LINES: Line[] = [
     hex: CTA.brown,
     nav: { href: '/about', name: 'About Me' },
     points: [
-      [420, -1100],
+      [420, 120],
       [420, 470],
       [950, 1000],
     ],
@@ -153,10 +159,12 @@ export const LINES: Line[] = [
         [700, 750],
       ],
     },
+    // Top leg terminates just below the header in the home view; the other end is
+    // the off-map destination roundel [950,1000].
+    terminals: [[420, 120]],
     ticks: [
-      [420, 120],
-      [420, -60],
-      [420, -240],
+      [420, 300],
+      [420, 210],
     ],
   },
   {
