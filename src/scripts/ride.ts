@@ -152,40 +152,38 @@ class MapView {
     }
   }
 
-  // Stall watchdog. Under rapid input the ride's GSAP timeline can freeze
-  // mid-flight (playhead stops advancing) without completing — leaving the cards
-  // hidden and `busy` stuck true, which blocks all further navigation. This is a
-  // TIMER (not rAF) so it still fires if the rAF ticker itself has stalled; when
-  // it sees the active timeline's playhead frozen for ~0.3s it force-finishes the
-  // ride via progress(1) — the same jump-to-end the "click to skip" affordance
-  // uses — which fires the remaining beats (cardsIn, onComplete → busy=false) and
-  // recovers cleanly. Frozen-time detection can't false-fire during normal play
-  // (a running timeline's time advances every frame, including through its
-  // deliberate pause beats, which are empty time, not a stopped playhead).
+  // Stall watchdog. Under rapid input — especially on a slower machine, where the
+  // canvas-heavy music reveal produces a long frame — the ride's GSAP timeline can
+  // freeze mid-flight: the playhead stops, the reveal hangs, cards never fade in,
+  // and `busy` stays true (blocking all further navigation). This TIMER (not rAF)
+  // keeps sampling the playhead; if it hasn't advanced for ~0.2s it force-finishes
+  // the ride via progress(1) — the same jump-to-end the click-to-skip affordance
+  // uses — firing the remaining beats (cardsIn, onComplete → busy=false) so the
+  // platform always lands populated. It can't false-fire during healthy playback:
+  // a running timeline's time advances every frame, including through its
+  // deliberate pause beats (empty time, not a stopped playhead).
   private _watchdog: ReturnType<typeof setInterval> | null = null;
   private _startWatchdog() {
     this._stopWatchdog();
-    let lastTime = -1;
+    let last = -1;
     let frozen = 0;
     this._watchdog = setInterval(() => {
       if (!this._busy) return this._stopWatchdog();
       const tl = this.active;
       if (!tl) return;
       const t = tl.time();
-      // Only count a freeze once the playhead has actually started moving (t > 0),
-      // so a timeline's leading delay (toMap/switchPlatform open with delay:0.35,
-      // during which time() legitimately sits at 0) is never mistaken for a stall.
-      if (t > 0 && t === lastTime) frozen++;
+      // t > 0 skips the timelines' leading delay (toMap/switchPlatform open with
+      // delay:0.35, where time() legitimately sits at 0 — not a stall).
+      if (t > 0 && t === last) frozen++;
       else {
         frozen = 0;
-        lastTime = t;
+        last = t;
       }
       if (frozen >= 2) {
-        // ~0.3s frozen mid-flight → stalled. Jump to the end to finish cleanly.
         this._stopWatchdog();
         tl.progress(1);
       }
-    }, 150);
+    }, 100);
   }
   private _stopWatchdog() {
     if (this._watchdog !== null) {
