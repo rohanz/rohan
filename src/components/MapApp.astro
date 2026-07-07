@@ -4,6 +4,7 @@ import TransitMap from '../components/TransitMap.astro';
 import StationBoard from '../components/StationBoard.astro';
 import { getCollection } from 'astro:content';
 import music from '../data/music.json';
+import { SOCIALS } from '../data/socials';
 
 interface Props {
   title: string;
@@ -43,12 +44,6 @@ const tech = [
   'Gemini',
 ];
 
-const socials: [string, string][] = [
-  ['github', 'https://github.com/rohanz'],
-  ['spotify', 'https://open.spotify.com/artist/3I1V2FxqX2qs3zrUY0fCPp'],
-  ['instagram', 'https://www.instagram.com/rrohan.jk/'],
-  ['linkedin', 'https://www.linkedin.com/in/rohan-jk'],
-];
 ---
 <Layout title={title} description={description} bodyClass="home" initialView={initialView}>
   <header class="top-bar" id="logo-bar">
@@ -182,8 +177,8 @@ const socials: [string, string][] = [
         <div class="platform-card card-about card-about-socials" data-card="about">
           <h3 class="about-label">Socials</h3>
           <div class="social-buttons">
-            {socials.map(([name, href]) => (
-              <a class="social-btn" href={href} target="_blank" rel="noopener noreferrer">{name}</a>
+            {SOCIALS.map((s) => (
+              <a class="social-btn" href={s.href} target="_blank" rel="noopener noreferrer">{s.name}</a>
             ))}
           </div>
         </div>

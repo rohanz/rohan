@@ -1,5 +1,6 @@
 ---
 import { NAV_LINES } from '../data/system';
+import { SOCIALS } from '../data/socials';
 const dests = NAV_LINES.map((l) => ({
   id: l.id,
   hex: l.hex,
@@ -40,6 +41,20 @@ const dests = NAV_LINES.map((l) => ({
         </li>
       ))}
     </ul>
+  </div>
+  <div class="board-social">
+    {SOCIALS.map((s) => (
+      <a
+        class="social-link"
+        href={s.href}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={s.name}
+        title={s.name}
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d={s.icon} /></svg>
+      </a>
+    ))}
   </div>
 </nav>
 
@@ -140,5 +155,28 @@ const dests = NAV_LINES.map((l) => ({
   :global(#main:has(#map-3d[data-hl='projects'])) .board-link[data-line='projects'] .swatch,
   :global(#main:has(#map-3d[data-hl='about'])) .board-link[data-line='about'] .swatch {
     width: 46px;
+  }
+
+  /* External socials, pinned to the bottom of the rail (the .board-body above
+     flexes to fill, pushing this row down). Muted monochrome icons that darken
+     to ink on hover — distinct from the destination rows, not another line. */
+  .board-social {
+    display: flex;
+    align-items: center;
+    gap: 1.05rem;
+    padding: 0.85rem 0.95rem;
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+  }
+  .social-link {
+    display: inline-flex;
+    color: #8a8578;
+    transition: color 0.18s ease, transform 0.18s ease;
+  }
+  .social-link:hover, .social-link:focus-visible { color: #131313; transform: translateY(-1px); }
+  .social-link:focus-visible { outline: none; }
+  .social-link svg { display: block; width: 19px; height: 19px; fill: currentColor; }
+  @media (max-width: 1024px) {
+    .board-social { gap: 0.8rem; padding: 0.75rem 0.8rem; }
+    .social-link svg { width: 18px; height: 18px; }
   }
 </style>
