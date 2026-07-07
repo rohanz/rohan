@@ -56,7 +56,7 @@ export const LINES: Line[] = [
     hex: CTA.purple,
     nav: { href: '/music', name: 'Music' },
     points: [
-      [-1520, 560],
+      [-1440, 560],
       [240, 560],
       [420, 380],
       [600, 200],
@@ -78,12 +78,13 @@ export const LINES: Line[] = [
         [600, 100],
       ],
     },
-    // Left leg terminates under the projects corridor (its stops span x -1400..0);
-    // the other end is the off-top destination roundel [600,-300].
-    terminals: [[-1520, 560]],
+    // Left leg terminates just short of the projects line's own end (-1500), so
+    // the two parallel lines don't end flush; the other end is the off-top
+    // destination roundel [600,-300].
+    terminals: [[-1440, 560]],
     ticks: [
-      [-1200, 560],
-      [-900, 560],
+      [-1160, 560],
+      [-880, 560],
       [-600, 560],
       [-300, 560],
       [160, 560],

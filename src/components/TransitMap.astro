@@ -111,7 +111,7 @@ const LAKE = 'M880,-1600 L2600,-1600 L2600,2000 L880,2000 L880,1310 L1030,1160 L
         {LINES.map((line) => (
           <g data-ticks-for={line.id}>
             {line.ticks.map((t) => <circle data-at={`${t[0]},${t[1]}`} cx={t[0]} cy={t[1]} r="5" fill="#fff" stroke="var(--ink)" stroke-width="2.4" />)}
-            {(line.terminals ?? []).map((t) => <circle cx={t[0]} cy={t[1]} r="9" fill="#fff" stroke="var(--ink)" stroke-width="3.5" />)}
+            {(line.terminals ?? []).map((t) => <circle cx={t[0]} cy={t[1]} r="15" fill="#fff" stroke="var(--ink)" stroke-width="5" />)}
           </g>
         ))}
         {NAV_LINES.map((line) => (
