@@ -21,18 +21,18 @@ if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
 let isNavigatingByPopstate = false;
 
 const sectionTitles = {
-    music: 'music — rohan.jk',
-    projects: 'projects — rohan.jk',
-    about: 'about — rohan.jk',
+    music: 'music - rohan.jk',
+    projects: 'projects - rohan.jk',
+    about: 'about - rohan.jk',
 };
 
 function updateTitle(section, projectTitle) {
     if (projectTitle) {
-        document.title = `${projectTitle} — rohan.jk`;
+        document.title = `${projectTitle} - rohan.jk`;
     } else if (sectionTitles[section]) {
         document.title = sectionTitles[section];
     } else {
-        document.title = 'rohan.jk — software & ai';
+        document.title = 'rohan.jk - software & ai';
     }
 }
 

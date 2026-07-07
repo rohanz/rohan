@@ -123,11 +123,7 @@ careersphere does not stop at "you should learn X." It tries to connect the reco
 
 For jobs, the app ranks freshly ingested MyCareersFuture postings against the user's current skills and the roles the engine selected. The result is not a generic job search page: each posting is shown because its listed skills overlap with the user's profile, and the UI keeps matched and missing skills visible so the user can tell why it appeared.
 
-<img src="assets/images/projects/careersphere/where-you-stand.webp" alt="careersphere where you stand page with ready roles and live jobs">
-
 For courses, the app connects the skills needed for a reachable role to live SkillsFuture course options. That matters because a gap is only useful if it becomes an action. If the system says Database Administration is one of the skills holding back a role, it should also be able to show relevant courses, providers, and registration links instead of leaving the user to search from scratch.
-
-<img src="assets/images/projects/careersphere/how-to-get-there.webp" alt="careersphere how to get there page with a recommended skill gap and courses">
 
 ### how fit is scored
 
@@ -164,7 +160,11 @@ After that, the app shows:
 - matching jobs ranked by listed-skill coverage
 - inline "why?" evidence and assumptions
 
+<img src="assets/images/projects/careersphere/where-you-stand.webp" alt="careersphere where you stand page with ready roles and live jobs">
+
 <img src="assets/images/projects/careersphere/where-you-could-go.webp" alt="careersphere where you could go page with reachable roles and pivot paths">
+
+<img src="assets/images/projects/careersphere/how-to-get-there.webp" alt="careersphere how to get there page with a recommended skill gap and courses">
 
 For example, a non-programmer does not just get told to "learn Python." The app can show that senior roles in their own field already require data analytics or automation, surface the adjacent skill that unlocks them, and point to live SkillsFuture courses to close that gap. That was the product thesis: build on what someone already has instead of telling them to restart from zero.
 
