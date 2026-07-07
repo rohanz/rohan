@@ -16,7 +16,7 @@ function polyPoints(pts: Point[]) {
 ---
 <svg
   class="map-backdrop"
-  viewBox="-170 -70 1320 900"
+  viewBox={`0 0 ${VIEWBOX.w} ${VIEWBOX.h}`}
   preserveAspectRatio="xMidYMid slice"
   aria-hidden="true"
 >
@@ -25,9 +25,9 @@ function polyPoints(pts: Point[]) {
       d={filletPath(line.points)}
       fill="none"
       stroke={line.hex}
-      stroke-width={line.id === lineId ? 8 : 6}
+      stroke-width={8}
       stroke-linejoin="round"
-      opacity={line.id === lineId ? 0.1 : 0.05}
+      opacity={line.id === lineId ? 0.14 : 0.07}
     />
   ))}
 </svg>
