@@ -29,9 +29,16 @@ function prefersReducedMotion(): boolean {
 /** Retina-aware canvas sizing: backing store scaled by DPR, ctx in CSS px. */
 function sizeCanvas(canvas: HTMLCanvasElement, w: number, h: number): CanvasRenderingContext2D {
   const dpr = window.devicePixelRatio || 1;
-  canvas.width = Math.round(w * dpr);
-  canvas.height = Math.round(h * dpr);
+  const cw = Math.round(w * dpr);
+  const ch = Math.round(h * dpr);
   const ctx = canvas.getContext('2d')!;
+  // Setting canvas.width/height reallocates and clears the backing store — the
+  // expensive part. Skip it when the size is unchanged so a redundant resize
+  // (e.g. the ResizeObserver re-firing after we've already primed the size) is
+  // cheap and can't produce the long frame that stalls a ride.
+  if (canvas.width === cw && canvas.height === ch) return ctx;
+  canvas.width = cw;
+  canvas.height = ch;
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   return ctx;
 }
@@ -173,8 +180,13 @@ class RowPlayer {
     const rect = this.waveCanvas.getBoundingClientRect();
     const w = rect.width || 300;
     const h = rect.height || 56;
+    const dpr = window.devicePixelRatio || 1;
+    const unchanged =
+      this.waveCanvas.width === Math.round(w * dpr) && this.waveCanvas.height === Math.round(h * dpr);
     this.waveCtx = sizeCanvas(this.waveCanvas, w, h);
-    if (!this.isPlaying) this.drawIdle();
+    // Only redraw when the size actually changed, so a redundant ResizeObserver
+    // fire (after the ride engine has already primed the size) is a true no-op.
+    if (!unchanged && !this.isPlaying) this.drawIdle();
   }
 
   /** Sync each meter canvas's CSS-px dimensions + backing store with its
@@ -826,6 +838,20 @@ let activePlayer: RowPlayer | null = null;
 let players: RowPlayer[] = [];
 let resizeTimer: ReturnType<typeof setTimeout> | undefined;
 let resizeBound = false;
+
+/** Size every music row's canvases NOW (synchronously), against their current
+ *  laid-out box. The ride engine calls this while it reveals the music platform
+ *  — AFTER the camera has settled — so the canvases' one expensive resize happens
+ *  in that still moment (no animation to stall) rather than being triggered later
+ *  by the ResizeObserver, whose long frame would hitch the entry fade. Once this
+ *  has run, the observer's own fire is a true no-op (see the guards in
+ *  sizeCanvas / resizeWaveCanvas / resizeMeters). */
+export function primeMusicSizing(): void {
+  players.forEach((p) => {
+    p.resizeWaveCanvas();
+    p.resizeMeters();
+  });
+}
 
 /** Silence and reset the currently-playing row. Called by the ride engine on
  *  return-to-map and on cross-page navigation. */

@@ -13,7 +13,7 @@
 import gsap from 'gsap';
 import { HOME, VIEWBOX, lineById, type LineId, type Line, type Point } from '../data/system';
 import { filletPoints } from '../lib/fillet';
-import { stopMusicPlayback } from './music-player';
+import { stopMusicPlayback, primeMusicSizing } from './music-player';
 
 const MAP_SCALE = 2.8; // zoom while riding
 // Van Wijk & Nuij (2003) curvature constant for the combined zoom+pan swoop.
@@ -870,6 +870,22 @@ class MapView {
     });
   }
 
+  /** The light part of the arrival — top-bar colour handoff, section title, and
+   *  active-destination marker. Runs DURING the camera reveal (it's cheap and the
+   *  bar morphing to the line colour as you arrive is deliberate). The heavy part
+   *  (un-hiding + laying out + sizing + fading in the entries) is showUI/cardsIn,
+   *  which run only once the camera has SETTLED, so no content work ever lands on
+   *  a camera-animation frame. */
+  handoffChrome(id: LineId) {
+    const line = lineById(id);
+    this.setActiveDest(id);
+    const bar = document.querySelector('.top-bar');
+    const section = document.getElementById('bar-section');
+    if (bar)
+      gsap.to(bar, { backgroundColor: line.hex, duration: 0.4, ease: 'power1.out', overwrite: 'auto' });
+    if (section) section.textContent = line.nav!.name;
+  }
+
   showUI(id: LineId) {
     if (!this.ui) return;
     const line = lineById(id);
@@ -909,6 +925,13 @@ class MapView {
       sec.hidden = sec.getAttribute('data-content') !== id;
     });
     this.placeCards();
+    // showUI runs AFTER the camera has settled (see the ride timelines), so this
+    // is the still moment to do the music platform's one expensive canvas resize:
+    // size all 16 canvases synchronously now, against their final layout, so the
+    // ResizeObserver's own (later, async) fire is a no-op and the entry fade below
+    // never hits a heavy resize frame. (Doing it mid-reveal was the rapid-click
+    // stall.) No-op for the other platforms — they have no canvases.
+    if (id === 'music') primeMusicSizing();
     // Keep the entries INVISIBLE through the camera reveal. showUI() only does
     // setup + positioning (via placeCards) here; the actual staggered fade-in is
     // scheduled separately (cardsIn) to begin AFTER the reveal has settled, so
@@ -1180,6 +1203,13 @@ class MapView {
       onComplete: () => {
         this.echo.k = 0;
         this.apply();
+        // Reveal the entries only now that the camera has fully SETTLED. All the
+        // heavy work (un-hide + layout + the music canvases' one big resize) runs
+        // synchronously in this still moment — no camera animation is left to
+        // stall — and cardsIn then fades the ready content in. Deferring it here
+        // (rather than mid-reveal) is what makes the rapid-click freeze impossible.
+        this.showUI(id);
+        this.cardsIn(id);
         this.busy = false;
       },
     });
@@ -1224,16 +1254,13 @@ class MapView {
     const REVEAL_AT = 3.2;
     if (id === 'music') this.vanWijkTo(tl, park, REVEAL_AT, REVEAL_DUR, REVEAL_EASE);
     else this.revealTo(tl, park, REVEAL_AT);
-    // Set up the platform UI DURING the reveal (top-bar handoff, section title,
-    // filter/more buttons, data-content visibility, and placeCards to position
-    // the still-HIDDEN entries), so the structure is ready as the camera pulls
-    // back. The entries themselves stay invisible here.
-    tl.call(() => this.showUI(id), undefined, REVEAL_AT + 0.15);
-    // Stagger the entries in RIGHT as the camera comes to rest (REVEAL_SETTLE of
-    // the way through the reveal — see REVEAL_SETTLE).
-    tl.call(() => this.cardsIn(id), undefined, REVEAL_AT + REVEAL_DUR * REVEAL_SETTLE);
+    // The only thing done DURING the reveal is the cheap top-bar colour handoff
+    // (the bar morphs to the line colour as you arrive). The entries are revealed
+    // at onComplete — see above — so no content layout/paint work overlaps the
+    // camera animation.
+    tl.call(() => this.handoffChrome(id), undefined, REVEAL_AT + 0.15);
 
-    this.skippable(tl);
+    this.trackRide(tl);
   }
 
   toMap(animate = true, onArrive?: () => void) {
@@ -1368,7 +1395,7 @@ class MapView {
       );
     }
 
-    this.skippable(tl);
+    this.trackRide(tl);
   }
 
   /** Platform → platform as one train ride that PASSES THROUGH the Home
@@ -1454,6 +1481,10 @@ class MapView {
       onComplete: () => {
         this.echo.k = 0;
         this.apply();
+        // Reveal B's entries only now that the camera has settled (heavy work off
+        // any animation) — see toPlatform's onComplete for the rationale.
+        this.showUI(id);
+        this.cardsIn(id);
         this.busy = false;
       },
     });
@@ -1535,12 +1566,11 @@ class MapView {
     const REVEAL_AT = rideEnd;
     if (id === 'music') this.vanWijkTo(tl, park, REVEAL_AT, REVEAL_DUR, REVEAL_EASE);
     else this.revealTo(tl, park, REVEAL_AT);
-    // Set up the new platform UI during the reveal (entries stay hidden).
-    tl.call(() => this.showUI(id), undefined, REVEAL_AT + 0.15);
-    // Stagger the entries in RIGHT as the camera comes to rest (REVEAL_SETTLE).
-    tl.call(() => this.cardsIn(id), undefined, REVEAL_AT + REVEAL_DUR * REVEAL_SETTLE);
+    // Only the cheap top-bar colour handoff runs during the reveal; the entries are
+    // revealed at onComplete (above), off the camera animation.
+    tl.call(() => this.handoffChrome(id), undefined, REVEAL_AT + 0.15);
 
-    this.skippable(tl);
+    this.trackRide(tl);
   }
 
   toPage(page: number) {
@@ -1630,18 +1660,21 @@ class MapView {
     });
   }
 
-  skippable(tl: gsap.core.Timeline) {
-    // Track the in-flight ride so dispose() (on navigation away) can kill it.
+  /** Register the in-flight ride so dispose()/finishRide() can act on it, and
+   *  clear the reference once it settles. */
+  trackRide(tl: gsap.core.Timeline) {
     this.active = tl;
-    const skip = () => tl.progress(1);
-    const off = () => {
-      window.removeEventListener('pointerdown', skip);
-      window.removeEventListener('keydown', skip);
+    tl.then(() => {
       if (this.active === tl) this.active = null;
-    };
-    setTimeout(() => window.addEventListener('pointerdown', skip, { once: true }), 150);
-    window.addEventListener('keydown', skip, { once: true });
-    tl.then(off);
+    });
+  }
+
+  /** Skip the in-flight ride straight to its settled end — the page appears at
+   *  once. Driven by the "click the destination again" gesture (see go()). Jumping
+   *  to the end fires the same onComplete beats a natural arrival does (showUI +
+   *  cardsIn → busy=false), so the platform lands fully populated. */
+  finishRide() {
+    this.active?.progress(1);
   }
 
   /** Tear the engine down before the page is swapped out (astro:before-swap).
@@ -1672,6 +1705,12 @@ let target: ViewId = 'map';
 // Guards the once-only binding of window-level listeners (popstate/resize) that
 // must survive ClientRouter swaps; init() re-runs per page-load.
 let globalBound = false;
+// Timestamp of the last accepted rail click, for the same-target debounce in go().
+let lastRailClickAt = -Infinity;
+// A repeat click on the destination you're already heading to is ignored for this
+// long (accidental double-clicks / machine-gun clicking), then acts as "skip the
+// ride and jump to the page". A different destination is never debounced.
+const RAIL_CLICK_COOLDOWN = 200; // ms
 
 function urlFor(view: ViewId): string {
   return view === 'map' ? '/' : `/${view}`;
@@ -1699,11 +1738,25 @@ function reconcile() {
   else mv.switchPlatform(want);
 }
 
-/** User-initiated navigation (rail click). Records the intent as the new target,
- *  reflects it in the URL, and reconciles — immediately if idle, or on settle if
- *  a ride is running (so the click is honored rather than swallowed). */
+/** User-initiated navigation (rail click).
+ *  - A NEW destination is honored immediately: it becomes the target, the URL
+ *    updates, and reconcile() starts or (on settle) redirects toward it.
+ *  - A REPEAT click on the destination you're already heading to is the "skip"
+ *    gesture: after a short cooldown it jumps the in-flight ride straight to the
+ *    page; within the cooldown (an accidental double-click / rapid burst) it's
+ *    ignored — which is also what keeps machine-gun clicking from perturbing the
+ *    ride. Clicking the view you're already settled on does nothing. */
 function go(view: ViewId) {
-  if (!mv || target === view) return;
+  if (!mv) return;
+  const now = typeof performance !== 'undefined' ? performance.now() : 0;
+  if (target === view) {
+    if (mv.busy && now - lastRailClickAt >= RAIL_CLICK_COOLDOWN) {
+      lastRailClickAt = now;
+      mv.finishRide();
+    }
+    return;
+  }
+  lastRailClickAt = now;
   target = view;
   if (viewFromPath(location.pathname) !== view)
     history.pushState({ view }, '', urlFor(view));
