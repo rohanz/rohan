@@ -1203,13 +1203,16 @@ class MapView {
       onComplete: () => {
         this.echo.k = 0;
         this.apply();
-        // Reveal the entries only now that the camera has fully SETTLED. All the
-        // heavy work (un-hide + layout + the music canvases' one big resize) runs
-        // synchronously in this still moment — no camera animation is left to
-        // stall — and cardsIn then fades the ready content in. Deferring it here
-        // (rather than mid-reveal) is what makes the rapid-click freeze impossible.
-        this.showUI(id);
-        this.cardsIn(id);
+        // MUSIC ONLY: reveal the entries here, once the camera has fully SETTLED.
+        // Music's 16 canvases resize expensively the moment they're shown, so doing
+        // it in this still moment (no camera animation left to stall) is what makes
+        // the rapid-click freeze impossible. projects/about have no canvases and
+        // reveal mid-ride (below), which keeps their layout measurement timing —
+        // and About's stop-pair count — exactly as before.
+        if (id === 'music') {
+          this.showUI(id);
+          this.cardsIn(id);
+        }
         this.busy = false;
       },
     });
@@ -1254,11 +1257,17 @@ class MapView {
     const REVEAL_AT = 3.2;
     if (id === 'music') this.vanWijkTo(tl, park, REVEAL_AT, REVEAL_DUR, REVEAL_EASE);
     else this.revealTo(tl, park, REVEAL_AT);
-    // The only thing done DURING the reveal is the cheap top-bar colour handoff
-    // (the bar morphs to the line colour as you arrive). The entries are revealed
-    // at onComplete — see above — so no content layout/paint work overlaps the
-    // camera animation.
-    tl.call(() => this.handoffChrome(id), undefined, REVEAL_AT + 0.15);
+    if (id === 'music') {
+      // Music: only the cheap top-bar colour handoff during the reveal; the entries
+      // are revealed at onComplete (above), off the camera animation.
+      tl.call(() => this.handoffChrome(id), undefined, REVEAL_AT + 0.15);
+    } else {
+      // projects/about: reveal the entries during the reveal, as originally tuned
+      // (showUI positions the still-hidden entries; cardsIn staggers them in as the
+      // camera comes to rest). No canvases here, so nothing heavy to stall.
+      tl.call(() => this.showUI(id), undefined, REVEAL_AT + 0.15);
+      tl.call(() => this.cardsIn(id), undefined, REVEAL_AT + REVEAL_DUR * REVEAL_SETTLE);
+    }
 
     this.trackRide(tl);
   }
@@ -1481,10 +1490,11 @@ class MapView {
       onComplete: () => {
         this.echo.k = 0;
         this.apply();
-        // Reveal B's entries only now that the camera has settled (heavy work off
-        // any animation) — see toPlatform's onComplete for the rationale.
-        this.showUI(id);
-        this.cardsIn(id);
+        // MUSIC ONLY: reveal at settle (canvas-heavy) — see toPlatform's onComplete.
+        if (id === 'music') {
+          this.showUI(id);
+          this.cardsIn(id);
+        }
         this.busy = false;
       },
     });
@@ -1566,9 +1576,12 @@ class MapView {
     const REVEAL_AT = rideEnd;
     if (id === 'music') this.vanWijkTo(tl, park, REVEAL_AT, REVEAL_DUR, REVEAL_EASE);
     else this.revealTo(tl, park, REVEAL_AT);
-    // Only the cheap top-bar colour handoff runs during the reveal; the entries are
-    // revealed at onComplete (above), off the camera animation.
-    tl.call(() => this.handoffChrome(id), undefined, REVEAL_AT + 0.15);
+    if (id === 'music') {
+      tl.call(() => this.handoffChrome(id), undefined, REVEAL_AT + 0.15);
+    } else {
+      tl.call(() => this.showUI(id), undefined, REVEAL_AT + 0.15);
+      tl.call(() => this.cardsIn(id), undefined, REVEAL_AT + REVEAL_DUR * REVEAL_SETTLE);
+    }
 
     this.trackRide(tl);
   }
