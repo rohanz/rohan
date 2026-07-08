@@ -1718,12 +1718,6 @@ let target: ViewId = 'map';
 // Guards the once-only binding of window-level listeners (popstate/resize) that
 // must survive ClientRouter swaps; init() re-runs per page-load.
 let globalBound = false;
-// Timestamp of the last accepted rail click, for the same-target debounce in go().
-let lastRailClickAt = -Infinity;
-// A repeat click on the destination you're already heading to is ignored for this
-// long (accidental double-clicks / machine-gun clicking), then acts as "skip the
-// ride and jump to the page". A different destination is never debounced.
-const RAIL_CLICK_COOLDOWN = 200; // ms
 
 function urlFor(view: ViewId): string {
   return view === 'map' ? '/' : `/${view}`;
@@ -1752,24 +1746,21 @@ function reconcile() {
 }
 
 /** User-initiated navigation (rail click).
- *  - A NEW destination is honored immediately: it becomes the target, the URL
- *    updates, and reconcile() starts or (on settle) redirects toward it.
- *  - A REPEAT click on the destination you're already heading to is the "skip"
- *    gesture: after a short cooldown it jumps the in-flight ride straight to the
- *    page; within the cooldown (an accidental double-click / rapid burst) it's
- *    ignored — which is also what keeps machine-gun clicking from perturbing the
- *    ride. Clicking the view you're already settled on does nothing. */
+ *  - While a ride is animating, ANY click force-completes it to the end (finishRide
+ *    → the page + entries appear at once). It never starts/redirects anything, so a
+ *    burst of clicks can't perturb the ride or land you on an unpopulated platform:
+ *    the first click skips, and every click after that is a no-op (we're now
+ *    settled and view === target).
+ *  - When idle, a click to a NEW destination starts the ride; clicking the view
+ *    you're already on does nothing.
+ *  (Back/forward are separate — popstate goes through reconcile(), not this.) */
 function go(view: ViewId) {
   if (!mv) return;
-  const now = typeof performance !== 'undefined' ? performance.now() : 0;
-  if (target === view) {
-    if (mv.busy && now - lastRailClickAt >= RAIL_CLICK_COOLDOWN) {
-      lastRailClickAt = now;
-      mv.finishRide();
-    }
+  if (mv.busy) {
+    mv.finishRide();
     return;
   }
-  lastRailClickAt = now;
+  if (mv.view === view) return;
   target = view;
   if (viewFromPath(location.pathname) !== view)
     history.pushState({ view }, '', urlFor(view));

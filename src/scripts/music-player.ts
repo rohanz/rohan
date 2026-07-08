@@ -178,7 +178,13 @@ class RowPlayer {
 
   resizeWaveCanvas(): void {
     const rect = this.waveCanvas.getBoundingClientRect();
-    const w = rect.width || 300;
+    // Hidden (0-width) => keep the last real size and do nothing. Crucial: when
+    // you LEAVE the music platform, the cards are hidden, which fires this via the
+    // ResizeObserver — resizing to a fallback here would be an expensive frame that
+    // stalls the *incoming* platform's reveal (the platform→platform "empty cards"
+    // bug). A hidden canvas never needs resizing anyway.
+    if (rect.width === 0) return;
+    const w = rect.width;
     const h = rect.height || 56;
     const dpr = window.devicePixelRatio || 1;
     const unchanged =
@@ -201,7 +207,8 @@ class RowPlayer {
     ): [number, number, CanvasRenderingContext2D] | null => {
       if (!canvas) return null;
       const rect = canvas.getBoundingClientRect();
-      const w = rect.width || defW;
+      if (rect.width === 0) return null; // hidden — keep the last real size (see resizeWaveCanvas)
+      const w = rect.width;
       const h = rect.height || defH;
       const dpr = window.devicePixelRatio || 1;
       if (canvas.width === Math.round(w * dpr) && canvas.height === Math.round(h * dpr)) return null;
