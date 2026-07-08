@@ -1230,7 +1230,13 @@ class MapView {
         // and About's stop-pair count — exactly as before.
         if (id === 'music') {
           this.showUI(id);
-          this.cardsIn(id);
+          // Run cardsIn on the NEXT frame, not synchronously here. When a skip
+          // (finishRide → progress(1)) fires this onComplete inside a click
+          // handler, a stagger tween created mid-render doesn't get scheduled and
+          // the entries stay invisible. A rAF gives it a clean tick context.
+          requestAnimationFrame(() => {
+            if (this.view === id) this.cardsIn(id);
+          });
         }
         this.busy = false;
       },
@@ -1512,9 +1518,13 @@ class MapView {
         this.echo.k = 0;
         this.apply();
         // MUSIC ONLY: reveal at settle (canvas-heavy) — see toPlatform's onComplete.
+        // cardsIn on the next frame so a skip's synchronous progress(1) doesn't
+        // drop the stagger tween (see toPlatform onComplete).
         if (id === 'music') {
           this.showUI(id);
-          this.cardsIn(id);
+          requestAnimationFrame(() => {
+            if (this.view === id) this.cardsIn(id);
+          });
         }
         this.busy = false;
       },
