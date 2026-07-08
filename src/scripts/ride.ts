@@ -961,7 +961,11 @@ class MapView {
     gsap.set(['#more-next', '#more-prev'], { autoAlpha: 0 });
   }
 
-  cardsIn(id: LineId) {
+  /** Reveal the platform's entries. `instant` (used by a SKIP — see finishRide)
+   *  snaps them fully visible with gsap.set instead of the staggered fade-in:
+   *  a set can't silently fail to tick, so the canvas-heavy music platform can't
+   *  be left blank after a skip, and "instant" is the right feel for a skip anyway. */
+  cardsIn(id: LineId, instant = false) {
     const line = lineById(id);
     const axis = line.platform!.axis;
     // Fade the filter pills in together with the project entries, but ONLY on the
@@ -972,26 +976,31 @@ class MapView {
     if (id === 'projects') {
       const filterBar = document.getElementById('filter-bar');
       if (filterBar && parseFloat(getComputedStyle(filterBar).opacity) < 0.5)
-        gsap.fromTo(
-          filterBar,
-          { autoAlpha: 0 },
-          { autoAlpha: 1, duration: 0.5, ease: 'power1.out', overwrite: 'auto' },
-        );
+        instant
+          ? gsap.set(filterBar, { autoAlpha: 1 })
+          : gsap.fromTo(
+              filterBar,
+              { autoAlpha: 0 },
+              { autoAlpha: 1, duration: 0.5, ease: 'power1.out', overwrite: 'auto' },
+            );
     }
     const onPage = this.cardsFor(id).filter((c) => c.style.display !== 'none');
     dbg(
       'cardsIn',
       id,
-      `fading ${onPage.length} cards (total ${this.cardsFor(id).length}, perPage ${this.perPageFor(id)})`,
+      `${instant ? 'INSTANT' : 'staggered'} — ${onPage.length} cards (total ${this.cardsFor(id).length}, perPage ${this.perPageFor(id)})`,
     );
     const dividers = Array.from(
       document.querySelectorAll<HTMLElement>(`#platform-ui [data-divider="${id}"]`),
     ).filter((d) => d.style.display !== 'none');
-    gsap.fromTo(
-      dividers,
-      { autoAlpha: 0 },
-      { autoAlpha: 1, duration: 0.5, stagger: 0.06, ease: 'power1.out', overwrite: 'auto' },
-    );
+    if (instant)
+      gsap.set(dividers, { autoAlpha: 1 });
+    else
+      gsap.fromTo(
+        dividers,
+        { autoAlpha: 0 },
+        { autoAlpha: 1, duration: 0.5, stagger: 0.06, ease: 'power1.out', overwrite: 'auto' },
+      );
     if (axis === 'h') {
       gsap.set(onPage, { xPercent: -50, yPercent: 0 });
     } else if (axis === 'd') {
@@ -1024,6 +1033,17 @@ class MapView {
     const btns = ['#more-next', '#more-prev']
       .map((s) => document.querySelector<HTMLElement>(s))
       .filter((b): b is HTMLElement => !!b && !b.hidden);
+    if (instant) {
+      // Skip: snap everything visible at once. Kill any pending (possibly stuck)
+      // fade tweens first — an in-render cardsIn may have set the cards to
+      // autoAlpha 0 with a tween that never ticks — then set the final state.
+      gsap.killTweensOf([...staggerCards, ...dividers, ...btns]);
+      gsap.set(staggerCards, { autoAlpha: 1, x: 0, y: 0 });
+      gsap.set(dividers, { autoAlpha: 1 });
+      gsap.set(btns, { autoAlpha: 1 });
+      btns.forEach((b) => (b.style.pointerEvents = ''));
+      return;
+    }
     btns.forEach((b) => (b.style.pointerEvents = 'none'));
     const lastCardDelay = Math.max(0, (staggerCards.length - 1) * 0.15);
     gsap.to(btns, {
@@ -1228,15 +1248,12 @@ class MapView {
         // the rapid-click freeze impossible. projects/about have no canvases and
         // reveal mid-ride (below), which keeps their layout measurement timing —
         // and About's stop-pair count — exactly as before.
+        // Natural arrival reveals here (staggered). A SKIP re-reveals instantly in
+        // finishRide, after progress(1) returns — because gsap calls made inside
+        // this synchronous render (which a skip triggers) don't apply.
         if (id === 'music') {
           this.showUI(id);
-          // Run cardsIn on the NEXT frame, not synchronously here. When a skip
-          // (finishRide → progress(1)) fires this onComplete inside a click
-          // handler, a stagger tween created mid-render doesn't get scheduled and
-          // the entries stay invisible. A rAF gives it a clean tick context.
-          requestAnimationFrame(() => {
-            if (this.view === id) this.cardsIn(id);
-          });
+          this.cardsIn(id);
         }
         this.busy = false;
       },
@@ -1518,13 +1535,10 @@ class MapView {
         this.echo.k = 0;
         this.apply();
         // MUSIC ONLY: reveal at settle (canvas-heavy) — see toPlatform's onComplete.
-        // cardsIn on the next frame so a skip's synchronous progress(1) doesn't
-        // drop the stagger tween (see toPlatform onComplete).
+        // Natural arrival staggers here; a skip re-reveals instantly in finishRide.
         if (id === 'music') {
           this.showUI(id);
-          requestAnimationFrame(() => {
-            if (this.view === id) this.cardsIn(id);
-          });
+          this.cardsIn(id);
         }
         this.busy = false;
       },
@@ -1717,9 +1731,22 @@ class MapView {
    *  once. Driven by the "click the destination again" gesture (see go()). Jumping
    *  to the end fires the same onComplete beats a natural arrival does (showUI +
    *  cardsIn → busy=false), so the platform lands fully populated. */
+  _skipping = false;
   finishRide() {
     dbg('finishRide → progress(1)', this.active ? 'has active tl' : 'NO active tl (busy but no tl!)');
+    // Force the camera to its end. Its reveal callbacks fire INSIDE gsap's
+    // synchronous render, where any new gsap.set/tween is dropped — so the entries
+    // can come up blank (the "empty music page" bug). We therefore skip the reveal
+    // during the render (_skipping) and re-run it here, AFTER progress(1) returns,
+    // in a clean context — instantly, which is the right feel for a skip anyway.
+    this._skipping = true;
     this.active?.progress(1);
+    this._skipping = false;
+    if (this.view !== 'map') {
+      this.showUI(this.view);
+      this.cardsIn(this.view, true);
+      dbg('finishRide: re-revealed', this.view, 'instantly (post-render)');
+    }
   }
 
   /** Tear the engine down before the page is swapped out (astro:before-swap).
