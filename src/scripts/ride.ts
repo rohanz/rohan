@@ -15,6 +15,16 @@ import { HOME, VIEWBOX, lineById, type LineId, type Line, type Point } from '../
 import { filletPoints } from '../lib/fillet';
 import { stopMusicPlayback, primeMusicSizing } from './music-player';
 
+// TEMPORARY diagnostic logging for the platform→platform "empty cards" report.
+// Flip RIDE_DEBUG to false (or delete these) once we've caught the sequence.
+// In the browser console you can also toggle it live: `localStorage.rideDebug='0'`.
+const RIDE_DEBUG =
+  typeof localStorage === 'undefined' ? true : localStorage.getItem('rideDebug') !== '0';
+let dbgN = 0;
+const dbg = (...a: unknown[]) => {
+  if (RIDE_DEBUG) console.log(`[ride ${(++dbgN).toString().padStart(3, '0')}]`, ...a);
+};
+
 const MAP_SCALE = 2.8; // zoom while riding
 // Van Wijk & Nuij (2003) curvature constant for the combined zoom+pan swoop.
 // Larger => a bigger zoom-out arc between the two poses; smaller => a flatter,
@@ -180,6 +190,7 @@ class MapView {
         last = t;
       }
       if (frozen >= 2) {
+        dbg(`⚠ WATCHDOG: ride timeline FROZE at t=${t.toFixed(2)} — force-finishing`);
         this._stopWatchdog();
         tl.progress(1);
       }
@@ -888,6 +899,7 @@ class MapView {
 
   showUI(id: LineId) {
     if (!this.ui) return;
+    dbg('showUI', id, '(un-hide + place + size)');
     const line = lineById(id);
     this.ui.hidden = false;
     this.ui.setAttribute('data-axis', line.platform!.axis);
@@ -967,6 +979,11 @@ class MapView {
         );
     }
     const onPage = this.cardsFor(id).filter((c) => c.style.display !== 'none');
+    dbg(
+      'cardsIn',
+      id,
+      `fading ${onPage.length} cards (total ${this.cardsFor(id).length}, perPage ${this.perPageFor(id)})`,
+    );
     const dividers = Array.from(
       document.querySelectorAll<HTMLElement>(`#platform-ui [data-divider="${id}"]`),
     ).filter((d) => d.style.display !== 'none');
@@ -1101,6 +1118,7 @@ class MapView {
 
   toPlatform(id: LineId, animate = true) {
     if (this.busy || this.view !== 'map') return;
+    dbg(`toPlatform(${id}, animate=${animate}) START`);
     const line = lineById(id);
     this.busy = true;
     this.view = id;
@@ -1201,6 +1219,7 @@ class MapView {
     const tl = gsap.timeline({
       defaults: { overwrite: 'auto' },
       onComplete: () => {
+        dbg(`toPlatform(${id}) onComplete`);
         this.echo.k = 0;
         this.apply();
         // MUSIC ONLY: reveal the entries here, once the camera has fully SETTLED.
@@ -1420,6 +1439,7 @@ class MapView {
    *  to line B across the interchange pause. */
   switchPlatform(id: LineId) {
     if (this.busy || this.view === 'map' || this.view === id) return;
+    dbg(`switchPlatform(${this.view} → ${id}) START`);
     const fromLine = lineById(this.view);
     const toLine = lineById(id);
     this.busy = true;
@@ -1488,6 +1508,7 @@ class MapView {
       delay: 0.35,
       defaults: { overwrite: 'auto' },
       onComplete: () => {
+        dbg(`switchPlatform(→${id}) onComplete`);
         this.echo.k = 0;
         this.apply();
         // MUSIC ONLY: reveal at settle (canvas-heavy) — see toPlatform's onComplete.
@@ -1687,6 +1708,7 @@ class MapView {
    *  to the end fires the same onComplete beats a natural arrival does (showUI +
    *  cardsIn → busy=false), so the platform lands fully populated. */
   finishRide() {
+    dbg('finishRide → progress(1)', this.active ? 'has active tl' : 'NO active tl (busy but no tl!)');
     this.active?.progress(1);
   }
 
@@ -1697,6 +1719,7 @@ class MapView {
    *  corrupting it (the "empty/stale platform" after back-forward). Killing the
    *  timeline stops those scheduled callbacks. */
   dispose() {
+    dbg('dispose (page swap) — killing active ride' + (this.active ? '' : ' (none)'));
     this.active?.kill();
     this.active = null;
     this._stopWatchdog();
@@ -1740,6 +1763,7 @@ function reconcile() {
   if (!mv || mv.busy) return;
   const want = target;
   if (mv.view === want) return;
+  dbg(`reconcile: view=${mv.view} → target=${want}`);
   if (want === 'map') mv.toMap();
   else if (mv.view === 'map') mv.toPlatform(want);
   else mv.switchPlatform(want);
@@ -1757,10 +1781,15 @@ function reconcile() {
 function go(view: ViewId) {
   if (!mv) return;
   if (mv.busy) {
+    dbg(`CLICK ${view} — busy (view=${mv.view}) → finishRide (skip to end)`);
     mv.finishRide();
     return;
   }
-  if (mv.view === view) return;
+  if (mv.view === view) {
+    dbg(`CLICK ${view} — already here, ignored`);
+    return;
+  }
+  dbg(`CLICK ${view} — idle (from ${mv.view}) → start ride`);
   target = view;
   if (viewFromPath(location.pathname) !== view)
     history.pushState({ view }, '', urlFor(view));

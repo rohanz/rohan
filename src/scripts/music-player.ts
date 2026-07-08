@@ -165,8 +165,16 @@ class RowPlayer {
     // toggles included), not just window resizes.
     if (typeof ResizeObserver !== 'undefined') {
       const ro = new ResizeObserver(() => {
+        const before = this.waveCanvas.width;
         this.resizeWaveCanvas();
         this.resizeMeters();
+        // Log only a REAL resize (backing store changed) — that's the expensive
+        // frame we care about; skips/no-ops are silent.
+        if (
+          this.waveCanvas.width !== before &&
+          (typeof localStorage === 'undefined' || localStorage.getItem('rideDebug') !== '0')
+        )
+          console.log(`[ride ---] music canvas RESIZED ${before}→${this.waveCanvas.width} (heavy)`);
       });
       ro.observe(this.waveCanvas);
       // The meter canvases have viewport-relative CSS widths (clamp(...vw...)),
