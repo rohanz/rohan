@@ -1059,11 +1059,13 @@ class MapView {
     const line = lineById(id);
     this.ui.hidden = false;
     this.ui.setAttribute('data-axis', line.platform!.axis);
-    this.setActiveDest(id);
-    const bar = document.querySelector('.top-bar');
-    const section = document.getElementById('bar-section');
-    if (bar) gsap.to(bar, { backgroundColor: line.hex, duration: 0.4, ease: 'power1.out', overwrite: 'auto' });
-    if (section) section.textContent = line.nav!.name;
+    // Chrome handoff (active-dest marker, bar colour, section title) is shared
+    // with the mid-reveal path — one implementation, not a drifted copy. On the
+    // rides that already ran handoffChrome during the reveal this re-run is a
+    // no-op (same tween target + overwrite:'auto', same text), and it makes
+    // showUI self-sufficient for the callers that never ran the handoff
+    // (initial deep-link restore, platform switches, reduced motion).
+    this.handoffChrome(id);
 
     // Reset the projects filter whenever the view is (re)entered.
     const filterBar = this.ui.querySelector<HTMLElement>('#filter-bar');
@@ -1646,7 +1648,6 @@ class MapView {
     // TICK — no appended parked focal — so the arrival stops dead at the last tick
     // and BEAT 5 zooms out from there (no backward bounce).
     const outPts = this.ridePath(toLine);
-    const outSampler = pathSampler(outPts);
     // ONE continuous path A → Home → B, driven by a SINGLE trapezoid so the whole
     // express run shares the same ramp-up, top speed, and ramp-down as every other
     // ride (before: two legs with a distance-proportional split, which held speed

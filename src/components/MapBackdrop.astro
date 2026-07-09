@@ -1,7 +1,7 @@
 ---
 // Faint continuation of the transit mesh behind inner-page content, so every
 // page reads as another place on the same map the ride just crossed.
-import { LINES, VIEWBOX, type Point } from '../data/system';
+import { LINES, VIEWBOX } from '../data/system';
 import { filletPath } from '../lib/fillet';
 
 interface Props {
@@ -9,10 +9,6 @@ interface Props {
   lineId: string;
 }
 const { lineId } = Astro.props;
-
-function polyPoints(pts: Point[]) {
-  return pts.map(([x, y]) => `${x},${y}`).join(' ');
-}
 ---
 <svg
   class="map-backdrop"

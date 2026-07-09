@@ -492,3 +492,8 @@ function cleanup() {
 
 document.addEventListener('astro:page-load', init);
 document.addEventListener('astro:before-swap', cleanup);
+
+// No imports above, so without this the file would be a GLOBAL script sharing
+// scope with every other import-less script (its `cleanups` collides with
+// article-widgets.ts). `export {}` makes it a module; Vite bundles it as one anyway.
+export {};

@@ -7,7 +7,7 @@
   },
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build",
+    "build": "astro check && astro build",
     "preview": "astro preview",
     "astro": "astro",
     "test": "vitest run"
@@ -19,6 +19,8 @@
     "gsap": "^3.15.0"
   },
   "devDependencies": {
+    "@astrojs/check": "^0.9.9",
+    "typescript": "^6.0.3",
     "vitest": "^4.1.9"
   }
 }

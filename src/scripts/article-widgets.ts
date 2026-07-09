@@ -649,6 +649,11 @@ function initBqstAudioDemo() {
   const settings = placeholder.dataset.settings || 'matched clean/processed drum loop';
   const bpm = Number.parseFloat(placeholder.dataset.bpm || '90');
   if (!cleanUrl || !processedUrl) return;
+  // Re-bind as plain `string` past the guard: loadBuffers below is a hoisted
+  // function declaration, so TS's narrowing of cleanUrl/processedUrl doesn't
+  // reach into it.
+  const cleanSrc: string = cleanUrl;
+  const processedSrc: string = processedUrl;
   const AC = window.AudioContext || (window as any).webkitAudioContext;
   if (!AC) return;
 
@@ -696,6 +701,11 @@ function initBqstAudioDemo() {
   let activeVersion = 'clean';
   let isPlaying = false;
   let isReady = false;
+  // Set when the fetch/decode below fails. Without it a post-failure click
+  // would set aria-busy + wantsToPlay and wait on an isReady that can never
+  // arrive — a spinner stuck for the rest of the page's life. start() checks
+  // this flag and re-runs loadBuffers() so a later click is a real retry.
+  let loadFailed = false;
   let rafId: number | null = null;
   let waveFadeId: number | null = null;
   // Pending "kill the sources after the pause fade" timer — see pause()/start().
@@ -706,24 +716,33 @@ function initBqstAudioDemo() {
   root.classList.add('is-ready');
   drawWaveform();
 
-  Promise.all([fetchAudioData(cleanUrl), fetchAudioData(processedUrl)])
-    .then(async ([cleanData, processedData]) => {
-      ensureAudioContext();
-      const [clean, processed] = await Promise.all([
-        context!.decodeAudioData(cleanData.slice(0)),
-        context!.decodeAudioData(processedData.slice(0)),
-      ]);
-      cleanBuffer = clean;
-      processedBuffer = processed;
-      isReady = true;
-      playButton.removeAttribute('aria-busy');
-      drawWaveform();
-      if (wantsToPlay && !isPlaying) start();
-    })
-    .catch(() => {
-      root.classList.add('is-error');
-      playButton.removeAttribute('aria-busy');
-    });
+  loadBuffers();
+
+  /** Fetch + decode both versions. Runs once at init, and again from start()
+   *  after a failure (a flaky network shouldn't permanently brick the demo). */
+  function loadBuffers() {
+    Promise.all([fetchAudioData(cleanSrc), fetchAudioData(processedSrc)])
+      .then(async ([cleanData, processedData]) => {
+        ensureAudioContext();
+        const [clean, processed] = await Promise.all([
+          context!.decodeAudioData(cleanData.slice(0)),
+          context!.decodeAudioData(processedData.slice(0)),
+        ]);
+        cleanBuffer = clean;
+        processedBuffer = processed;
+        isReady = true;
+        root.classList.remove('is-error'); // a retry succeeded — clear the failure badge
+        playButton.removeAttribute('aria-busy');
+        drawWaveform();
+        if (wantsToPlay && !isPlaying) start();
+      })
+      .catch(() => {
+        loadFailed = true;
+        root.classList.add('is-error');
+        // Clear the spinner even mid-"wantsToPlay": the wait is over, it lost.
+        playButton.removeAttribute('aria-busy');
+      });
+  }
 
   function ensureAudioContext() {
     if (context) return context;
@@ -899,6 +918,12 @@ function initBqstAudioDemo() {
     ensureAudioContext();
     if (context!.state === 'suspended') { try { await context!.resume(); } catch { /* */ } }
     if (!isReady || !cleanBuffer || !processedBuffer) {
+      // After a failed load isReady can never flip on its own — re-run the
+      // loader so this click is a retry, not an eternal aria-busy spinner.
+      if (loadFailed) {
+        loadFailed = false;
+        loadBuffers();
+      }
       wantsToPlay = true;
       playButton.setAttribute('aria-busy', 'true');
       return;
@@ -1538,3 +1563,6 @@ function cleanupWidgets() {
 
 document.addEventListener('astro:page-load', initWidgets);
 document.addEventListener('astro:before-swap', cleanupWidgets);
+
+// Module marker — see the note at the end of article.ts (scope collision).
+export {};

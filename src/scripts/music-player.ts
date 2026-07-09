@@ -63,13 +63,16 @@ let analyserR: AnalyserNode | null = null;
 // typed arrays per frame (steady 60fps GC pressure during playback). Sized lazily
 // on first use; each draw target gets its own buffer so a single frame's
 // wave/meter/spectrum reads never alias.
-let waveScratch: Uint8Array | null = null;
-let freqScratch: Uint8Array | null = null;
-let meterLScratch: Float32Array | null = null;
-let meterRScratch: Float32Array | null = null;
-const u8Scratch = (cur: Uint8Array | null, n: number): Uint8Array =>
+// The explicit <ArrayBuffer> generics matter: the AnalyserNode read methods
+// require Float32Array<ArrayBuffer>/Uint8Array<ArrayBuffer> (not the default
+// <ArrayBufferLike>, which admits SharedArrayBuffer) under TS 5.7+ lib types.
+let waveScratch: Uint8Array<ArrayBuffer> | null = null;
+let freqScratch: Uint8Array<ArrayBuffer> | null = null;
+let meterLScratch: Float32Array<ArrayBuffer> | null = null;
+let meterRScratch: Float32Array<ArrayBuffer> | null = null;
+const u8Scratch = (cur: Uint8Array<ArrayBuffer> | null, n: number): Uint8Array<ArrayBuffer> =>
   cur && cur.length === n ? cur : new Uint8Array(n);
-const f32Scratch = (cur: Float32Array | null, n: number): Float32Array =>
+const f32Scratch = (cur: Float32Array<ArrayBuffer> | null, n: number): Float32Array<ArrayBuffer> =>
   cur && cur.length === n ? cur : new Float32Array(n);
 
 function ensureAudioGraph(): void {
@@ -171,6 +174,17 @@ class RowPlayer {
   freqHighlights = new Float32Array(FREQ_BANDS);
   freqHighlightTargets = new Float32Array(FREQ_BANDS);
   freqHighlightBlurred = new Float32Array(FREQ_BANDS);
+  // Per-frame scratch for drawFrequencyCurve, hoisted so the 60fps spectrum
+  // draw doesn't allocate four 128-element arrays every frame (steady GC
+  // pressure during playback, same rationale as the module-level analyser
+  // scratch buffers). All are fixed FREQ_BANDS-length. Float64Array keeps the
+  // arithmetic in double precision, bit-identical to the plain JS arrays this
+  // replaces; curveTargets stays Float32Array to match the Float32Array it
+  // used to allocate per call.
+  curveHeights = new Float64Array(FREQ_BANDS);
+  curveSmooth = new Float64Array(FREQ_BANDS);
+  curveTargets = new Float32Array(FREQ_BANDS);
+  curvePoints: { x: number; y: number }[] = Array.from({ length: FREQ_BANDS }, () => ({ x: 0, y: 0 }));
 
   constructor(el: HTMLElement) {
     this.el = el;
@@ -253,7 +267,6 @@ class RowPlayer {
   resizeMeters(): void {
     const apply = (
       canvas: HTMLCanvasElement | null,
-      defW: number,
       defH: number,
     ): [number, number, CanvasRenderingContext2D] | null => {
       if (!canvas) return null;
@@ -266,17 +279,17 @@ class RowPlayer {
       return [w, h, sizeCanvas(canvas, w, h)];
     };
     let changed = false;
-    const vec = apply(this.vecCanvas, this.vecW, this.vecH);
+    const vec = apply(this.vecCanvas, this.vecH);
     if (vec) {
       [this.vecW, this.vecH, this.vecCtx] = vec;
       changed = true;
     }
-    const freq = apply(this.freqCanvas, this.freqW, this.freqH);
+    const freq = apply(this.freqCanvas, this.freqH);
     if (freq) {
       [this.freqW, this.freqH, this.freqCtx] = freq;
       changed = true;
     }
-    const vu = apply(this.vuCanvas, this.vuW, this.vuH);
+    const vu = apply(this.vuCanvas, this.vuH);
     if (vu) {
       [this.vuW, this.vuH, this.vuCtx] = vu;
       changed = true;
@@ -389,6 +402,14 @@ class RowPlayer {
     ctx.arc(cx, cy, radius, 0, Math.PI * 2);
     ctx.stroke();
 
+    // Clip the dot cloud to the scope circle (same center/radius the grid just
+    // drew): the ×2 gain means hard-panned or loud material (|mid|/|side| >
+    // half full-scale) would otherwise plot outside the circle, scattering
+    // stray dots across the corners of the canvas.
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+    ctx.clip();
     ctx.fillStyle = accent(0.58);
     const step = Math.max(1, Math.floor(bufLen / 256));
     for (let i = 0; i < bufLen; i += step) {
@@ -398,6 +419,7 @@ class RowPlayer {
       const py = cy - mid * radius * 2;
       ctx.fillRect(px, py, 1.5, 1.5);
     }
+    ctx.restore();
   }
 
   // -- spectrum ------------------------------------------------------------
@@ -408,25 +430,37 @@ class RowPlayer {
     const freqH = this.freqH;
     const baseline = freqH;
     const topPad = 6;
-    const heightLevels = Array.from(levels, (value) => Math.max(0, Math.min(0.72, value)));
-    const smoothLevels = heightLevels.map((value, index) => {
-      const a = heightLevels[Math.max(0, index - 2)];
-      const b = heightLevels[Math.max(0, index - 1)];
-      const d = heightLevels[Math.min(heightLevels.length - 1, index + 1)];
-      const e = heightLevels[Math.min(heightLevels.length - 1, index + 2)];
-      return (a + b * 2 + value * 3 + d * 2 + e) / 9;
-    });
-    const colorLevels = smoothLevels.map((value) => {
-      const t = Math.max(0, Math.min(1, (value - 0.3) / 0.34));
-      return t * t * (3 - 2 * t);
-    });
-    const intensity = colorLevels.reduce((max, value) => Math.max(max, value), 0);
-    const xFor = (i: number) => (i / (smoothLevels.length - 1)) * freqW;
+    // Both callers hand over FREQ_BANDS-length levels (freqSmoothed live, its
+    // decaying copy during fadeFreqToIdle), so the fixed-size scratch fields
+    // always cover the input exactly.
+    const n = FREQ_BANDS;
+    const heightLevels = this.curveHeights;
+    for (let i = 0; i < n; i++) heightLevels[i] = Math.max(0, Math.min(0.72, levels[i]));
+    const smoothLevels = this.curveSmooth;
+    for (let i = 0; i < n; i++) {
+      const a = heightLevels[Math.max(0, i - 2)];
+      const b = heightLevels[Math.max(0, i - 1)];
+      const d = heightLevels[Math.min(n - 1, i + 1)];
+      const e = heightLevels[Math.min(n - 1, i + 2)];
+      smoothLevels[i] = (a + b * 2 + heightLevels[i] * 3 + d * 2 + e) / 9;
+    }
+    // The smoothstep "color level" per band was only ever reduced to its max,
+    // so compute the max inline instead of materialising a third array.
+    let intensity = 0;
+    for (let i = 0; i < n; i++) {
+      const t = Math.max(0, Math.min(1, (smoothLevels[i] - 0.3) / 0.34));
+      intensity = Math.max(intensity, t * t * (3 - 2 * t));
+    }
+    const xFor = (i: number) => (i / (n - 1)) * freqW;
     const yFor = (value: number) => baseline - Math.max(0, Math.min(1, value)) * (freqH - topPad);
 
     ctx.clearRect(0, 0, freqW, freqH);
 
-    const points = smoothLevels.map((value, index) => ({ x: xFor(index), y: yFor(value) }));
+    const points = this.curvePoints; // mutated in place — never reallocated
+    for (let i = 0; i < n; i++) {
+      points[i].x = xFor(i);
+      points[i].y = yFor(smoothLevels[i]);
+    }
 
     const traceCurve = (startWithMove = true) => {
       if (startWithMove) ctx.moveTo(points[0].x, points[0].y);
@@ -456,11 +490,15 @@ class RowPlayer {
     ctx.fillStyle = accent((0.09 + intensity * 0.1) * alpha);
     ctx.fill();
 
-    const targetHighlights = new Float32Array(FREQ_BANDS);
+    const targetHighlights = this.curveTargets;
     if (highlightLevels) {
       for (let i = 0; i < targetHighlights.length; i++) {
         targetHighlights[i] = Math.max(0, Math.min(1, highlightLevels[i] || 0));
       }
+    } else {
+      // Reused scratch: the fresh-allocation version was implicitly zero here
+      // (no highlights during the fade-to-idle path); clear explicitly.
+      targetHighlights.fill(0);
     }
     for (let i = 0; i < this.freqHighlights.length; i++) {
       const target = targetHighlights[i] || 0;
@@ -677,9 +715,18 @@ class RowPlayer {
 
   // -- live loop -----------------------------------------------------------
   drawLive = (): void => {
+    // Reduced motion: don't animate — but ALSO don't draw a single live frame,
+    // which would freeze a random mid-song waveform/spectrum snapshot on screen
+    // for the whole track. Show the calm idle visuals instead; the button's
+    // playing state (aria-pressed) still reflects playback.
+    if (prefersReducedMotion()) {
+      this.drawIdle();
+      this.drawMetersIdle();
+      return;
+    }
     this.drawWaveLive();
     this.drawMetersLive();
-    if (this.isPlaying && !prefersReducedMotion()) {
+    if (this.isPlaying) {
       this.animationId = requestAnimationFrame(this.drawLive);
     }
   };
