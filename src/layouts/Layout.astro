@@ -1,5 +1,6 @@
 ---
 import '@fontsource-variable/inter';
+import interWoff2 from '@fontsource-variable/inter/files/inter-latin-wght-normal.woff2?url';
 import '../styles/global.css';
 import { ClientRouter } from 'astro:transitions';
 import { SOCIALS } from '../data/socials';
@@ -57,12 +58,13 @@ const personLd = JSON.stringify({
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={ogAbs} />
 
+    <link rel="preload" as="font" type="font/woff2" href={interWoff2} crossorigin />
     <meta name="theme-color" content="#1e1e1e" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" sizes="any" />
     <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
-    <script type="application/ld+json" set:html={personLd} />
+    <script is:inline type="application/ld+json" set:html={personLd} />
     <ClientRouter />
   </head>
   <body class={bodyClass} data-initial-view={initialView}>

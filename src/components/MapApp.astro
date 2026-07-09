@@ -206,8 +206,8 @@ const tech = [
 <style>
   .top-bar {
     position: relative;
-    height: 74px;
-    background: #000;
+    height: var(--topbar-h);
+    background: var(--bar-bg);
     display: flex;
     align-items: center;
     padding: 0 1.6rem;
@@ -242,10 +242,10 @@ const tech = [
   .bar-section:empty { display: none; }
   .map-stage {
     position: relative;
-    height: calc(100vh - 74px);
+    height: calc(100vh - var(--topbar-h));
     /* Progressive enhancement: dvh tracks the dynamic URL-bar viewport on
        tablet-band Safari; browsers without dvh keep the vh line above. */
-    height: calc(100dvh - 74px);
+    height: calc(100dvh - var(--topbar-h));
     padding: 0;
   }
   .map-wrap {
@@ -298,7 +298,7 @@ const tech = [
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
     font-size: 0.95rem;
     color: #fff;
-    background: #131313;
+    background: var(--ink-strong);
     border: none;
     border-radius: 999px;
     padding: 0.65rem 1.2rem;
@@ -353,7 +353,7 @@ const tech = [
     display: flex;
     align-items: center;
     gap: 1.1rem;
-    color: #1a1a1a;
+    color: var(--ink);
     /* Ceiling on how tall any in-row visual (cover / waveform / meters) may
        grow. The rows are laid out on the map with a vertical PITCH that scales
        with viewport HEIGHT (~0.164 * vh — see parkPose 'v': the stops are 100
@@ -392,9 +392,9 @@ const tech = [
   }
   .row-info { flex: 1 1 auto; min-width: 0; }
   .row-title { margin: 0; font-size: clamp(1.15rem, 1.35vw, 1.5rem); font-weight: 700; line-height: 1.2; }
-  .row-artist { margin: 0.2rem 0 0.4rem; font-size: clamp(0.82rem, 0.92vw, 1rem); color: #6f6a60; font-weight: 600; }
+  .row-artist { margin: 0.2rem 0 0.4rem; font-size: clamp(0.82rem, 0.92vw, 1rem); color: var(--muted-2); font-weight: 600; }
   .row-links { display: flex; flex-wrap: wrap; gap: 0.6rem; font-size: 0.72rem; font-weight: 700; }
-  .row-links a { color: #754fad; text-decoration: none; }
+  .row-links a { color: var(--line-music); text-decoration: none; }
   .row-links a:hover { text-decoration: underline; }
   /* Icon-style play/pause button, matching the original's circular
      waveform-play-btn (not a text pill). Sits at the end of the row. */
@@ -413,14 +413,14 @@ const tech = [
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    border: 1.5px solid #754fad;
+    border: 1.5px solid var(--line-music);
     border-radius: 50%;
     background: transparent;
-    color: #754fad;
+    color: var(--line-music);
     transition: background 0.2s ease, color 0.2s ease;
   }
   .row-play:hover { background: rgba(117, 79, 173, 0.12); }
-  .row-play[aria-pressed='true'] { background: #754fad; color: #fff; }
+  .row-play[aria-pressed='true'] { background: var(--line-music); color: #fff; }
   .row-play-icon { width: clamp(20px, 1.5vw, 26px); height: clamp(20px, 1.5vw, 26px); fill: currentColor; }
   .row-play .icon-pause { display: none; }
   .row-play[aria-pressed='true'] .icon-play { display: none; }
@@ -475,7 +475,7 @@ const tech = [
     font-size: 10px;
     font-weight: 600;
     letter-spacing: 0.08em;
-    color: #6f6a60;
+    color: var(--muted-2);
     text-transform: lowercase;
     white-space: nowrap;
   }
@@ -591,7 +591,7 @@ const tech = [
   .card-project .summary {
     margin: 0;
     font-size: clamp(0.68rem, 0.8vw, 0.8rem);
-    color: #6f6a60;
+    color: var(--muted-2);
     line-height: 1.5;
     display: -webkit-box;
     -webkit-line-clamp: 3;
@@ -617,10 +617,10 @@ const tech = [
   .card-project .tags li {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
     font-weight: 500;
-    font-size: clamp(0.5rem, 0.56vw, 0.58rem);
+    font-size: clamp(0.56rem, 0.56vw, 0.58rem);
     text-transform: lowercase;
     white-space: nowrap;
-    color: #4a453c;
+    color: var(--tag-ink);
     background: rgba(255, 255, 255, 0.92);
     border: 1px solid rgba(26, 26, 26, 0.2);
     border-radius: 3px;
@@ -639,7 +639,7 @@ const tech = [
      degrades gracefully to hidden — exactly as the original does. */
   #filter-bar {
     position: absolute;
-    top: 78px;
+    top: calc(var(--topbar-h) + 4px);
     /* A centered block within the content region to the RIGHT of the docked
        rail, sized so the full ~31-tag set falls into ~4 tidy rows (roughly
        8 pills/row) rather than a tall 6-row stack — wider and shorter reads
@@ -673,7 +673,7 @@ const tech = [
     font-size: 0.7rem;
     text-align: center;
     text-transform: lowercase;
-    color: #4a453c;
+    color: var(--tag-ink);
     background: rgba(255, 255, 255, 0.92);
     border: 1px solid rgba(26, 26, 26, 0.2);
     border-radius: 3px;
@@ -683,11 +683,11 @@ const tech = [
   }
   .filter-tag.active,
   .filter-tag[aria-pressed='true'] {
-    background: #d13d59;
-    border-color: #d13d59;
+    background: var(--line-projects);
+    border-color: var(--line-projects);
     color: #fff;
   }
-  .filter-tag:hover:not(.active) { border-color: #d13d59; color: #1a1a1a; }
+  .filter-tag:hover:not(.active) { border-color: var(--line-projects); color: var(--ink); }
 
   /* About platform: UNIFORM station cards. Every card is the same width and
      shares a min-height (both set inline by placeCards()/aboutGeom() in
@@ -713,7 +713,7 @@ const tech = [
     font-size: calc(clamp(0.66rem, 0.85vw, 0.8rem) * var(--about-scale, 1));
     letter-spacing: 0.16em;
     text-transform: uppercase;
-    color: #6f6a60;
+    color: var(--muted-2);
   }
   /* Photo card: image sits inset within the uniform box with a thin frame,
      rather than bleeding edge to edge. */
@@ -725,7 +725,7 @@ const tech = [
     min-height: 0;
     object-fit: cover;
     display: block;
-    border: 1.5px solid #2a2621;
+    border: 1.5px solid var(--ink-warm);
     border-radius: 6px;
   }
   /* Bio card: text-only now (photo split into its own card), sized up to fill
@@ -738,11 +738,11 @@ const tech = [
     display: block;
     font-size: calc(clamp(0.72rem, 0.92vw, 0.98rem) * var(--about-scale, 1));
     line-height: 1.3;
-    color: #2a2621;
+    color: var(--ink-warm);
   }
   /* Stats: two tiles that stretch to fill the box height. */
   .stat-row { display: flex; gap: 0.55rem; flex: 1; min-height: 0; }
-  .stat-tile { flex: 1; background: #815e49; color: #fff; border-radius: 8px; padding: 0.7rem 0.8rem; display: flex; flex-direction: column; justify-content: center; gap: 0.35rem; }
+  .stat-tile { flex: 1; background: var(--line-about); color: #fff; border-radius: 8px; padding: 0.7rem 0.8rem; display: flex; flex-direction: column; justify-content: center; gap: 0.35rem; }
   .stat-value { font-size: calc(clamp(1.5rem, 2.4vw, 2.3rem) * var(--about-scale, 1)); font-weight: 800; line-height: 1; }
   .stat-label { font-size: calc(clamp(0.7rem, 0.95vw, 0.86rem) * var(--about-scale, 1)); opacity: 0.92; }
   /* Tech pills: fill the box, wrapping and vertically centred. Pills (font +
@@ -754,7 +754,7 @@ const tech = [
   /* Socials: 2×2 grid of chunky buttons that STRETCH to fill the box, so the
      four links occupy the uniform card as fully as the other cards' content. */
   .social-buttons { display: grid; grid-template-columns: 1fr 1fr; grid-auto-rows: 1fr; gap: 0.6rem; flex: 1; min-height: 0; }
-  .social-btn { display: flex; align-items: center; justify-content: center; text-decoration: none; font-weight: 700; font-size: calc(clamp(0.9rem, 1.15vw, 1.12rem) * var(--about-scale, 1)); color: #fff; background: #815e49; border-radius: 8px; padding: 0.7rem 0.6rem; }
+  .social-btn { display: flex; align-items: center; justify-content: center; text-decoration: none; font-weight: 700; font-size: calc(clamp(0.9rem, 1.15vw, 1.12rem) * var(--about-scale, 1)); color: #fff; background: var(--line-about); border-radius: 8px; padding: 0.7rem 0.6rem; }
   .social-btn:hover { filter: brightness(1.12); }
   /* CV: label stays top-left like every other About card (inherits
      .card-about's flex-start column flow); the button is then centred in
@@ -773,7 +773,7 @@ const tech = [
     font-weight: 800;
     font-size: calc(clamp(0.95rem, 1.2vw, 1.1rem) * var(--about-scale, 1));
     color: #fff;
-    background: #815e49;
+    background: var(--line-about);
     border-radius: 8px;
     padding: calc(0.85rem * var(--about-scale, 1)) calc(1.9rem * var(--about-scale, 1));
   }

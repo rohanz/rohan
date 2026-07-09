@@ -19,7 +19,7 @@ const dests = NAV_LINES.map((l) => ({
           data-line="map"
           data-astro-prefetch="hover"
           class="board-link"
-          style="--line-hex:#131313"
+          style="--line-hex:var(--ink-strong)"
         >
           <span class="swatch swatch-home" aria-hidden="true"></span>
           <span class="board-name">Home</span>
@@ -78,7 +78,7 @@ const dests = NAV_LINES.map((l) => ({
     font-size: 1.1rem;
     font-weight: 700;
     color: #fff;
-    background: #131313;
+    background: var(--ink-strong);
   }
   .board-icon {
     display: inline-flex;
@@ -88,7 +88,7 @@ const dests = NAV_LINES.map((l) => ({
     height: 1.35rem;
     border-radius: 50%;
     background: #fff;
-    color: #131313;
+    color: var(--ink-strong);
     font-weight: 700;
     font-size: 0.88rem;
     font-style: normal;
@@ -107,7 +107,7 @@ const dests = NAV_LINES.map((l) => ({
     padding: 0.5rem 0.55rem;
     border-radius: 6px;
     text-decoration: none;
-    color: #131313;
+    color: var(--ink-strong);
     font-weight: 700;
     font-size: 1.2rem;
     transition: background 0.15s ease;
@@ -132,7 +132,7 @@ const dests = NAV_LINES.map((l) => ({
     height: 16px;
     border-radius: 50%;
     background: #fff;
-    border: 3px solid #131313;
+    border: 3px solid var(--ink-strong);
     box-sizing: border-box;
   }
   /* Home's swatch is a fixed roundel — keep it at 16px on hover (the base
@@ -172,7 +172,7 @@ const dests = NAV_LINES.map((l) => ({
     color: #8a8578;
     transition: color 0.18s ease, transform 0.18s ease;
   }
-  .social-link:hover, .social-link:focus-visible { color: #131313; transform: translateY(-2px); }
+  .social-link:hover, .social-link:focus-visible { color: var(--ink-strong); transform: translateY(-2px); }
   .social-link svg { display: block; width: 25px; height: 25px; fill: currentColor; }
   @media (max-width: 1024px) {
     .board-social { padding: 0.9rem 1rem; }

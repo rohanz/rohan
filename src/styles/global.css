@@ -5,7 +5,13 @@
   --bg: #f4f1ea;
   --ink: #1a1a1a;
   --muted: #6e6a5e; /* darkened from #8a8578 to clear WCAG AA (4.5:1) on the #f4f1ea paper */
+  --muted-2: #6f6a60; /* secondary gray: row artists, meter labels, card summaries */
   --board: #1e1e1e;
+  --ink-strong: #131313; /* legend-panel near-black: rail rows, edge buttons */
+  --ink-warm: #2a2621; /* warm near-black: about-card bio text + photo frame */
+  --tag-ink: #4a453c; /* tag/filter pill text */
+  --bar-bg: #000; /* homepage top title bar */
+  --topbar-h: 74px;
   --max: 1100px;
   --radius: 10px;
 }
@@ -90,7 +96,7 @@ img { max-width: 100%; display: block; }
   height: 100dvh; /* tracks the real viewport as mobile URL bars expand/collapse */
   z-index: 9999; pointer-events: none;
   transform: translateX(calc(-1 * var(--streak-w)));
-  color: #1e1e1e; /* JS sets this to the destination hex */
+  color: var(--board); /* JS sets this to the destination hex */
   background: currentColor;
 }
 
@@ -183,6 +189,18 @@ body.home #station-board .board-body { flex: 1 1 auto; }
 
 /* Inner pages sit on the same map land as the homepage world. */
 body.page { background: #e4e1d8; }
+
+/* Print: drop the interactive chrome — the nav rail, the faint map backdrop
+   behind article pages, the fixed train-line TOC sidebar (it would overlap
+   the article text), and the transition streak overlay. */
+@media print {
+  #station-board,
+  .map-backdrop,
+  .train-toc,
+  #wipe {
+    display: none !important;
+  }
+}
 
 /* Poster typography: every title and subheader carries the transit signage
    face (Helvetica), matching the map labels and Legend panel. */

@@ -224,7 +224,7 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
     /* Warm cream card with ink text and a hairline in the section's red — matches
        the light theme (the original's light-theme tooltip), not a stark black box. */
     background: #fbf7ee;
-    color: #1a1a1a;
+    color: var(--ink);
     border: 1px solid rgba(209, 61, 89, 0.22);
     font-size: 0.85rem;
     font-weight: 500;
@@ -260,7 +260,7 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
     border: 1px solid rgba(26, 26, 26, 0.14);
     border-radius: 5px;
     background: rgba(251, 247, 238, 0.92);
-    color: #6f6a60;
+    color: var(--muted-2);
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
     font-size: 0.72rem;
     font-weight: 600;
@@ -304,13 +304,13 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
     /* Widget/visual accent = the projects line red (not amber — amber is reserved
        for the map's stop-lighting; the article's plots, meters and highlighted
        values read in the section's own colour). */
-    --w-accent: #d13d59;
+    --w-accent: var(--line-projects);
     --w-accent-glow: rgba(209,61,89,0.4);
     /* Widget cards read as the page's cream paper, not stark white. */
     --w-card: #e8e4db;
     --w-border: rgba(0,0,0,0.12);
-    --w-ink: #1a1a1a;
-    --w-muted: #6f6a60;
+    --w-ink: var(--ink);
+    --w-muted: var(--muted-2);
   }
 
   /* Image lightbox */
@@ -392,8 +392,8 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
     background: transparent; color: var(--line-projects); cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
     font-size: 1rem; font-weight: 700; transition: background 180ms ease, color 180ms ease, box-shadow 180ms ease; flex-shrink: 0;
   }
-  .bqst-audio-play:hover { background: var(--w-accent); color: #1a1a1a; box-shadow: 0 0 22px var(--w-accent-glow); }
-  .bqst-audio-play.playing { background: var(--w-accent); color: #1a1a1a; box-shadow: 0 0 24px var(--w-accent-glow); }
+  .bqst-audio-play:hover { background: var(--w-accent); color: var(--ink); box-shadow: 0 0 22px var(--w-accent-glow); }
+  .bqst-audio-play.playing { background: var(--w-accent); color: var(--ink); box-shadow: 0 0 24px var(--w-accent-glow); }
   .bqst-audio-toggle {
     display: inline-grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: min(100%, 280px);
     padding: 0.2rem; border: 1px solid var(--w-border); border-radius: 999px; background: rgba(0,0,0,0.03);
@@ -402,7 +402,7 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
     min-height: 34px; border: 0; border-radius: 999px; background: transparent; color: var(--w-muted);
     font-weight: 700; font-size: 0.92rem; cursor: pointer; transition: background 160ms ease, color 160ms ease, box-shadow 160ms ease;
   }
-  .bqst-audio-toggle button.is-active { background: var(--w-accent); color: #1a1a1a; box-shadow: 0 0 18px var(--w-accent-glow); }
+  .bqst-audio-toggle button.is-active { background: var(--w-accent); color: var(--ink); box-shadow: 0 0 18px var(--w-accent-glow); }
   .bqst-audio-wave {
     position: relative; height: 68px; border: 1px solid var(--w-border); border-radius: 8px; overflow: hidden;
     background: linear-gradient(180deg, rgba(209,61,89,0.06), rgba(209,61,89,0.02));
