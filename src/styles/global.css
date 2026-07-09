@@ -4,7 +4,7 @@
   --line-about: #815e49;
   --bg: #f4f1ea;
   --ink: #1a1a1a;
-  --muted: #8a8578;
+  --muted: #6e6a5e; /* darkened from #8a8578 to clear WCAG AA (4.5:1) on the #f4f1ea paper */
   --board: #1e1e1e;
   --max: 1100px;
   --radius: 10px;
@@ -32,6 +32,16 @@ img { max-width: 100%; display: block; }
 .sr-only {
   position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
   overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+/* The Layout skip link is an .sr-only anchor — it must become visible when
+   keyboard-focused or it's unusable. Pinned top-left above the top bar and the
+   #wipe overlay, as an inverted ink chip on the site's cream palette. */
+.sr-only:focus-visible {
+  position: fixed; top: 0.75rem; left: 0.75rem; z-index: 10000;
+  width: auto; height: auto; margin: 0; padding: 0.55rem 0.95rem;
+  overflow: visible; clip: auto; white-space: normal;
+  background: var(--ink); color: var(--bg);
+  border-radius: 8px; font-weight: 700; text-decoration: none;
 }
 
 /* Full-width station-sign header shared by inner pages */
@@ -75,7 +85,9 @@ img { max-width: 100%; display: block; }
    `--streak-w` is the trail length; the crisp leading line sits at its right. */
 :root { --streak-w: 7px; }
 #wipe {
-  position: fixed; top: 0; left: 0; height: 100vh; width: var(--streak-w);
+  position: fixed; top: 0; left: 0; width: var(--streak-w);
+  height: 100vh; /* fallback for browsers without dvh */
+  height: 100dvh; /* tracks the real viewport as mobile URL bars expand/collapse */
   z-index: 9999; pointer-events: none;
   transform: translateX(calc(-1 * var(--streak-w)));
   color: #1e1e1e; /* JS sets this to the destination hex */
@@ -115,7 +127,22 @@ img { max-width: 100%; display: block; }
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  *, *::before, *::after { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+  /* Also force a single iteration + zero delay: an `infinite` animation cut to
+     0.001ms would otherwise loop ~10^6 times/sec and storm animationiteration
+     events; a long delay would leave elements stuck in their pre-anim state. */
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    transition-delay: 0ms !important;
+  }
+}
+/* The `*` selector above can't match ::view-transition-* pseudos; wipe.ts already
+   gates arming on the preference, but this keeps the CSS self-contained. */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(streak),
+  ::view-transition-old(root),
+  ::view-transition-new(root) { animation: none !important; }
 }
 
 /* Homepage Destinations rail — pinned globally so client-side navigation

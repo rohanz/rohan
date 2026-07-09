@@ -56,6 +56,11 @@ const tech = [
   </header>
 
   <main id="main" class="map-stage">
+    <!-- Page h1 for the map views (visually hidden — the map poster carries no
+         visible page title). The card h3s below are left as-is deliberately:
+         re-leveling them risks styling churn, and the h1→h3 skip is an
+         accepted minor nit. -->
+    <h1 class="sr-only">rohan.jk — interactive transit map</h1>
     <div class="map-wrap"><TransitMap /></div>
     <StationBoard />
 
@@ -89,7 +94,7 @@ const tech = [
             </div>
             <!-- Order matches the original's waveform-player: play button,
                  then waveform, then meters (see main.js displayMusic). -->
-            <button type="button" class="row-play" data-play aria-label="Play snippet" aria-pressed="false">
+            <button type="button" class="row-play" data-play aria-label={`Play snippet of ${t.title}`} aria-pressed="false">
               <svg class="row-play-icon icon-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5.5v13l11-6.5z" /></svg>
               <svg class="row-play-icon icon-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 5h4v14h-4zM13.5 5h4v14h-4z" /></svg>
             </button>
@@ -97,7 +102,7 @@ const tech = [
               <canvas class="row-wave" height="56" aria-hidden="true"></canvas>
               <span class="meter-label">wave</span>
             </div>
-            <div class="row-meters">
+            <div class="row-meters" aria-hidden="true">
               <div class="meter-group meter-group-freq">
                 <canvas class="row-freq" width="282" height="110"></canvas>
                 <span class="meter-label">freq</span>
@@ -238,6 +243,9 @@ const tech = [
   .map-stage {
     position: relative;
     height: calc(100vh - 74px);
+    /* Progressive enhancement: dvh tracks the dynamic URL-bar viewport on
+       tablet-band Safari; browsers without dvh keep the vh line above. */
+    height: calc(100dvh - 74px);
     padding: 0;
   }
   .map-wrap {

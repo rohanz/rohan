@@ -9,7 +9,7 @@ const dests = NAV_LINES.map((l) => ({
 }));
 ---
 <nav id="station-board" class="station-board" aria-label="Destinations">
-  <p class="board-title"><span class="board-icon" aria-hidden="true">i</span> Destinations</p>
+  <h2 class="board-title"><span class="board-icon" aria-hidden="true">i</span> Destinations</h2>
   <div class="board-body">
     <ul>
       <li>
@@ -173,7 +173,6 @@ const dests = NAV_LINES.map((l) => ({
     transition: color 0.18s ease, transform 0.18s ease;
   }
   .social-link:hover, .social-link:focus-visible { color: #131313; transform: translateY(-2px); }
-  .social-link:focus-visible { outline: none; }
   .social-link svg { display: block; width: 25px; height: 25px; fill: currentColor; }
   @media (max-width: 1024px) {
     .board-social { padding: 0.9rem 1rem; }
