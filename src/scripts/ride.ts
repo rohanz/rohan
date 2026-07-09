@@ -15,17 +15,65 @@ import { HOME, VIEWBOX, lineById, type LineId, type Line, type Point } from '../
 import { filletPoints } from '../lib/fillet';
 import { stopMusicPlayback, primeMusicSizing } from './music-player';
 
-// TEMPORARY diagnostic logging for the platform→platform "empty cards" report.
-// Flip RIDE_DEBUG to false (or delete these) once we've caught the sequence.
-// In the browser console you can also toggle it live: `localStorage.rideDebug='0'`.
-const RIDE_DEBUG =
-  typeof localStorage === 'undefined' ? true : localStorage.getItem('rideDebug') !== '0';
-let dbgN = 0;
-const dbg = (...a: unknown[]) => {
-  if (RIDE_DEBUG) console.log(`[ride ${(++dbgN).toString().padStart(3, '0')}]`, ...a);
-};
-
 const MAP_SCALE = 2.8; // zoom while riding
+// UNIFORM "SAME TRAIN" RIDES — a trapezoidal speed profile shared by every trip
+// (home↔page, page↔page, both directions). The camera eases from rest up to a
+// fixed TOP speed over a fixed RAMP time, CRUISES at that top speed for however
+// long the distance needs, then eases back to rest over the same RAMP time. So
+// the ramp-up, the top speed, and the ramp-down are IDENTICAL for all trips — only
+// the flat middle stretches for longer ones. (Before: fixed-duration rides made
+// speed scale with distance; then a constant-speed pass made top speed uniform but
+// left the ramps distance-dependent because power2.inOut peaks at the midpoint.)
+// RIDE_VTOP is world units/sec; RIDE_RAMP seconds. The ramp is deliberately LONG
+// (0.8s) so the ease-in/out is gradual and clearly visible — a short ramp packs
+// its acceleration into a brief "kick" that reads as an abrupt start/stop. Trade-
+// off: a long ramp covers a lot of ground — the two ramps together span
+// RIDE_VTOP·RIDE_RAMP·(ACCEL_AREA+DECEL_AREA) ≈ 1067 units — which is more than the
+// shortest hops (Home↔Music 752, Home↔About 837). Those degrade to a TRIANGULAR
+// profile — same 0.8s ramp time, but they peak below RIDE_VTOP because there's no
+// room to reach it (see trapezoid, which caps vp at dist/rampSpan). Every longer
+// trip reaches the full top speed.
+const RIDE_VTOP = 1600;
+const RIDE_RAMP = 0.8;
+// The two ramps use DIFFERENT velocity curves, on purpose:
+//  • ACCEL — SMOOTHERSTEP velocity S(x)=6x⁵−15x⁴+10x³ (zero 1st AND 2nd derivative
+//    at both ends → a soft, imperceptible launch off the platform). accelG is its
+//    antiderivative x⁶−3x⁵+2.5x⁴; ∫₀¹ = ½ (ACCEL_AREA).
+//  • DECEL — velocity (1−y)²: brakes HARD the instant it leaves cruise (a big,
+//    obvious drop in speed — you clearly SEE it braking), then eases to a soft
+//    stop. Deliberately far more pronounced than the launch. decelG is its
+//    antiderivative (1−(1−y)³)/3; ∫₀¹ = ⅓ (DECEL_AREA).
+// The ramps cover different distances (½·V·RAMP vs ⅓·V·RAMP), so the trapezoid
+// accounts for each area separately.
+const ACCEL_AREA = 0.5;
+const DECEL_AREA = 1 / 3;
+const accelG = (x: number): number => x ** 6 - 3 * x ** 5 + 2.5 * x ** 4;
+const decelG = (y: number): number => (1 - (1 - y) ** 3) / 3;
+// Build the trapezoidal cruise for a path of `dist` world units: returns the
+// timeline duration and a position(normalized-time) ease. A `dist` shorter than
+// the two ramps' combined span degrades gracefully to a triangular profile (ramps
+// meet, lower peak, no cruise) — but every real ride's path clears it, so all
+// reach RIDE_VTOP.
+const trapezoid = (dist: number): { duration: number; ease: (u: number) => number } => {
+  // Degenerate/zero-length path: no travel. Guard against the 0/0 (vp=0 → tc=NaN)
+  // that would poison the tween. Not reachable by real ride paths, but cheap safety.
+  if (dist <= 0) return { duration: 0.01, ease: () => 1 };
+  const rampSpan = RIDE_RAMP * (ACCEL_AREA + DECEL_AREA); // both ramps' distance per unit V
+  const vp = dist >= RIDE_VTOP * rampSpan ? RIDE_VTOP : dist / rampSpan;
+  const aUp = vp * RIDE_RAMP * ACCEL_AREA; // distance the accel ramp covers
+  const aDown = vp * RIDE_RAMP * DECEL_AREA; // distance the (shorter) brake covers
+  const cd = Math.max(0, dist - aUp - aDown); // constant-speed distance
+  const tc = cd / vp; // cruise time
+  const T = 2 * RIDE_RAMP + tc;
+  const ease = (u: number): number => {
+    const t = u * T;
+    if (t <= RIDE_RAMP) return (vp * RIDE_RAMP * accelG(t / RIDE_RAMP)) / dist; // soft launch
+    if (t <= RIDE_RAMP + tc) return (aUp + vp * (t - RIDE_RAMP)) / dist; // cruise
+    const y = (t - RIDE_RAMP - tc) / RIDE_RAMP; // 0 → 1 across the brake
+    return (aUp + cd + vp * RIDE_RAMP * decelG(y)) / dist; // hard, visible brake
+  };
+  return { duration: T, ease };
+};
 // Van Wijk & Nuij (2003) curvature constant for the combined zoom+pan swoop.
 // Larger => a bigger zoom-out arc between the two poses; smaller => a flatter,
 // more direct blend. 1.4 gives a natural single gesture while keeping the music
@@ -48,6 +96,9 @@ const REVEAL_SETTLE = 0.9;
 const AMBER = '#f9c25e';
 const CX = VIEWBOX.w / 2;
 const CY = VIEWBOX.h / 2;
+// Fallback for the "← Back" paging button's width when it's hidden (so backWidth()
+// need not measure it, avoiding a reflow) — tuned to its real rendered ~95px.
+const BACK_BTN_FALLBACK_W = 95;
 
 // Music-row visuals, laid out onto the map grid. Music stops sit at world x=600
 // on the 50-unit (one-square) grid; each visual is CENTRED on the grid column at
@@ -88,14 +139,23 @@ function pathSampler(pts: Point[]) {
     cum.push(cum[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
   }
   const total = cum[cum.length - 1];
+  // Only `total` and `at()` are consumed by the ride engine; `cum`/`pts` stay
+  // internal to the closure (they used to be returned, but nothing read them).
   return {
     total,
-    cum,
-    pts,
     at(p: number): { at: Point; dir: Point } {
       const d = Math.min(Math.max(p, 0), 1) * total;
-      let i = 1;
-      while (i < cum.length - 1 && cum[i] < d) i++;
+      // Binary search the sorted cumulative-length array for the segment holding d,
+      // instead of a linear rescan from the start on every frame. Find the smallest
+      // i with cum[i] >= d, clamped to a real segment [1, len-1].
+      let lo = 1;
+      let hi = cum.length - 1;
+      while (lo < hi) {
+        const mid = (lo + hi) >> 1;
+        if (cum[mid] < d) lo = mid + 1;
+        else hi = mid;
+      }
+      const i = lo;
       const segLen = cum[i] - cum[i - 1] || 1;
       const t = (d - cum[i - 1]) / segLen;
       const [x1, y1] = pts[i - 1];
@@ -132,9 +192,17 @@ class MapView {
   view: ViewId = 'map';
   page = 0;
   _busy = false;
-  /** The in-flight ride timeline, tracked so dispose() can kill it when the page
-   *  is navigated away (otherwise its deferred callbacks corrupt the next page). */
-  active: gsap.core.Timeline | null = null;
+  /** The in-flight ride animation (timeline OR bare tween — page-turn / filter
+   *  pans register here too), tracked so dispose()/finishRide() can kill it and
+   *  the stall watchdog can sample its playhead. Typed as the shared Animation
+   *  base so both kinds fit; .kill()/.time()/.then() all live there. */
+  active: gsap.core.Animation | null = null;
+  /** Set when the viewport changes (resize / late font or photo reflow) while a
+   *  ride is in flight. A ride captures its park pose at START, so without this
+   *  flag a mid-ride resize would land the camera against the OLD viewport
+   *  geometry. The busy setter's settled edge re-derives the pose and re-places
+   *  the entries when it sees the flag. */
+  poseDirty = false;
   /** True only while a projects page-turn pan is animating. placeProjectPaging
    *  skips re-positioning the paging buttons during this window so they stay put
    *  (faded out) instead of drifting across with the camera. */
@@ -158,6 +226,25 @@ class MapView {
     if (starting) this._startWatchdog();
     if (settled) {
       this._stopWatchdog();
+      // A resize (or late font/photo reflow) landed mid-ride: the ride parked the
+      // camera against the OLD viewport geometry. Re-derive the park pose against
+      // the new metrics now that the camera is at rest, clamping the page first —
+      // widening the window can shrink pagesFor (About fits more stop-pairs per
+      // page), and a stale page would slice an empty stop set.
+      if (this.poseDirty) {
+        this.poseDirty = false;
+        if (this.view !== 'map') {
+          this.page = Math.max(0, Math.min(this.page, this.pagesFor(this.view) - 1));
+          Object.assign(this.state, this.parkPose(lineById(this.view), this.page));
+          this.apply();
+          this.placeCards();
+        }
+      }
+      // Announce the settled view (tab title + screen-reader live region). The
+      // settled edge is the single choke point EVERY transition passes through —
+      // rides, direct/reduced-motion entries, skips — so no per-path calls needed;
+      // announceView itself no-ops when the view hasn't actually changed.
+      announceView(this.view);
       this.onSettle?.();
     }
   }
@@ -167,11 +254,11 @@ class MapView {
   // freeze mid-flight: the playhead stops, the reveal hangs, cards never fade in,
   // and `busy` stays true (blocking all further navigation). This TIMER (not rAF)
   // keeps sampling the playhead; if it hasn't advanced for ~0.2s it force-finishes
-  // the ride via progress(1) — the same jump-to-end the click-to-skip affordance
-  // uses — firing the remaining beats (cardsIn, onComplete → busy=false) so the
-  // platform always lands populated. It can't false-fire during healthy playback:
-  // a running timeline's time advances every frame, including through its
-  // deliberate pause beats (empty time, not a stopped playhead).
+  // the ride via finishRide() — the same deterministic kill-and-snap the click-to-
+  // skip affordance uses — landing the populated platform and clearing `busy`. It
+  // can't false-fire during healthy playback: a running timeline's time advances
+  // every frame, including through its deliberate pause beats (empty time, not a
+  // stopped playhead).
   private _watchdog: ReturnType<typeof setInterval> | null = null;
   private _startWatchdog() {
     this._stopWatchdog();
@@ -190,9 +277,13 @@ class MapView {
         last = t;
       }
       if (frozen >= 2) {
-        dbg(`⚠ WATCHDOG: ride timeline FROZE at t=${t.toFixed(2)} — force-finishing`);
-        this._stopWatchdog();
-        tl.progress(1);
+        // Recover through the SAME deterministic path as a click-skip: finishRide()
+        // kills the frozen timeline + transient tweens and snaps to the canonical
+        // rest state. NOT tl.progress(1) — seeking fires the reveal inside gsap's
+        // synchronous render and leaves it unable to tick, the very blank-platform
+        // failure finishRide was written to avoid (so the safety net can't itself
+        // strand the user on an empty platform).
+        this.finishRide();
       }
     }, 100);
   }
@@ -207,7 +298,6 @@ class MapView {
    *  the current page maps to card `order[page * perPage + j]`. Other
    *  views keep the identity order (no filtering UI). */
   order: number[] = [];
-  filter = 'all';
 
   apply = () => {
     const tx = CX - this.state.s * this.state.x;
@@ -223,15 +313,49 @@ class MapView {
       );
       el.setAttribute('opacity', String(this.echo.k * (i === 0 ? 0.3 : 0.16)));
     });
-    if (this.view !== 'map') this.placeCards();
+    // Re-place the platform entries only while they're actually VISIBLE (the reveal
+    // pan and parked, when they must track the camera). Through the whole cruise the
+    // platform-ui is hidden, so re-laying it out every frame — for music, ~24
+    // querySelectors + canvas-cluster packing per frame — is wasted work that eats
+    // the frame budget and causes the mid-ride stutter. Skipping it when hidden is
+    // free: showUI() does a placeCards() the moment it un-hides.
+    if (this.view !== 'map' && !this.ui?.hidden) this.placeCards();
   };
 
   /** Rendered width of the docked left rail (0 if absent). The rail is a
    *  fixed-width flush-left dock, so its width is the single constant that
    *  every "clear the rail" calculation below anchors to — no more clamp
-   *  guesswork duplicated between CSS and JS. */
+   *  guesswork duplicated between CSS and JS. MEMOIZED: it's read from inside
+   *  placeCards()'s per-frame path (placeProjectPaging) during a projects reveal,
+   *  and a getBoundingClientRect() there — after the frame's style writes — forces
+   *  a synchronous layout reflow every frame. The rail width only changes on
+   *  resize, so cache it alongside _metrics (cleared by clearMetrics()). */
+  _railW: number | null = null;
   railWidth(): number {
-    return this.board ? this.board.getBoundingClientRect().width : 0;
+    if (this._railW !== null) return this._railW;
+    const w = this.board ? this.board.getBoundingClientRect().width : 0;
+    // Only cache a real width; a 0 (rail not yet laid out) is not memoized, so the
+    // next call re-measures rather than sticking at 0 until clearMetrics().
+    return w > 0 ? (this._railW = w) : 0;
+  }
+  /** Rendered width of the "← Back" paging button, memoized for the same reason as
+   *  railWidth() (read per-frame in placeProjectPaging). Returns the fixed CSS
+   *  fallback WITHOUT measuring when the button is hidden (page 0 — which is where
+   *  every arrival reveal sits), so the reveal never triggers a reflow to read it. */
+  _backW: number | null = null;
+  backWidth(): number {
+    if (this._backW !== null) return this._backW;
+    const back = document.getElementById('more-prev');
+    if (!back || back.hidden) return BACK_BTN_FALLBACK_W; // hidden → fallback, no reflow
+    const w = back.getBoundingClientRect().width;
+    return w > 0 ? (this._backW = w) : BACK_BTN_FALLBACK_W;
+  }
+  /** Drop every viewport-derived memo so the next read re-measures. Called on
+   *  resize and after late reflows (fonts, bio photo). */
+  clearMetrics() {
+    this._metrics = null;
+    this._railW = null;
+    this._backW = null;
   }
 
   metrics() {
@@ -339,7 +463,8 @@ class MapView {
     end: { x: number; y: number; s: number },
     at: number,
     dur: number,
-    ease: string = 'power1.inOut',
+    // Accepts a function ease too — the music reveals pass REVEAL_EASE directly.
+    ease: string | gsap.EaseFunction = 'power1.inOut',
   ) {
     const proxy = { t: 0 };
     // World-space width the viewport spans at scale 1 — keeps w commensurate with
@@ -507,8 +632,43 @@ class MapView {
     });
   }
 
+  // Per-view DOM lookups memoized for the lifetime of this MapView. The platform
+  // entries are server-rendered once and never added/removed at runtime (paging
+  // only toggles `display`), so these NodeLists are invariant — and a page swap
+  // builds a fresh MapView with empty caches, so nothing goes stale across
+  // navigations. Memoizing keeps placeCards()'s per-frame reveal path from
+  // re-running querySelectorAll (+ Array.from allocation) every frame.
+  private _cardCache = new Map<string, HTMLElement[]>();
+  private _dividerCache = new Map<string, HTMLElement[]>();
+  private _thumbCache = new WeakMap<HTMLElement, HTMLElement | null>();
+
   cardsFor(id: LineId): HTMLElement[] {
-    return Array.from(document.querySelectorAll<HTMLElement>(`#platform-ui [data-card="${id}"]`));
+    let cached = this._cardCache.get(id);
+    if (!cached || !cached.length) {
+      cached = Array.from(document.querySelectorAll<HTMLElement>(`#platform-ui [data-card="${id}"]`));
+      if (cached.length) this._cardCache.set(id, cached); // don't cache an empty (too-early) read
+    }
+    return cached;
+  }
+
+  /** Memoized [data-divider] elements for a view (see _cardCache rationale). */
+  dividersFor(id: ViewId): HTMLElement[] {
+    let cached = this._dividerCache.get(id);
+    if (!cached) {
+      cached = Array.from(document.querySelectorAll<HTMLElement>(`#platform-ui [data-divider="${id}"]`));
+      this._dividerCache.set(id, cached);
+    }
+    return cached;
+  }
+
+  /** Memoized `.thumb` child of a project card (queried per-frame during reveal). */
+  thumbFor(card: HTMLElement): HTMLElement | null {
+    let t = this._thumbCache.get(card);
+    if (t === undefined) {
+      t = card.querySelector<HTMLElement>('.thumb');
+      this._thumbCache.set(card, t);
+    }
+    return t;
   }
 
   /** Display order for a view: for 'projects' this is the (possibly
@@ -653,7 +813,7 @@ class MapView {
       card.style.display = '';
       if (cardWidth !== null) {
         card.style.width = `${cardWidth}px`;
-        const thumb = card.querySelector<HTMLElement>('.thumb');
+        const thumb = this.thumbFor(card);
         if (thumb) thumb.style.height = `${cardWidth * 0.56}px`;
       }
       if (p.axis === 'd' && about) {
@@ -717,7 +877,6 @@ class MapView {
    *  mobile layout (buttons in the bottom corners) is left to CSS. */
   placeProjectPaging(p: NonNullable<Line['platform']>, cardWidth: number, order: number[], from: number, per: number) {
     const more = document.getElementById('more-next');
-    const back = document.getElementById('more-prev');
     if (!more) return;
     if (window.innerWidth <= 768 || this.pagingPan) {
       // Mobile layout is CSS-driven; and while a page-turn pan is running the
@@ -737,7 +896,7 @@ class MapView {
     // edge stands in front of the first card (Back is pinned at railWidth+20, so
     // its width matters — using its left edge overshoots on wide screens), then
     // give "More →" that same gap past the last card so the two read symmetric.
-    const backW = back && back.getBoundingClientRect().width > 0 ? back.getBoundingClientRect().width : 95;
+    const backW = this.backWidth();
     const firstCardLeft = this.worldToScreen(firstStop)[0] - cardWidth / 2;
     const gap = Math.max(16, firstCardLeft - (this.railWidth() + 20 + backW));
     const rightEdge = this.worldToScreen(lastStop)[0] + cardWidth / 2;
@@ -812,9 +971,7 @@ class MapView {
    *  first and below the last). The stops sit on 100-unit centers, so the
    *  midpoints land on the map's 50-unit grid lines. */
   placeDividers(line: Line) {
-    const dividers = Array.from(
-      document.querySelectorAll<HTMLElement>(`#platform-ui [data-divider="${this.view}"]`),
-    );
+    const dividers = this.dividersFor(this.view);
     if (!dividers.length) return;
     const p = line.platform!;
     const per = this.perPageFor(this.view);
@@ -899,7 +1056,6 @@ class MapView {
 
   showUI(id: LineId) {
     if (!this.ui) return;
-    dbg('showUI', id, '(un-hide + place + size)');
     const line = lineById(id);
     this.ui.hidden = false;
     this.ui.setAttribute('data-axis', line.platform!.axis);
@@ -912,7 +1068,6 @@ class MapView {
     // Reset the projects filter whenever the view is (re)entered.
     const filterBar = this.ui.querySelector<HTMLElement>('#filter-bar');
     if (id === 'projects') {
-      this.filter = 'all';
       this.order = this.cardsFor('projects').map((_, i) => i);
       filterBar?.querySelectorAll<HTMLButtonElement>('.filter-tag').forEach((btn) => {
         const active = btn.dataset.filter === 'all';
@@ -949,9 +1104,7 @@ class MapView {
     // scheduled separately (cardsIn) to begin AFTER the reveal has settled, so
     // the platform lands first and the entries then populate one by one.
     const hideCards = this.cardsFor(id).filter((c) => c.style.display !== 'none');
-    const hideDivs = Array.from(
-      document.querySelectorAll<HTMLElement>(`#platform-ui [data-divider="${id}"]`),
-    );
+    const hideDivs = this.dividersFor(id);
     gsap.set([...hideCards, ...hideDivs, ...(id === 'projects' && filterBar ? [filterBar] : [])], {
       autoAlpha: 0,
     });
@@ -985,14 +1138,7 @@ class MapView {
             );
     }
     const onPage = this.cardsFor(id).filter((c) => c.style.display !== 'none');
-    dbg(
-      'cardsIn',
-      id,
-      `${instant ? 'INSTANT' : 'staggered'} — ${onPage.length} cards (total ${this.cardsFor(id).length}, perPage ${this.perPageFor(id)})`,
-    );
-    const dividers = Array.from(
-      document.querySelectorAll<HTMLElement>(`#platform-ui [data-divider="${id}"]`),
-    ).filter((d) => d.style.display !== 'none');
+    const dividers = this.dividersFor(id).filter((d) => d.style.display !== 'none');
     if (instant)
       gsap.set(dividers, { autoAlpha: 1 });
     else
@@ -1026,13 +1172,14 @@ class MapView {
             .map((o) => o.card)
         : onPage;
     // Paging buttons: fade in TOGETHER with the last card (so the entrance reads
-    // as one continuous beat), but hold them un-clickable (pointer-events:none)
-    // until the whole stagger has finished — a click mid-animation would kick off
-    // another page-turn over the still-settling one and glitch. Only the buttons
-    // updateMoreButtons left visible on this page are touched.
+    // as one continuous beat), but hold them DISABLED until the whole stagger has
+    // finished — a click mid-animation would kick off another page-turn over the
+    // still-settling one and glitch. `disabled` (not pointer-events:none) so
+    // keyboard activation is blocked too — pointer-events only stops the mouse.
+    // Only the buttons updateMoreButtons left visible on this page are touched.
     const btns = ['#more-next', '#more-prev']
-      .map((s) => document.querySelector<HTMLElement>(s))
-      .filter((b): b is HTMLElement => !!b && !b.hidden);
+      .map((s) => document.querySelector<HTMLButtonElement>(s))
+      .filter((b): b is HTMLButtonElement => !!b && !b.hidden);
     if (instant) {
       // Skip: snap everything visible at once. Kill any pending (possibly stuck)
       // fade tweens first — an in-render cardsIn may have set the cards to
@@ -1041,10 +1188,10 @@ class MapView {
       gsap.set(staggerCards, { autoAlpha: 1, x: 0, y: 0 });
       gsap.set(dividers, { autoAlpha: 1 });
       gsap.set(btns, { autoAlpha: 1 });
-      btns.forEach((b) => (b.style.pointerEvents = ''));
+      btns.forEach((b) => (b.disabled = false));
       return;
     }
-    btns.forEach((b) => (b.style.pointerEvents = 'none'));
+    btns.forEach((b) => (b.disabled = true));
     const lastCardDelay = Math.max(0, (staggerCards.length - 1) * 0.15);
     gsap.to(btns, {
       autoAlpha: 1,
@@ -1066,7 +1213,7 @@ class MapView {
         stagger: 0.15,
         ease: 'power2.out',
         overwrite: 'auto',
-        onComplete: () => btns.forEach((b) => (b.style.pointerEvents = '')),
+        onComplete: () => btns.forEach((b) => (b.disabled = false)),
       },
     );
   }
@@ -1074,6 +1221,10 @@ class MapView {
   hideUI(fast = false) {
     if (!this.ui) return;
     const ui = this.ui;
+    // Standalone fade (not owned by the ride timeline). On a normal transition it
+    // runs to completion and hides the outgoing platform. On an INTERRUPT the
+    // engine calls killTransientTweens() before it can complete, so this onComplete
+    // never fires against the settled view — applyRestState() owns ui.hidden then.
     gsap.to(['#platform-ui [data-card]', '#platform-ui [data-divider]', '#more-next', '#more-prev', '#filter-bar'], {
       autoAlpha: 0,
       duration: fast ? 0.15 : 0.3,
@@ -1083,19 +1234,6 @@ class MapView {
         ui.hidden = true;
       },
     });
-  }
-
-  /** Flash a stop amber as the camera passes it. The pulse is deliberately SHORT
-   *  and sharp — a quick rise, no hold, a quick fall — so that even where stops
-   *  pass close together (the decelerating approach to a platform), each flash
-   *  has nearly decayed before the next begins: the stops read as a running
-   *  sequence of single flashes, not a lit-up cluster. `keep` holds the amber
-   *  (used for the Home tick while the camera pauses on it). */
-  light(el: Element | null, keep = false) {
-    if (!el) return;
-    const t2 = gsap.timeline();
-    t2.to(el, { attr: { fill: AMBER }, duration: 0.09, ease: 'power2.out' });
-    if (!keep) t2.to(el, { attr: { fill: '#ffffff' }, duration: 0.13, ease: 'power2.in' });
   }
 
   /** The single consistent amber pulse — fade in, fade out — used ONLY for a
@@ -1138,7 +1276,6 @@ class MapView {
 
   toPlatform(id: LineId, animate = true) {
     if (this.busy || this.view !== 'map') return;
-    dbg(`toPlatform(${id}, animate=${animate}) START`);
     const line = lineById(id);
     this.busy = true;
     this.view = id;
@@ -1197,8 +1334,11 @@ class MapView {
       this.apply();
       this.showUI(id);
       // No ride to wait for on a direct/reduced-motion entry — populate the
-      // entries immediately (showUI leaves them hidden).
-      this.cardsIn(id);
+      // entries immediately (showUI leaves them hidden). Reduced motion snaps
+      // them (instant=true); a plain direct page load KEEPS the staggered
+      // entrance — that one-by-one populate is part of the arrival design and
+      // only motion-sensitive users asked for it gone.
+      this.cardsIn(id, prefersReducedMotion());
       this.busy = false;
       return;
     }
@@ -1239,7 +1379,6 @@ class MapView {
     const tl = gsap.timeline({
       defaults: { overwrite: 'auto' },
       onComplete: () => {
-        dbg(`toPlatform(${id}) onComplete`);
         this.echo.k = 0;
         this.apply();
         // MUSIC ONLY: reveal the entries here, once the camera has fully SETTLED.
@@ -1276,16 +1415,22 @@ class MapView {
     // pulse; only the endpoints (Home at departure, the destination roundel on
     // arrival) flash. The ride ends at the platform's LAST TICK; the zoom-out that
     // follows settles to the park pose.
-    tl.to(prog, { p: 1, duration: 2.2, ease: 'power2.inOut', onUpdate: moveSample }, 1.0);
+    // Trapezoidal cruise (see trapezoid / RIDE_VTOP / RIDE_RAMP): soft-launch →
+    // top speed → hard-brake, duration derived from path length. Starts at 1.0
+    // (after the 0.6 zoom-in + 0.4 Home pause); the reveal picks up the instant it
+    // ends, so every downstream beat is anchored to RIDE_AT + cruise.
+    const RIDE_AT = 1.0;
+    const { duration: cruise, ease: cruiseEase } = trapezoid(sampler.total);
+    const rideEnd = RIDE_AT + cruise;
+    tl.to(prog, { p: 1, duration: cruise, ease: cruiseEase, onUpdate: moveSample }, RIDE_AT);
     // Fade every other line out so the platform is revealed as the camera arrives.
-    tl.call(() => this.setFades(line, 0, 0.7), undefined, 2.7);
-    // Clear the echo/motion-blur exactly as the ride reaches the last tick (3.2s),
-    // which is where the reveal picks up — no held pause between them (the ride
-    // decelerates to ~0 velocity into the tick and the reveal soft-launches from
-    // ~0, so the handoff stays smooth).
-    tl.call(() => { this.echo.k = 0; this.apply(); }, undefined, 3.2);
+    tl.call(() => this.setFades(line, 0, 0.7), undefined, rideEnd - 0.5);
+    // Clear the echo/motion-blur exactly as the ride reaches the last tick, which is
+    // where the reveal picks up — no held pause between them (the ride decelerates to
+    // ~0 velocity into the tick and the reveal soft-launches from ~0).
+    tl.call(() => { this.echo.k = 0; this.apply(); }, undefined, rideEnd);
     // The destination roundel pulses amber as the camera arrives at the line end.
-    tl.call(() => this.pulseStop(destRoundel), undefined, 3.2);
+    tl.call(() => this.pulseStop(destRoundel), undefined, rideEnd);
     // BEAT 4 — REVEAL from the last tick (ride scale) to the parked pose over
     // REVEAL_DUR with REVEAL_EASE (the finalized "About feel": monotonic scale,
     // soft launch → long decelerating tail into rest). about/projects use the
@@ -1296,7 +1441,7 @@ class MapView {
     // time-mirror of its clean go-home zoom-in (which is symmetric + monotonic),
     // so pan and zoom move together as ONE arc with no overshoot and the stops
     // stay clear. Same REVEAL_EASE / REVEAL_DUR feel.
-    const REVEAL_AT = 3.2;
+    const REVEAL_AT = rideEnd;
     if (id === 'music') this.vanWijkTo(tl, park, REVEAL_AT, REVEAL_DUR, REVEAL_EASE);
     else this.revealTo(tl, park, REVEAL_AT);
     if (id === 'music') {
@@ -1405,28 +1550,27 @@ class MapView {
     // single smooth arc (no two-step, no stretch). Ends exactly at ridePts[0] @
     // MAP_SCALE so the ride below is unchanged.
     this.vanWijkTo(tl, { x: ridePts[0][0], y: ridePts[0][1], s: MAP_SCALE }, 0, 0.7);
-    // BEAT 2 — RIDE platform → Home, decelerating into the Home stop. The
-    // destination roundel pulses amber as the ride departs from it.
-    tl.call(() => this.pulseStop(destRoundel), undefined, 0.8);
-    tl.to(prog, { p: 0.78, duration: 1.2, ease: 'power2.in', onUpdate: moveSample }, 0.8);
-    // Arrive with a crisp ease-out (power2, 0.7s) rather than a long power3 tail:
-    // power3.out spent its last ~0.3s creeping imperceptibly onto Home, so the
-    // camera visually PARKED ~2.6s while the pulse/zoom-out (pinned to the tween's
-    // technical end at 2.9s) hadn't fired yet — a dead beat on Home. Landing at
-    // 2.6s and firing the arrival beats there removes it.
-    tl.to(prog, { p: 1, duration: 0.7, ease: 'power2.out', onUpdate: moveSample }, 2.0);
-    // BEAT 3 — ARRIVE at Home (2.6s): pulse Home amber and clear the echo the
-    // instant the ride lands — no dwell before the pulse.
-    tl.call(() => { this.echo.k = 0; this.pulseStop(homeDot); this.apply(); }, undefined, 2.6);
+    // BEAT 2 — RIDE platform → Home on the shared trapezoidal cruise (see trapezoid):
+    // soft-launch off the platform, top speed, hard-brake into Home. Same forward
+    // profile as every other ride, so leaving and arriving feel like the same train.
+    // The destination roundel pulses amber as the ride departs from it.
+    const RIDE_AT = 0.8;
+    const { duration: cruise, ease: cruiseEase } = trapezoid(sampler.total);
+    const rideEnd = RIDE_AT + cruise;
+    tl.call(() => this.pulseStop(destRoundel), undefined, RIDE_AT);
+    tl.to(prog, { p: 1, duration: cruise, ease: cruiseEase, onUpdate: moveSample }, RIDE_AT);
+    // BEAT 3 — ARRIVE at Home: pulse Home amber and clear the echo the instant the
+    // ride lands — no dwell before the pulse.
+    tl.call(() => { this.echo.k = 0; this.pulseStop(homeDot); this.apply(); }, undefined, rideEnd);
     // BEAT 4 — ZOOM-OUT to the wide map: a PURE zoom-out, launching the moment the
-    // ride reaches Home (2.6s, no hold). The glide already parked x/y exactly on
-    // Home (mapPose() is the plain HOME-centred pose), so this tween's x/y are
-    // no-ops and only `s` animates 2.8 → 1 — Home holds dead-still and simply grows
-    // to fill the frame, never sliding sideways.
+    // ride reaches Home (no hold). The glide already parked x/y exactly on Home
+    // (mapPose() is the plain HOME-centred pose), so this tween's x/y are no-ops and
+    // only `s` animates 2.8 → 1 — Home holds dead-still and simply grows to fill the
+    // frame, never sliding sideways.
     tl.to(
       this.state,
       { ...this.mapPose(), duration: 0.8, ease: 'power2.inOut', onUpdate: this.apply },
-      2.6,
+      rideEnd,
     );
     // Arrival: reveal the Home LABEL with a soft fade so it glides in as the
     // camera settles, rather than snapping. ride-active is dropped here (so the
@@ -1442,7 +1586,7 @@ class MapView {
           gsap.to(homeLabel, { opacity: 1, duration: 0.45, ease: 'power1.out', overwrite: 'auto' });
         },
         undefined,
-        3.0,
+        rideEnd + 0.4,
       );
     }
 
@@ -1462,30 +1606,35 @@ class MapView {
    *  to line B across the interchange pause. */
   switchPlatform(id: LineId) {
     if (this.busy || this.view === 'map' || this.view === id) return;
-    dbg(`switchPlatform(${this.view} → ${id}) START`);
     const fromLine = lineById(this.view);
     const toLine = lineById(id);
     this.busy = true;
     this.view = id;
     this.page = 0;
     stopMusicPlayback(); // silence the leaving line's preview before riding on
-    this.hideUI(false);
     this.stage.classList.add('ride-active');
     delete this.stage.dataset.hl;
 
     const park = this.parkPose(toLine, 0);
 
     if (prefersReducedMotion()) {
-      // Instant hop straight to the new platform (no journey).
+      // Instant hop straight to the new platform (no journey). NO hideUI here:
+      // its 0.3s fade's onComplete sets ui.hidden = true ~0.3s from now — AFTER
+      // this branch has already revealed the new platform, blanking it (the same
+      // orphaned-fade failure the interrupt path guards against). showUI()'s
+      // [data-content] section swap already hides the old view's entries, and
+      // cardsIn(…, true) snaps the new ones visible with no animation — the right
+      // reduced-motion behavior anyway.
       this.setFades(null, 1, 0.01); // un-fade everything the old view had hidden
       this.setFades(toLine, 0, 0.01); // then hide all but the new line
       Object.assign(this.state, park);
       this.apply();
       this.showUI(id);
-      this.cardsIn(id);
+      this.cardsIn(id, true);
       this.busy = false;
       return;
     }
+    this.hideUI(false); // animated path only — fade the outgoing platform away
 
     // Reverse leg: leaving-line platform → Home, ending EXACTLY at Home.
     const inPts = this.ridePath(fromLine).reverse();
@@ -1495,21 +1644,34 @@ class MapView {
     const inSampler = pathSampler(inPts);
     // Outbound leg: Home → new-line platform. The ride ends at the platform's LAST
     // TICK — no appended parked focal — so the arrival stops dead at the last tick
-    // and BEAT 6 zooms out from there (no backward bounce).
+    // and BEAT 5 zooms out from there (no backward bounce).
     const outPts = this.ridePath(toLine);
     const outSampler = pathSampler(outPts);
+    // ONE continuous path A → Home → B, driven by a SINGLE trapezoid so the whole
+    // express run shares the same ramp-up, top speed, and ramp-down as every other
+    // ride (before: two legs with a distance-proportional split, which held speed
+    // constant WITHIN a trip but re-derived the ramps from each leg's length). The
+    // camera passes STRAIGHT THROUGH Home at top speed; the interchange is just the
+    // fraction of the path where the route crosses Home.
+    const throughPts = [...inPts, ...outPts];
+    const throughSampler = pathSampler(throughPts);
+    // Arc-length fraction of the MERGED path at which the route crosses Home. Must
+    // use throughSampler.total (which includes the tiny inPts-end → outPts-start
+    // join segment), not inSampler+outSampler, so the Home pulse fires exactly as
+    // the camera passes Home rather than a hair after.
+    const junctionFrac = inSampler.total / (throughSampler.total || 1);
 
     const homeDot = document.getElementById('home-dot');
-    const progIn = { p: 0 };
-    const progOut = { p: 0 };
-    let lastAt: Point = inPts[0];
+    const prog = { p: 0 };
+    let lastAt: Point = throughPts[0];
+    let junctionFired = false;
 
-    // Both legs move ONLY the focal point (x/y); scale is untouched here so it
-    // holds at MAP_SCALE across the whole pass-through. Intermediate ticks no
-    // longer pulse — only the three endpoints (A's roundel at departure, Home at
-    // the interchange, B's roundel on arrival) flash amber.
-    const move = (sampler: ReturnType<typeof pathSampler>, prog: { p: number }) => {
-      const { at, dir } = sampler.at(prog.p);
+    // Moves ONLY the focal point (x/y); scale holds at MAP_SCALE across the whole
+    // pass-through. Only the three endpoints pulse (A's roundel at departure, Home
+    // at the interchange, B's roundel on arrival); Home fires as the camera CROSSES
+    // it — when prog passes the junction fraction — not on a fixed clock.
+    const moveSample = () => {
+      const { at, dir } = throughSampler.at(prog.p);
       this.state.x = at[0];
       this.state.y = at[1];
       const speedPx = Math.hypot(at[0] - lastAt[0], at[1] - lastAt[1]) * this.state.s;
@@ -1518,9 +1680,11 @@ class MapView {
       this.echo.k = Math.min(speedPx / 22, 1);
       this.apply();
       lastAt = at;
+      if (!junctionFired && prog.p >= junctionFrac) {
+        junctionFired = true;
+        this.pulseStop(homeDot);
+      }
     };
-    const moveIn = () => move(inSampler, progIn);
-    const moveOut = () => move(outSampler, progOut);
 
     const tl = gsap.timeline({
       // DEPARTURE SEQUENCING: hideUI() above starts a ~0.3s fade-out of platform
@@ -1531,7 +1695,6 @@ class MapView {
       delay: 0.35,
       defaults: { overwrite: 'auto' },
       onComplete: () => {
-        dbg(`switchPlatform(→${id}) onComplete`);
         this.echo.k = 0;
         this.apply();
         // MUSIC ONLY: reveal at settle (canvas-heavy) — see toPlatform's onComplete.
@@ -1566,43 +1729,16 @@ class MapView {
       0.8,
     );
     tl.call(() => this.setFades(null, 1, 0.6), undefined, 0.1);
-    // The A→Home and Home→B legs are split by DISTANCE, not given equal fixed
-    // times. The Home→B leg can be far longer than A→Home (e.g. Projects sits well
-    // past the interchange, ~2.5× the Music→Home distance), and equal durations
-    // would make the camera LURCH — jump speed — as it crossed Home. Dividing a
-    // fixed total ride time between the legs in proportion to their path length
-    // holds the cruise speed constant across the interchange: with tIn ∝ dIn and
-    // tOut ∝ dOut, power2.in's exit velocity (3·dIn/tIn) equals power2.out's entry
-    // velocity (3·dOut/tOut), so the pass-through is one continuous sweep that
-    // simply peaks at Home. Self-corrects for every page pair.
-    const RIDE_TIME = 2.8; // total A → Home → B, matching the old 1.3 + 1.5
-    const dTot = inSampler.total + outSampler.total || 1;
-    const tIn = RIDE_TIME * (inSampler.total / dTot);
-    const tOut = RIDE_TIME * (outSampler.total / dTot);
     const rideStart = 0.8; // BEAT 1 (vanWijk departure) runs 0 → 0.7, then a 0.1s settle — matches toMap's departure exactly so the origin pulse lands at the same 0.8s in both
-    const junctionAt = rideStart + tIn; // camera crosses Home here
-    const rideEnd = junctionAt + tOut; // arrives at B's last tick
-
-    // BEAT 2 — RIDE A → Home. Accelerates out of A and stays fast INTO the
-    // interchange (power2.in, no decel) so the camera runs THROUGH Home rather
-    // than braking for it.
-    tl.to(progIn, { p: 1, duration: tIn, ease: 'power2.in', onUpdate: moveIn }, rideStart);
-    // BEAT 3 — PASS THROUGH HOME at ride scale (no pause): Home flashes amber as
-    // the camera sweeps past. The echo/motion-blur is left UNTOUCHED so it carries
-    // through the interchange (speed-derived, it stays up because the camera never
-    // slows), and the top bar hands its colour/label from line A to line B on the
-    // fly. No echo.k=0, no apply() freeze — the ride keeps flowing.
-    tl.call(() => this.pulseStop(homeDot), undefined, junctionAt);
-    // The top bar keeps the ORIGIN line's colour and title for the whole journey;
-    // both hand off to the destination only on ARRIVAL (showUI at the reveal,
-    // below) — exactly like a map→page trip, where the bar changes when you get
-    // there rather than as you pass through the interchange.
-    // BEAT 4 — RIDE Home → platform B: carries the interchange speed (power2.out,
-    // no re-acceleration from a standstill) and decelerates into B (B's roundel
-    // pulses on arrival). Starts the INSTANT BEAT 2 ends — no gap and, because the
-    // leg times are distance-proportional, no speed step: one continuous express
-    // run past the interchange.
-    tl.to(progOut, { p: 1, duration: tOut, ease: 'power2.out', onUpdate: moveOut }, junctionAt);
+    const { duration: cruise, ease: cruiseEase } = trapezoid(throughSampler.total);
+    const rideEnd = rideStart + cruise; // arrives at B's last tick
+    // BEAT 2/3/4 — RIDE A → Home → B as ONE trapezoidal sweep: ease up to top
+    // speed, CRUISE straight through the Home interchange at top speed (no pause,
+    // no brake — the echo/motion-blur carries through since the camera never
+    // slows), then ease down into B. Home pulses amber as the camera crosses it
+    // (see moveSample); the top bar hands colour/label to B only on arrival (the
+    // reveal below), exactly like a map→page trip.
+    tl.to(prog, { p: 1, duration: cruise, ease: cruiseEase, onUpdate: moveSample }, rideStart);
     // Fade everything but the new line as B arrives.
     tl.call(() => this.setFades(toLine, 0, 0.7), undefined, rideEnd - 0.4);
     // Clear the echo/motion-blur exactly as B's ride reaches the last tick, where
@@ -1638,6 +1774,21 @@ class MapView {
     const pages = this.pagesFor(id);
     if (page < 0 || page >= pages) return;
     this.busy = true;
+    const park = this.parkPose(line, page);
+    if (prefersReducedMotion()) {
+      // Reduced motion: no fade-out, no camera pan — snap straight to the new
+      // page's parked pose and populate it (cardsIn's instant=true is a gsap.set,
+      // so nothing animates).
+      Object.assign(this.state, park);
+      this.apply();
+      this.pagingPan = false;
+      this.page = page;
+      this.placeCards();
+      this.updateMoreButtons();
+      this.cardsIn(id, true);
+      this.busy = false;
+      return;
+    }
     const visible = this.cardsFor(id).filter((c) => c.style.display !== 'none');
     const more = document.getElementById('more-next');
     const back = document.getElementById('more-prev');
@@ -1650,25 +1801,29 @@ class MapView {
       ease: 'power1.in',
       overwrite: 'auto',
     });
-    const park = this.parkPose(line, page);
     this.pagingPan = true;
-    gsap.to(this.state, {
-      ...park,
-      duration: 0.65,
-      ease: 'power2.inOut',
-      onUpdate: this.apply,
-      onComplete: () => {
-        this.pagingPan = false;
-        this.page = page;
-        this.placeCards();
-        this.updateMoreButtons();
-        // cardsIn (above) fades the paging buttons back in once the last card has
-        // landed — the buttons were faded out at the start of the turn and stay
-        // hidden through the pan, so they re-appear only with the finished page.
-        this.cardsIn(id);
-        this.busy = false;
-      },
-    });
+    // Registered via trackRide so the stall watchdog, finishRide() and dispose()
+    // can see (and kill) this pan like any ride — before, a frozen page-turn was
+    // invisible to the watchdog and left `busy` stuck.
+    this.trackRide(
+      gsap.to(this.state, {
+        ...park,
+        duration: 0.65,
+        ease: 'power2.inOut',
+        onUpdate: this.apply,
+        onComplete: () => {
+          this.pagingPan = false;
+          this.page = page;
+          this.placeCards();
+          this.updateMoreButtons();
+          // cardsIn (above) fades the paging buttons back in once the last card has
+          // landed — the buttons were faded out at the start of the turn and stay
+          // hidden through the pan, so they re-appear only with the finished page.
+          this.cardsIn(id);
+          this.busy = false;
+        },
+      }),
+    );
   }
 
   /** Projects-only: filter which cards occupy the platform's stop slots by
@@ -1677,7 +1832,6 @@ class MapView {
   applyFilter(tag: string) {
     if (this.busy || this.view !== 'projects' || !this.ui) return;
     const cards = this.cardsFor('projects');
-    this.filter = tag;
     this.order =
       tag === 'all'
         ? cards.map((_, i) => i)
@@ -1695,6 +1849,20 @@ class MapView {
     const line = lineById('projects');
     const returningToTop = this.page !== 0;
     this.busy = true;
+    if (prefersReducedMotion()) {
+      // Reduced motion: no fade-out, no return pan — snap to page 0's pose (a
+      // no-op unless we were on a later page) and repopulate instantly.
+      if (returningToTop) {
+        Object.assign(this.state, this.parkPose(line, 0));
+        this.apply();
+      }
+      this.page = 0;
+      this.placeCards();
+      this.cardsIn('projects', true);
+      this.updateMoreButtons();
+      this.busy = false;
+      return;
+    }
     const visible = cards.filter((c) => c.style.display !== 'none');
     gsap.to(visible, {
       autoAlpha: 0,
@@ -1710,7 +1878,11 @@ class MapView {
         };
         if (returningToTop) {
           const park = this.parkPose(line, 0);
-          gsap.to(this.state, { ...park, duration: 0.5, ease: 'power2.inOut', onUpdate: this.apply, onComplete: finish });
+          // trackRide: give the stall watchdog / finishRide() / dispose() the same
+          // visibility into this return pan as into a full ride (see toPage).
+          this.trackRide(
+            gsap.to(this.state, { ...park, duration: 0.5, ease: 'power2.inOut', onUpdate: this.apply, onComplete: finish }),
+          );
         } else {
           finish();
         }
@@ -1718,48 +1890,130 @@ class MapView {
     });
   }
 
-  /** Register the in-flight ride so dispose()/finishRide() can act on it, and
-   *  clear the reference once it settles. */
-  trackRide(tl: gsap.core.Timeline) {
+  /** Register the in-flight ride (timeline or bare camera tween) so dispose()/
+   *  finishRide() can act on it and the watchdog can sample it, and clear the
+   *  reference once it settles. */
+  trackRide(tl: gsap.core.Animation) {
     this.active = tl;
     tl.then(() => {
       if (this.active === tl) this.active = null;
     });
   }
 
-  /** Skip the in-flight ride straight to its settled end — the page appears at
-   *  once. Driven by the "click the destination again" gesture (see go()). Jumping
-   *  to the end fires the same onComplete beats a natural arrival does (showUI +
-   *  cardsIn → busy=false), so the platform lands fully populated. */
-  _skipping = false;
-  finishRide() {
-    dbg('finishRide → progress(1)', this.active ? 'has active tl' : 'NO active tl (busy but no tl!)');
-    // Force the camera to its end. Its reveal callbacks fire INSIDE gsap's
-    // synchronous render, where any new gsap.set/tween is dropped — so the entries
-    // can come up blank (the "empty music page" bug). We therefore skip the reveal
-    // during the render (_skipping) and re-run it here, AFTER progress(1) returns,
-    // in a clean context — instantly, which is the right feel for a skip anyway.
-    this._skipping = true;
-    this.active?.progress(1);
-    this._skipping = false;
-    if (this.view !== 'map') {
-      this.showUI(this.view);
-      this.cardsIn(this.view, true);
-      dbg('finishRide: re-revealed', this.view, 'instantly (post-render)');
+  /** Every map element that participates in the per-view fade — decorative +
+   *  nav lines, their ticks/platform-stops, the land zones/water, the
+   *  destination roundels — minus the persistent rail. The single source of
+   *  truth shared by fadeTargets() (which of these to dim for a given line) and
+   *  applyRestState()'s deterministic reset (all of them back to full). */
+  private fadeUniverse(): Element[] {
+    return Array.from(
+      document.querySelectorAll(
+        '[data-line], [data-ticks-for], [data-pstops], [data-land-zones], [data-land-water], g.destination',
+      ),
+    ).filter((el) => !el.closest('#station-board'));
+  }
+
+  /** Kill EVERY in-flight transition side-effect tween: the per-view fades, the
+   *  platform show/hide fade, card/divider/paging reveals, the top-bar colour
+   *  handoff, the stop-pulse fills, AND any bare camera tween on this.state (a
+   *  page-turn / filter pan is now also tracked in this.active, but killing the
+   *  state's tweens directly stays as a belt-and-braces sweep). These are
+   *  spawned outside the ride timeline, so killing the timeline alone leaves them
+   *  running, and their late onUpdate / onComplete / clearProps then fire against
+   *  the settled (or next) view and corrupt it (the empty platform; the
+   *  re-brightened background; a page-turn drifting after a skip, or its onComplete
+   *  querying the NEXT page after a swap). Killing a tween runs NEITHER its
+   *  onComplete nor its clearProps, so once this returns the settled visual state
+   *  is entirely ours to define. The one choke point every interrupt passes through. */
+  private killTransientTweens() {
+    gsap.killTweensOf(this.fadeUniverse());
+    gsap.killTweensOf(
+      '#platform-ui [data-card], #platform-ui [data-divider], #more-next, #more-prev, #filter-bar',
+    );
+    gsap.killTweensOf(this.state); // page-turn / filter camera pans
+    gsap.killTweensOf('[data-destination] circle, #home-dot'); // in-flight amber stop-pulses
+    // Hover-launch ease-back/glow tweens target the PATH children, which the
+    // fadeUniverse kill (group elements) doesn't cover.
+    gsap.killTweensOf('.line-group .line-path');
+    const bar = document.querySelector('.top-bar');
+    if (bar) gsap.killTweensOf(bar);
+  }
+
+  /** Snap the world to the canonical PARKED state for `view` — instantly and
+   *  idempotently. This is the single source of truth for "what the map looks
+   *  like when settled on X": which lines are dim, the camera pose, which UI is
+   *  shown, the bar colour. Built entirely from gsap.set (no tweens), so it can
+   *  never be left half-applied and can't be overridden by a later animation
+   *  frame. Because it fully derives state from `view` alone, recovery from an
+   *  interrupt never depends on replaying a sequence of animated beats — call it
+   *  after killTransientTweens() and the engine is in a known-good state. */
+  private applyRestState(view: ViewId) {
+    // Fades: reset the whole universe to full, then dim all-but-view. Resetting
+    // EVERY element (not just the ones currently marked) makes this independent of
+    // whatever partial fade state an interrupted ride happened to leave behind.
+    this.fadeUniverse().forEach((el) => {
+      el.removeAttribute('data-was-faded');
+      gsap.set(el, { clearProps: 'opacity' });
+    });
+    if (view !== 'map') {
+      this.fadeTargets(lineById(view)).forEach((el) => {
+        el.setAttribute('data-was-faded', '');
+        gsap.set(el, { opacity: 0 });
+      });
+    }
+    this.echo.k = 0;
+    // Restore all stop roundels to white — an interrupt can land mid-pulse (its
+    // amber tween was just killed in killTransientTweens), and every settled view
+    // shows plain white roundels.
+    document
+      .querySelectorAll('[data-destination] circle, #home-dot')
+      .forEach((el) => gsap.set(el, { attr: { fill: '#ffffff' } }));
+    if (view === 'map') {
+      Object.assign(this.state, this.mapPose());
+      this.stage.classList.remove('ride-active');
+      this.apply();
+      this.setActiveDest('map');
+      if (this.ui) this.ui.hidden = true;
+      const bar = document.querySelector('.top-bar');
+      const section = document.getElementById('bar-section');
+      if (bar) gsap.set(bar, { backgroundColor: '#000' });
+      if (section) section.textContent = '';
+    } else {
+      Object.assign(this.state, this.parkPose(lineById(view), this.page));
+      this.apply();
+      this.showUI(view); // un-hide + place + size (leaves the entries hidden)
+      // instant=true reveals via gsap.set, not a staggered fade — a set can't be
+      // left un-ticked, so a skipped-to platform can never land blank.
+      this.cardsIn(view, true);
     }
   }
 
-  /** Tear the engine down before the page is swapped out (astro:before-swap).
-   *  A ride's GSAP timeline is NOT bound to the DOM: left alive across a
-   *  ClientRouter navigation, its still-pending `tl.call(showUI/cardsIn)` beats
-   *  fire ~seconds later and run document.querySelector against the NEXT page,
-   *  corrupting it (the "empty/stale platform" after back-forward). Killing the
-   *  timeline stops those scheduled callbacks. */
-  dispose() {
-    dbg('dispose (page swap) — killing active ride' + (this.active ? '' : ' (none)'));
+  /** Force the in-flight ride straight to its settled destination — the "click
+   *  the destination again while riding" skip. We do NOT use timeline.progress(1):
+   *  seeking fires the reveal inside gsap's synchronous render and leaves gsap in a
+   *  state where even later calls on those targets are dropped (blank platform).
+   *  Instead: kill the ride, kill every orphanable side-effect tween, then snap to
+   *  the canonical rest state. Deterministic regardless of when the skip landed. */
+  finishRide() {
+    const view = this.view; // ride methods set view := destination at their start
     this.active?.kill();
     this.active = null;
     this._stopWatchdog();
+    this.killTransientTweens();
+    this.applyRestState(view);
+    this.busy = false;
+  }
+
+  /** Tear the engine down before the page is swapped out (astro:before-swap).
+   *  A ride's GSAP timeline (and the side-effect tweens its beats spawned) are NOT
+   *  bound to the DOM: left alive across a ClientRouter navigation they fire
+   *  ~seconds later against the NEXT page and corrupt it (the "empty/stale
+   *  platform" after back-forward). Kill the timeline AND every transient tween. */
+  dispose() {
+    this.active?.kill();
+    this.active = null;
+    this._stopWatchdog();
+    this.killTransientTweens();
   }
 }
 
@@ -1778,6 +2032,15 @@ let target: ViewId = 'map';
 // Guards the once-only binding of window-level listeners (popstate/resize) that
 // must survive ClientRouter swaps; init() re-runs per page-load.
 let globalBound = false;
+// When a click skips an in-flight ride (finishRide), the engine settles INSTANTLY.
+// Without this guard the very next click in a rapid burst finds an idle engine and
+// starts a fresh full ride — so a spam-burst ends up playing an unwanted ~3.6s
+// platform→platform journey (its mid-travel map-reveal is the "background fades
+// back in" the user sees). This window makes good on the input model — "the first
+// click skips, clicks after do nothing" — by swallowing further nav clicks for a
+// beat after a skip. Deliberate single navigations (no recent skip) are untouched.
+let lastSkipAt = -Infinity;
+const SKIP_COOLDOWN = 350; // ms
 
 function urlFor(view: ViewId): string {
   return view === 'map' ? '/' : `/${view}`;
@@ -1791,6 +2054,33 @@ function viewFromPath(path: string): ViewId {
   return 'map';
 }
 
+/** Validate a template-supplied view string instead of blind-casting it. A typo
+ *  in data-initial-view / data-line / data-ride-line must degrade to 'map', not
+ *  throw inside lineById and abort init before map-ready (which would leave the
+ *  whole map hidden). */
+function asViewId(v: string | undefined | null): ViewId {
+  return v === 'music' || v === 'projects' || v === 'about' || v === 'map' ? v : 'map';
+}
+
+// Tab title + screen-reader announcement for SPA view changes. The rail nav is
+// preventDefaulted (no real navigation), so without this the tab title and
+// assistive tech stay stuck on whatever page was server-rendered.
+// `announcedView` guards the initial load: init() seeds it with the entry view,
+// so the first settle never clobbers the server-rendered title with a rebuild.
+let announcedView: ViewId | null = null;
+// The map's title is whatever the home page ships with; captured at init when we
+// actually load ON the home page (see init), else the static index.astro title.
+let mapTitle = 'rohan.jk — software & ai';
+function announceView(view: ViewId) {
+  if (view === announcedView) return;
+  announcedView = view;
+  // Platform titles mirror the static pages exactly ("music — rohan.jk" etc.);
+  // the ViewId IS the lowercase name those pages use.
+  document.title = view === 'map' ? mapTitle : `${view} — rohan.jk`;
+  const announcer = document.getElementById('routeAnnouncer');
+  if (announcer) announcer.textContent = view === 'map' ? 'Map' : lineById(view).nav!.name;
+}
+
 /** Drive one transition toward `target`. No-op while a ride is in flight — the
  *  settle hook calls this again when the ride completes, so it converges. Each
  *  ride method sets `mv.view = target` at its start, so after a single completed
@@ -1800,7 +2090,6 @@ function reconcile() {
   if (!mv || mv.busy) return;
   const want = target;
   if (mv.view === want) return;
-  dbg(`reconcile: view=${mv.view} → target=${want}`);
   if (want === 'map') mv.toMap();
   else if (mv.view === 'map') mv.toPlatform(want);
   else mv.switchPlatform(want);
@@ -1818,15 +2107,18 @@ function reconcile() {
 function go(view: ViewId) {
   if (!mv) return;
   if (mv.busy) {
-    dbg(`CLICK ${view} — busy (view=${mv.view}) → finishRide (skip to end)`);
     mv.finishRide();
+    lastSkipAt = performance.now();
+    return;
+  }
+  // A click landing just after a skip is part of the same burst — ignore it, so the
+  // burst can't spawn a fresh full ride off the instantly-settled engine.
+  if (performance.now() - lastSkipAt < SKIP_COOLDOWN) {
     return;
   }
   if (mv.view === view) {
-    dbg(`CLICK ${view} — already here, ignored`);
     return;
   }
-  dbg(`CLICK ${view} — idle (from ${mv.view}) → start ride`);
   target = view;
   if (viewFromPath(location.pathname) !== view)
     history.pushState({ view }, '', urlFor(view));
@@ -1861,20 +2153,26 @@ function init() {
   };
 
   const bind = (el: Element, lineId: string | null) => {
-    el.addEventListener('mouseenter', () => {
+    const enter = () => {
       hoverLine = lineId;
       syncHover();
-    });
-    el.addEventListener('mouseleave', () => {
+    };
+    const leave = () => {
       hoverLine = null;
       syncHover();
-    });
+    };
+    el.addEventListener('mouseenter', enter);
+    el.addEventListener('mouseleave', leave);
+    // Keyboard parity: tabbing onto a rail link / line lights the same data-hl
+    // highlight the pointer hover does (focusin/out bubble from inner focusables).
+    el.addEventListener('focusin', enter);
+    el.addEventListener('focusout', leave);
     el.addEventListener('click', (e) => {
       if (!lineId) return;
       const ev = e as MouseEvent;
       if (ev.metaKey || ev.ctrlKey || ev.shiftKey) return;
       e.preventDefault();
-      go(lineId as ViewId);
+      go(asViewId(lineId)); // validated — a template typo degrades to map, never throws
     });
   };
   document
@@ -1913,11 +2211,30 @@ function init() {
       // The stage box changed — drop the memoized metrics so the next read
       // recomputes against the new viewport (runs even while busy, so an
       // in-flight ride re-measures on its next frame).
-      mv._metrics = null;
-      if (mv.busy) return;
+      mv.clearMetrics();
+      if (mv.busy) {
+        // Mid-ride resize: the ride captured its park pose at START, against the
+        // old viewport. Flag it so the busy setter's settled edge re-derives the
+        // pose (and re-places the entries) once the camera is at rest.
+        mv.poseDirty = true;
+        return;
+      }
       if (mv.view !== 'map') {
+        // Widening the window can SHRINK pagesFor (About fits more stop-pairs per
+        // page), and an unclamped stale page then slices an EMPTY stop set —
+        // camera at the world origin, zero cards, the blank-About bug. Clamp
+        // first; if the page actually moved, repopulate the platform too (the
+        // pose alone would leave the old page's cards stranded off-screen).
+        const clamped = Math.max(0, Math.min(mv.page, mv.pagesFor(mv.view) - 1));
+        const pageChanged = clamped !== mv.page;
+        mv.page = clamped;
         Object.assign(mv.state, mv.parkPose(lineById(mv.view), mv.page));
         mv.apply();
+        if (pageChanged) {
+          mv.placeCards();
+          mv.updateMoreButtons();
+          mv.cardsIn(mv.view, true);
+        }
       } else {
         // Keep Home centered in the visible region as the rail width / viewport
         // changes.
@@ -1927,40 +2244,39 @@ function init() {
     });
   }
 
-  // A direct-entry parked view (see below) lays out its cards synchronously
-  // at page-load time, which can race ahead of web-font loading — re-run
-  // placement once fonts settle so any font-driven reflow (line count,
-  // card height) is reflected.
-  document.fonts?.ready.then(() => {
-    if (mv && mv.view !== 'map' && !mv.busy) {
-      mv._metrics = null;
-      mv.placeCards();
+  // Late layout shifts (web fonts arriving, the bio photo decoding) can change
+  // the stage box / rail width AFTER a direct-entry parked view laid itself out
+  // synchronously at page-load time. Shared recovery: drop the stale viewport
+  // memos so the next read re-measures, then re-place against the fresh metrics.
+  // ALWAYS clear the metrics — even mid-ride, so the ride's next frame measures
+  // true — but defer the re-place itself to the settled edge via poseDirty (the
+  // same flag a mid-ride resize sets) instead of silently swallowing it.
+  const lateReflow = () => {
+    if (!mv || mv.view === 'map') return;
+    mv.clearMetrics();
+    if (mv.busy) {
+      mv.poseDirty = true;
+      return;
     }
-  });
-
-  // The about platform's vertical card-stacking (placeCards()'s 'd' branch,
-  // see ride.ts) measures each card's rendered height to keep cards from
-  // overlapping — but the bio card's lazy-loaded photo can finish loading
-  // (and change the row's stretched height) after that measurement runs,
-  // leaving stale, now-overlapping positions. Re-run placement once it's in.
+    mv.placeCards();
+  };
+  document.fonts?.ready.then(lateReflow);
   const bioPhoto = document.querySelector<HTMLImageElement>('.card-about-photo .photo');
   if (bioPhoto && !bioPhoto.complete) {
-    bioPhoto.addEventListener(
-      'load',
-      () => {
-        if (mv && mv.view !== 'map' && !mv.busy) {
-          mv._metrics = null;
-          mv.placeCards();
-        }
-      },
-      { once: true },
-    );
+    bioPhoto.addEventListener('load', lateReflow, { once: true });
   }
 
-  const initial = (document.body.dataset.initialView ?? 'map') as ViewId;
+  // Validated, not blind-cast: a template typo in data-initial-view must degrade
+  // to map, not throw inside lineById and abort init before map-ready.
+  const initial = asViewId(document.body.dataset.initialView);
   // Seed the reconciler's target with the view we're loading into, so the first
   // settle doesn't see a stale 'map' target and ride away from a direct entry.
   target = initial;
+  // Seed the announcer with the entry view so the first settle doesn't clobber
+  // the server-rendered title; and when we actually load ON the home page, its
+  // shipped title is the authoritative map title for later SPA returns.
+  announcedView = initial;
+  if (initial === 'map') mapTitle = document.title;
   if (initial !== 'map') {
     history.replaceState({ view: initial }, '', urlFor(initial));
     mv.toPlatform(initial, false);
