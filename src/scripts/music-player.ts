@@ -22,8 +22,14 @@ const accent = (a = 1) => `rgba(117, 79, 173, ${a})`; // #754fad purple (base)
 const peak = (a = 1) => `rgba(167, 139, 250, ${a})`; // brighter violet — spectrum peak overlay + VU hot zone
 const ink = (a = 1) => `rgba(26, 26, 26, ${a})`; // #1a1a1a — neutral grey/ink for VU normal range
 
+// Cache the MediaQueryList — prefersReducedMotion() is called from the 60fps
+// draw loop, and constructing a fresh matchMedia query per frame is waste. The
+// list object is live (its .matches updates when the OS setting changes), so
+// caching loses nothing.
+const reducedMotionMQL =
+  typeof window !== 'undefined' ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
 function prefersReducedMotion(): boolean {
-  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  return reducedMotionMQL?.matches ?? false;
 }
 
 /** Retina-aware canvas sizing: backing store scaled by DPR, ctx in CSS px. */
@@ -51,16 +57,33 @@ let analyser: AnalyserNode | null = null;
 let analyserL: AnalyserNode | null = null;
 let analyserR: AnalyserNode | null = null;
 
+// Reused scratch buffers for the per-frame draw path. The analyser bin count is
+// fixed, and only one row plays at a time on the shared graph, so these are
+// allocated once and reused every frame instead of allocating four ~2048-element
+// typed arrays per frame (steady 60fps GC pressure during playback). Sized lazily
+// on first use; each draw target gets its own buffer so a single frame's
+// wave/meter/spectrum reads never alias.
+let waveScratch: Uint8Array | null = null;
+let freqScratch: Uint8Array | null = null;
+let meterLScratch: Float32Array | null = null;
+let meterRScratch: Float32Array | null = null;
+const u8Scratch = (cur: Uint8Array | null, n: number): Uint8Array =>
+  cur && cur.length === n ? cur : new Uint8Array(n);
+const f32Scratch = (cur: Float32Array | null, n: number): Float32Array =>
+  cur && cur.length === n ? cur : new Float32Array(n);
+
 function ensureAudioGraph(): void {
   if (!audioEl) {
     audioEl = new Audio();
     audioEl.preload = 'metadata';
     audioEl.crossOrigin = 'anonymous';
     audioEl.hidden = true;
-    // Attach to the DOM so playback state is observable/inspectable; it stays
-    // visually hidden and drives the shared analyser graph either way.
-    document.body.appendChild(audioEl);
   }
+  // Attach to the DOM so playback state is observable/inspectable; it stays
+  // visually hidden and drives the shared analyser graph either way. Re-append
+  // after ClientRouter swaps: the swap replaces <body>, orphaning the element
+  // (playback still works detached, but keep the stated inspectability true).
+  if (!audioEl.isConnected) document.body.appendChild(audioEl);
   if (!audioCtx) {
     const AC = window.AudioContext || (window as any).webkitAudioContext;
     if (AC) audioCtx = new AC();
@@ -83,8 +106,20 @@ function ensureAudioGraph(): void {
     splitter.connect(analyserL, 0);
     splitter.connect(analyserR, 1);
     analyser.connect(audioCtx.destination);
-  } catch {
-    // Already connected — a MediaElementSource can only be created once.
+  } catch (err) {
+    // A partial failure here would be the worst kind: `source` exists (a
+    // MediaElementSource CAPTURES the element's output — and can only be created
+    // once per element, so there is no rebuilding) but was never routed to
+    // destination, which would leave every track playing SILENTLY forever. Fall
+    // back to wiring the source straight to the speakers: audio works, the
+    // analyser visuals just stay idle.
+    console.warn('[music] analyser graph setup failed — visuals disabled', err);
+    analyser = analyserL = analyserR = null;
+    try {
+      source?.connect(audioCtx.destination);
+    } catch {
+      /* source itself failed to create — element output was never captured */
+    }
   }
 }
 
@@ -106,6 +141,8 @@ class RowPlayer {
   vuCanvas: HTMLCanvasElement | null;
   vuCtx: CanvasRenderingContext2D | null;
 
+  /** ResizeObserver watching this row's canvases; disconnected in destroy(). */
+  ro: ResizeObserver | null = null;
   isPlaying = false;
   animationId: number | null = null;
   vuReturnId: number | null = null;
@@ -126,6 +163,10 @@ class RowPlayer {
   vecH = 110;
   freqW = 282;
   freqH = 110;
+  // Wave canvas CSS-px size, cached from resizeWaveCanvas() so the per-playback-
+  // frame draw doesn't call getBoundingClientRect() (a forced layout reflow) 60×/s.
+  waveCssW = 300;
+  waveCssH = 56;
   freqSmoothed = new Float32Array(FREQ_BANDS);
   freqHighlights = new Float32Array(FREQ_BANDS);
   freqHighlightTargets = new Float32Array(FREQ_BANDS);
@@ -164,24 +205,24 @@ class RowPlayer {
     // ResizeObserver catches every real layout-size change (visibility
     // toggles included), not just window resizes.
     if (typeof ResizeObserver !== 'undefined') {
-      const ro = new ResizeObserver(() => {
-        const before = this.waveCanvas.width;
+      this.ro = new ResizeObserver(() => {
         this.resizeWaveCanvas();
         this.resizeMeters();
-        // Log only a REAL resize (backing store changed) — that's the expensive
-        // frame we care about; skips/no-ops are silent.
-        if (
-          this.waveCanvas.width !== before &&
-          (typeof localStorage === 'undefined' || localStorage.getItem('rideDebug') !== '0')
-        )
-          console.log(`[ride ---] music canvas RESIZED ${before}→${this.waveCanvas.width} (heavy)`);
       });
-      ro.observe(this.waveCanvas);
+      this.ro.observe(this.waveCanvas);
       // The meter canvases have viewport-relative CSS widths (clamp(...vw...)),
       // so their rendered boxes change with the viewport too — observe one of
       // them (they resize together) to keep backing stores in sync.
-      if (this.vuCanvas) ro.observe(this.vuCanvas);
+      if (this.vuCanvas) this.ro.observe(this.vuCanvas);
     }
+  }
+
+  /** Detach everything that would otherwise pin this row (and its canvases'
+   *  backing stores) in memory after a ClientRouter page swap. */
+  destroy(): void {
+    this.cancelAnimations();
+    this.ro?.disconnect();
+    this.ro = null;
   }
 
   resizeWaveCanvas(): void {
@@ -194,6 +235,8 @@ class RowPlayer {
     if (rect.width === 0) return;
     const w = rect.width;
     const h = rect.height || 56;
+    this.waveCssW = w;
+    this.waveCssH = h;
     const dpr = window.devicePixelRatio || 1;
     const unchanged =
       this.waveCanvas.width === Math.round(w * dpr) && this.waveCanvas.height === Math.round(h * dpr);
@@ -243,9 +286,12 @@ class RowPlayer {
 
   // -- waveform ------------------------------------------------------------
   drawIdle(): void {
-    const rect = this.waveCanvas.getBoundingClientRect();
-    const w = rect.width || 300;
-    const h = rect.height || 56;
+    // Cached CSS-px size (see resizeWaveCanvas) — this runs per-frame inside
+    // fadeWaveToIdle, so a getBoundingClientRect here would force a layout reflow
+    // per fade frame; and when hidden (0-rect) the cache keeps the LAST real size,
+    // so the whole backing store is cleared rather than a stale 300px strip.
+    const w = this.waveCssW;
+    const h = this.waveCssH;
     this.waveCtx.clearRect(0, 0, w, h);
     this.waveCtx.beginPath();
     this.waveCtx.strokeStyle = accent(0.32);
@@ -262,12 +308,11 @@ class RowPlayer {
       return;
     }
     const bufferLength = analyser.frequencyBinCount;
-    const dataArray = new Uint8Array(bufferLength);
+    const dataArray = (waveScratch = u8Scratch(waveScratch, bufferLength));
     analyser.getByteTimeDomainData(dataArray);
 
-    const rect = this.waveCanvas.getBoundingClientRect();
-    const w = rect.width || 300;
-    const h = rect.height || 56;
+    const w = this.waveCssW; // cached from resizeWaveCanvas (no per-frame reflow)
+    const h = this.waveCssH;
     const ctx = this.waveCtx;
     ctx.clearRect(0, 0, w, h);
 
@@ -467,7 +512,7 @@ class RowPlayer {
   computeSpectrum(): void {
     if (!this.freqCtx || !analyser) return;
     const freqBins = analyser.frequencyBinCount;
-    const freqData = new Uint8Array(freqBins);
+    const freqData = (freqScratch = u8Scratch(freqScratch, freqBins));
     analyser.getByteFrequencyData(freqData);
 
     const minBin = 2;
@@ -620,8 +665,8 @@ class RowPlayer {
   drawMetersLive(): void {
     if (analyserL && analyserR) {
       const bufLen = analyserL.frequencyBinCount;
-      const dataL = new Float32Array(bufLen);
-      const dataR = new Float32Array(bufLen);
+      const dataL = (meterLScratch = f32Scratch(meterLScratch, bufLen));
+      const dataR = (meterRScratch = f32Scratch(meterRScratch, bufLen));
       analyserL.getFloatTimeDomainData(dataL);
       analyserR.getFloatTimeDomainData(dataR);
       this.drawVuLive(dataL, dataR, bufLen);
@@ -790,15 +835,22 @@ class RowPlayer {
     this.btn.classList.toggle('playing', on);
   }
 
-  /** Pause and ease every visual back to its dormant state. */
-  reset(): void {
-    if (!audioEl) return;
-    audioEl.pause();
+  /** Pause and return every visual to its dormant state. `instant` SNAPS straight
+   *  to idle instead of running the four concurrent fade-to-idle canvas rAF loops
+   *  (wave/stereo/freq/VU, ~0.4–0.9s each). Those fades are pure eye-candy for the
+   *  in-place pause; when the stop is because we're LEAVING the music view (a ride
+   *  is starting — see stopMusicPlayback), the row is about to be hidden and faded
+   *  off anyway, so animating it just burns frames against the departure ride. */
+  reset(instant = false): void {
+    audioEl?.pause(); // only the audio pause needs the element; visuals reset regardless
     this.isPlaying = false;
     this.setPressed(false);
-    if (this.animationId) {
-      cancelAnimationFrame(this.animationId);
-      this.animationId = null;
+    this.cancelAnimations(); // stop the live loop AND any in-flight fades
+    if (instant) {
+      this.vuSmoothed = -40;
+      this.drawIdle(); // waveform
+      this.drawMetersIdle(); // VU + stereo + freq
+      return;
     }
     this.fadeWaveToIdle();
     this.fadeVecToIdle();
@@ -812,13 +864,22 @@ class RowPlayer {
       activePlayer = null;
       return;
     }
+    // A row with no data-audio-url would set src to the page URL and always fail
+    // silently — refuse up-front instead.
+    if (!this.audioUrl) {
+      console.warn('[music] row has no audio url', this.el);
+      return;
+    }
     // Hand the shared graph over from whoever held it.
     if (activePlayer && activePlayer !== this) activePlayer.reset();
     activePlayer = this;
 
     this.cancelAnimations();
     ensureAudioGraph();
-    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+    if (audioCtx && audioCtx.state === 'suspended')
+      audioCtx.resume().catch(() => {
+        /* resume can reject on some mobile browsers; playback retry re-attempts */
+      });
     if (!audioEl) return;
 
     audioEl.src = this.audioUrl;
@@ -836,7 +897,15 @@ class RowPlayer {
         this.setPressed(true);
         this.drawLive();
       })
-      .catch(() => {});
+      .catch((err) => {
+        // Autoplay policy, 404'd file, CORS — without this the button just does
+        // nothing forever with zero breadcrumbs. Leave a console trace and put the
+        // row back in its resting state so a retry click is possible.
+        if (intent !== this.playIntent) return; // superseded by a newer click
+        console.warn('[music] playback failed', this.audioUrl, err);
+        this.setPressed(false);
+        if (activePlayer === this) activePlayer = null;
+      });
   }
 }
 
@@ -872,7 +941,7 @@ export function primeMusicSizing(): void {
  *  return-to-map and on cross-page navigation. */
 export function stopMusicPlayback(): void {
   if (activePlayer) {
-    activePlayer.reset();
+    activePlayer.reset(true); // instant snap — a ride is starting; don't animate over it
     activePlayer = null;
   } else if (audioEl && !audioEl.paused) {
     audioEl.pause();
@@ -892,12 +961,17 @@ function onResize(): void {
 }
 
 function initMusicPlayer(): void {
+  // Release the PREVIOUS page's players first — their ResizeObservers would
+  // otherwise pin the old (now-detached) rows and 16 canvas backing stores in
+  // memory across ClientRouter swaps. This must run even when the new page has
+  // no music rows (map page → article page), so it sits above the early return.
+  players.forEach((p) => p.destroy());
+  players = [];
   const rows = Array.from(document.querySelectorAll<HTMLElement>('#platform-ui [data-card="music"]'));
   if (!rows.length) return;
   // Construct each row's player independently so one row's failure can't abort
   // the rest: a single throw inside a `rows.map(...)` would leave every later
   // row without a player (dead play button, unpainted meters).
-  players = [];
   for (const row of rows) {
     try {
       players.push(new RowPlayer(row));
@@ -907,8 +981,33 @@ function initMusicPlayer(): void {
   }
   if (!resizeBound) {
     window.addEventListener('resize', onResize);
+    watchDpr();
     resizeBound = true;
   }
+}
+
+/** Re-size all canvases when devicePixelRatio changes (window dragged between a
+ *  retina and a 1x monitor) — the CSS boxes don't change, so neither `resize` nor
+ *  the ResizeObservers fire, and the backing stores would keep the old scale
+ *  (blurry canvases). The standard trick: a `resolution` media query matching the
+ *  CURRENT dpr fires `change` once when dpr moves; re-subscribe against the new
+ *  value each time. */
+function watchDpr(): void {
+  const listen = () => {
+    const mql = window.matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`);
+    mql.addEventListener(
+      'change',
+      () => {
+        players.forEach((p) => {
+          p.resizeWaveCanvas();
+          p.resizeMeters();
+        });
+        listen(); // re-arm against the new dpr
+      },
+      { once: true },
+    );
+  };
+  listen();
 }
 
 document.addEventListener('astro:page-load', initMusicPlayer);
