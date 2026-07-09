@@ -602,7 +602,16 @@ function initBqstDspLab() {
   });
 
   let isActive = true;
-  requestBqstDraw = () => requestAnimationFrame(() => { if (isActive) drawAll(); });
+  // Coalesce redraws: knob drags fire many state changes per frame; queueing a
+  // rAF for each would redraw all four canvases several times per frame.
+  let bqstDrawId: number | null = null;
+  requestBqstDraw = () => {
+    if (bqstDrawId !== null) return; // one already queued for this frame
+    bqstDrawId = requestAnimationFrame(() => {
+      bqstDrawId = null;
+      if (isActive) drawAll();
+    });
+  };
   requestBqstDraw();
   if ((document as any).fonts?.ready) {
     (document as any).fonts.ready.then(() => requestBqstDraw()).catch(() => {});
@@ -613,6 +622,7 @@ function initBqstDspLab() {
 
   cleanups.push(() => {
     isActive = false;
+    if (bqstDrawId !== null) cancelAnimationFrame(bqstDrawId);
     clearTimeout(resizeTimer);
     window.removeEventListener('resize', onResize);
     driveListeners.forEach(({ control, onInput, onPointerDown, onKeyDown }) => {
@@ -688,6 +698,8 @@ function initBqstAudioDemo() {
   let isReady = false;
   let rafId: number | null = null;
   let waveFadeId: number | null = null;
+  // Pending "kill the sources after the pause fade" timer — see pause()/start().
+  let stopTimer = 0;
   let previousWaveVersion: string | null = null;
   let waveFadeStart = 0;
 
@@ -834,7 +846,10 @@ function initBqstAudioDemo() {
   function drawProgress() {
     const duration = cleanBuffer?.duration || processedBuffer?.duration || 0;
     const ratio = duration > 0 ? (getPlaybackTime() % duration) / duration : 0;
-    progress.style.width = `${Math.max(0, Math.min(1, ratio)) * 100}%`;
+    // Written as a transform (paired with the full-width scaleX(0) styling in
+    // [slug].astro) so the per-frame update stays compositor-only — animating
+    // `width` would relayout the wave row 60 times a second.
+    progress.style.transform = `scaleX(${Math.max(0, Math.min(1, ratio))})`;
     if (isPlaying) rafId = requestAnimationFrame(drawProgress);
   }
 
@@ -877,6 +892,10 @@ function initBqstAudioDemo() {
   }
 
   async function start() {
+    // pause() defers stopSources by 60ms to let its fade-out finish; a
+    // pause→play inside that window must cancel the pending stop or the stale
+    // timer kills the freshly started sources (UI says playing, audio dead).
+    clearTimeout(stopTimer);
     ensureAudioContext();
     if (context!.state === 'suspended') { try { await context!.resume(); } catch { /* */ } }
     if (!isReady || !cleanBuffer || !processedBuffer) {
@@ -920,7 +939,8 @@ function initBqstAudioDemo() {
       masterGain.gain.setValueAtTime(masterGain.gain.value, now);
       masterGain.gain.linearRampToValueAtTime(0, now + 0.045);
     }
-    window.setTimeout(stopSources, 60);
+    // Stored so start() (and cleanup) can cancel it — see the note in start().
+    stopTimer = window.setTimeout(stopSources, 60);
   }
 
   const onPlayClick = () => { if (isPlaying) pause(); else start(); };
@@ -937,6 +957,7 @@ function initBqstAudioDemo() {
   cleanups.push(() => {
     if (rafId) cancelAnimationFrame(rafId);
     if (waveFadeId) cancelAnimationFrame(waveFadeId);
+    clearTimeout(stopTimer); // stopSources below runs synchronously instead
     window.removeEventListener('resize', onResize);
     playButton.removeEventListener('click', onPlayClick);
     versionHandlers.forEach(({ button, h }) => button.removeEventListener('click', h));
@@ -1157,12 +1178,29 @@ function initLcmDemo() {
   window.addEventListener('pointerup', endPointer);
   window.addEventListener('pointercancel', endPointer);
 
+  // Only hijack the ~15 mapped letter keys while the piano is actually on
+  // screen — a page-wide preventDefault on letters would break typing and
+  // shortcuts everywhere else on the article. Same pattern as initDemoPlayer:
+  // starts true (corrected by the observer's first callback) and stays true if
+  // IntersectionObserver is unavailable so the piano still works.
+  let pianoVisible = true;
+  let pianoIO: IntersectionObserver | undefined;
+  const demo = placeholder.querySelector('.lcm-demo') as HTMLElement;
+  if (typeof IntersectionObserver !== 'undefined' && demo) {
+    pianoIO = new IntersectionObserver((entries) => {
+      pianoVisible = entries[0].isIntersecting;
+    });
+    pianoIO.observe(demo);
+  }
+
   const onKeyDown = (e: KeyboardEvent) => {
     if (e.repeat || e.metaKey || e.ctrlKey || e.altKey) return;
     const ae = document.activeElement as HTMLElement | null;
     if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.isContentEditable)) return;
     const off = LCM_KEY_OFFSETS[e.code];
     if (off === undefined) return;
+    // Off-screen piano: let the key through un-prevented (no note either).
+    if (!pianoVisible) return;
     e.preventDefault();
     keyHeld.add(LOW + off);
     render();
@@ -1179,6 +1217,7 @@ function initLcmDemo() {
   window.addEventListener('blur', onBlur);
 
   cleanups.push(() => {
+    pianoIO?.disconnect();
     piano.removeEventListener('pointerdown', onPointerDown);
     window.removeEventListener('pointerup', endPointer);
     window.removeEventListener('pointercancel', endPointer);
@@ -1351,6 +1390,10 @@ function initDemoPlayer() {
   let vuSmoothed = -40;
   let playbackStart = 0;
   let disposed = false;
+  // Whether the widget is on-screen. Starts true (corrected by the observer on its
+  // first callback); stays true if IntersectionObserver is unavailable so the loop
+  // still runs. Gates drawLive so an off-screen widget costs nothing.
+  let demoVisible = true;
   const CHUNK = 1024;
 
   const decodeCtx = getAC();
@@ -1361,12 +1404,22 @@ function initDemoPlayer() {
       if (disposed) return;
       audioBuffer = decoded;
       playbackStart = performance.now();
-      demoAnimId = requestAnimationFrame(drawLive);
+      // Start the loop only if visible AND not already running — the Intersection
+      // Observer may have started it already (it fires before decode finishes for an
+      // on-screen widget). Without this guard both paths schedule drawLive and two
+      // rAF chains run forever.
+      if (demoVisible && demoAnimId === null) demoAnimId = requestAnimationFrame(drawLive);
     })
     .catch(() => {});
 
   function drawLive() {
-    if (disposed) return;
+    // Pause the 60fps loop when disposed OR scrolled off-screen — no point drawing
+    // (and allocating two Float32Arrays) a widget nobody can see. The observer below
+    // restarts it when it scrolls back into view.
+    if (disposed || !demoVisible) {
+      demoAnimId = null;
+      return;
+    }
     demoAnimId = requestAnimationFrame(drawLive);
     if (!audioBuffer) return;
     const sampleRate = audioBuffer.sampleRate;
@@ -1437,11 +1490,25 @@ function initDemoPlayer() {
   };
   window.addEventListener('resize', onResize);
 
+  // Only run the draw loop while the widget is in view. Toggling visibility restarts
+  // the loop (drawLive self-pauses when it goes off-screen).
+  let demoIO: IntersectionObserver | undefined;
+  if (typeof IntersectionObserver !== 'undefined') {
+    demoIO = new IntersectionObserver((entries) => {
+      demoVisible = entries[0].isIntersecting;
+      if (demoVisible && !disposed && demoAnimId === null) {
+        demoAnimId = requestAnimationFrame(drawLive);
+      }
+    });
+    demoIO.observe(player);
+  }
+
   cleanups.push(() => {
     disposed = true;
     if (demoAnimId) cancelAnimationFrame(demoAnimId);
     clearTimeout(demoResizeTimer);
     window.removeEventListener('resize', onResize);
+    demoIO?.disconnect();
     demoAnimId = null;
     audioBuffer = null;
   });

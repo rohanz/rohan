@@ -326,6 +326,10 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
     width: min(100% - 2rem, 420px); padding: 0.58rem 0.78rem; border-radius: 8px;
     background: rgba(20,20,20,0.72); color: #eee; font-size: 0.84rem; font-weight: 600; text-align: center;
   }
+  /* Reserve the scrollbar gutter so the overflow lock below doesn't reflow the
+     page when the bar vanishes (progressive enhancement — browsers without
+     scrollbar-gutter just keep the old, minor layout jump). */
+  html { scrollbar-gutter: stable; }
   body.image-lightbox-open { overflow: hidden; }
 
   /* Shared lab / audio demo card frame */
@@ -405,10 +409,16 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
   }
   .bqst-audio-wave canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
   .bqst-audio-wave span { position: absolute; inset: 50% 0 auto; height: 1px; background: rgba(0,0,0,0.16); }
+  /* Playhead progress: a full-width bar scaled from the left. article-widgets.ts
+     writes `transform: scaleX(ratio)` per frame — compositor-only, where the old
+     per-frame `width` writes forced a relayout of the wave row 60x/s. The 2px
+     leading edge lives inside the scaled box so it thins slightly at low ratios;
+     the bar is square-cornered, so nothing visibly distorts under scaleX. */
   .bqst-audio-wave i {
-    position: absolute; top: 0; bottom: 0; left: 0; width: 0; display: block; pointer-events: none;
+    position: absolute; top: 0; bottom: 0; left: 0; width: 100%; display: block; pointer-events: none;
     background: linear-gradient(90deg, rgba(209,61,89,0.22), rgba(209,61,89,0.05));
-    border-right: 2px solid var(--w-accent); will-change: width;
+    border-right: 2px solid var(--w-accent);
+    transform: scaleX(0); transform-origin: left; will-change: transform;
   }
 
   /* Live chord monitor piano */

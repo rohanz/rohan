@@ -32,7 +32,9 @@ function initLightbox(article: HTMLElement) {
   const open = (img: HTMLImageElement) => {
     const src = img.currentSrc || img.src;
     if (!src) return;
-    lastTrigger = img;
+    // Return focus to the focusable .article-zoom wrapper (not the inert <img>)
+    // so keyboard users land back where they opened from.
+    lastTrigger = img.closest<HTMLElement>('.article-zoom') ?? img;
     expanded.src = src;
     expanded.alt = img.alt || '';
     overlay.classList.add('is-visible');
@@ -45,7 +47,21 @@ function initLightbox(article: HTMLElement) {
     // Static asset-strip logos aren't zoom targets.
     const img = (e.target as HTMLElement).closest('img');
     if (!img || !article.contains(img) || img.closest('.bqst-asset-card')) return;
+    // A linked image navigates; hijacking it into the lightbox (and
+    // preventDefault-ing the link) would break the author's intent.
+    if (img.closest('a')) return;
     e.preventDefault();
+    open(img);
+  };
+  // The zoom wrappers are keyboard buttons (tabindex + role, set below) —
+  // Enter/Space opens the same path as a click.
+  const onArticleKeydown = (e: KeyboardEvent) => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    const box = (e.target as HTMLElement).closest<HTMLElement>('.article-zoom');
+    if (!box || !article.contains(box)) return;
+    const img = box.querySelector('img');
+    if (!img || img.closest('a')) return;
+    e.preventDefault(); // Space would otherwise scroll the page
     open(img);
   };
   const onOverlayClick = (e: Event) => {
@@ -53,6 +69,10 @@ function initLightbox(article: HTMLElement) {
   };
   const onKeydown = (e: KeyboardEvent) => {
     if (!overlay.classList.contains('is-visible')) return;
+    // Modifier-only presses and command combos (Cmd/Ctrl+C, screen-reader and
+    // browser shortcuts) must pass through un-prevented, not close the lightbox.
+    if (e.key === 'Shift' || e.key === 'Control' || e.key === 'Alt' || e.key === 'Meta') return;
+    if (e.metaKey || e.ctrlKey) return;
     e.preventDefault();
     close();
   };
@@ -65,7 +85,17 @@ function initLightbox(article: HTMLElement) {
     if (img.closest('.bqst-asset-card') || img.closest('.article-zoom')) return;
     const box = document.createElement('span');
     box.className = 'article-zoom';
-    box.dataset.hint = 'click to expand';
+    // Linked images keep the sizing wrap but not the "expand" affordance — the
+    // click/keydown handlers bail on them, so a hint or button role would lie.
+    if (!img.closest('a')) {
+      box.dataset.hint = 'click to expand';
+      // Keyboard operability: the wrapper is the tab stop that opens the
+      // lightbox (see onArticleKeydown), announced as a button with the
+      // image's own alt text for context.
+      box.tabIndex = 0;
+      box.setAttribute('role', 'button');
+      box.setAttribute('aria-label', img.alt ? `Expand image: ${img.alt}` : 'Expand image');
+    }
     img.parentNode?.insertBefore(box, img);
     box.appendChild(img);
     wrapped.push(box);
@@ -84,12 +114,14 @@ function initLightbox(article: HTMLElement) {
   });
 
   article.addEventListener('click', onArticleClick);
+  article.addEventListener('keydown', onArticleKeydown);
   overlay.addEventListener('click', onOverlayClick);
   document.addEventListener('keydown', onKeydown);
 
   cleanups.push(() => {
     close();
     article.removeEventListener('click', onArticleClick);
+    article.removeEventListener('keydown', onArticleKeydown);
     overlay.removeEventListener('click', onOverlayClick);
     document.removeEventListener('keydown', onKeydown);
     overlay.remove();
@@ -343,6 +375,9 @@ function initGlossary(article: HTMLElement) {
   const tip = document.createElement('div');
   tip.className = 'gloss-tooltip';
   tip.setAttribute('role', 'tooltip');
+  // Stable id so the active term can point at the tooltip via aria-describedby
+  // (set on show, removed on hide) — otherwise the definition is visual-only.
+  tip.id = 'gloss-tooltip';
   document.body.appendChild(tip);
 
   let active: HTMLElement | null = null;
@@ -351,7 +386,10 @@ function initGlossary(article: HTMLElement) {
   const show = (term: HTMLElement, clientY?: number) => {
     const text = term.dataset.gloss;
     if (!text) return;
+    // Re-point the association when hopping directly between terms.
+    if (active && active !== term) active.removeAttribute('aria-describedby');
     active = term;
+    term.setAttribute('aria-describedby', tip.id);
     tip.textContent = text;
     tip.classList.add('is-visible');
     const rects = Array.from(term.getClientRects());
@@ -386,6 +424,7 @@ function initGlossary(article: HTMLElement) {
     tip.style.top = `${Math.round(top)}px`;
   };
   const hide = () => {
+    active?.removeAttribute('aria-describedby');
     active = null;
     tip.classList.remove('is-visible');
   };
