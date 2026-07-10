@@ -853,7 +853,23 @@ class MapView {
         card.dataset.side = onLeft ? 'left' : 'right';
         const gap = 16;
         card.style.width = `${about.cardW}px`;
-        card.style.height = `${about.cardH}px`;
+        // TEXT cards get min-height (not height): their content carries
+        // LEGIBILITY FLOORS (CSS max() font sizes), so on small screens the
+        // floored text can need a few px more than the geometric card box — a
+        // fixed height would CLIP it (real-Chrome font metrics differ from
+        // whatever we tune against headless). Growing is safe: cards are drawn
+        // at 85% of the stop pitch (aboutGeom's H_RATIO), so the inter-stop gap
+        // absorbs the growth, and yPercent(-50) centering keeps a grown card
+        // symmetric on its stop. The PHOTO card keeps a fixed height — its <img>
+        // fills 100% of the box (object-fit: cover) and can never overflow, but
+        // height:auto would let that same 100% rule collapse it.
+        if (card.classList.contains('card-about-photo')) {
+          card.style.height = `${about.cardH}px`;
+          card.style.minHeight = '';
+        } else {
+          card.style.height = 'auto';
+          card.style.minHeight = `${about.cardH}px`;
+        }
         // Scale the card's CONTENT (fonts, pill padding, label gap) with the card
         // height so it never clips or overlaps the label when the diagonal shrinks
         // to fit all three stops on a small screen. Reference 210 leaves clear
