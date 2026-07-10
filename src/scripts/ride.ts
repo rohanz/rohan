@@ -39,16 +39,21 @@ const RIDE_RAMP = 0.8;
 //  • ACCEL — SMOOTHERSTEP velocity S(x)=6x⁵−15x⁴+10x³ (zero 1st AND 2nd derivative
 //    at both ends → a soft, imperceptible launch off the platform). accelG is its
 //    antiderivative x⁶−3x⁵+2.5x⁴; ∫₀¹ = ½ (ACCEL_AREA).
-//  • DECEL — velocity (1−y)²: brakes HARD the instant it leaves cruise (a big,
-//    obvious drop in speed — you clearly SEE it braking), then eases to a soft
-//    stop. Deliberately far more pronounced than the launch. decelG is its
-//    antiderivative (1−(1−y)³)/3; ∫₀¹ = ⅓ (DECEL_AREA).
-// The ramps cover different distances (½·V·RAMP vs ⅓·V·RAMP), so the trapezoid
+//  • DECEL — velocity (1−y)³(1+3y): a JERK-LIMITED hard brake. v′(0)=0, so the
+//    deceleration eases in over the first beats instead of slamming on at the
+//    cruise→brake boundary — an earlier (1−y)² profile applied its MAXIMUM
+//    deceleration in the very first frame, and that acceleration discontinuity
+//    read as a stutter at ramp-down onset even at a perfect frame rate. Still
+//    plainly dramatic: speed is down to ~31% by mid-brake, peak deceleration
+//    1.78·v/RAMP (vs 2.0 before) landing at y=⅓, and v′(1)=0 gives the same
+//    soft final stop. decelG is its antiderivative y−2y³+2y⁴−0.6y⁵; ∫₀¹ = 0.4
+//    (DECEL_AREA).
+// The ramps cover different distances (½ vs 0.4 ·V·RAMP), so the trapezoid
 // accounts for each area separately.
 const ACCEL_AREA = 0.5;
-const DECEL_AREA = 1 / 3;
+const DECEL_AREA = 0.4;
 const accelG = (x: number): number => x ** 6 - 3 * x ** 5 + 2.5 * x ** 4;
-const decelG = (y: number): number => (1 - (1 - y) ** 3) / 3;
+const decelG = (y: number): number => y - 2 * y ** 3 + 2 * y ** 4 - 0.6 * y ** 5;
 // Build the trapezoidal cruise for a path of `dist` world units: returns the
 // timeline duration and a position(normalized-time) ease. A `dist` shorter than
 // the two ramps' combined span degrades gracefully to a triangular profile (ramps
@@ -1477,7 +1482,12 @@ class MapView {
     const rideEnd = RIDE_AT + cruise;
     tl.to(prog, { p: 1, duration: cruise, ease: cruiseEase, onUpdate: moveSample }, RIDE_AT);
     // Fade every other line out so the platform is revealed as the camera arrives.
-    tl.call(() => this.setFades(line, 0, 0.7), undefined, rideEnd - 0.5);
+    // Fired at the END OF THE CRUISE, not mid-brake: setFades spawns ~35 opacity
+    // tweens in one frame (the heaviest single frame of the ride), and landing
+    // that burst inside the braking window read as a hitch right as the ramp-down
+    // began. The cruise has frame budget to spare; the fade still completes just
+    // before arrival.
+    tl.call(() => this.setFades(line, 0, 0.7), undefined, Math.max(RIDE_AT, rideEnd - RIDE_RAMP - 0.05));
     // Clear the echo/motion-blur exactly as the ride reaches the last tick, which is
     // where the reveal picks up — no held pause between them (the ride decelerates to
     // ~0 velocity into the tick and the reveal soft-launches from ~0).
@@ -1791,8 +1801,10 @@ class MapView {
     // (see moveSample); the top bar hands colour/label to B only on arrival (the
     // reveal below), exactly like a map→page trip.
     tl.to(prog, { p: 1, duration: cruise, ease: cruiseEase, onUpdate: moveSample }, rideStart);
-    // Fade everything but the new line as B arrives.
-    tl.call(() => this.setFades(toLine, 0, 0.7), undefined, rideEnd - 0.4);
+    // Fade everything but the new line as B arrives — fired at end-of-cruise, not
+    // mid-brake, so the ~35-tween creation burst lands where the frame budget is
+    // free (see toPlatform's matching comment).
+    tl.call(() => this.setFades(toLine, 0, 0.7), undefined, Math.max(rideStart, rideEnd - RIDE_RAMP - 0.05));
     // Clear the echo/motion-blur exactly as B's ride reaches the last tick, where
     // the reveal picks up — no held pause between them.
     tl.call(() => { this.echo.k = 0; this.apply(); }, undefined, rideEnd);
