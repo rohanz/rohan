@@ -63,10 +63,9 @@ Lesson one of the project: **evaluate the artefact you trained, not the artefact
 
 ## scale, then data
 
-With the instrument fixed and the wall still standing at 95.4%, two questions remained. Was the 8B's precision ceiling a *size* problem? Again, only one way to find out. The answer was yes: a 14B trained identically, once I matched its citation density fairly, hit 97.4% per-number against the 8B's 95.4%.) Was the 14B then *data*-limited? (Very: doubling the teacher corpus to about 2,000 memos produced the single biggest jump of the project, 82% cited pass at 99.1% per-number accuracy, while citing *more* numbers per memo than the teacher. A third doubling bought nothing; the curve had flattened.) A final preference-training pass nudged the finished writer, **v6, to 84% cited pass and 99.6% per-number accuracy at about 49 claims per memo**. That's roughly one wrong number per 250, against the teacher's one per 500.
+With the instrument fixed and the wall still standing at 95.4%, two questions remained. Was the 8B's precision ceiling a *size* problem? Again, only one way to find out. The answer was yes: a 14B trained identically, once I matched its citation density fairly, hit 97.4% per-number against the 8B's 95.4%. Was the 14B then *data*-limited? As it turns out, very: doubling the teacher corpus to about 2,000 memos produced the single biggest jump of the project, 82% cited pass at 99.1% per-number accuracy, while citing *more* numbers per memo than the teacher. A third doubling bought nothing but pain to my poor GPU; the curve had flattened. One last training pass produced the finished writer, and it's a strange one: a DPO run on 250 judge-preferred pairs of the 14B's own memos, aimed at prose quality rather than precision (the reason why is coming in the next section). It failed at that goal completely, but the gate numbers nudged up as a side effect: **v6, 84% cited pass and 99.6% per-number accuracy at about 49 claims per memo**. That's roughly one wrong number per 250, against the teacher's one per 500.
 
-That's the best writer I could train, and 84% still isn't 100%. The four flat experiments had already told me the last stretch wasn't coming from more training. It came from somewhere else entirely.
-
+That's the best writer I could train, and 84% still isn't 100%. The four flat experiments had already told me the last stretch wasn't coming from more training. So I had to stretch the rules of the game a little bit
 ## the model can fix what it can't avoid
 
 The breakthrough was inverting the question. "Train the model to be right the first time" kept failing. So: **train it to fix what the gate catches.**
@@ -86,6 +85,8 @@ Before anyone gets excited, two things the 100% doesn't say. Both were measured 
 First, the teacher was never given a retry loop; wrap Sonnet in the same gate-and-fix harness and it would sit near 100% too. The claim is *parity under the harness*, not superiority.
 
 Second, and more interesting: I ran a blind quality comparison. Same companies, my system's memo against the teacher's, judged by a third frontier model with positions swapped to prevent bias, on analytical quality alone (both memos already had perfect numbers). The teacher won **50 to 0**. My memos recite the data accurately; Sonnet's memos *think*. In the AbbVie pair, for instance, both memos report that profit collapsed after 2022 while cash from operations stayed near $19–25B every year. Sonnet's memo connects the two and concludes the collapse is mostly accounting charges rather than a real cash problem. Mine leaves the two facts in adjacent paragraphs for the reader to assemble.
+
+That gap is what v6's final training pass was trying to close: DPO explicitly optimising toward the judge's own preferences. The judge was unmoved, 50 to 0 before and 50 to 0 after. The teacher's edge reads like capability, not style, and at 14B it wasn't trainable.
 
 See if you can tell them apart yourself:
 
