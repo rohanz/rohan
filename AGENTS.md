@@ -10,6 +10,7 @@ This repo is the static portfolio site for `rohanjk.xyz`.
 ## Deployment
 
 - The live GitHub Pages branch is `master`.
+- **After any change to `assets/js/main.js` or `assets/css/style.css`, bump the `?v=` cache-buster on their tags in `index.html`** (e.g. `?v=YYYYMMDDx`). Browsers pin the old asset against the old query string; without the bump, visitors (and you) keep running stale code.
 - Feature or staging work may happen on other branches, but changes intended for the live site must be merged or pushed to `master`.
 - Before finishing, run `git status --short --branch` and make sure the branch and uncommitted changes are intentional.
 
