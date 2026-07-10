@@ -223,6 +223,18 @@ const LAKE = 'M880,-1600 L2600,-1600 L2600,2000 L880,2000 L880,1310 L1030,1160 L
   .map-tilt { width: 100%; height: 100%; }
   .map-3d { position: relative; width: 100%; height: 100%; }
   .layer { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  /* The camera groups animate a CSS transform every ride frame (see ride.ts
+     apply()). will-change keeps each one on a composited GPU layer so the
+     zoom beats SCALE a cached texture instead of re-rasterizing the whole map
+     per frame — the arrival/departure zooms were the only raster-bound phases
+     (the cruise is pan-only). The texture re-rasters sharp once the camera
+     settles, so nothing is blurry at rest. */
+  g[data-camera],
+  g[data-camera-land],
+  g[data-top-camera],
+  g[data-echo] {
+    will-change: transform;
+  }
   .layer-top { pointer-events: none; }
   .home-label { font-size: 18px; font-weight: 700; letter-spacing: normal; }
   .home-sub { font-size: 11px; font-weight: 500; letter-spacing: normal; }
