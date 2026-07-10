@@ -728,7 +728,11 @@ class MapView {
     const railLeft = this.railWidth() + 24; // clear the docked left rail
     const gap = 16;
     const marginR = 24;
-    const marginV = 84;
+    // Tight vertical margins: the camera zooms IN so the diagonal run fills the
+    // stage and every card (and its content, which scales with card height) is
+    // as large as the viewport allows — was 84, which left the view floating in
+    // empty map and forced small cards/text on laptops.
+    const marginV = 52;
     const wAvail = rect.width - marginR - railLeft;
     const hBudget = rect.height - 2 * marginV;
 
@@ -743,7 +747,10 @@ class MapView {
     const nm1 = n - 1;
     const pH = (wAvail - 2 * gap + 2 * R * gap) / (nm1 + 2 * R);
     const pV = (hBudget + gap) / n;
-    let P = Math.min(pH, pV, 320);
+    // Cap raised with the tighter margins (was 320) — on big monitors the pitch
+    // can now grow until the cards reach full content scale with presence,
+    // rather than parking small in a sea of map.
+    let P = Math.min(pH, pV, 360);
     P = Math.max(120, P);
     // Full-pitch height sets the WIDTH (cardW = R * baseH, unchanged), but the
     // card itself is drawn a touch SHORTER (H_RATIO) so the run reads tighter
