@@ -978,9 +978,22 @@ let resizeBound = false;
  *  has run, the observer's own fire is a true no-op (see the guards in
  *  sizeCanvas / resizeWaveCanvas / resizeMeters). */
 export function primeMusicSizing(): void {
-  players.forEach((p) => {
+  // Row 0 synchronously — its card is the first to fade in — then one row per
+  // animation frame. All 16 backing-store reallocations (4 rows x 4 canvases at
+  // devicePixelRatio) in a single frame was a deliberate ~100ms long frame at the
+  // exact moment of arrival; spread row-per-frame it is 4 x ~25ms, and each row
+  // is sized frames before its staggered card entrance (0.15s apart) needs it.
+  const prime = (p: RowPlayer) => {
     p.resizeWaveCanvas();
     p.resizeMeters();
+  };
+  players.forEach((p, i) => {
+    if (i === 0) prime(p);
+    else {
+      let frames = i;
+      const step = () => (--frames <= 0 ? prime(p) : requestAnimationFrame(step));
+      requestAnimationFrame(step);
+    }
   });
 }
 

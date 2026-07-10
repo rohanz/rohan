@@ -94,6 +94,12 @@ const LAKE = 'M880,-1600 L2600,-1600 L2600,2000 L880,2000 L880,1310 L1030,1160 L
   >
     <g data-camera>
       <g id="lines-world">
+      <!-- Line STROKES only, separately addressable: the motion-blur echoes
+           <use> THIS group rather than all of #lines-world, so each echo clone
+           re-rasters just the coloured paths — not the ~60 stop/terminal circles
+           too. Blurred dots were invisible in the effect anyway, and the clones
+           are the biggest per-frame raster cost during a cruise. -->
+      <g id="lines-strokes">
       {LINES.map((line) => (
         <g data-line={line.id} class:list={['line-group', { nav: !!line.nav }]} style={`--glow:${line.hex}`}>
           <path
@@ -107,6 +113,7 @@ const LAKE = 'M880,-1600 L2600,-1600 L2600,2000 L880,2000 L880,1310 L1030,1160 L
           />
         </g>
       ))}
+      </g>
 
       <!-- All stops drawn AFTER every line: a stop on an intersection can
            never hide behind another line. Grouped per line so a parked view
@@ -173,10 +180,10 @@ const LAKE = 'M880,-1600 L2600,-1600 L2600,2000 L880,2000 L880,1310 L1030,1160 L
          lines, offset along the travel direction at low opacity. Pure
          transforms — no gaussian rasterization, so no frame spikes ever. -->
     <g data-echo="1" opacity="0" pointer-events="none" aria-hidden="true">
-      <use href="#lines-world" />
+      <use href="#lines-strokes" />
     </g>
     <g data-echo="2" opacity="0" pointer-events="none" aria-hidden="true">
-      <use href="#lines-world" />
+      <use href="#lines-strokes" />
     </g>
   </svg>
 

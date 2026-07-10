@@ -304,6 +304,9 @@ class MapView {
    *  views keep the identity order (no filtering UI). */
   order: number[] = [];
 
+  /** Whether the echo layers are currently display:none (see apply). */
+  private echoesHidden = false;
+
   apply = () => {
     const tx = CX - this.state.s * this.state.x;
     const ty = CY - this.state.s * this.state.y;
@@ -318,15 +321,33 @@ class MapView {
       el.setAttribute('transform', `translate(${tx} ${ty}) scale(${this.state.s})`);
       if (el.style.transform) el.style.transform = '';
     }
-    this.echoes.forEach((el, i) => {
-      const m = (i + 1) * 4.5 * this.echo.k;
-      el.setAttribute(
-        'transform',
-        `translate(${tx + this.echo.dx * m} ${ty + this.echo.dy * m}) scale(${this.state.s})`,
-      );
-      if (el.style.transform) el.style.transform = '';
-      el.setAttribute('opacity', String(this.echo.k * (i === 0 ? 0.3 : 0.16)));
-    });
+    // Echo (motion-blur) layers: each one re-rasters the full line strokes, so
+    // they only exist while the blur is actually visible. Below a small k the
+    // clones are hidden with display:none — a guaranteed zero-paint state, unlike
+    // opacity 0, which can still cost a group surface — and their per-frame
+    // attribute writes are skipped entirely (idle frames, zoom beats, reveals and
+    // page pans all run with k = 0; no reason to invalidate two extra SVG
+    // subtrees there).
+    if (this.echo.k < 0.05) {
+      if (!this.echoesHidden) {
+        this.echoes.forEach((el) => el.setAttribute('display', 'none'));
+        this.echoesHidden = true;
+      }
+    } else {
+      if (this.echoesHidden) {
+        this.echoes.forEach((el) => el.removeAttribute('display'));
+        this.echoesHidden = false;
+      }
+      this.echoes.forEach((el, i) => {
+        const m = (i + 1) * 4.5 * this.echo.k;
+        el.setAttribute(
+          'transform',
+          `translate(${tx + this.echo.dx * m} ${ty + this.echo.dy * m}) scale(${this.state.s})`,
+        );
+        if (el.style.transform) el.style.transform = '';
+        el.setAttribute('opacity', String(this.echo.k * (i === 0 ? 0.3 : 0.16)));
+      });
+    }
     // Re-place the platform entries only while they're actually VISIBLE (the reveal
     // pan and parked, when they must track the camera). Through the whole cruise the
     // platform-ui is hidden, so re-laying it out every frame — for music, ~24
@@ -1384,9 +1405,12 @@ class MapView {
         // hover-dim silently stops working after a round-trip.
         { opacity: 1, duration: 0.4, ease: 'power1.out', overwrite: 'auto', clearProps: 'opacity' },
       );
-      // Fade the CLICKED line's glow off over the same beat, so the highlight
-      // dissolves gradually instead of snapping when ride-active drops the CSS
-      // drop-shadow. Inline GSAP filter overrides ride-active's `filter: none`;
+      // Fade the CLICKED line's glow off QUICKLY (0.15s, was 0.4s): an animating
+      // drop-shadow forces an isolated surface + gaussian blur per frame on a
+      // path whose bbox spans the map, and at 0.4s it overlapped the departure
+      // zoom — the most raster-expensive beat (scale animating). At 0.15s it is
+      // gone before the zoom has meaningfully scaled, and the dissolve still
+      // reads. Inline GSAP filter overrides ride-active's `filter: none`;
       // clearProps hands control back to the stylesheet once it settles.
       const ridden = Array.from(
         this.stage.querySelectorAll<SVGPathElement>(`[data-line="${id}"] .line-path`),
@@ -1396,7 +1420,7 @@ class MapView {
         { filter: `drop-shadow(0 0 1.2px ${line.hex})` },
         {
           filter: `drop-shadow(0 0 0px ${line.hex})`,
-          duration: 0.4,
+          duration: 0.15,
           ease: 'power1.out',
           overwrite: 'auto',
           clearProps: 'filter',
@@ -1510,7 +1534,11 @@ class MapView {
     // that burst inside the braking window read as a hitch right as the ramp-down
     // began. The cruise has frame budget to spare; the fade still completes just
     // before arrival.
-    tl.call(() => this.setFades(line, 0, 0.7), undefined, Math.max(RIDE_AT, rideEnd - RIDE_RAMP - 0.05));
+    // Timed so the 0.55s fade FINISHES as the brake begins: ~35 groups at
+    // intermediate opacity each need their own composite surface, and letting
+    // that overlap the braking window stacked raster cost exactly where the
+    // ramp-down judder was felt. On the shortest rides it starts mid-cruise.
+    tl.call(() => this.setFades(line, 0, 0.55), undefined, Math.max(RIDE_AT + 0.1, rideEnd - RIDE_RAMP - 0.6));
     // Clear the echo/motion-blur exactly as the ride reaches the last tick, which is
     // where the reveal picks up — no held pause between them (the ride decelerates to
     // ~0 velocity into the tick and the reveal soft-launches from ~0).
@@ -1828,7 +1856,8 @@ class MapView {
     // Fade everything but the new line as B arrives — fired at end-of-cruise, not
     // mid-brake, so the ~35-tween creation burst lands where the frame budget is
     // free (see toPlatform's matching comment).
-    tl.call(() => this.setFades(toLine, 0, 0.7), undefined, Math.max(rideStart, rideEnd - RIDE_RAMP - 0.05));
+    // Completes as the brake begins — see toPlatform's matching comment.
+    tl.call(() => this.setFades(toLine, 0, 0.55), undefined, Math.max(rideStart + 0.1, rideEnd - RIDE_RAMP - 0.6));
     // Clear the echo/motion-blur exactly as B's ride reaches the last tick, where
     // the reveal picks up — no held pause between them.
     tl.call(() => { this.echo.k = 0; this.apply(); }, undefined, rideEnd);
