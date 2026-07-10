@@ -10,7 +10,9 @@
     "build": "astro check && astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:e2e": "playwright test --grep-invert @slow",
+    "test:e2e:all": "playwright test"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.3",
@@ -20,6 +22,7 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.9",
+    "@playwright/test": "^1.61.1",
     "typescript": "^6.0.3",
     "vitest": "^4.1.9"
   }
