@@ -39,13 +39,13 @@ For v2 I attacked the memorisation directly: triple the data (the full 1,237-mem
 
 v2.1 kept the big corpus and brought back the second epoch, with the data <span class="gloss-term" data-gloss="Splitting train and test data by time period as well as by company, so the model can't memorise a specific company-quarter and get quizzed on it later.">time-sliced</span> so the extra repetition couldn't reintroduce the memorisation plague. That was the right mix: format stuck, no memorisation, and a teacher-like 40 citations per memo.
 
-Then I hit the wall. v2.1's per-number accuracy sat at 95.4%, and no amount of blind training moved it. At 40 numbers a memo, 95% per number means most memos carry at least one bad one, and the gate fails them whole. The errors weren't fabrications anymore, though, just imperfect transcription, like turning "168.6 billion shares" into 165. **36% of memos survived.** That meant I was finally past the timid base model, but nowhere near the teacher's 93%.
+Then I hit the wall. v2.1's per-number accuracy sat at 95.4%, and no amount of blind training moved it. At 40 numbers a memo, 95% per number means most memos carry at least one bad one, and the gate fails them whole. The errors weren't fabrications anymore, though, just imperfect transcription, like turning "168.6 billion shares" into 165. **36% of memos survived, single-shot, model alone.** That meant I was finally past the timid base model, but nowhere near the teacher's 93%.
 
 <div id="qla-compound-visual"></div>
 
 ### four attempts to train it out
 
-So I tried to train the errors out, in escalating order of desperation:
+So I tried to train the errors out, in escalating orders of desperation:
 
 - **More training epochs**: no movement.
 - **Stricter prompts** (banning derived arithmetic, capping citation counts): no movement.
@@ -57,13 +57,13 @@ That's the great wall: 95.4% per-number accuracy, apparently baked into the 8B, 
 
 ### the broken instrument
 
-Somewhere in there I discovered my measuring instrument wasn't being completely truthful: I'd been training models just fine, but then evaluating through aggressive 4-bit quantization, which was silently garbling the fine-tuned <span class="gloss-term" data-gloss="The billions of learned numbers that make up a trained model. Damage them and the behaviour degrades in subtle ways.">weights</span> and costing about 7 accuracy points. Every number in this article (even the ones you've already read) comes from after that fix.
+Somewhere through that process I discovered my measuring instrument wasn't being completely truthful: I'd been training models just fine, but then evaluating through aggressive <span class="gloss-term" data-gloss="Compressing a model by storing each of its weights in 4 bits instead of 16, an eighth of the size. Done carelessly it damages the model; the compression section later shows how to do it right.">4-bit quantization</span>, which was silently garbling the fine-tuned <span class="gloss-term" data-gloss="The billions of learned numbers that make up a trained model. Damage them and the behaviour degrades in subtle ways.">weights</span> and costing about 7 accuracy points. Every number in this article (even the ones you've already read) comes from after that fix.
 
 Lesson one of the project: **evaluate the artefact you trained, not the artefact you deploy.**
 
 ## scale, then data
 
-With the instrument fixed and the wall still standing at 95.4%, two questions remained. Was the 8B's precision ceiling a *size* problem? (Yes: a 14B trained identically, once I matched its citation density fairly, hit 97.4% per-number against the 8B's 95.4%.) Was the 14B then *data*-limited? (Very: doubling the teacher corpus to about 2,000 memos produced the single biggest jump of the project, 82% cited pass at 99.1% per-number accuracy, while citing *more* numbers per memo than the teacher. A third doubling bought nothing; the curve had flattened.) A final preference-training pass nudged the finished writer, **v6, to 84% cited pass and 99.6% per-number accuracy at about 49 claims per memo**. That's roughly one wrong number per 250, against the teacher's one per 500.
+With the instrument fixed and the wall still standing at 95.4%, two questions remained. Was the 8B's precision ceiling a *size* problem? Again, only one way to find out. The answer was yes: a 14B trained identically, once I matched its citation density fairly, hit 97.4% per-number against the 8B's 95.4%.) Was the 14B then *data*-limited? (Very: doubling the teacher corpus to about 2,000 memos produced the single biggest jump of the project, 82% cited pass at 99.1% per-number accuracy, while citing *more* numbers per memo than the teacher. A third doubling bought nothing; the curve had flattened.) A final preference-training pass nudged the finished writer, **v6, to 84% cited pass and 99.6% per-number accuracy at about 49 claims per memo**. That's roughly one wrong number per 250, against the teacher's one per 500.
 
 That's the best writer I could train, and 84% still isn't 100%. The four flat experiments had already told me the last stretch wasn't coming from more training. It came from somewhere else entirely.
 
@@ -71,7 +71,7 @@ That's the best writer I could train, and 84% still isn't 100%. The four flat ex
 
 The breakthrough was inverting the question. "Train the model to be right the first time" kept failing. So: **train it to fix what the gate catches.**
 
-I'd actually built the answer back at the 8B stage: 354 training examples of the form *here's a memo you wrote + here's the gate's list of untraceable numbers → here's the corrected memo*. One small fine-tune later, the 8B "fixer" existed, and the controls made the result unambiguous. Told exactly which numbers were wrong, an untrained model fixes almost none of its failures (1 in 20). The trained fixer repairs about two-thirds in one round, and about 95% across two rounds, even on drafts written by *different, bigger models it never saw in training*, including the 14B writer that outgrew it.
+I'd actually built the answer back at the 8B stage: 354 training examples of the form *here's a memo you wrote + here's the gate's list of untraceable numbers → here's the corrected memo*. One small fine-tune later, the 8B "fixer" existed, and the controls made the result unambiguous. Told exactly which numbers were wrong, an untrained model fixes almost none of its failures (1 in 20). The trained fixer repairs about two-thirds of the failures in one round, and 19 out of 20 across two rounds, even on drafts written by *different, bigger models it never saw in training*, including the 14B writer that outgrew it.
 
 That's the system's engine: **draft → gate → targeted repair → gate again**. No human in the loop, and no number unchecked. Below is one real repair from the test set.
 
