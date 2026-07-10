@@ -41,6 +41,8 @@ v2.1 kept the big corpus and brought back the second epoch, with the data <span 
 
 Then I hit the wall. v2.1's per-number accuracy sat at 95.4%, and no amount of blind training moved it. At 40 numbers a memo, 95% per number should doom nearly every memo; errors cluster in unlucky memos rather than spreading evenly, so more survive than the arithmetic's 15%, but not many more. The errors weren't fabrications anymore, though, just imperfect transcription, like turning "168.6 billion shares" into 165. **36% of memos survived, single-shot, model alone.** That meant I was finally past the timid base model, but nowhere near the teacher's 93%.
 
+The demo below is that brutal arithmetic drawn out: slide along the curve and watch how per-number accuracy compounds into memo survival at 40 claims. The 8B marker is where this section is stuck. The 14B and 14B-v6 markers are models you haven't met yet; they're the next two sections, and the curve is why they had to exist.
+
 <div id="qla-compound-visual"></div>
 
 ### four attempts to train it out
@@ -99,9 +101,9 @@ The last pass was making it small enough to live somewhere cheap, which means re
 
 <span class="gloss-term" data-gloss="Importance-matrix quantization: run your actual workload through the model once, record which weights it leans on, and place the rounding steps to protect those weights when compressing.">imatrix quantization</span> fixes this by measuring first. You run your real workload through the model once (I used the memo prompts themselves), record which weights the work actually leans on, and then place the rungs so those weights land close to one and take almost no rounding error. The unimportant weights absorb the error instead. The illustration below shows the idea.
 
-Result: the 14B writer compresses from 16GB to **9GB with no measurable quality loss**, using the same 4-bit budget that destroyed accuracy when spent naively. The full system (writer + fixer + gate) now runs standalone on a Mac mini in about 18GB of memory, generating verified memos for zero marginal cost.
-
 <div id="qla-quant-visual"></div>
+
+Result: the 14B writer compresses from 16GB to **9GB with no quality loss on the gate metrics** (the instrument this project trusts), using the same 4-bit budget that destroyed accuracy when spent naively. The full system (writer + fixer + gate) now runs standalone on a Mac mini in about 18GB of memory, generating verified memos for zero marginal cost.
 
 ## the machine fights back!
 
