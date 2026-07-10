@@ -1,5 +1,5 @@
 ---
-title: "quant strategy research: the ways backtests lie"
+title: "quant strategy research: strategies, and the ways backtests lie"
 summary: "The strategy-research arm of a miniature trading firm: a backtesting engine that makes cheating structurally impossible, pairs trading with Kalman-adaptive hedging, factor strategies with survivorship bias measured at +4.6%/yr instead of disclaimed, and an ML layer that lost to its baseline."
 image: assets/images/projects/quantlab-research/banner.webp
 technologies:
@@ -87,7 +87,7 @@ These factors were alright, but it wasn't close to the mythical success stories 
 
 The three famous strategies only dug up three unimpressive negatives, with one thread running through all of them. On a survivorship-inflated bull decade, every filter, gate, and clever overlay is just drag. Plain momentum is stubbornly, boringly, and infuriatingly hard to beat. Every spectacular number pulled away the moment I reached for it with a fair test. 
 
-I started this whole project with a small, naive hope that I'd leave with a golden ticket. Maybe I'd find one of those unusual strategies the finance hopefuls talked about, and I'd never have to work a day for the rest of my life.
+I started this whole project with a small, naive hope that I'd leave with a golden ticket. Maybe I'd find one of those unusual strategies those finance hopefuls talked about, and I'd never have to work a day for the rest of my life.
 
 I'm still writing these portfolio articles, so you know how that went.
 

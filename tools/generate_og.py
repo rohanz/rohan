@@ -153,13 +153,31 @@ def make_project_card(slug, title, summary, techs, banner_path):
     y = 150
 
     title_font, tsize = fit_title(d, title, text_w, CHILLAX_BOLD)
-    d.text((PAD, y), title, font=title_font, fill=AMBER + (255,))
-    y += tsize + 30
+    if d.textlength(title, font=title_font) > text_w:
+        # Too long even at the floor size: wrap, shrinking further until the
+        # whole title fits in three lines (never ellipsize away the ending).
+        while True:
+            tlines = wrap(d, title, title_font, text_w)
+            if len(tlines) <= 3 or tsize <= 36:
+                break
+            tsize -= 4
+            title_font = font(CHILLAX_BOLD, tsize)
+        if len(tlines) > 3:
+            tlines = tlines[:3]
+            tlines[-1] = tlines[-1].rstrip(" ,;:") + "…"
+    else:
+        tlines = [title]
+    for tline in tlines:
+        d.text((PAD, y), tline, font=title_font, fill=AMBER + (255,))
+        y += tsize + 10
+    y += 20
 
+    # Trade summary lines for title lines so the tags row never collides.
+    max_summary = min(3, 5 - len(tlines))
     sum_font = font(INTER_MEDIUM, 36)
     lines = wrap(d, summary, sum_font, text_w)
-    if len(lines) > 3:
-        lines = lines[:3]
+    if len(lines) > max_summary:
+        lines = lines[:max_summary]
         lines[-1] = lines[-1].rstrip(" ,;:") + "…"
     for line in lines:
         d.text((PAD, y), line, font=sum_font, fill=MUTED + (255,))
@@ -229,6 +247,11 @@ def make_stub(slug, title, summary):
 def main():
     print("Homepage card:", os.path.relpath(make_homepage_card(), ROOT))
     index = json.load(open(os.path.join(ROOT, "projects/index.json")))
+    # Unlisted articles get share cards + meta stubs too — they're shared by
+    # direct link, so link previews matter. They stay out of the grid/sitemap.
+    unlisted_path = os.path.join(ROOT, "projects/unlisted.json")
+    if os.path.exists(unlisted_path):
+        index = index + json.load(open(unlisted_path))
     print(f"\nProjects ({len(index)}):")
     for fname in index:
         slug = fname[:-3] if fname.endswith(".md") else fname
