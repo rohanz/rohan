@@ -20,6 +20,7 @@ This repo is the static portfolio site for `rohanjk.xyz`.
 - `assets/js/main.js`: routing, markdown loading, project rendering, interactive visualizations, audio demos, and theme behavior.
 - `projects/*.md`: project articles. Each file starts with YAML frontmatter.
 - `projects/index.json`: ordered list of project markdown files shown by the site.
+- `projects/unlisted.json`: articles reachable by direct link but hidden from the live grid (see Unlisted Articles).
 - `assets/images/projects/...`: project images (WebP — see Assets below).
 - `assets/audio/...`: audio demos and snippets.
 - `downloads/...`: public downloadable files such as installers.
@@ -50,6 +51,26 @@ technologies:
 Use relative asset paths from the site root, for example `assets/images/projects/bqst/final-ui.webp`.
 
 Use normal markdown for body copy. Inline HTML is supported and used for custom components, glossary terms, tables, and CTAs. All title/summary/tag/markdown content is sanitized through DOMPurify before injection — keep new dynamic sinks sanitized too.
+
+## Unlisted Articles
+
+An article can be published as **unlisted**: fully readable at its direct URL (`/projects/<slug>`), but invisible on the live projects grid. Use this for drafts being shared privately before public launch.
+
+- To unlist an article, put its filename in `projects/unlisted.json` instead of `projects/index.json`. An article must be in exactly one of the two files.
+- To publish it later, move the filename from `unlisted.json` to `index.json` (and add its route to `sitemap.xml`).
+- **On the live site**: no card, no filter tags, no prev/next arrows from other articles; the direct link works and is shareable (GitHub Pages `404.html` SPA fallback handles deep links).
+- **Locally** (`localhost` / `127.0.0.1`): unlisted articles DO get grid cards, marked with an `unlisted` badge, so they can be reviewed by clicking through like any other project. This is hostname-gated in `displayProjects()` in `main.js`.
+- Unlisted articles are not in `sitemap.xml` and are not prerendered by `tools/generate_og.py` (it reads `index.json` only), so link previews fall back to the site-wide OG image. The URL is unguessable only by obscurity — don't put anything truly secret in one.
+
+### Testing unlisted articles locally
+
+Deep links need the SPA-fallback server, not plain `http.server`:
+
+```sh
+python3 tools/serve.py 8081
+```
+
+Then check: `http://127.0.0.1:8081/` projects grid shows the unlisted cards WITH badge; the direct link (e.g. `/projects/quantlab-research`) loads with visuals working. To preview the LIVE behaviour (cards hidden), open the same page via a non-localhost hostname, e.g. `http://$(hostname).local:8081/` — serve.py binds 127.0.0.1 by default, so either temporarily bind 0.0.0.0 or just verify the hostname gate by checking `unlisted.json` isn't referenced from the grid DOM.
 
 ## Assets
 

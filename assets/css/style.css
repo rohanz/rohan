@@ -1072,6 +1072,21 @@ body {
     transition: color 0.3s ease;
 }
 
+/* Local-dev only: unlisted articles get cards with this badge (see displayProjects) */
+.project-card-unlisted-badge {
+    display: inline-block;
+    margin-right: 0.5em;
+    padding: 0.1em 0.5em;
+    border: 1px solid var(--accent);
+    border-radius: 4px;
+    color: var(--accent);
+    font-size: 0.62rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    vertical-align: middle;
+}
+
 @media (hover: hover) {
     .project-card:hover .project-card-title {
         color: var(--accent);
@@ -3397,4 +3412,1025 @@ body.image-lightbox-open {
     .lcm-piano { height: 132px; }
     .lcm-key.black { width: 1.6rem; }
     .lcm-chord { font-size: 2rem; }
+}
+
+/* ============================================================
+   QUANTLAB ANALYST VISUALS (quantlab-analyst project article)
+   ============================================================ */
+.qla-visual {
+    box-sizing: border-box;
+    max-width: 100%;
+    margin: 1.4rem 0 2rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    background:
+        linear-gradient(135deg, rgba(255, 204, 128, 0.08), transparent 42%),
+        var(--bg-card);
+    overflow: hidden;
+}
+
+.qla-visual-header {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.35rem 1rem;
+    padding: 0.9rem 1rem 0.75rem;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.qla-visual-kicker {
+    font-family: 'Chillax', 'Inter', sans-serif;
+    font-weight: 700;
+    color: var(--accent);
+    font-size: 1rem;
+}
+
+.qla-visual-meta {
+    color: var(--text-muted);
+    font-size: 0.82rem;
+}
+
+.qla-visual-body {
+    padding: 1rem;
+}
+
+.qla-btn {
+    font-family: 'Chillax', 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 0.88rem;
+    padding: 0.45rem 1.1rem;
+    border-radius: 999px;
+    border: 1px solid var(--border-subtle);
+    background: var(--bg-card);
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.qla-btn:hover {
+    border-color: var(--border-hover);
+    background: var(--bg-card-hover);
+}
+
+.qla-btn:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+.qla-btn-accent {
+    background: var(--accent);
+    color: var(--bg-primary);
+    border-color: transparent;
+}
+
+.qla-btn-accent:hover {
+    background: var(--accent);
+    border-color: transparent;
+    filter: brightness(1.08);
+}
+
+[data-theme="light"] .qla-btn-accent {
+    color: #FFF8E1;
+}
+
+/* --- 1. compounding slider --- */
+.qla-compound-takeaway {
+    margin: 0.4rem 0 0.8rem;
+    min-height: 2.9em;
+    color: var(--text-secondary);
+    font-size: 0.92rem;
+    font-style: italic;
+}
+
+.qla-compound-canvas {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+}
+
+/* --- 2. gate playground --- */
+.qla-memo {
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    background: var(--bg-card);
+    padding: 0.9rem 1rem;
+    white-space: pre-wrap;
+    font-size: 0.85rem;
+    line-height: 1.55;
+    color: var(--text-secondary);
+}
+
+.qla-mark-bad {
+    background: rgba(224, 85, 85, 0.18);
+    color: #E05555;
+    border-bottom-color: #E05555;
+    font-weight: 700;
+}
+
+[data-theme="light"] .qla-mark-bad {
+    color: #B23B3B;
+    border-bottom-color: #B23B3B;
+}
+
+.qla-mark-bad,
+.qla-mark-good {
+    padding: 0 0.15em;
+    border-radius: 3px;
+}
+
+.qla-mark-good {
+    background: rgba(102, 187, 106, 0.18);
+    color: #66BB6A;
+    font-weight: 700;
+}
+
+[data-theme="light"] .qla-mark-good {
+    color: #2E7D32;
+}
+
+.qla-gate-report-title {
+    font-family: 'Chillax', 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    display: flex;
+    gap: 0.7rem;
+    align-items: baseline;
+    flex-wrap: wrap;
+}
+
+.qla-fixer-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 0.9rem;
+}
+
+.qla-fixer-col-title {
+    font-family: 'Chillax', 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    margin-bottom: 0.4rem;
+}
+
+/* --- 3. you be the judge --- */
+.qla-judge-status {
+    font-family: 'Chillax', 'Inter', sans-serif;
+    font-weight: 700;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    margin: 0 0 0.7rem;
+}
+
+.qla-judge-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 0.9rem;
+    margin-bottom: 0.9rem;
+}
+
+.qla-judge-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.7rem;
+}
+
+.qla-judge-col .qla-judge-panel {
+    align-self: stretch;
+}
+
+.qla-judge-probe {
+    visibility: hidden;
+}
+
+.qla-judge-panel {
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    background: var(--bg-card);
+    overflow: hidden;
+}
+
+.qla-judge-panel.is-pick-correct {
+    border-color: #66BB6A;
+    box-shadow: 0 0 0 1px #66BB6A;
+}
+
+[data-theme="light"] .qla-judge-panel.is-pick-correct {
+    border-color: #2E7D32;
+    box-shadow: 0 0 0 1px #2E7D32;
+}
+
+.qla-judge-panel.is-pick-wrong {
+    border-color: #E05555;
+    box-shadow: 0 0 0 1px #E05555;
+}
+
+[data-theme="light"] .qla-judge-panel.is-pick-wrong {
+    border-color: #B23B3B;
+    box-shadow: 0 0 0 1px #B23B3B;
+}
+
+.qla-judge-panel-label {
+    font-family: 'Chillax', 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 0.82rem;
+    color: var(--accent);
+    padding: 0.55rem 0.9rem;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.qla-judge-panel-body {
+    padding: 0.8rem 0.9rem;
+    white-space: pre-wrap;
+    font-size: 0.83rem;
+    line-height: 1.55;
+    color: var(--text-secondary);
+}
+
+.qla-judge-guess:disabled {
+    opacity: 0.45;
+    cursor: default;
+}
+
+.qla-judge-guess:disabled:hover {
+    border-color: var(--border-subtle);
+    background: var(--bg-card);
+}
+
+.qla-judge-controls {
+    justify-content: center;
+    min-height: 2.6em;
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    margin-top: 0.2rem;
+}
+
+.qla-judge-feedback {
+    /* one line at the inherited 1.7 line-height, reserved exactly */
+    min-height: 1.7em;
+    line-height: 1.7;
+    text-align: center;
+    color: var(--text-primary);
+    font-size: 0.92rem;
+    font-weight: 700;
+    margin: 0.3rem 0 0;
+}
+
+.qla-judge-feedback.is-correct { color: #66BB6A; }
+[data-theme="light"] .qla-judge-feedback.is-correct { color: #2E7D32; }
+.qla-judge-feedback.is-wrong { color: #E05555; }
+[data-theme="light"] .qla-judge-feedback.is-wrong { color: #B23B3B; }
+
+/* --- 4. prediction game timeline --- */
+.qla-timeline-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.9rem;
+}
+
+.qla-timeline-legend {
+    color: var(--text-muted);
+    font-size: 0.82rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.qla-teacher-tick {
+    display: inline-block;
+    width: 3px;
+    height: 0.9rem;
+    border-radius: 2px;
+    background: var(--accent);
+}
+
+.qla-timeline-track {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.8rem;
+}
+
+@media (max-width: 900px) {
+    .qla-timeline-track {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 520px) {
+    .qla-timeline-track {
+        grid-template-columns: 1fr;
+    }
+}
+
+.qla-timeline-card {
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    background: var(--bg-card);
+    padding: 0.8rem 0.9rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+}
+
+.qla-timeline-name {
+    font-family: 'Chillax', 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.qla-timeline-tag {
+    display: inline-block;
+    font-family: 'Chillax', 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 0.7rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 0.15rem;
+}
+
+.qla-timeline-tag-result {
+    color: var(--accent);
+}
+
+.qla-timeline-pred p,
+.qla-timeline-result p {
+    margin: 0;
+    font-size: 0.84rem;
+    line-height: 1.45;
+    color: var(--text-secondary);
+}
+
+/* Cards are equalized to one fixed height by JS; the slot rides the flex
+   column's bottom edge so every reveal button lines up across the row. */
+.qla-timeline-slot {
+    position: relative;
+    margin-top: auto;
+}
+
+.qla-timeline-result.is-unrevealed {
+    visibility: hidden;
+}
+
+.qla-timeline-bar {
+    position: relative;
+    height: 8px;
+    border-radius: 999px;
+    background: var(--bg-card-hover);
+    border: 1px solid var(--border-subtle);
+    margin-top: 0.55rem;
+    overflow: hidden;
+}
+
+.qla-timeline-bar-fill {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 0;
+    background: linear-gradient(90deg,
+        color-mix(in srgb, var(--accent) 45%, transparent),
+        var(--accent));
+    border-radius: 999px;
+    transition: width 0.7s var(--ease-out-expo);
+}
+
+.qla-timeline-bar-teacher {
+    position: absolute;
+    top: -2px;
+    bottom: -2px;
+    width: 2px;
+    background: var(--text-primary);
+    opacity: 0.7;
+}
+
+.qla-timeline-bar-pct {
+    display: inline-block;
+    margin-top: 0.3rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+}
+
+.qla-timeline-reveal {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .qla-timeline-bar-fill,
+    .qla-btn {
+        transition: none;
+    }
+}
+
+@media (max-width: 640px) {
+    .qla-visual-body {
+        padding: 0.8rem;
+    }
+}
+
+/* ============================================================
+   QUANTLAB FIN VISUALS (quantlab project article)
+   Reuses the qla-visual shell, buttons and slider components.
+   ============================================================ */
+
+/* --- 1. the lookahead cheat --- */
+.qlf-mode-toggle {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+}
+
+.qlf-mode-btn.is-active {
+    background: var(--accent);
+    color: var(--bg-primary);
+    border-color: transparent;
+}
+
+[data-theme="light"] .qlf-mode-btn.is-active {
+    color: #FFF8E1;
+}
+
+.qlf-mode-cheat.is-active {
+    background: #E05555;
+    color: #1a1a1a;
+}
+
+[data-theme="light"] .qlf-mode-cheat.is-active {
+    background: #B23B3B;
+    color: #FFF8E1;
+}
+
+.qlf-la-readout {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 0.7rem;
+    margin-bottom: 0.9rem;
+}
+
+.qlf-la-stat {
+    display: grid;
+    gap: 0.15rem;
+    padding: 0.5rem 0.7rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    opacity: 0.6;
+    transition: opacity 0.25s ease, border-color 0.25s ease;
+}
+
+.qlf-la-stat.is-emphasized {
+    opacity: 1;
+    border-color: var(--border-hover);
+}
+
+.qlf-la-stat-hold {
+    opacity: 0.85;
+}
+
+.qlf-la-big {
+    font-family: 'Chillax', 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 1.7rem;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-primary);
+}
+
+.qlf-la-stat-cheat .qlf-la-big { color: #E05555; }
+[data-theme="light"] .qlf-la-stat-cheat .qlf-la-big { color: #B23B3B; }
+.qlf-la-stat-honest .qlf-la-big { color: var(--accent); }
+
+.qlf-la-stat-label {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+.qlf-la-window-note {
+    margin: 0.35rem 0 0.7rem;
+    color: var(--text-muted);
+    font-size: 0.78rem;
+}
+
+/* --- shared: legends + hover crosshair --- */
+.qlf-legend {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.3rem 1rem;
+    flex-wrap: wrap;
+    margin: 0.4rem 0 0.3rem;
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+}
+
+.qlf-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.qlf-legend-swatch {
+    display: inline-block;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+.qlf-sw-accent { color: var(--accent); }
+.qlf-sw-warn { color: #E05555; }
+[data-theme="light"] .qlf-sw-warn { color: #B23B3B; }
+.qlf-sw-muted { color: var(--text-muted); }
+
+.qlf-legend-swatch.qlf-sw-gap {
+    background: rgba(224, 85, 85, 0.16);
+    box-shadow: inset 0 0 0 1px rgba(224, 85, 85, 0.45);
+}
+
+[data-theme="light"] .qlf-legend-swatch.qlf-sw-gap {
+    background: rgba(178, 59, 59, 0.14);
+    box-shadow: inset 0 0 0 1px rgba(178, 59, 59, 0.45);
+}
+
+.qlf-legend-swatch.qlf-sw-window {
+    background: rgba(232, 230, 227, 0.1);
+    box-shadow: inset 0 0 0 1px rgba(232, 230, 227, 0.35);
+}
+
+[data-theme="light"] .qlf-legend-swatch.qlf-sw-window {
+    background: rgba(62, 39, 35, 0.08);
+    box-shadow: inset 0 0 0 1px rgba(62, 39, 35, 0.3);
+}
+
+/* rung swatch: a short vertical tick, matching the canvas rungs */
+.qlf-legend-swatch.qlf-sw-rung {
+    width: 3px;
+    height: 12px;
+    border-radius: 1px;
+    color: var(--text-secondary);
+}
+
+.qlf-crosshair-canvas {
+    touch-action: pan-y;
+    cursor: crosshair;
+}
+
+/* visually-hidden range input: keyboard fallback for the crosshair */
+.qlf-sr-range {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.qla-compound-canvas-wrap {
+    position: relative;
+}
+
+.qla-compound-canvas-wrap.qlf-cross-focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+    border-radius: 4px;
+}
+
+.qlf-readout {
+    display: flex;
+    gap: 0.4rem 1.4rem;
+    flex-wrap: wrap;
+    margin: 0.5rem 0 0.6rem;
+    /* line up the first field with the chart's plot area (canvas padL = 44px) */
+    padding-left: 44px;
+    transition: opacity 0.15s ease;
+}
+
+.qlf-readout.is-idle {
+    opacity: 0.45;
+}
+
+.qlf-readout-field {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.45rem;
+}
+
+.qlf-readout-label {
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.qlf-readout-value {
+    display: inline-block;
+    color: var(--text-primary);
+    font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+    font-size: 0.84rem;
+    font-variant-numeric: tabular-nums;
+    border-bottom: 1px solid var(--border-subtle);
+    text-align: right;
+    min-height: 1.3em;
+}
+
+/* --- 2. kalman vs static --- */
+.qlf-chip-note {
+    margin: 0.4rem 0 0;
+    color: var(--text-muted);
+    font-size: 0.78rem;
+}
+
+/* --- imatrix quantization explainer captions --- */
+/* Both captions share one grid cell; the inactive one stays laid out but
+   invisible, so the cell height is the max of the two and toggling never
+   moves anything below the chart. */
+.qla-imx-captions {
+    display: grid;
+    margin-top: 0.4rem;
+}
+
+.qla-imx-captions p {
+    grid-area: 1 / 1;
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.92rem;
+    font-style: italic;
+}
+
+.qla-imx-captions p.is-off {
+    visibility: hidden;
+}
+
+/* --- 3. survivorship wedge + believe-o-meter --- */
+.qlf-meter {
+    margin-top: 1rem;
+    padding-top: 0.9rem;
+    border-top: 1px solid var(--border-subtle);
+}
+
+.qlf-meter-question {
+    margin: 0.5rem 0 0.6rem;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.qlf-meter-presets {
+    display: flex;
+    gap: 0.45rem;
+    flex-wrap: wrap;
+}
+
+.qlf-meter-btn {
+    font-size: 0.82rem;
+    padding: 0.38rem 0.9rem;
+}
+
+.qlf-meter-btn.is-active {
+    background: var(--accent);
+    color: var(--bg-primary);
+    border-color: transparent;
+}
+
+[data-theme="light"] .qlf-meter-btn.is-active {
+    color: #FFF8E1;
+}
+
+.qlf-meter-big {
+    margin: 0.7rem 0 0.3rem;
+    font-family: 'Chillax', 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 1.25rem;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+}
+
+.qlf-meter-big.is-at-measured {
+    color: var(--accent);
+}
+
+/* --- 4. risk gate playground --- */
+/* full-width stacked rows */
+.qlf-risk-row {
+    margin-top: 0.8rem;
+}
+
+.qlf-risk-row > .qlf-btn-group-label {
+    margin-bottom: 0.3rem;
+}
+
+.qlf-limits-row {
+    display: flex;
+    gap: 0.3rem 1.6rem;
+    flex-wrap: wrap;
+    align-items: baseline;
+}
+
+.qlf-limits-value {
+    color: var(--text-secondary);
+    font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+    font-size: 0.82rem;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.qlf-state-tiles {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+}
+
+@media (max-width: 560px) {
+    .qlf-state-tiles {
+        grid-template-columns: 1fr;
+    }
+}
+
+.qlf-state-tile {
+    display: grid;
+    grid-template-rows: auto auto;
+    gap: 0.15rem;
+    padding: 0.45rem 0.6rem;
+    min-width: 0;
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    transition: border-color 0.25s ease;
+}
+
+.qlf-state-label {
+    color: var(--text-muted);
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* tile body: exactly three value lines tall in every tile, always */
+.qlf-state-body {
+    display: flex;
+    flex-direction: column;
+    height: 4.2em;
+    min-width: 0;
+    font-size: 0.82rem;
+}
+
+.qlf-state-body-center {
+    justify-content: center;
+    gap: 0.1rem;
+}
+
+.qlf-state-value {
+    color: var(--text-primary);
+    font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+    line-height: 1.4;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.qlf-state-sub {
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    line-height: 1.4;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+/* positions: one fixed line per allowlisted symbol, amount right-aligned */
+.qlf-pos-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    line-height: 1.4;
+    height: 1.4em;
+    font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+    font-variant-numeric: tabular-nums;
+}
+
+.qlf-pos-sym {
+    color: var(--text-secondary);
+}
+
+.qlf-pos-amt {
+    color: var(--text-muted);
+}
+
+.qlf-pos-amt.is-held {
+    color: var(--text-primary);
+}
+
+.qlf-state-value.is-negative { color: #E05555; }
+[data-theme="light"] .qlf-state-value.is-negative { color: #B23B3B; }
+
+.qlf-state-tile.qlf-pulse {
+    border-color: var(--accent);
+    animation: qlf-tile-pulse 0.6s ease;
+}
+
+@keyframes qlf-tile-pulse {
+    0% { background: rgba(255, 204, 128, 0.18); }
+    100% { background: transparent; }
+}
+
+[data-theme="light"] .qlf-state-tile.qlf-pulse {
+    animation-name: qlf-tile-pulse-light;
+}
+
+@keyframes qlf-tile-pulse-light {
+    0% { background: rgba(141, 110, 99, 0.15); }
+    100% { background: transparent; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .qlf-state-tile.qlf-pulse { animation: none; }
+}
+
+.qlf-risk-bottom {
+    display: flex;
+    gap: 0.8rem 2rem;
+    flex-wrap: wrap;
+    margin-top: 0.9rem;
+}
+
+.qlf-risk-bottom .qlf-order-row {
+    max-width: 100%;
+}
+
+.qlf-btn-group {
+    min-width: 0;
+}
+
+.qlf-btn-group-label {
+    display: block;
+    margin-bottom: 0.35rem;
+    color: var(--text-muted);
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.qlf-status-strip {
+    display: block;
+    box-sizing: border-box;
+    height: 2.4em;
+    line-height: 2.4em;
+    padding: 0 0.6rem;
+    border-radius: 5px;
+    border: 1px solid var(--border-subtle);
+    color: var(--text-muted);
+    font-family: 'Chillax', 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 0.82rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.qlf-status-strip.is-tripped {
+    background: rgba(224, 85, 85, 0.15);
+    border-color: #E05555;
+    color: #E05555;
+}
+
+[data-theme="light"] .qlf-status-strip.is-tripped {
+    background: rgba(178, 59, 59, 0.1);
+    border-color: #B23B3B;
+    color: #B23B3B;
+}
+
+.qla-visual.qlf-is-killed {
+    border-color: #E05555;
+}
+
+[data-theme="light"] .qla-visual.qlf-is-killed {
+    border-color: #B23B3B;
+}
+
+.qlf-is-killed [data-buy] {
+    opacity: 0.45;
+}
+
+.qlf-risk-buttons {
+    display: flex;
+    gap: 0.45rem;
+    flex-wrap: wrap;
+}
+
+/* order buttons stay in one straight row; scroll horizontally if tight,
+   wrap only at true mobile widths */
+.qlf-risk-buttons.qlf-order-row {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-hover) transparent;
+}
+
+.qlf-risk-buttons.qlf-order-row::-webkit-scrollbar {
+    height: 5px;
+}
+
+.qlf-risk-buttons.qlf-order-row::-webkit-scrollbar-thumb {
+    background: var(--border-hover);
+    border-radius: 4px;
+}
+
+.qlf-order-row .qlf-risk-btn {
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+    .qlf-risk-buttons.qlf-order-row {
+        flex-wrap: wrap;
+        overflow-x: visible;
+    }
+}
+
+.qlf-risk-btn {
+    font-size: 0.8rem;
+    padding: 0.38rem 0.85rem;
+}
+
+.qlf-risk-btn-warn {
+    color: #E05555;
+    border-color: rgba(224, 85, 85, 0.5);
+}
+
+[data-theme="light"] .qlf-risk-btn-warn {
+    color: #B23B3B;
+    border-color: rgba(178, 59, 59, 0.5);
+}
+
+.qlf-audit-log {
+    height: 280px;
+    overflow-y: auto;
+    padding: 0.5rem 0.6rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    background: var(--bg-primary);
+    font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+    font-size: 0.76rem;
+    line-height: 1.5;
+}
+
+.qlf-audit-log:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+.qlf-audit-line {
+    display: flex;
+    gap: 0.5rem;
+    align-items: baseline;
+    padding: 0.1rem 0;
+    color: var(--text-secondary);
+}
+
+.qlf-audit-ts {
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+
+.qlf-audit-verdict {
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.qlf-audit-line.is-approved .qlf-audit-verdict { color: #66BB6A; }
+[data-theme="light"] .qlf-audit-line.is-approved .qlf-audit-verdict { color: #2E7D32; }
+.qlf-audit-line.is-rejected .qlf-audit-verdict { color: #E05555; }
+[data-theme="light"] .qlf-audit-line.is-rejected .qlf-audit-verdict { color: #B23B3B; }
+
+/* slim scrollbars for the scrolling panels in the quantlab visuals */
+.qlf-audit-log {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-hover) transparent;
+}
+
+.qlf-audit-log::-webkit-scrollbar {
+    width: 7px;
+    height: 7px;
+}
+
+.qlf-audit-log::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.qlf-audit-log::-webkit-scrollbar-thumb {
+    background: var(--border-hover);
+    border-radius: 4px;
+}
+
+.qlf-audit-log::-webkit-scrollbar-thumb:hover {
+    background: var(--accent);
 }
