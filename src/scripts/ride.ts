@@ -1484,9 +1484,9 @@ class MapView {
     // and swells (the mirror of the go-home reveal). Eases to a standstill so the
     // pause that follows has no jerk.
     tl.to(this.state, { s: MAP_SCALE, duration: 0.6, ease: 'power2.inOut', onUpdate: this.apply }, 0);
-    // BEAT 2 — PAUSE ON HOME (~0.4s): a "stopped at the station" hold. Home pulses
-    // amber (fade in, fade out — the journey's origin endpoint) and the motion-echo
-    // is cleared so the frame is still.
+    // BEAT 2 — BREATH ON HOME (~0.2s): a beat at the station, not a stop. Home
+    // pulses amber (the journey's origin endpoint) and the motion-echo is cleared
+    // so the frame is still; the pulse's tail overlaps the cruise's soft launch.
     tl.call(() => { this.echo.k = 0; this.pulseStop(homeDot); this.apply(); }, undefined, 0.6);
     // BEAT 3 — RIDE Home → platform. One eased glide: accelerates out of the Home
     // pause, cruises, decelerates into the platform. Intermediate ticks no longer
@@ -1494,10 +1494,13 @@ class MapView {
     // arrival) flash. The ride ends at the platform's LAST TICK; the zoom-out that
     // follows settles to the park pose.
     // Trapezoidal cruise (see trapezoid / RIDE_VTOP / RIDE_RAMP): soft-launch →
-    // top speed → hard-brake, duration derived from path length. Starts at 1.0
-    // (after the 0.6 zoom-in + 0.4 Home pause); the reveal picks up the instant it
-    // ends, so every downstream beat is anchored to RIDE_AT + cruise.
-    const RIDE_AT = 1.0;
+    // top speed → hard-brake, duration derived from path length. Starts at 0.8:
+    // 0.6 zoom-in + a 0.2s breath on Home. The breath used to be 0.4s, but with
+    // the zoom-in ending dead-still AND the cruise's jerk-limited launch adding
+    // its own ~0.25s of slow start, home departures sat parked noticeably longer
+    // than platform departures (whose swoop settles for only 0.1s before their
+    // cruise) — 0.8 puts every ride's travel on the same beat.
+    const RIDE_AT = 0.8;
     const { duration: cruise, ease: cruiseEase } = trapezoid(sampler.total);
     const rideEnd = RIDE_AT + cruise;
     tl.to(prog, { p: 1, duration: cruise, ease: cruiseEase, onUpdate: moveSample }, RIDE_AT);
