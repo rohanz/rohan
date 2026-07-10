@@ -4402,11 +4402,11 @@ function initQuantlabVisuals(container) {
 // 1. The compounding slider: memo survival = p^n
 // ------------------------------------------------------------
 function initQlaCompound(node, cleanups) {
-    // Only the models the reader has met at this point in the article:
-    // the 8B stuck at the wall, and the teacher. The full journey lives in
-    // the roster exhibit further down.
+    // Only models that can honestly sit on this curve: it assumes 40 claims
+    // per memo, so v1 (broken-era accuracy) and the timid base (15 claims)
+    // don't qualify. The full journey lives in the roster exhibit below.
     const models = [
-        { name: '8B (me, stuck here)', p: 0.954 },
+        { name: 'v2.1', p: 0.954 },
         { name: 'teacher', p: 0.998 }
     ];
     const WALL_P = 0.954; // the 95.4% wall, drawn as a dashed vertical
@@ -4417,7 +4417,7 @@ function initQlaCompound(node, cleanups) {
     const canvas = document.createElement('canvas');
     canvas.className = 'qla-compound-canvas';
     canvas.setAttribute('role', 'img');
-    canvas.setAttribute('aria-label', 'Curve of memo survival rate versus per-number accuracy at 40 claims per memo, with markers for the 8B at the 95.4% wall and the teacher at 99.8%');
+    canvas.setAttribute('aria-label', 'Curve of memo survival rate versus per-number accuracy at 40 claims per memo, with markers for v2.1 at the 95.4% wall and the teacher at 99.8%');
     body.appendChild(qlfLegend([
         { cls: 'qlf-sw-accent', label: 'survival curve' },
         { cls: 'qlf-sw-muted', label: 'measured models' }
