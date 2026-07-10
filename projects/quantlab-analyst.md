@@ -65,12 +65,13 @@ Lesson one of the project: **evaluate the artefact you trained, not the artefact
 
 With the instrument fixed and the wall still standing at 95.4%, two questions remained. Was the 8B's precision ceiling a *size* problem? Again, only one way to find out. The answer was yes: a 14B trained identically, once I matched its citation density fairly, hit 97.4% per-number against the 8B's 95.4%. Was the 14B then *data*-limited? As it turns out, very: doubling the teacher corpus to about 2,000 memos produced the single biggest jump of the project, 82% cited pass at 99.1% per-number accuracy, while citing *more* numbers per memo than the teacher. A third doubling bought nothing but pain to my poor GPU; the curve had flattened. One last training pass produced the finished writer, and it's a strange one: a DPO run on 250 judge-preferred pairs of the 14B's own memos, aimed at prose quality rather than precision (the reason why is coming in the next section). It failed at that goal completely, but the gate numbers nudged up as a side effect: **v6, 84% cited pass and 99.6% per-number accuracy at about 49 claims per memo**. That's roughly one wrong number per 250, against the teacher's one per 500.
 
-That's the best writer I could train, and 84% still isn't 100%. The four flat experiments had already told me the last stretch wasn't coming from more training. So I had to stretch the rules of the game a little bit
+That's the best writer I could train, but 84% still isn't perfect. The four flat experiments had already told me the last stretch wasn't coming from more training. So I had to stretch the rules of the game a little bit.
+
 ## the model can fix what it can't avoid
 
-The breakthrough was inverting the question. "Train the model to be right the first time" kept failing. So: **train it to fix what the gate catches.**
+If I couldn't teach the model to be right the first time, maybe I could teach it to be right the second time. Why not **train it to fix what the gate catches?** Make a secondary model, daisy chained in serial from the first, (where output of writer becomes the input of this model, the "fixer") to catch and resolve any mistakes.
 
-I'd actually built the answer back at the 8B stage: 354 training examples of the form *here's a memo you wrote + here's the gate's list of untraceable numbers → here's the corrected memo*. One small fine-tune later, the 8B "fixer" existed, and the controls made the result unambiguous. Told exactly which numbers were wrong, an untrained model fixes almost none of its failures (1 in 20). The trained fixer repairs about two-thirds of the failures in one round, and 19 out of 20 across two rounds, even on drafts written by *different, bigger models it never saw in training*, including the 14B writer that outgrew it.
+It was a measurably smaller task, so I tried it with the 8B, using 354 training examples of the form *here's a memo you wrote + here's the gate's list of untraceable numbers → here's the corrected memo*. One small fine-tune later, the 8B fixer existed, and the controls made the result definitive. It pointed out exactly which numbers were wrong, an untrained model fixes almost none of its failures (1 in 20). The trained fixer repairs about two-thirds of the failures in one round, and 19 out of 20 across two rounds, even on drafts written by *different, bigger models it never saw in training*, including the 14B writer that outsized it.
 
 That's the system's engine: **draft → gate → targeted repair → gate again**. No human in the loop, and no number unchecked. Below is one real repair from the test set.
 
@@ -78,25 +79,25 @@ That's the system's engine: **draft → gate → targeted repair → gate again*
 
 Put the pieces together (the v6 writer, the gate, the 8B fixer, two repair rounds) and the system passed **50 out of 50 test memos with every number independently re-verified**, at above-teacher citation density. On this benchmark, that's past the teacher's own 93%. (The memo excerpts in the interactives below are real v6 outputs from the held-out test set.)
 
-## the honest part
+## apples to oranges?
 
-Before anyone gets excited, two things the 100% doesn't say. Both were measured on purpose.
+Before anyone gets too excited, lets think about the fairness of this comparison.
 
-First, the teacher was never given a retry loop; wrap Sonnet in the same gate-and-fix harness and it would sit near 100% too. The claim is *parity under the harness*, not superiority.
+First, the teacher was never given a retry loop; wrap Sonnet in the same gate-and-fix harness and it would sit near 100% too. That shifts our claim to *parity under the harness*, not superiority.
 
-Second, and more interesting: I ran a blind quality comparison. Same companies, my system's memo against the teacher's, judged by a third frontier model with positions swapped to prevent bias, on analytical quality alone (both memos already had perfect numbers). The teacher won **50 to 0**. My memos recite the data accurately; Sonnet's memos *think*. In the AbbVie pair, for instance, both memos report that profit collapsed after 2022 while cash from operations stayed near $19–25B every year. Sonnet's memo connects the two and concludes the collapse is mostly accounting charges rather than a real cash problem. Mine leaves the two facts in adjacent paragraphs for the reader to assemble.
+Second, and more interesting: I ran a blind quality comparison. First, myself: I had trouble reliably picking out the teacher from my model, but moreso because I don't necessarily know what makes a well written memo. Then, a slightly smarter experiment: same companies, my system's memo against the teacher's, judged by a third frontier model, Opus 4.8, with positions swapped to prevent bias, on analytical quality alone (both memos already had perfect numbers). The teacher won **50 to 0**. My memos recite the data accurately; Sonnet's memos *provide narratives*. In the AbbVie pair, for instance, both memos report that profit collapsed after 2022 while cash from operations stayed near $19–25B every year. Sonnet's memo connects the two and concludes the collapse is mostly accounting charges rather than a real cash problem. Mine leaves the two facts in adjacent paragraphs for the reader to assemble.
 
-That gap is what v6's final training pass was trying to close: DPO explicitly optimising toward the judge's own preferences. The judge was unmoved, 50 to 0 before and 50 to 0 after. The teacher's edge reads like capability, not style, and at 14B it wasn't trainable.
+The issue was that I was only teaching it a single metric, accurate reporting, and not writing style or quality. In my opinion, its doable, and it's for a future project.
 
 See if you can tell them apart yourself:
 
 <div id="qla-judge-visual"></div>
 
-So the truthful headline is precise: **a local system can match a frontier model on "every number is provably right", though not on "the memo you'd rather read".** Verifiability and quality are different axes, and conflating them is how AI benchmarks usually lie. Keeping them apart was the whole point of the gate.
+So the truthful headline is precise: **a local system can match a frontier model on "every number is provably right".** Verifiability and quality, though, are different, independent axes, and conflating them is how AI benchmarks usually lie. Keeping them apart was the whole point of the gate.
 
-## compression, and a mac mini
+## compression: squeezing into a mac mini
 
-The last pass was making it small enough to live somewhere cheap. A model's weights are just billions of numbers, and <span class="gloss-term" data-gloss="Storing each weight with fewer bits. 16-bit weights can take about 65,000 distinct values; 4-bit weights only 16. Smaller files, faster inference, some rounding error.">quantization</span> stores each one with fewer bits: instead of a near-continuous range of values, every weight gets rounded to the nearest rung on a small ladder. At 4 bits the ladder has only sixteen rungs, so where the rungs sit matters a lot. Round the wrong weights too coarsely and the model degrades. I already knew this the hard way: naive 4-bit compression is exactly what silently cost 7 points of accuracy earlier in the project.
+The last pass was making it small enough to live somewhere cheap, which means returning to quantization, this time on purpose. The mechanics: a model's weights are just billions of numbers, and quantization stores each one with fewer bits. Instead of a near-continuous range of values, every weight gets rounded to the nearest rung on a small ladder. At 4 bits the ladder has only sixteen rungs, so where the rungs sit matters a lot. Round the wrong weights too coarsely and the model degrades. I already knew this the hard way: naive 4-bit compression is exactly what silently cost 7 points of accuracy earlier in the project.
 
 <span class="gloss-term" data-gloss="Importance-matrix quantization: run your actual workload through the model once, record which weights it leans on, and place the rounding steps to protect those weights when compressing.">imatrix quantization</span> fixes this by measuring first. You run your real workload through the model once (I used the memo prompts themselves), record which weights the work actually leans on, and then place the rungs so those weights land close to one and take almost no rounding error. The unimportant weights absorb the error instead. The illustration below shows the idea.
 
