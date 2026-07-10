@@ -61,7 +61,7 @@ An article can be published as **unlisted**: fully readable at its direct URL (`
 - To publish it later, move the filename from `unlisted.json` to `index.json` (and add its route to `sitemap.xml`).
 - **On the live site**: no card, no filter tags, no prev/next arrows from other articles; the direct link works and is shareable (GitHub Pages `404.html` SPA fallback handles deep links).
 - **Locally** (`localhost` / `127.0.0.1`): unlisted articles DO get grid cards, marked with an `unlisted` badge, so they can be reviewed by clicking through like any other project. This is hostname-gated in `displayProjects()` in `main.js`.
-- Unlisted articles are not in `sitemap.xml` and are not prerendered by `tools/generate_og.py` (it reads `index.json` only), so link previews fall back to the site-wide OG image. The URL is unguessable only by obscurity — don't put anything truly secret in one.
+- Unlisted articles stay out of `sitemap.xml`, but `tools/generate_og.py` DOES read `unlisted.json` too: they get full share cards and meta stubs, since their whole point is being shared by direct link. The URL is unguessable only by obscurity (`unlisted.json` is publicly fetchable) — don't put anything truly secret in one.
 
 ### Testing unlisted articles locally
 
