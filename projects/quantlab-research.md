@@ -97,4 +97,6 @@ I'm still writing these portfolio articles, so you know how that went.
 2. **Adaptivity beats refitting. I have the receipts.** The Kalman filter was a DSP-to-finance transfer that turned -41% into -19% (still a loss, but half the bleeding), and the tuning leak I caught in my own work cost 20 points when confessed, which tells you how much the lies are worth.
 3. **Boring baselines are stubbornly hard to beat.** An ML layer, three famous community strategies, and a stack of clever overlays all lost to plain momentum once tested honestly. Nobody dangles *that* result in front of you.
 
+## where to next?
+
 Research is only one arm of a trading firm. The signals built here feed the execution side, a matching engine, a risk-control gateway, and live paper trading, covered in <a href="/projects/quantlab-systems">building a trading firm's machinery</a>. The AI research arm, fine-tuning a small open model into an analyst whose memos are verifiably correct, is covered in <a href="/projects/quantlab-analyst">distilling a financial analyst</a>. Everything reproduces from single documented commands, and the full research journal lives in the repo.
