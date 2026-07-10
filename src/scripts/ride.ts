@@ -302,21 +302,24 @@ class MapView {
   apply = () => {
     const tx = CX - this.state.s * this.state.x;
     const ty = CY - this.state.s * this.state.y;
-    // CSS transform (style), NOT the SVG transform attribute: paired with the
-    // stylesheet's `will-change: transform` on these groups, the browser keeps
-    // each camera layer as a composited GPU texture and SCALES it during the
-    // zoom beats instead of re-rasterizing the whole map every frame — the
-    // arrival/departure zooms were the only raster-bound phases (cruise is
-    // pan-only and was already cheap). CSS px on SVG elements ≡ user units and
-    // the default transform-origin is the SVG's 0 0, so the numbers are
-    // identical to the old attribute form.
-    const t = `translate(${tx}px, ${ty}px) scale(${this.state.s})`;
+    // SVG transform ATTRIBUTE, deliberately not CSS transform + will-change:
+    // we tried promoting these groups to composited GPU layers and it was
+    // WORSE on real hardware — Chrome's SVG layer compositing produced visual
+    // artifacts (a stray box from a layer escaping its clip) and more jank.
+    // The attribute path re-rasters during the zoom beats, which is fine for
+    // a scene this small. (If this is ever revisited: clear the leftover
+    // style.transform too, or it silently overrides the attribute.)
     for (const el of this.cameras) {
-      el.style.transform = t;
+      el.setAttribute('transform', `translate(${tx} ${ty}) scale(${this.state.s})`);
+      if (el.style.transform) el.style.transform = '';
     }
     this.echoes.forEach((el, i) => {
       const m = (i + 1) * 4.5 * this.echo.k;
-      el.style.transform = `translate(${tx + this.echo.dx * m}px, ${ty + this.echo.dy * m}px) scale(${this.state.s})`;
+      el.setAttribute(
+        'transform',
+        `translate(${tx + this.echo.dx * m} ${ty + this.echo.dy * m}) scale(${this.state.s})`,
+      );
+      if (el.style.transform) el.style.transform = '';
       el.setAttribute('opacity', String(this.echo.k * (i === 0 ? 0.3 : 0.16)));
     });
     // Re-place the platform entries only while they're actually VISIBLE (the reveal

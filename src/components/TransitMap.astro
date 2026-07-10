@@ -145,6 +145,7 @@ const LAKE = 'M880,-1600 L2600,-1600 L2600,2000 L880,2000 L880,1310 L1030,1160 L
             stroke-width="16"
             stroke-linecap="round"
             stroke-linejoin="round"
+            tabindex="-1"
           />
         ))}
       </g>
@@ -223,18 +224,12 @@ const LAKE = 'M880,-1600 L2600,-1600 L2600,2000 L880,2000 L880,1310 L1030,1160 L
   .map-tilt { width: 100%; height: 100%; }
   .map-3d { position: relative; width: 100%; height: 100%; }
   .layer { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-  /* The camera groups animate a CSS transform every ride frame (see ride.ts
-     apply()). will-change keeps each one on a composited GPU layer so the
-     zoom beats SCALE a cached texture instead of re-rasterizing the whole map
-     per frame — the arrival/departure zooms were the only raster-bound phases
-     (the cruise is pan-only). The texture re-rasters sharp once the camera
-     settles, so nothing is blurry at rest. */
-  g[data-camera],
-  g[data-camera-land],
-  g[data-top-camera],
-  g[data-echo] {
-    will-change: transform;
-  }
+  /* NOTE (perf, tried and reverted): promoting the camera groups with
+     will-change: transform + CSS transforms made real-GPU rendering WORSE —
+     Chrome's compositing of promoted SVG <g> layers is unreliable (visible
+     artifacts: a layer escaping its clip painted as a stray box; and more
+     jank, not less). The camera animates via the SVG transform attribute;
+     the zoom beats' re-raster is acceptable because the scene is small. */
   .layer-top { pointer-events: none; }
   .home-label { font-size: 18px; font-weight: 700; letter-spacing: normal; }
   .home-sub { font-size: 11px; font-weight: 500; letter-spacing: normal; }
@@ -244,6 +239,12 @@ const LAKE = 'M880,-1600 L2600,-1600 L2600,2000 L880,2000 L880,1310 L1030,1160 L
   .home-label { transition: opacity 0.25s ease; }
   :global(#map-3d[data-hl]:not(.ride-active)) .home-label { opacity: 0.55; }
   .hit-path { cursor: pointer; pointer-events: stroke; }
+  /* Hit-paths are invisible pointer targets inside an aria-hidden SVG (the rail
+     is the accessible/keyboard route). They must never take focus: Chromium put
+     them in the tab order (and focuses tabindex="-1" elements on click), and
+     the UA's blue outline:auto around a fat off-screen path bbox painted a
+     giant stray "selection box" over the map. */
+  .hit-path:focus, .hit-path:focus-visible { outline: none; }
   /* Label hidden while riding out (the dot stays fully visible as the amber-lit
      target). No transition here: on arrival ride-active is removed and the label
      is faded in by GSAP (via .home-label-wrap) instead, so the label must snap
