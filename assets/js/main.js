@@ -4402,14 +4402,14 @@ function initQuantlabVisuals(container) {
 // 1. The compounding slider: memo survival = p^n
 // ------------------------------------------------------------
 function initQlaCompound(node, cleanups) {
-    // 14B-v6 (the production writer) supersedes the 14b-max intermediate,
-    // which is dropped here to keep the labels near 100% readable.
+    // Only the models the reader has met at this point in the article:
+    // the 8B stuck at the wall, and the teacher. The full journey lives in
+    // the roster exhibit further down.
     const models = [
-        { name: '8B', p: 0.954 },
-        { name: '14B', p: 0.974 },
-        { name: '14B-v6', p: 0.996 },
+        { name: '8B (me, stuck here)', p: 0.954 },
         { name: 'teacher', p: 0.998 }
     ];
+    const WALL_P = 0.954; // the 95.4% wall, drawn as a dashed vertical
     const N_CLAIMS = 40; // teacher-density reference
     const body = qlaShell(node, 'why 95% per number is not 95% per memo', 'memo survival = p^n · at 40 claims per memo');
 
@@ -4417,7 +4417,7 @@ function initQlaCompound(node, cleanups) {
     const canvas = document.createElement('canvas');
     canvas.className = 'qla-compound-canvas';
     canvas.setAttribute('role', 'img');
-    canvas.setAttribute('aria-label', 'Curve of memo survival rate versus per-number accuracy at 40 claims per memo, with markers for the 8B, 14B, 14B-v6 and teacher models');
+    canvas.setAttribute('aria-label', 'Curve of memo survival rate versus per-number accuracy at 40 claims per memo, with markers for the 8B at the 95.4% wall and the teacher at 99.8%');
     body.appendChild(qlfLegend([
         { cls: 'qlf-sw-accent', label: 'survival curve' },
         { cls: 'qlf-sw-muted', label: 'measured models' }
@@ -4491,6 +4491,20 @@ function initQlaCompound(node, cleanups) {
             ctx.fillText(`${(g * 100).toFixed(1)}%`, x(g), h - 10);
         });
 
+        // the wall: dashed vertical at 95.4%
+        ctx.setLineDash([4, 4]);
+        ctx.strokeStyle = qlaTextColor(0.4);
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(x(WALL_P), pad.t);
+        ctx.lineTo(x(WALL_P), h - pad.b);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = qlaTextColor(0.55);
+        ctx.textAlign = 'left';
+        ctx.font = '600 11px Inter, sans-serif';
+        ctx.fillText('the wall', x(WALL_P) + 6, pad.t + 12);
+
         ctx.strokeStyle = qlaAccent();
         ctx.lineWidth = 2.5;
         ctx.beginPath();
@@ -4503,12 +4517,6 @@ function initQlaCompound(node, cleanups) {
         ctx.stroke();
 
         ctx.font = '700 11px Inter, sans-serif';
-        // All labels sit above their dots. 14B-v6 and teacher are close in x;
-        // when their labels would overlap vertically, 14B-v6 shifts left so
-        // it ends before the teacher label starts.
-        const teacher = models[models.length - 1];
-        const teacherY = y(survival(teacher.p, N_CLAIMS));
-        const teacherLabelLeft = x(teacher.p) - 7 - ctx.measureText(teacher.name).width;
         models.forEach(m => {
             const mx = x(m.p);
             const my = y(survival(m.p, N_CLAIMS));
@@ -4517,11 +4525,7 @@ function initQlaCompound(node, cleanups) {
             ctx.arc(mx, my, 4, 0, Math.PI * 2);
             ctx.fill();
             ctx.textAlign = m.p > 0.985 ? 'right' : 'center';
-            let lx = m.p > 0.985 ? mx - 7 : mx;
-            if (m !== teacher && m.p > 0.985 && Math.abs(my - teacherY) < 13) {
-                lx = Math.min(lx, teacherLabelLeft - 8);
-            }
-            ctx.fillText(m.name, lx, my - 9);
+            ctx.fillText(m.name, m.p > 0.985 ? mx - 7 : mx, my - 9);
         });
 
         // hover crosshair, the chart's sole interaction

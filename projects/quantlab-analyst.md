@@ -41,7 +41,7 @@ v2.1 kept the big corpus and brought back the second epoch, with the data <span 
 
 Then I hit the wall. v2.1's per-number accuracy sat at 95.4%, and no amount of blind training moved it. At 40 numbers a memo, 95% per number should doom nearly every memo; errors cluster in unlucky memos rather than spreading evenly, so more survive than the arithmetic's 15%, but not many more. The errors weren't fabrications anymore, though, just imperfect transcription, like turning "168.6 billion shares" into 165. **36% of memos survived, single-shot, model alone.** That meant I was finally past the timid base model, but nowhere near the teacher's 93%.
 
-The demo below shows why this hurt so much. A memo makes about 40 numeric claims, and one bad claim kills the whole thing, so small gains in per-number accuracy are worth huge jumps in survival. Slide along the curve to see it. The 8B marker is where I was stuck. The two markers above it belong to models I haven't introduced yet: the steepness of that curve is exactly why they had to exist.
+The demo below shows why this hurt so much. A memo makes about 40 numeric claims, and one bad claim kills the whole thing, so small gains in per-number accuracy are worth huge jumps in memo survival. That's precisely why I was dead set on squeezing out every possible 0.01% of improvement out of the model that I possibly could. Slide along the curve to see it: the dashed line is the wall I was stuck at, and the teacher sits near the top of a very steep hill.
 
 <div id="qla-compound-visual"></div>
 
