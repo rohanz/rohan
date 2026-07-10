@@ -799,10 +799,29 @@ class MapView {
     // Sized to ~62% of the pitch (not the full pitch) so there's a clear
     // gutter between adjacent cards rather than them touching edge-to-edge.
     let cardWidth: number | null = null;
+    let thumbRatio = 0.56;
     if (this.view === 'projects' && p.stops.length > 1) {
       const [ax] = this.worldToScreen(p.stops[0]);
       const [bx] = this.worldToScreen(p.stops[1]);
-      cardWidth = Math.max(150, Math.abs(bx - ax) * 0.62);
+      cardWidth = Math.abs(bx - ax) * 0.62;
+      // Height-aware cap: at the PARKED pose the track sits at 0.42 of the
+      // stage and the cards hang 0.055 below it, so the vertical room a card
+      // can occupy is a fixed fraction of the stage height. Cap the width so
+      // thumb (0.56w) + the non-thumb content budget (~210px: body min-height
+      // 200 + border, measured on a settled desktop card) stays above the
+      // stage bottom with a 16px margin. Computed from the parked fractions
+      // (not the live camera) so the cap is constant per viewport and never
+      // makes card width jitter during the reveal swoop. On ordinary large
+      // screens (1280×760+) the cap is far above the pitch width and never
+      // binds, so desktop rendering is byte-for-byte unchanged.
+      const avail = rect.height * (1 - 0.42 - 0.055) - 16;
+      const maxW = (avail - 210) / 0.56;
+      // Genuinely short stages (small laptops): even a minimum-width card
+      // can't fit a full 0.56w thumb, so trim the thumb ratio instead of
+      // dropping below the 150px width floor — the CSS max-height media
+      // query trims the text budget in tandem (see .card-project rules).
+      if (maxW < 150) thumbRatio = 0.44;
+      cardWidth = Math.max(150, Math.min(cardWidth, maxW));
     }
 
     for (let j = 0; j < per; j++) {
@@ -814,7 +833,7 @@ class MapView {
       if (cardWidth !== null) {
         card.style.width = `${cardWidth}px`;
         const thumb = this.thumbFor(card);
-        if (thumb) thumb.style.height = `${cardWidth * 0.56}px`;
+        if (thumb) thumb.style.height = `${cardWidth * thumbRatio}px`;
       }
       if (p.axis === 'd' && about) {
         // About: three stops, each carrying a symmetric pair of identical

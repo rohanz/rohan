@@ -626,6 +626,20 @@ const tech = [
     border-radius: 3px;
     padding: 0.22rem 0.5rem;
   }
+  /* Short laptop screens: below ~700px of viewport height the parked track
+     (0.42 of the stage, pinned there by the filter bar just above it) leaves
+     too little room under it for a full-budget card — the fullest card's tag
+     pills fell past the fold. Trim the text budget: two summary lines instead
+     of three, a slightly tighter body, and smaller tag pills. placeCards()
+     trims the thumb ratio (0.56 → 0.44) on the same class of screens, so the
+     whole card compresses in proportion and its bottom clears the viewport. */
+  @media (max-height: 700px) {
+    .card-project .body { min-height: 150px; padding: 0.5rem 0.6rem 0.55rem; }
+    .card-project h3 { font-size: 0.78rem; }
+    .card-project .summary { -webkit-line-clamp: 2; }
+    .card-project .tags { gap: 0.24rem; }
+    .card-project .tags li { font-size: 0.52rem; padding: 0.15rem 0.4rem; }
+  }
 
   /* Filter bar: pinned in the band between the top bar and the platform
      track, projects view only (toggled in showUI/hideUI). Wraps into
@@ -710,7 +724,9 @@ const tech = [
   .about-label {
     margin: 0;
     flex: none;
-    font-size: calc(clamp(0.66rem, 0.85vw, 0.8rem) * var(--about-scale, 1));
+    /* Floored: the small-caps label must stay legible even when the shrunk
+       diagonal drives --about-scale well below 1 on laptop viewports. */
+    font-size: max(9px, calc(clamp(0.66rem, 0.85vw, 0.8rem) * var(--about-scale, 1)));
     letter-spacing: 0.16em;
     text-transform: uppercase;
     color: var(--muted-2);
@@ -736,25 +752,39 @@ const tech = [
     /* Top-aligned: the paragraph starts just under the "BIO" label and flows
        down, rather than being vertically centred in the box. */
     display: block;
-    font-size: calc(clamp(0.72rem, 0.92vw, 0.98rem) * var(--about-scale, 1));
-    line-height: 1.3;
+    /* Floored at 10.5px: the un-floored scale product fell to ~8px on laptop
+       viewports (illegible). The card has vertical headroom at those scales,
+       so flooring the font is safe; line-height tightens slightly only when
+       the floor is what's in effect (font-size never exceeds 10.5px/1.3 ratio
+       territory on large screens, where the scaled size is bigger anyway). */
+    font-size: max(10.5px, calc(clamp(0.72rem, 0.92vw, 0.98rem) * var(--about-scale, 1)));
+    /* Line-height tracks the UN-floored font product (1.3×), floored at 12px.
+       On large screens the product exceeds 12px so nothing changes; when the
+       10.5px font floor is in effect the leading compresses toward 12px/10.5px
+       ≈ 1.14, which is what lets the floored (larger) text still fit the
+       shrunk card without clipping. */
+    line-height: max(12px, calc(1.3 * clamp(0.72rem, 0.92vw, 0.98rem) * var(--about-scale, 1)));
     color: var(--ink-warm);
   }
   /* Stats: two tiles that stretch to fill the box height. */
   .stat-row { display: flex; gap: 0.55rem; flex: 1; min-height: 0; }
   .stat-tile { flex: 1; background: var(--line-about); color: #fff; border-radius: 8px; padding: 0.7rem 0.8rem; display: flex; flex-direction: column; justify-content: center; gap: 0.35rem; }
   .stat-value { font-size: calc(clamp(1.5rem, 2.4vw, 2.3rem) * var(--about-scale, 1)); font-weight: 800; line-height: 1; }
-  .stat-label { font-size: calc(clamp(0.7rem, 0.95vw, 0.86rem) * var(--about-scale, 1)); opacity: 0.92; }
+  .stat-label { font-size: max(9px, calc(clamp(0.7rem, 0.95vw, 0.86rem) * var(--about-scale, 1))); opacity: 0.92; }
   /* Tech pills: fill the box, wrapping and vertically centred. Pills (font +
      padding + gap) scale with the card so 16 of them never overflow a shrunk box. */
   /* align-content: flex-start anchors the pills just below the label and lets
      them grow DOWN — never up over the "tech stack" label — if space is tight. */
   .chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; align-content: flex-start; flex: 1; min-height: 0; gap: calc(0.36rem * var(--about-scale, 1)); }
-  .chip { font-size: calc(clamp(0.62rem, 0.85vw, 0.76rem) * var(--about-scale, 1)); font-weight: 700; border-radius: 999px; padding: calc(0.26rem * var(--about-scale, 1)) calc(0.62rem * var(--about-scale, 1)); background: #eee7db; color: #3a352b; }
+  /* Chip line-height pins the previously-inherited 1.6× ratio to the
+     UN-floored font product (floored at 9.9px = 1.1× the 9px font floor):
+     identical on large screens, but compressed rows when the font floor binds
+     so all 16 floored pills still fit the shrunk tech-stack card. */
+  .chip { font-size: max(9px, calc(clamp(0.62rem, 0.85vw, 0.76rem) * var(--about-scale, 1))); line-height: max(9.9px, calc(1.6 * clamp(0.62rem, 0.85vw, 0.76rem) * var(--about-scale, 1))); font-weight: 700; border-radius: 999px; padding: calc(0.26rem * var(--about-scale, 1)) calc(0.62rem * var(--about-scale, 1)); background: #eee7db; color: #3a352b; }
   /* Socials: 2×2 grid of chunky buttons that STRETCH to fill the box, so the
      four links occupy the uniform card as fully as the other cards' content. */
   .social-buttons { display: grid; grid-template-columns: 1fr 1fr; grid-auto-rows: 1fr; gap: 0.6rem; flex: 1; min-height: 0; }
-  .social-btn { display: flex; align-items: center; justify-content: center; text-decoration: none; font-weight: 700; font-size: calc(clamp(0.9rem, 1.15vw, 1.12rem) * var(--about-scale, 1)); color: #fff; background: var(--line-about); border-radius: 8px; padding: 0.7rem 0.6rem; }
+  .social-btn { display: flex; align-items: center; justify-content: center; text-decoration: none; font-weight: 700; font-size: max(11px, calc(clamp(0.9rem, 1.15vw, 1.12rem) * var(--about-scale, 1))); color: #fff; background: var(--line-about); border-radius: 8px; padding: 0.7rem 0.6rem; }
   .social-btn:hover { filter: brightness(1.12); }
   /* CV: label stays top-left like every other About card (inherits
      .card-about's flex-start column flow); the button is then centred in
@@ -771,7 +801,7 @@ const tech = [
     text-align: center;
     text-decoration: none;
     font-weight: 800;
-    font-size: calc(clamp(0.95rem, 1.2vw, 1.1rem) * var(--about-scale, 1));
+    font-size: max(11px, calc(clamp(0.95rem, 1.2vw, 1.1rem) * var(--about-scale, 1)));
     color: #fff;
     background: var(--line-about);
     border-radius: 8px;
