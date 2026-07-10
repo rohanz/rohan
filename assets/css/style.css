@@ -3683,148 +3683,92 @@ body.image-lightbox-open {
 .qla-judge-feedback.is-wrong { color: #E05555; }
 [data-theme="light"] .qla-judge-feedback.is-wrong { color: #B23B3B; }
 
-/* --- 4. prediction game timeline --- */
-.qla-timeline-toolbar {
+/* --- 4. the roster exhibit --- */
+.qla-roster-controls {
     display: flex;
     align-items: center;
-    gap: 1rem;
-    flex-wrap: wrap;
-    margin-bottom: 0.9rem;
+    gap: 0.6rem;
+    margin: 0.7rem 0 0.5rem;
 }
 
-.qla-timeline-legend {
+.qla-roster-label {
     color: var(--text-muted);
-    font-size: 0.82rem;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
-.qla-teacher-tick {
-    display: inline-block;
-    width: 3px;
-    height: 0.9rem;
-    border-radius: 2px;
-    background: var(--accent);
-}
-
-.qla-timeline-track {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 0.8rem;
-}
-
-@media (max-width: 900px) {
-    .qla-timeline-track {
-        grid-template-columns: repeat(2, 1fr);
-    }
-}
-
-@media (max-width: 520px) {
-    .qla-timeline-track {
-        grid-template-columns: 1fr;
-    }
-}
-
-.qla-timeline-card {
+.qla-roster-select {
+    background: var(--bg-card);
+    color: var(--text-primary);
     border: 1px solid var(--border-subtle);
     border-radius: 6px;
-    background: var(--bg-card);
-    padding: 0.8rem 0.9rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.55rem;
+    padding: 0.35rem 0.6rem;
+    font-family: inherit;
+    font-size: 0.85rem;
+    cursor: pointer;
 }
 
-.qla-timeline-name {
-    font-family: 'Chillax', 'Inter', sans-serif;
-    font-weight: 700;
-    font-size: 0.95rem;
-    color: var(--text-primary);
-    margin: 0;
+.qla-roster-select:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
 }
 
-.qla-timeline-tag {
-    display: inline-block;
-    font-family: 'Chillax', 'Inter', sans-serif;
-    font-weight: 700;
-    font-size: 0.7rem;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--text-muted);
-    margin-bottom: 0.15rem;
-}
-
-.qla-timeline-tag-result {
-    color: var(--accent);
-}
-
-.qla-timeline-pred p,
-.qla-timeline-result p {
-    margin: 0;
-    font-size: 0.84rem;
-    line-height: 1.45;
+.qla-roster-desc {
+    margin: 0 0 0.4rem;
+    min-height: 2.6em; /* two lines: switching models never reflows */
     color: var(--text-secondary);
+    font-size: 0.88rem;
+    line-height: 1.3;
 }
 
-/* Cards are equalized to one fixed height by JS; the slot rides the flex
-   column's bottom edge so every reveal button lines up across the row. */
-.qla-timeline-slot {
-    position: relative;
-    margin-top: auto;
+.qla-roster-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem 1.1rem;
+    margin-bottom: 0.55rem;
+    min-height: 1.4em;
 }
 
-.qla-timeline-result.is-unrevealed {
-    visibility: hidden;
-}
-
-.qla-timeline-bar {
-    position: relative;
-    height: 8px;
-    border-radius: 999px;
-    background: var(--bg-card-hover);
-    border: 1px solid var(--border-subtle);
-    margin-top: 0.55rem;
-    overflow: hidden;
-}
-
-.qla-timeline-bar-fill {
-    position: absolute;
-    inset: 0 auto 0 0;
-    width: 0;
-    background: linear-gradient(90deg,
-        color-mix(in srgb, var(--accent) 45%, transparent),
-        var(--accent));
-    border-radius: 999px;
-    transition: width 0.7s var(--ease-out-expo);
-}
-
-.qla-timeline-bar-teacher {
-    position: absolute;
-    top: -2px;
-    bottom: -2px;
-    width: 2px;
-    background: var(--text-primary);
-    opacity: 0.7;
-}
-
-.qla-timeline-bar-pct {
-    display: inline-block;
-    margin-top: 0.3rem;
-    font-size: 0.8rem;
-    font-weight: 700;
-    color: var(--accent);
+.qla-roster-stat {
+    color: var(--text-muted);
+    font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+    font-size: 0.76rem;
     font-variant-numeric: tabular-nums;
 }
 
-.qla-timeline-reveal {
-    position: absolute;
-    bottom: 0;
-    left: 0;
+.qla-roster-verdict {
+    font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+    font-size: 0.76rem;
+    font-weight: 700;
+    color: #E05555;
 }
 
+.qla-roster-verdict.is-pass { color: #66BB6A; }
+[data-theme="light"] .qla-roster-verdict { color: #B23B3B; }
+[data-theme="light"] .qla-roster-verdict.is-pass { color: #2E7D32; }
+
+.qla-roster-memo {
+    height: 300px;
+    overflow-y: auto;
+    margin-top: 0.5rem;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-subtle) transparent;
+}
+
+.qla-roster-memo::-webkit-scrollbar { width: 6px; }
+.qla-roster-memo::-webkit-scrollbar-thumb {
+    background: var(--border-subtle);
+    border-radius: 3px;
+}
+
+.qlf-legend-swatch.qla-sw-good { background: #66BB6A; }
+.qlf-legend-swatch.qla-sw-bad { background: #E05555; }
+[data-theme="light"] .qlf-legend-swatch.qla-sw-good { background: #2E7D32; }
+[data-theme="light"] .qlf-legend-swatch.qla-sw-bad { background: #B23B3B; }
+
 @media (prefers-reduced-motion: reduce) {
-    .qla-timeline-bar-fill,
     .qla-btn {
         transition: none;
     }

@@ -4363,19 +4363,18 @@ function initQuantlabVisuals(container) {
     const compoundNode = container.querySelector('#qla-compound-visual');
     const gateNode = container.querySelector('#qla-gate-visual');
     const judgeNode = container.querySelector('#qla-judge-visual');
-    const timelineNode = container.querySelector('#qla-timeline-visual');
+    const rosterNode = container.querySelector('#qla-roster-visual');
     const quantNode = container.querySelector('#qla-quant-visual');
-    if (!compoundNode && !gateNode && !judgeNode && !timelineNode && !quantNode) return;
+    if (!compoundNode && !gateNode && !judgeNode && !rosterNode && !quantNode) return;
 
     if (qlaCleanup) { qlaCleanup(); qlaCleanup = null; }
     const cleanups = [];
     qlaCleanup = () => { cleanups.forEach(fn => { try { fn(); } catch (e) {} }); qlaCleanup = null; };
 
     if (compoundNode) initQlaCompound(compoundNode, cleanups);
-    if (timelineNode) initQlaTimeline(timelineNode, cleanups);
     if (quantNode) initQlaQuant(quantNode, cleanups);
 
-    if (gateNode || judgeNode) {
+    if (gateNode || judgeNode || rosterNode) {
         fetch('/assets/js/quantlab-visual-data.json', { cache: 'no-cache' })
             .then(res => (res.ok ? res.json() : Promise.reject(new Error(`HTTP ${res.status}`))))
             .then(data => {
@@ -4385,6 +4384,11 @@ function initQuantlabVisuals(container) {
                     initQlaJudge(judgeNode, data.judgePairs, cleanups);
                 } else if (judgeNode) {
                     console.warn('quantlab-visual-data.json: missing judgePairs; judge visual skipped');
+                }
+                if (rosterNode && data.roster && Array.isArray(data.roster.models)) {
+                    initQlaRoster(rosterNode, data.roster, cleanups);
+                } else if (rosterNode) {
+                    console.warn('quantlab-visual-data.json: missing roster key; roster exhibit skipped');
                 }
             })
             .catch(err => {
@@ -4821,123 +4825,199 @@ function initQlaJudge(node, judgePairs, cleanups) {
 }
 
 // ------------------------------------------------------------
-// 4. The prediction game: pre-registered call vs what happened
+// 4. The roster: every model, same company, real memos vs the gate
 // ------------------------------------------------------------
-function initQlaTimeline(node, cleanups) {
-    const runs = [
-        { name: 'v1 · first distillation (8B)', predicted: 'imitating the teacher gets close', result: '10% pass. It memorized numbers and wrote them into the wrong companies.', pass: 10 },
-        { name: 'v2.1 · more data, fixed splits (8B)', predicted: 'format locks in, accuracy follows', result: '36% pass. Perfect style, but still one wrong number in most memos.', pass: 36 },
-        { name: 'v3 · pass/fail DPO (8B)', predicted: 'preference training fixes accuracy', result: '26% pass. It learned to cite fewer numbers instead of getting them right.', pass: 26 },
-        { name: 'v4 · minimal-pair DPO (8B)', predicted: 'with only digits differing, accuracy is the only thing to learn', result: '30% pass. The shortcut was closed and accuracy still did not move.', pass: 30 },
-        { name: 'v5 · the fixer (8B)', predicted: 'maybe it can repair errors it is told about', result: '26% pass as a writer, but as a repair specialist it fixed most flagged memos. Kept for that job.', pass: 26 },
-        { name: '14B · same recipe, bigger model', predicted: 'a bigger model is more accurate', result: '56% pass once trained fairly. Model size was a real ceiling for the 8B.', pass: 56 },
-        { name: '14b-max · doubled training data', predicted: 'more teacher memos, 60-70% pass', result: '82% pass. The biggest single jump of the project.', pass: 82 },
-        { name: 'v6 · quality preference training', predicted: 'training on judged pairs improves writing quality', result: '84% pass, best writer overall. Writing quality itself did not budge.', pass: 84 }
-    ];
-    const TEACHER = 93;
-    const body = qlaShell(node, 'the prediction game', 'every experiment pre-registered · reveal what actually happened');
+function initQlaRoster(node, roster, cleanups) {
+    const models = roster.models;
+    const body = qlaShell(node, 'the roster', `every model, same company (${roster.ticker}) \u00b7 real memos, every number checked by the gate`);
 
-    const toolbar = qlaEl('div', 'qla-timeline-toolbar');
-    const revealAll = qlaEl('button', 'qla-btn qla-btn-accent', 'reveal all');
-    revealAll.type = 'button';
-    revealAll.setAttribute('aria-label', 'Reveal all experiment results');
-    toolbar.appendChild(revealAll);
-    const legend = qlaEl('span', 'qla-timeline-legend');
-    legend.appendChild(qlaEl('i', 'qla-teacher-tick'));
-    legend.appendChild(document.createTextNode(` metric: % of memos passing the gate single-shot, no retries · teacher: ${TEACHER}%`));
-    toolbar.appendChild(legend);
-    body.appendChild(toolbar);
+    const passVal = m => parseInt(m.passRate, 10); // "n/a" -> NaN, skipped on the chart
+    const TEACHER = parseInt(roster.teacherPass, 10);
+    let selected = models.length - 1; // start on the final writer
 
-    const track = qlaEl('div', 'qla-timeline-track');
-    body.appendChild(track);
+    // --- chart ---
+    const canvasWrap = qlaEl('div', 'qla-compound-canvas-wrap');
+    const canvas = document.createElement('canvas');
+    canvas.className = 'qla-compound-canvas';
+    canvas.style.cursor = 'pointer';
+    canvas.setAttribute('role', 'img');
+    canvasWrap.appendChild(canvas);
+    body.appendChild(canvasWrap);
 
-    runs.forEach(run => {
-        const card = qlaEl('article', 'qla-timeline-card');
-        card.appendChild(qlaEl('h4', 'qla-timeline-name', run.name));
-        const pred = qlaEl('div', 'qla-timeline-pred');
-        pred.appendChild(qlaEl('span', 'qla-timeline-tag', 'predicted'));
-        pred.appendChild(qlaEl('p', undefined, run.predicted));
-        card.appendChild(pred);
-
-        // the result occupies its exact final space from load (visibility,
-        // not display), with the reveal button overlaid — so revealing never
-        // changes the card's or the track's height
-        const resultBlock = qlaEl('div', 'qla-timeline-result is-unrevealed');
-        resultBlock.appendChild(qlaEl('span', 'qla-timeline-tag qla-timeline-tag-result', 'result'));
-        resultBlock.appendChild(qlaEl('p', undefined, run.result));
-        if (run.pass !== null) {
-            const barWrap = qlaEl('div', 'qla-timeline-bar');
-            barWrap.setAttribute('role', 'img');
-            barWrap.setAttribute('aria-label', `${run.pass}% cited pass, teacher at ${TEACHER}%`);
-            const fill = qlaEl('i', 'qla-timeline-bar-fill');
-            const tick = qlaEl('i', 'qla-timeline-bar-teacher');
-            tick.style.left = `${TEACHER}%`;
-            barWrap.appendChild(fill);
-            barWrap.appendChild(tick);
-            const pct = qlaEl('span', 'qla-timeline-bar-pct', `${run.pass}% cited pass`);
-            resultBlock.appendChild(barWrap);
-            resultBlock.appendChild(pct);
-        }
-
-        const slot = qlaEl('div', 'qla-timeline-slot');
-        slot.appendChild(resultBlock);
-        const btn = qlaEl('button', 'qla-btn qla-timeline-reveal', 'reveal');
-        btn.type = 'button';
-        btn.setAttribute('aria-label', `Reveal the result of ${run.name}`);
-        const doReveal = () => {
-            if (!resultBlock.classList.contains('is-unrevealed')) return;
-            btn.hidden = true;
-            resultBlock.classList.remove('is-unrevealed');
-            const fill = resultBlock.querySelector('.qla-timeline-bar-fill');
-            if (fill) {
-                if (prefersReducedMotion.matches) fill.style.width = `${run.pass}%`;
-                else requestAnimationFrame(() => { fill.style.width = `${run.pass}%`; });
-            }
-        };
-        btn.addEventListener('click', doReveal);
-        slot.appendChild(btn);
-        card.appendChild(slot);
-        card.qlaReveal = doReveal;
-        track.appendChild(card);
+    // --- selector ---
+    const controls = qlaEl('div', 'qla-roster-controls');
+    const selLabel = qlaEl('label', 'qla-roster-label', 'model:');
+    const select = document.createElement('select');
+    select.className = 'qla-roster-select';
+    select.setAttribute('aria-label', 'Choose a model to inspect its memo');
+    models.forEach((m, i) => {
+        const opt = document.createElement('option');
+        opt.value = String(i);
+        opt.textContent = m.name;
+        select.appendChild(opt);
     });
+    selLabel.setAttribute('for', 'qlaRosterSelect');
+    select.id = 'qlaRosterSelect';
+    controls.appendChild(selLabel);
+    controls.appendChild(select);
+    body.appendChild(controls);
 
-    revealAll.addEventListener('click', () => {
-        track.querySelectorAll('.qla-timeline-card').forEach(card => card.qlaReveal());
-    });
+    // --- description + stats (fixed heights so switching never reflows) ---
+    const desc = qlaEl('p', 'qla-roster-desc', '');
+    body.appendChild(desc);
+    const stats = qlaEl('div', 'qla-roster-stats');
+    const statPass = qlaEl('span', 'qla-roster-stat', '');
+    const statAcc = qlaEl('span', 'qla-roster-stat', '');
+    const statMemo = qlaEl('span', 'qla-roster-stat', '');
+    const statVerdict = qlaEl('span', 'qla-roster-verdict', '');
+    stats.appendChild(statPass);
+    stats.appendChild(statAcc);
+    stats.appendChild(statMemo);
+    stats.appendChild(statVerdict);
+    body.appendChild(stats);
 
-    // Uniform card height: results already occupy reserved space, so each
-    // card's natural height is final at layout. Measure the tallest and fix
-    // all cards to it; re-run when the track width changes (init happens
-    // before the detail view has layout, so the first observer callback is
-    // also the first valid measurement).
-    let lastTrackWidth = 0;
-    function equalizeCards() {
-        // Row-internal alignment: names, prediction texts and result texts
-        // each get one shared height (the tallest at the current column
-        // width), so PREDICTED, the result block and the pass bar all start
-        // at the same y in every card.
-        ['.qla-timeline-name', '.qla-timeline-pred p', '.qla-timeline-result p'].forEach(sel => {
-            const els = track.querySelectorAll(sel);
-            let max = 0;
-            els.forEach(el => { el.style.height = 'auto'; });
-            els.forEach(el => { max = Math.max(max, el.offsetHeight); });
-            els.forEach(el => { el.style.height = `${max}px`; });
+    body.appendChild(qlfLegend([
+        { cls: 'qla-sw-good', label: 'traced to evidence' },
+        { cls: 'qla-sw-bad', label: 'failed the gate' },
+        { cls: 'qlf-sw-muted', label: 'plain text: not a claim (years, ids)' }
+    ]));
+
+    const memoPane = qlaEl('div', 'qla-memo qla-roster-memo');
+    memoPane.setAttribute('tabindex', '0');
+    memoPane.setAttribute('aria-label', 'The selected model\u2019s memo with verified and violating numbers highlighted');
+    body.appendChild(memoPane);
+
+    function renderMemo(m) {
+        memoPane.textContent = '';
+        m.segments.forEach(seg => {
+            if (seg.t === 'ok') memoPane.appendChild(qlaEl('mark', 'qla-mark-good', seg.s));
+            else if (seg.t === 'bad') memoPane.appendChild(qlaEl('mark', 'qla-mark-bad', seg.s));
+            else memoPane.appendChild(document.createTextNode(seg.s));
         });
-        const cards = track.querySelectorAll('.qla-timeline-card');
-        let max = 0;
-        cards.forEach(c => { c.style.height = 'auto'; });
-        cards.forEach(c => { max = Math.max(max, c.offsetHeight); });
-        cards.forEach(c => { c.style.height = `${max}px`; });
+        memoPane.scrollTop = 0;
     }
-    const trackObserver = new ResizeObserver(() => {
-        const w = track.clientWidth;
-        if (w !== lastTrackWidth) {
-            lastTrackWidth = w;
-            equalizeCards();
-        }
+
+    function drawChart() {
+        const rect = canvas.parentElement.getBoundingClientRect();
+        const w = Math.max(300, rect.width);
+        const h = 190;
+        const ctx = sizeCanvas(canvas, w, h);
+        canvas.style.height = `${h}px`;
+        ctx.clearRect(0, 0, w, h);
+
+        const pad = { l: 40, r: 14, t: 16, b: 34 };
+        const pw = w - pad.l - pad.r;
+        const ph = h - pad.t - pad.b;
+        const x = i => pad.l + (models.length === 1 ? pw / 2 : (i / (models.length - 1)) * pw);
+        const y = v => pad.t + (1 - v / 100) * ph;
+
+        // grid + y labels
+        ctx.font = '600 10px Inter, sans-serif';
+        ctx.lineWidth = 1;
+        [0, 25, 50, 75, 100].forEach(g => {
+            ctx.strokeStyle = qlfTextColor(0.1);
+            ctx.beginPath();
+            ctx.moveTo(pad.l, y(g));
+            ctx.lineTo(w - pad.r, y(g));
+            ctx.stroke();
+            ctx.fillStyle = qlfTextColor(0.45);
+            ctx.textAlign = 'right';
+            ctx.fillText(`${g}%`, pad.l - 5, y(g) + 3);
+        });
+
+        // teacher reference
+        ctx.setLineDash([4, 4]);
+        ctx.strokeStyle = qlfTextColor(0.5);
+        ctx.beginPath();
+        ctx.moveTo(pad.l, y(TEACHER));
+        ctx.lineTo(w - pad.r, y(TEACHER));
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = qlfTextColor(0.55);
+        ctx.textAlign = 'left';
+        ctx.fillText(`teacher ${TEACHER}%`, pad.l + 4, y(TEACHER) - 5);
+
+        // connecting line over models with a numeric pass rate
+        ctx.strokeStyle = qlfAccent();
+        ctx.globalAlpha = 0.55;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        let started = false;
+        models.forEach((m, i) => {
+            const v = passVal(m);
+            if (isNaN(v)) return;
+            if (!started) { ctx.moveTo(x(i), y(v)); started = true; }
+            else ctx.lineTo(x(i), y(v));
+        });
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+
+        // dots + x labels
+        models.forEach((m, i) => {
+            const v = passVal(m);
+            const isSel = i === selected;
+            if (!isNaN(v)) {
+                ctx.fillStyle = isSel ? qlfAccent() : qlfTextColor(0.5);
+                ctx.beginPath();
+                ctx.arc(x(i), y(v), isSel ? 6 : 3.5, 0, Math.PI * 2);
+                ctx.fill();
+                if (isSel) {
+                    ctx.strokeStyle = qlfAccent();
+                    ctx.lineWidth = 1.5;
+                    ctx.beginPath();
+                    ctx.arc(x(i), y(v), 9, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+            }
+            ctx.fillStyle = isSel ? qlfAccent() : qlfTextColor(0.5);
+            ctx.font = isSel ? '700 10px Inter, sans-serif' : '600 10px Inter, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(m.id, x(i), h - 18);
+            if (isSel && !isNaN(v)) {
+                ctx.font = '700 11px Inter, sans-serif';
+                ctx.fillText(`${v}%`, x(i), y(v) - 12);
+            }
+        });
+
+        canvas.setAttribute('aria-label',
+            `Cited-pass rate by model in training order, teacher at ${TEACHER}% for reference. Selected: ${models[selected].name} at ${models[selected].passRate}.`);
+    }
+
+    function selectModel(i) {
+        selected = i;
+        const m = models[i];
+        select.value = String(i);
+        desc.textContent = m.desc;
+        statPass.textContent = `cited pass ${m.passRate}`;
+        statAcc.textContent = `per-number ${m.acc}`;
+        statMemo.textContent = `this memo: ${m.memoOk} verified \u00b7 ${m.memoBad} untraceable`;
+        statVerdict.textContent = m.memoPassed ? 'gate: PASS' : 'gate: FAIL';
+        statVerdict.classList.toggle('is-pass', m.memoPassed);
+        renderMemo(m);
+        drawChart();
+    }
+
+    function onCanvasClick(e) {
+        const rect = canvas.getBoundingClientRect();
+        const pad = { l: 40, r: 14 };
+        const pw = Math.max(1, rect.width - pad.l - pad.r);
+        const rel = (e.clientX - rect.left - pad.l) / pw;
+        const i = Math.max(0, Math.min(models.length - 1, Math.round(rel * (models.length - 1))));
+        selectModel(i);
+    }
+    canvas.addEventListener('click', onCanvasClick);
+    select.addEventListener('change', () => selectModel(parseInt(select.value, 10)));
+
+    const onRedraw = () => drawChart();
+    window.addEventListener('resize', onRedraw);
+    window.addEventListener('theme-changed', onRedraw);
+    cleanups.push(() => {
+        window.removeEventListener('resize', onRedraw);
+        window.removeEventListener('theme-changed', onRedraw);
+        canvas.removeEventListener('click', onCanvasClick);
     });
-    trackObserver.observe(track);
-    cleanups.push(() => trackObserver.disconnect());
+
+    selectModel(selected);
 }
 
 // ------------------------------------------------------------

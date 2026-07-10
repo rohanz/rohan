@@ -97,7 +97,7 @@ So the truthful headline is precise: **a local system can match a frontier model
 
 ## compression: squeezing into a mac mini
 
-The last pass was making it small enough to live somewhere cheap, which means returning to quantization, this time on purpose. The mechanics: a model's weights are just billions of numbers, and quantization stores each one with fewer bits. Instead of a near-continuous range of values, every weight gets rounded to the nearest rung on a small ladder. At 4 bits the ladder has only sixteen rungs, so where the rungs sit matters a lot. Round the wrong weights too coarsely and the model degrades. I already knew this the hard way: naive 4-bit compression is exactly what silently cost 7 points of accuracy earlier in the project.
+The last pass was making it small enough to live somewhere cheap, which means returning to quantization, this time on purpose. Let me explain the mechanics a little: a model's weights are just billions of numbers, and quantization stores each one with fewer bits. Instead of a near-continuous range of values, every weight gets rounded to the nearest rung on a small ladder. At 4 bits the ladder has only sixteen rungs, so where the rungs sit matters a lot. Round the wrong weights too coarsely and the model degrades. I already knew this the hard way: naive 4-bit compression is exactly what silently cost 7 points of accuracy earlier in the project.
 
 <span class="gloss-term" data-gloss="Importance-matrix quantization: run your actual workload through the model once, record which weights it leans on, and place the rounding steps to protect those weights when compressing.">imatrix quantization</span> fixes this by measuring first. You run your real workload through the model once (I used the memo prompts themselves), record which weights the work actually leans on, and then place the rungs so those weights land close to one and take almost no rounding error. The unimportant weights absorb the error instead. The illustration below shows the idea.
 
@@ -107,88 +107,23 @@ Result: the 14B writer compresses from 16GB to **9GB with no measurable quality 
 
 ## the machine fought back
 
-All of this ran on a single gaming GPU in another room, reached over SSH, and by the end the infrastructure had produced more genuine surprises than the model. Three unrelated problems each disguised themselves as the same unhelpful message, `CUDA driver error: unknown error`: a training library silently switching off a memory optimisation, a second library building an intermediate the size of the whole vocabulary that wouldn't fit on the card, and plain contention from an inference server I'd left running beside the training job. Each cost a night and a from-scratch <span class="gloss-term" data-gloss="Strip the setup down to nothing, then add pieces back one at a time until it breaks again. Slow, but it corners any bug eventually.">bisection</span> to tell apart, because the error itself said nothing.
+All of this ran on a single 4090 in another room, reached over SSH, and by the end the infrastructure had produced more genuine surprises than the model. Three unrelated problems each disguised themselves as the same unhelpful message, `CUDA driver error: unknown error`, which gave me little to go on. The culprits were varied, and many: a training library silently switching off a memory optimisation, a second library building an intermediate the size of the whole vocabulary that wouldn't fit on the card, and plain contention from an inference server I'd left running beside the training job. Each cost a night and a from-scratch <span class="gloss-term" data-gloss="Strip the setup down to nothing, then add pieces back one at a time until it breaks again. Slow, but it corners any bug eventually.">bisection</span> to tell apart, because the error itself said nothing.
 
-The rest was the same texture. An SSH tunnel dropped without a word and failed fifty evaluations before I noticed. A single misused shell pipe threw away an hour of generation through a broken-pipe signal I never saw. A model-serving endpoint returned empty text for one whole class of models, which would have quietly poisoned a training set had a yield check not caught 822 blank samples before they reached the trainer. None of this is glamorous, and all of it is the actual job. The lesson is the same one the gate teaches about the model: don't trust a green checkmark. Re-verify the passes, re-measure the wins, and assume the machinery is lying until it proves otherwise. It often was.
+There were more, all of the same texture. An SSH tunnel dropped without a word and failed fifty evaluations before I noticed. A single misused shell pipe threw away an hour of generation through a broken-pipe signal I never saw. A model-serving endpoint returned empty text for one whole class of models, which would have quietly poisoned a training set had a yield check not caught 822 blank samples before they reached the trainer. Not exactly the most glamorous, but for someone who's new to all this, definitely some things you have to learn on the job. In fact, they're probably things that can *only* be learnt on the job, too. The lesson is the same one the gate teaches about the model: don't trust a green checkmark. Re-verify the passes, re-measure the wins, and assume the machinery is lying until it proves otherwise. It often was.
 
 ## the models, by name
 
-A lot of model names have come up, so here's the roster in training order, before the final scorecard. Every model is a fine-tune of Qwen3 (an open model family), trained on one RTX 4090, and every percentage is the same metric: how many of the 50 <span class="gloss-term" data-gloss="Kept out of training entirely, so the score measures generalisation to new companies, not recall of seen ones.">held-out</span> memos pass the gate in one shot, no retries.
+A lot of model names have come up, so here they all are in one exhibit, in training order. The chart plots the same metric throughout: how many of the 50 <span class="gloss-term" data-gloss="Kept out of training entirely, so the score measures generalisation to new companies, not recall of seen ones.">held-out</span> memos pass the gate in one shot, no retries, with the teacher's 93% as the dashed line to beat.
 
-<table class="bqst-data-table">
-  <thead>
-    <tr>
-      <th>model</th>
-      <th>what it is</th>
-      <th>pass rate</th>
-      <th>per-number accuracy</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td><strong>v1</strong></td>
-      <td>first 8B distillation of the teacher</td>
-      <td>10%</td>
-      <td>not comparable (memorisation era)</td>
-    </tr>
-    <tr>
-      <td><strong>v2</strong></td>
-      <td>8B, tripled data but a single epoch</td>
-      <td>n/a (format collapse)</td>
-      <td>n/a</td>
-    </tr>
-    <tr>
-      <td><strong>v2.1</strong></td>
-      <td>8B, more data and fixed data splits</td>
-      <td>36%</td>
-      <td>95.4%</td>
-    </tr>
-    <tr>
-      <td><strong>v3</strong></td>
-      <td>v2.1 + preference training on pass/fail pairs</td>
-      <td>26%</td>
-      <td>94.7%</td>
-    </tr>
-    <tr>
-      <td><strong>v4</strong></td>
-      <td>v2.1 + preference training on corrected-digit pairs</td>
-      <td>30%</td>
-      <td>94.2%</td>
-    </tr>
-    <tr>
-      <td><strong>v5</strong></td>
-      <td>8B trained to repair flagged memos (“the fixer”)</td>
-      <td>26% as a writer; kept as the repair specialist</td>
-      <td>94.5%</td>
-    </tr>
-    <tr>
-      <td><strong>14B</strong></td>
-      <td>the v2.1 recipe on a model twice the size</td>
-      <td>56%</td>
-      <td>97.4%</td>
-    </tr>
-    <tr>
-      <td><strong>14b-max</strong></td>
-      <td>the 14B with a doubled training corpus</td>
-      <td>82%</td>
-      <td>99.1%</td>
-    </tr>
-    <tr>
-      <td><strong>v6</strong></td>
-      <td>14b-max + quality preference training, the final writer</td>
-      <td>84%</td>
-      <td>99.6%</td>
-    </tr>
-  </tbody>
-</table>
+The part I'd actually explore: pick any model, and below the chart you'll get its real memo for the same company (GE, from the held-out set), with a line on how that model was trained. Every number the gate checked is highlighted: green if it traced back to evidence, red if it didn't. Plain text (years, section ids) is whatever the gate ignores. Walk the roster from left to right and you can watch the red disappear, and the memos get denser at the same time: the untuned base cites 16 numbers timidly, v6 cites 52 and every one survives.
 
-The teacher, claude-sonnet-5, passes 93% single-shot at 99.8% per-number accuracy. The final production pair is v6 (writes) and v5 (repairs), with the gate between them.
+Two details worth hunting for. v3, the pass/fail DPO run, has almost no red, but count its citations: that's the reward hack in the wild, fewer claims instead of better ones. And v1's lone red number is the memorisation era in miniature.
+
+<div id="qla-roster-visual"></div>
+
+The final production pair is v6 (writes) and v5 (repairs), with the gate between them.
 
 ## what i'd actually claim
-
-First, the whole arc as I lived it, one pre-registered prediction at a time:
-
-<div id="qla-timeline-visual"></div>
 
 1. **Verification beats imitation for reliability.** Four attempts to train correctness *in* failed (more training, stricter prompts, and two flavours of preference training). The one fine-tune that paid for itself was trained on the verifier's own feedback, and it works as a loop.
 2. **Error-correction is a small, learnable, transferable skill.** 354 examples taught an 8B to out-repair models twice its size, across model families.
@@ -201,4 +136,4 @@ Under the hood this project exercised most of the modern fine-tuning toolkit end
 
 The analyst is the applied-AI wing of a larger build, a trading firm in miniature told in two companion pieces: <a href="/projects/quantlab-research">quant strategy research</a> (backtesting without self-deception, strategies, bias measured at +4.6%/yr) and <a href="/projects/quantlab-systems">building a trading firm's machinery</a> (a deterministic matching engine, a risk gateway no strategy can bypass, live paper trading). The same discipline runs through all three: verify mechanically, log every decision, keep the honest negatives.
 
-The full experimental trail, every hypothesis, prediction, result, and kill decision, including the embarrassing ones, lives in the repo's research log. That log, more than the 100%, is the artefact I'm proudest of.
+The full experimental trail, every hypothesis, prediction, result, and kill decision, including the embarrassing ones, lives in the repo's research log. That log, probably as much as the 100% I achieved, are the artefacts I'm proudest of.
