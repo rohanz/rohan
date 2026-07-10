@@ -85,9 +85,7 @@ Before anyone gets too excited, lets think about the fairness of this comparison
 
 First, the teacher was never given a retry loop; wrap Sonnet in the same gate-and-fix harness and it would sit near 100% too. That shifts our claim to *parity under the harness*, not superiority.
 
-Second, and more interesting: I ran a blind quality comparison. First, myself: I had trouble reliably picking out the teacher from my model, but moreso because I don't necessarily know what makes a well written memo. Then, a slightly smarter experiment: same companies, my system's memo against the teacher's, judged by a third frontier model, Opus 4.8, with positions swapped to prevent bias, on analytical quality alone (both memos already had perfect numbers). The teacher won **50 to 0**. My memos recite the data accurately; Sonnet's memos *provide narratives*. In the AbbVie pair, for instance, both memos report that profit collapsed after 2022 while cash from operations stayed near $19–25B every year. Sonnet's memo connects the two and concludes the collapse is mostly accounting charges rather than a real cash problem. Mine leaves the two facts in adjacent paragraphs for the reader to assemble.
-
-The issue was that I was only teaching it a single metric, accurate reporting, and not writing style or quality. In my opinion, its doable, and it's for a future project.
+Second, and more interesting: I ran a blind quality comparison, purely out of curiosity. Same companies, my system's memo against the teacher's, judged by a third frontier model, Opus 4.8, with positions swapped to prevent bias, on analytical quality alone (both memos already had perfect numbers). I'd only ever tuned my model on cited pass and per-number correctness, and I wanted to know whether Sonnet's narrative instincts had rubbed off along the way. They hadn't: the teacher won, 50 to 0. That result is also the reason for v6's strange final training pass: DPO aimed squarely at the judge's own preferences, trying to train the gap away. The judge didn't move an inch, 50 to 0 before and 50 to 0 after. The takeaway is that fine-tuning is aptly named. It tunes the discrete, specific thing you point it at, and nothing else. A student doesn't grow past its teacher on vague instruction.
 
 See if you can tell them apart yourself:
 
@@ -105,35 +103,36 @@ Result: the 14B writer compresses from 16GB to **9GB with no measurable quality 
 
 <div id="qla-quant-visual"></div>
 
-## the machine fought back
+## the machine fights back!
 
 All of this ran on a single 4090 in another room, reached over SSH, and by the end the infrastructure had produced more genuine surprises than the model. Three unrelated problems each disguised themselves as the same unhelpful message, `CUDA driver error: unknown error`, which gave me little to go on. The culprits were varied, and many: a training library silently switching off a memory optimisation, a second library building an intermediate the size of the whole vocabulary that wouldn't fit on the card, and plain contention from an inference server I'd left running beside the training job. Each cost a night and a from-scratch <span class="gloss-term" data-gloss="Strip the setup down to nothing, then add pieces back one at a time until it breaks again. Slow, but it corners any bug eventually.">bisection</span> to tell apart, because the error itself said nothing.
 
 There were more, all of the same texture. An SSH tunnel dropped without a word and failed fifty evaluations before I noticed. A single misused shell pipe threw away an hour of generation through a broken-pipe signal I never saw. A model-serving endpoint returned empty text for one whole class of models, which would have quietly poisoned a training set had a yield check not caught 822 blank samples before they reached the trainer. Not exactly the most glamorous, but for someone who's new to all this, definitely some things you have to learn on the job. In fact, they're probably things that can *only* be learnt on the job, too. The lesson is the same one the gate teaches about the model: don't trust a green checkmark. Re-verify the passes, re-measure the wins, and assume the machinery is lying until it proves otherwise. It often was.
 
-## the models, by name
+## the models, plotted
 
-A lot of model names have come up, so here they all are in one exhibit, in training order. The chart plots the same metric throughout: how many of the 50 <span class="gloss-term" data-gloss="Kept out of training entirely, so the score measures generalisation to new companies, not recall of seen ones.">held-out</span> memos pass the gate in one shot, no retries, with the teacher's 93% as the dashed line to beat.
+A lot of model names have come up, so here they all are in one exhibit, in training order. The chart plots the same metric throughout: how many of the 50 <span class="gloss-term" data-gloss="Kept out of training entirely, so the score measures generalisation to new companies, not recall of seen ones.">held-out</span> memos pass the gate in one shot, no retries, with the teacher's 93% as the dashed line for reference.
 
-The part I'd actually explore: pick any model, and below the chart you'll get its real memo for the same company (GE, from the held-out set), with a line on how that model was trained. Every number the gate checked is highlighted: green if it traced back to evidence, red if it didn't. Plain text (years, section ids) is whatever the gate ignores. Walk the roster from left to right and you can watch the red disappear, and the memos get denser at the same time: the untuned base cites 16 numbers timidly, v6 cites 52 and every one survives.
+Mess around with it: pick any model, and below the chart you'll get its real memo for the same company (GE, from the held-out set), with a line on how that model was trained. Every number the gate checked is highlighted: green if it traced back to evidence, red if it didn't. Plain text (years, section ids) is whatever the gate ignores. Walk the roster from left to right and you can watch the red disappear, and the memos get denser at the same time: the untuned base cites 16 numbers timidly, v6 cites 52 and every one survives. The format also get more ingrained.
 
-Two details worth hunting for. v3, the pass/fail DPO run, has almost no red, but count its citations: that's the reward hack in the wild, fewer claims instead of better ones. And v1's lone red number is the memorisation era in miniature.
+Two details worth hunting for. v3, the pass/fail DPO run, has almost no red, but count its citations: that's the reward hack in the wild, fewer claims instead of better ones. And v1's lone red number is a relic from the memorisation era.
 
 <div id="qla-roster-visual"></div>
 
 The final production pair is v6 (writes) and v5 (repairs), with the gate between them.
 
-## what i'd actually claim
+## learnings: frustrating but necessary
 
 1. **Verification beats imitation for reliability.** Four attempts to train correctness *in* failed (more training, stricter prompts, and two flavours of preference training). The one fine-tune that paid for itself was trained on the verifier's own feedback, and it works as a loop.
 2. **Error-correction is a small, learnable, transferable skill.** 354 examples taught an 8B to out-repair models twice its size, across model families.
 3. **Precision needed scale × data.** Size alone helped modestly. Size plus a doubled corpus converted a 95% writer into a 99.1% writer. The failed experiments are what make that conclusion trustworthy.
 4. **Controls and pre-registration did real work.** Every system number has a matching control; my pre-registered predictions were wrong in both directions several times, and the research log says so each time.
+5. **Fine-tuning tunes what you aim it at, and nothing else.** The gate metrics I optimised reached frontier level; the prose quality I never targeted didn't move, even when I finally targeted it directly. Verifiability and quality are different axes, and this system honestly claims only one.
 
 Under the hood this project exercised most of the modern fine-tuning toolkit end to end, on consumer hardware: QLoRA SFT and its scaling behaviour, three DPO designs (two instructive failures, one negative with a twist), <span class="gloss-term" data-gloss="When a model optimises a loophole in the metric instead of the goal, like citing fewer numbers so fewer can be wrong.">reward-hacking</span> diagnosis, <span class="gloss-term" data-gloss="Building training data from the model's own outputs, so the examples match what it actually writes rather than an idealised style.">on-policy data generation</span>, <span class="gloss-term" data-gloss="Using a third model to blind-compare outputs. Judges prefer whichever answer they read first, so every comparison is run twice with positions swapped.">LLM-as-judge</span> evaluation with position-debiasing, quantization-aware measurement, and importance-matrix compression. Each choice is documented with the evidence that forced it.
 
 ## where to next?
 
-The analyst is the applied-AI wing of a larger build, a trading firm in miniature told in two companion pieces: <a href="/projects/quantlab-research">quant strategy research</a> (backtesting without self-deception, strategies, bias measured at +4.6%/yr) and <a href="/projects/quantlab-systems">building a trading firm's machinery</a> (a deterministic matching engine, a risk gateway no strategy can bypass, live paper trading). The same discipline runs through all three: verify mechanically, log every decision, keep the honest negatives.
+The analyst is the applied-AI wing of a larger build, a trading firm in miniature told in two companion pieces: <a href="/projects/quantlab-research">quant strategy research</a> (backtesting without self-deception, strategies, bias measured at +4.6%/yr) and <a href="/projects/quantlab-systems">building a trading firm's machinery</a> (a deterministic matching engine, a risk gateway no strategy can bypass, live paper trading). The same discipline runs through all three: verify mechanically, log every decision, keep the learnings.
 
-The full experimental trail, every hypothesis, prediction, result, and kill decision, including the embarrassing ones, lives in the repo's research log. That log, probably as much as the 100% I achieved, are the artefacts I'm proudest of.
+For the analyst, though, the next step is targeting prose quality, and I'll either update this article or write a new one once I've conquered it.
