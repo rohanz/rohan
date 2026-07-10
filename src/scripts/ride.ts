@@ -1332,12 +1332,32 @@ class MapView {
   }
 
 
+  /** Force-fetch + decode the destination platform's images DURING the ride, so
+   *  the arrival reveal paints pre-decoded bitmaps. The cards are `loading="lazy"`
+   *  inside hidden sections, so without this the fetch AND decode both fire at the
+   *  moment of reveal — a ~70–140ms compositor stall with zero script time (real-
+   *  Chrome traced; invisible to the main thread, exactly the "laggy at arrival"
+   *  feel). `img.decode()` forces the load + off-thread decode regardless of
+   *  visibility; the cruise has seconds of idle budget for it. Idempotent —
+   *  decoded images resolve instantly on later rides. */
+  warmImages(id: LineId) {
+    this.cardsFor(id).forEach((card) => {
+      card.querySelectorAll('img').forEach((img) => {
+        img.decode?.().catch(() => {
+          /* decode is best-effort: a failed/aborted decode just falls back to
+             decoding at first paint, which is where we started */
+        });
+      });
+    });
+  }
+
   toPlatform(id: LineId, animate = true) {
     if (this.busy || this.view !== 'map') return;
     const line = lineById(id);
     this.busy = true;
     this.view = id;
     this.page = 0;
+    this.warmImages(id);
     // If we're launching from a HOVER (a line was highlighted, so the OTHER
     // lines are dimmed to 0.55 via the `[data-hl]:not(.ride-active)` CSS),
     // dropping data-hl + adding ride-active would snap those dimmed lines back
@@ -1674,6 +1694,7 @@ class MapView {
     this.busy = true;
     this.view = id;
     this.page = 0;
+    this.warmImages(id); // fetch+decode B's images during the ride (see warmImages)
     stopMusicPlayback(); // silence the leaving line's preview before riding on
     this.stage.classList.add('ride-active');
     delete this.stage.dataset.hl;
