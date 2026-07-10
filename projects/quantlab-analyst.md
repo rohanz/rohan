@@ -11,27 +11,27 @@ technologies:
   - Quant Finance
 ---
 
-## the itch, and the catch
+## the itch, and the concerns
 
-I'd read a lot about <span class="gloss-term" data-gloss="Taking a pre-trained model and training it further on a specific task so it specialises. Here, teaching small open models to write financial memos on consumer hardware.">fine-tuning</span>. Papers, blog posts, the occasional thread claiming a weekend fine-tune had beaten a frontier model (those never lie either). But reading about training a model is not the same as training one, and I wanted the difference. What I was missing was a real task to point it at. Ideally one where I could tell whether it was actually working, instead of squinting at loss curves and convincing myself.
+I'd heard a lot about <span class="gloss-term" data-gloss="Taking a pre-trained model and training it further on a specific task so it specialises. Here, teaching small open models to write financial memos on consumer hardware.">finetuning</span> LLMs. The idea of training a small open model on consumer GPUs, intrigued me. When you start to think about that, there's a question which naturally follows: "How much worse is it than Claude/Codex/Gemini?". Seems like we're starting at a disadvantage already, but it's a fair question. Not many people fine tune models, even fewer write about it, and even fewer do comparisons against frontier models and tell you how they did it. Seemed like there was only one way to find out, and I was game. All I needed was a task to point it at, and ideally one where I could tell whether it was actually working, instead of squinting at loss curves and convincing myself.
 
-A friend who works in portfolio management handed me the task without meaning to. Writing company research memos, he said, is bread-and-butter work: necessary, constant, and tedious. That's exactly the shape of a job worth automating, and it had one property that made it perfect for *learning* fine-tuning: correctness is mechanically checkable. A memo's numbers either trace back to the filings or they don't, so I could score every experiment against ground truth rather than guess whether the model had improved. It also plugged straight into <span class="gloss-term" data-gloss="My trading-firm-in-miniature monorepo: a backtesting engine, strategies, an order matching engine, risk controls, and live paper trading. This is its applied-AI arm.">quantlab</span>, the miniature trading firm I was already building.
+A friend who works in portfolio management handed me the task without meaning to. Writing company research memos, he said, is bread and butter work: necessary, constant, and tedious. That's exactly the nature of a job worth automating, and it had a specific characteristic that made it perfect for *learning* finetuning: correctness is mechanically checkable. A memo's numbers either trace back to the filings or they don't, so I could score every experiment against ground truth rather than guess whether the model had improved. It also plugged straight into <span class="gloss-term" data-gloss="My trading-firm-in-miniature monorepo: a backtesting engine, strategies, an order matching engine, risk controls, and live paper trading. This is its applied-AI arm.">quantlab</span>, the miniature trading firm I was already building.
 
-The catch is the whole point. Reading company <span class="gloss-term" data-gloss="The financial facts of a business from its official filings: revenue, profit, cash flow, debt, and so on.">fundamentals</span> across hundreds of tickers is exactly the kind of work you'd hand to an LLM, and exactly where LLMs are least trustworthy, because they get numbers *subtly* wrong. In finance a wrong number isn't a typo, it's a liability. Frontier models like Claude mostly get them right, but routing a research pipeline through a third-party API carries two costs a bank cares about deeply. Money: pay-per-call doesn't scale to re-analysing 500 companies every time the data updates. Privacy: what you're researching, and when, is itself sensitive, and regulated institutions often can't let that data leave their walls at all. A model running on your own hardware solves both, if, and only if, its output can be trusted. So the question this project answers: **can a model running on a gaming PC produce financial analysis where every number is mechanically provable? And how do you get from "mostly right" to "provably right"?** (Spoiler: on provable correctness, yes, at frontier level. On prose quality, measured fairly, not yet. Both get shown below.)
+Reading company <span class="gloss-term" data-gloss="The financial facts of a business from its official filings: revenue, profit, cash flow, debt, and so on.">fundamentals</span> across hundreds of tickers is exactly the kind of work you'd hand to an LLM, but also where small, open LLMs are least trustworthy, because they get numbers *subtly* wrong. In finance, the subtle typo could mean huge liability, so there's real motivation to figure out how to fix it. Frontier models like Claude mostly get them right, but routing a research pipeline through a third-party API carries two costs a bank cares about deeply. Money: pay-per-api call doesn't scale to re-analysing 500 companies every time the data updates. Privacy: what you're researching, and when, is itself sensitive, and regulated institutions often can't let that data leave their walls at all. A model running on your own hardware solves both, if, and only if, its output can be trusted. So the question this project answers: **can a model running on a gaming PC produce financial analysis where every number is mechanically provable? And how do you get from "mostly right" to "provably right"?** 
 
-Over three days of experiments that question turned into something bigger: a study of where reliability in AI systems actually comes from. It wasn't where I expected.
+Countless experiments turned that question into something bigger: a study of where reliability in AI systems actually comes from. It wasn't where I expected.
 
 ## the task and the gate
 
 Each memo is written from an <span class="gloss-term" data-gloss="A fixed set of numbered facts (revenue, margins, cash flow, price history) extracted from SEC EDGAR filings and computed metrics. The model may only use numbers from this pack.">evidence pack</span>, and every number must carry a citation like `[F3]` pointing at its source fact. A deterministic <span class="gloss-term" data-gloss="A roughly 100-line Python function, not an AI: it extracts every number from the memo and checks it against the evidence pack, allowing only rounding and unit conversions. Unverifiable numbers reject the whole memo.">gate</span> then re-checks the draft: any number that can't be traced back to evidence fails the memo outright. No appeals, no partial credit. The headline metric is **cited pass**: the fraction of memos that survive the gate with at least 10 citations, measured on 50 companies the models never saw in training.
 
-The teacher to beat: claude-sonnet-5, which passes 93% of the time while citing about 40 numbers per memo with 99.8% per-number accuracy.
+The model, and teacher, to beat: claude-sonnet-5, which passes 93% of the time while citing about 40 numbers per memo with 99.8% <span class="gloss-term" data-gloss="Of all the individual numbers a model cites, the share that actually match the evidence. Different from cited pass, which is all-or-nothing per memo: one bad number out of forty fails the whole thing.">per-number accuracy</span>. The two metrics interact brutally: at 40 claims a memo, even 99% per-number accuracy means about a third of memos carry at least one bad number and die at the gate. That arithmetic runs the whole project.
 
-## distillation, and the wall
+## distillation, and the great wall
 
-The first approach was classic <span class="gloss-term" data-gloss="Training a small model to imitate a large one: the big model generates examples of the task done well, and the small model learns to reproduce them.">distillation</span>: have Sonnet write about 1,200 gate-passing memos, then fine-tune an 8B model on them with <span class="gloss-term" data-gloss="Quantized Low-Rank Adaptation: a way to fine-tune large models on consumer GPUs by freezing the base weights in 4-bit precision and training tiny adapter matrices (about 0.5% of the parameters) on top.">QLoRA</span>, all on a single RTX 4090.
+The first approach was classic <span class="gloss-term" data-gloss="Training a small model to imitate a large one: the big model generates examples of the task done well, and the small model learns to reproduce them.">distillation</span>, and the process is worth spelling out because it's simpler than the mystique suggests. Build evidence packs for hundreds of companies. Have the teacher (Sonnet) write a memo for each, and keep only the memos that pass the gate, about 1,200 of them, so the student never sees a bad example. Format each one as a training pair: evidence pack in, cited memo out. Then run <span class="gloss-term" data-gloss="Supervised fine-tuning: show the model thousands of (input, ideal output) pairs and nudge its weights toward reproducing the outputs. The plainest form of fine-tuning.">SFT</span> over those pairs with <span class="gloss-term" data-gloss="Quantized Low-Rank Adaptation: a way to fine-tune large models on consumer GPUs by freezing the base weights in 4-bit precision and training tiny adapter matrices (about 0.5% of the parameters) on top.">QLoRA</span>, which freezes the base model and trains a thin adapter on top, small enough that a full training run takes about twenty minutes on a single RTX 4090. Export, compress, point the gate at its outputs, see what you've got.
 
-Getting even a working draft took three tries, and each failure taught me something different. The first model *memorised*: it had seen Apple's 26.9% net margin so often in training that it confidently wrote "26.9" into two dozen *other companies'* memos. I hadn't taught it finance, I'd taught it fluent fabrication, which is worse than the untrained model. The second model underfit, and handed me the most useful lesson of the early phase: it scored a *better* <span class="gloss-term" data-gloss="A model's error on held-out data during training, measured with the correct next word already supplied. Lower is usually better, but it is measured under 'teacher forcing', not free generation.">validation loss</span> than the first, yet generated visibly worse memos, dropping the citation format for generic prose. Validation loss is computed with the right answer already in the model's mouth; it says almost nothing about how the model behaves running free. I stopped trusting it and started scoring actual generations against the gate. The third model worked: format locked in, no memorisation, teacher-like citation density.
+Getting even a working draft was way harder than I thought it'd be. The first model *memorised*: it had seen Apple's 26.9% net margin so often in training that it confidently wrote "26.9" into two dozen *other companies'* memos. I'd somehow wound up teaching it confident fabrication, which is worse than the untrained model. The second model underfit, and handed me the most useful lesson of the early phase: it scored a *better* <span class="gloss-term" data-gloss="A model's error on held-out data during training, measured with the correct next word already supplied. Lower is usually better, but it is measured under 'teacher forcing', not free generation.">validation loss</span> than the first, yet generated visibly worse memos, dropping the citation format for generic prose. Validation loss is computed with the right answer already in the model's mouth; it says almost nothing about how the model behaves running free. I stopped trusting it and started scoring actual generations against the gate. The third model worked: format locked in, no memorisation, teacher-like citation density.
 
 But its per-number accuracy sat at about 95%, and no amount of blind training moved it. At 40 numbers a memo, 95% per number means most memos carry at least one bad one, and the gate fails them whole. The errors weren't fabrications anymore, just imperfect transcription, the way "168.6 billion shares" looks perfectly plausible when the evidence says 165. 36% of memos survived.
 
@@ -107,6 +107,7 @@ A lot of model names have come up, so here's the roster in training order, befor
       <th>model</th>
       <th>what it is</th>
       <th>pass rate</th>
+      <th>per-number accuracy</th>
     </tr>
   </thead>
   <tbody>
@@ -114,46 +115,54 @@ A lot of model names have come up, so here's the roster in training order, befor
       <td><strong>v1</strong></td>
       <td>first 8B distillation of the teacher</td>
       <td>10%</td>
+      <td>not comparable (memorisation era)</td>
     </tr>
     <tr>
       <td><strong>v2.1</strong></td>
       <td>8B, more data and fixed data splits</td>
       <td>36%</td>
+      <td>95.4%</td>
     </tr>
     <tr>
       <td><strong>v3</strong></td>
       <td>v2.1 + preference training on pass/fail pairs</td>
       <td>26%</td>
+      <td>94.7%</td>
     </tr>
     <tr>
       <td><strong>v4</strong></td>
       <td>v2.1 + preference training on corrected-digit pairs</td>
       <td>30%</td>
+      <td>94.2%</td>
     </tr>
     <tr>
       <td><strong>v5</strong></td>
       <td>8B trained to repair flagged memos (“the fixer”)</td>
       <td>26% as a writer; kept as the repair specialist</td>
+      <td>94.5%</td>
     </tr>
     <tr>
       <td><strong>14B</strong></td>
       <td>the v2.1 recipe on a model twice the size</td>
       <td>56%</td>
+      <td>97.4%</td>
     </tr>
     <tr>
       <td><strong>14b-max</strong></td>
       <td>the 14B with a doubled training corpus</td>
       <td>82%</td>
+      <td>99.1%</td>
     </tr>
     <tr>
       <td><strong>v6</strong></td>
       <td>14b-max + quality preference training, the final writer</td>
       <td>84%</td>
+      <td>99.6%</td>
     </tr>
   </tbody>
 </table>
 
-The teacher, claude-sonnet-5, passes 93% single-shot. The final production pair is v6 (writes) and v5 (repairs), with the gate between them.
+The teacher, claude-sonnet-5, passes 93% single-shot at 99.8% per-number accuracy. The final production pair is v6 (writes) and v5 (repairs), with the gate between them.
 
 ## what i'd actually claim
 
