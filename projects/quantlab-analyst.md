@@ -59,13 +59,13 @@ That's the great wall: 95.4% per-number accuracy, apparently baked into the 8B, 
 
 ### the broken instrument
 
-Somewhere through that process I discovered my measuring instrument wasn't being completely truthful: I'd been training models just fine, but then evaluating through aggressive <span class="gloss-term" data-gloss="Compressing a model by storing each of its weights in 4 bits instead of 16, an eighth of the size. Done carelessly it damages the model; the compression section later shows how to do it right.">4-bit quantization</span>, which was silently garbling the fine-tuned <span class="gloss-term" data-gloss="The billions of learned numbers that make up a trained model. Damage them and the behaviour degrades in subtle ways.">weights</span> and costing about 7 accuracy points. Every number in this article (even the ones you've already read) comes from after that fix.
+Somewhere through that process I discovered my measuring instrument wasn't being completely truthful: I'd been training models just fine, but then evaluating through aggressive <span class="gloss-term" data-gloss="Compressing a model by storing each of its weights in 4 bits instead of 16, a quarter of the size. Done carelessly it damages the model; the compression section later shows how to do it right.">4-bit quantization</span>, which was silently garbling the fine-tuned <span class="gloss-term" data-gloss="The billions of learned numbers that make up a trained model. Damage them and the behaviour degrades in subtle ways.">weights</span> and costing about 7 accuracy points. Every number in this article (even the ones you've already read) comes from after that fix.
 
 Lesson one of the project: **evaluate the artefact you trained, not the artefact you deploy.**
 
 ## scale, then data
 
-With the instrument fixed and the wall still standing at 95.4%, two questions remained. Was the 8B's precision ceiling a *size* problem? Again, only one way to find out. The answer was yes: a 14B trained identically, once I matched its citation density fairly, hit 97.4% per-number against the 8B's 95.4%. Was the 14B then *data*-limited? As it turns out, very: doubling the teacher corpus to about 2,000 memos produced the single biggest jump of the project. I'd pre-registered a prediction of 60-70% cited pass; it landed at 82%, at 99.1% per-number accuracy, while citing *more* numbers per memo than the teacher. A third doubling brought nothing but pain to my poor GPU; the curve had flattened. One last training pass produced the finished writer, and it's a strange one: a DPO run on 250 judge-preferred pairs of the 14B's own memos, aimed at prose quality rather than precision (the reason why is coming in the next section). It failed at that goal completely, but the gate numbers nudged up as a side effect: **v6, 84% cited pass and 99.6% per-number accuracy at about 49 claims per memo**. That's roughly one wrong number per 250, against the teacher's one per 500.
+With the instrument fixed and the wall still standing at 95.4%, two questions remained. Was the 8B's precision ceiling a *size* problem? Again, only one way to find out. The answer was yes: a 14B trained identically, once I matched its citation density fairly, hit 97.4% per-number against the 8B's 95.4%. Was the 14B then *data*-limited? As it turns out, very: growing the teacher corpus from 1,237 to about 2,000 memos produced the single biggest jump of the project. I'd pre-registered a prediction of 60-70% cited pass; it landed at 82%, at 99.1% per-number accuracy, while citing *more* numbers per memo than the teacher. Growing it again brought nothing but pain to my poor GPU; the curve had flattened. One last training pass produced the finished writer, and it's a strange one: a DPO run on 250 judge-preferred pairs of the 14B's own memos, aimed at prose quality rather than precision (the reason why is coming in the next section). It failed at that goal completely, but the gate numbers nudged up as a side effect: **v6, 84% cited pass and 99.6% per-number accuracy at about 49 claims per memo**. That's roughly one wrong number per 250, against the teacher's one per 500.
 
 That's the best writer I could train, but 84% still isn't perfect. The four flat experiments had already told me the last stretch wasn't coming from more training. It had to come from somewhere other than the model's weights: from the system around it.
 
@@ -103,7 +103,7 @@ The last pass was making it small enough to live somewhere cheap, which means re
 
 <div id="qla-quant-visual"></div>
 
-Result: the 14B writer compresses from 16GB to **9GB with no quality loss on the gate metrics** (the instrument this project trusts), using the same 4-bit budget that destroyed accuracy when spent naively. The full system (writer + fixer + gate) now runs standalone on a Mac mini in about 18GB of memory, generating verified memos for zero marginal cost.
+Result: the 14B writer compresses from its 16GB 8-bit export to **9GB with no quality loss on the gate metrics** (the instrument this project trusts), using the same 4-bit budget that destroyed accuracy when spent naively. The full system (writer + fixer + gate) now runs standalone on a Mac mini in about 18GB of memory, generating verified memos for zero marginal cost.
 
 ## the machine fights back
 
@@ -125,7 +125,7 @@ The final production pair is v6 (writes) and v5 (repairs), with the gate between
 
 1. **Verification beats imitation for reliability.** Four attempts to train correctness *in* failed (more training, stricter prompts, and two flavours of preference training). The one fine-tune that paid for itself was trained on the verifier's own feedback, and it works as a loop.
 2. **Error correction is a small, learnable, transferable skill.** 354 examples taught an 8B to out-repair models twice its size, across model families.
-3. **Precision needed scale × data.** Size alone helped a little. Size plus a doubled corpus converted a 95% writer into a 99.1% writer. The failed experiments are what make that conclusion trustworthy.
+3. **Precision needed scale × data.** Size alone helped a little. Size plus a bigger corpus converted a 95% writer into a 99.1% writer. The failed experiments are what make that conclusion trustworthy.
 4. **Controls and pre-registration are necessary.** Every system number has a matching control; my pre-registered predictions were wrong in both directions several times, and the research log says so each time.
 5. **Fine-tuning tunes what you aim it at, and nothing else.** The gate metrics I optimised reached frontier level; the prose quality I never targeted didn't move, even when I finally targeted it directly. Verifiability and quality are different axes, and this system honestly claims only one.
 
