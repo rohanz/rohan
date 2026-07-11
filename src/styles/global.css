@@ -97,6 +97,15 @@ img { max-width: 100%; display: block; }
 .sign-header .sign-title {
   position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
   margin: 0; font-size: 1.5rem; font-weight: 700; letter-spacing: -0.01em; white-space: nowrap;
+  /* Long titles (quantlab-systems' is ~900px) must truncate, not overflow the
+     bar/viewport: cap to the space between the logo block and the back pill. */
+  max-width: calc(100vw - 30rem);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+@media (max-width: 760px) {
+  /* The back pill is hidden here; only the logo block bounds the title. */
+  .sign-header .sign-title { max-width: calc(100vw - 18rem); }
 }
 
 /* Line-color spine running down the content */

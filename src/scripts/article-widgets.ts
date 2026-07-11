@@ -1550,6 +1550,1626 @@ function initDemoPlayer() {
 }
 
 // ============================================================
+// QUANTLAB VISUALS (quantlab-analyst / quantlab-research / quantlab-systems)
+// Ported from the original site's main.js (initQuantlabVisuals /
+// initQuantlabFinVisuals). Light theme only: the original's isLightTheme
+// branches are collapsed and the palette follows the article's settled rules —
+// amber (#f9c25e) for plot SERIES, projects red (#d13d59) for warn/accent
+// chrome, ink for text/grids, cream card background. Text-sized accents (stat
+// numbers, meter line) use a darker amber (#b8802a) because series amber is
+// too light to read as text on cream.
+// ============================================================
+
+const QL_WARN = RED; // "cheat"/"survivors"/violations — the projects red
+const QL_TEXT_AMBER = '#b8802a'; // text-weight amber (matches .lcm-chord)
+// Opaque equivalent of ink@0.55 pre-blended onto the cream card (#e8e4db):
+// the quant explainer's dots must be solid or the connector line ghosts through.
+const QL_DOT = '#777571';
+const qlText = (a: number) => `rgba(${INK_RGB},${a})`;
+
+function qlaEl(tag: string, className?: string, text?: string): HTMLElement {
+  const el = document.createElement(tag);
+  if (className) el.className = className;
+  if (text !== undefined) el.textContent = text;
+  return el;
+}
+
+function qlaShell(node: HTMLElement, kicker: string, meta: string): HTMLElement {
+  node.textContent = '';
+  const shell = qlaEl('div', 'qla-visual');
+  const header = qlaEl('div', 'qla-visual-header');
+  header.appendChild(qlaEl('span', 'qla-visual-kicker', kicker));
+  header.appendChild(qlaEl('span', 'qla-visual-meta', meta));
+  shell.appendChild(header);
+  const body = qlaEl('div', 'qla-visual-body');
+  shell.appendChild(body);
+  node.appendChild(shell);
+  return body;
+}
+
+// Legend row: colored dots + labels, right-aligned above the canvas.
+function qlfLegend(items: Array<{ cls: string; label: string }>): HTMLElement {
+  const row = qlaEl('div', 'qlf-legend');
+  items.forEach((it) => {
+    const item = qlaEl('span', 'qlf-legend-item');
+    item.appendChild(qlaEl('i', `qlf-legend-swatch ${it.cls}`));
+    item.appendChild(qlaEl('span', undefined, it.label));
+    row.appendChild(item);
+  });
+  return row;
+}
+
+// Visually-hidden keyboard fallback driving the same crosshair as the pointer.
+function qlfCrosshairInput(n: number, ariaLabel: string): HTMLInputElement {
+  const input = document.createElement('input');
+  input.type = 'range';
+  input.className = 'qlf-sr-range';
+  input.min = '0';
+  input.max = String(n - 1);
+  input.step = '1';
+  input.value = String(n - 1);
+  input.setAttribute('aria-label', ariaLabel);
+  return input;
+}
+
+// Fixed readout row below a chart. set(null) keeps last values but dims them.
+function qlfReadout(fields: Array<{ key: string; label: string; width: number }>) {
+  const row = qlaEl('div', 'qlf-readout is-idle');
+  row.setAttribute('aria-live', 'polite');
+  const boxes: Record<string, HTMLElement> = {};
+  fields.forEach((f) => {
+    const cell = qlaEl('span', 'qlf-readout-field');
+    cell.appendChild(qlaEl('span', 'qlf-readout-label', f.label));
+    // Figure space keeps the empty box glyph-bearing so the row's baseline
+    // doesn't shift on first fill (see the original's comment).
+    const box = qlaEl('span', 'qlf-readout-value', ' ');
+    box.style.minWidth = `calc(${f.width}ch + 1px)`;
+    boxes[f.key] = box;
+    cell.appendChild(box);
+    row.appendChild(cell);
+  });
+  return {
+    row,
+    set(values: Record<string, string> | null) {
+      if (values) {
+        Object.keys(values).forEach((k) => { if (boxes[k]) boxes[k].textContent = values[k]; });
+      } else {
+        Object.keys(boxes).forEach((k) => { boxes[k].textContent = ' '; });
+      }
+      row.classList.toggle('is-idle', !values);
+    },
+  };
+}
+
+// Pointer/touch crosshair over a canvas, snapped to the nearest index.
+// Listeners live on elements created inside the placeholder, so they're
+// discarded with the subtree on astro:before-swap — no explicit removal needed.
+function qlfAttachCrosshair(
+  canvas: HTMLCanvasElement,
+  input: HTMLInputElement,
+  n: number,
+  padL: number,
+  padR: number,
+  setCursor: (i: number | null) => void,
+) {
+  const fromEvent = (e: PointerEvent) => {
+    const rect = canvas.getBoundingClientRect();
+    const pw = Math.max(1, rect.width - padL - padR);
+    const i = Math.round(((e.clientX - rect.left - padL) / pw) * (n - 1));
+    return Math.max(0, Math.min(n - 1, i));
+  };
+  const onMove = (e: PointerEvent) => {
+    const i = fromEvent(e);
+    input.value = String(i);
+    setCursor(i);
+  };
+  canvas.classList.add('qlf-crosshair-canvas');
+  canvas.addEventListener('pointerdown', onMove);
+  canvas.addEventListener('pointermove', onMove);
+  canvas.addEventListener('pointerleave', () => setCursor(null));
+  input.addEventListener('input', () => setCursor(parseInt(input.value, 10)));
+  input.addEventListener('focus', () => {
+    canvas.parentElement!.classList.add('qlf-cross-focus');
+    setCursor(parseInt(input.value, 10));
+  });
+  input.addEventListener('blur', () => {
+    canvas.parentElement!.classList.remove('qlf-cross-focus');
+    setCursor(null);
+  });
+}
+
+// Coalesce redraws to one per frame: pointermove crosshairs can fire several
+// times per frame and each original setCursor() drew synchronously. The
+// returned scheduler queues at most one rAF; cleanup cancels a pending one.
+function makeRafDraw(draw: () => void): () => void {
+  let id: number | null = null;
+  const request = () => {
+    if (id !== null) return;
+    id = requestAnimationFrame(() => { id = null; draw(); });
+  };
+  cleanups.push(() => { if (id !== null) cancelAnimationFrame(id); id = null; });
+  return request;
+}
+
+function qlfNearestIndex(dates: string[], target: string): number {
+  let best = 0;
+  for (let i = 0; i < dates.length; i++) {
+    if (dates[i] <= target) best = i;
+    else break;
+  }
+  return best;
+}
+
+function qlfMoney(v: number): string {
+  const sign = v < 0 ? '-' : '';
+  return `${sign}$${Math.abs(Math.round(v)).toLocaleString('en-US')}`;
+}
+
+// ---- quantlab-analyst: 1. the compounding curve (memo survival = p^n) ----
+function initQlaCompound(node: HTMLElement) {
+  const models = [
+    { name: 'v2.1', p: 0.954 },
+    { name: 'teacher', p: 0.998 },
+  ];
+  const WALL_P = 0.954;
+  const N_CLAIMS = 40;
+  const body = qlaShell(node, 'why 95% per number is not 95% per memo', 'memo survival = p^n · at 40 claims per memo');
+
+  const canvasWrap = qlaEl('div', 'qla-compound-canvas-wrap');
+  const canvas = document.createElement('canvas');
+  canvas.className = 'qla-compound-canvas';
+  canvas.setAttribute('role', 'img');
+  canvas.setAttribute('aria-label', 'Curve of memo survival rate versus per-number accuracy at 40 claims per memo, with markers for v2.1 at the 95.4% wall and the teacher at 99.8%');
+  body.appendChild(qlfLegend([
+    { cls: 'qlf-sw-accent', label: 'survival curve' },
+    { cls: 'qlf-sw-muted', label: 'measured models' },
+  ]));
+  canvasWrap.appendChild(canvas);
+  const CROSS_N = 161;
+  const crossInput = qlfCrosshairInput(CROSS_N, 'Step along the accuracy axis to read the survival curve');
+  canvasWrap.appendChild(crossInput);
+  body.appendChild(canvasWrap);
+
+  const crossReadout = qlfReadout([
+    { key: 'acc', label: 'per-number accuracy', width: 6 },
+    { key: 'surv', label: 'memo survival', width: 6 },
+  ]);
+  body.appendChild(crossReadout.row);
+
+  const P_MIN = 0.90, P_MAX = 0.999;
+  const cursorP = (i: number) => P_MIN + (i / (CROSS_N - 1)) * (P_MAX - P_MIN);
+  let cursor: number | null = null;
+  const survival = (p: number, n: number) => Math.pow(p, n);
+
+  function draw() {
+    const rect = canvas.parentElement!.getBoundingClientRect();
+    const w = Math.max(280, rect.width);
+    const h = 240;
+    const ctx = sizeCanvas(canvas, w, h);
+    canvas.style.height = `${h}px`;
+    ctx.clearRect(0, 0, w, h);
+
+    const pad = { l: 44, r: 14, t: 14, b: 30 };
+    const pw = w - pad.l - pad.r;
+    const ph = h - pad.t - pad.b;
+    const x = (v: number) => pad.l + ((v - P_MIN) / (P_MAX - P_MIN)) * pw;
+    const y = (v: number) => pad.t + (1 - v) * ph;
+
+    ctx.strokeStyle = qlText(0.12);
+    ctx.fillStyle = qlText(0.5);
+    ctx.font = '600 11px Inter, sans-serif';
+    ctx.lineWidth = 1;
+    [0, 0.25, 0.5, 0.75, 1].forEach((g) => {
+      ctx.beginPath(); ctx.moveTo(pad.l, y(g)); ctx.lineTo(w - pad.r, y(g)); ctx.stroke();
+      ctx.textAlign = 'right';
+      ctx.fillText(`${Math.round(g * 100)}%`, pad.l - 6, y(g) + 4);
+    });
+    [0.90, 0.925, 0.95, 0.975, 0.999].forEach((g) => {
+      ctx.textAlign = g === 0.999 ? 'right' : 'center';
+      ctx.fillText(`${(g * 100).toFixed(1)}%`, x(g), h - 10);
+    });
+
+    // the wall: dashed vertical at 95.4%
+    ctx.setLineDash([4, 4]);
+    ctx.strokeStyle = qlText(0.4);
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x(WALL_P), pad.t); ctx.lineTo(x(WALL_P), h - pad.b); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = qlText(0.55);
+    ctx.textAlign = 'left';
+    ctx.fillText('the wall', x(WALL_P) + 6, pad.t + 12);
+
+    ctx.strokeStyle = AMBER;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    for (let i = 0; i <= 160; i++) {
+      const pv = P_MIN + (i / 160) * (P_MAX - P_MIN);
+      const yv = y(survival(pv, N_CLAIMS));
+      i === 0 ? ctx.moveTo(x(pv), yv) : ctx.lineTo(x(pv), yv);
+    }
+    ctx.stroke();
+
+    ctx.font = '700 11px Inter, sans-serif';
+    models.forEach((m) => {
+      const mx = x(m.p);
+      const my = y(survival(m.p, N_CLAIMS));
+      ctx.fillStyle = qlText(0.85);
+      ctx.beginPath(); ctx.arc(mx, my, 4, 0, Math.PI * 2); ctx.fill();
+      ctx.textAlign = m.p > 0.985 ? 'right' : 'center';
+      ctx.fillText(m.name, m.p > 0.985 ? mx - 7 : mx, my - 9);
+    });
+
+    if (cursor !== null) {
+      const pv = cursorP(cursor);
+      const hx = x(pv);
+      ctx.strokeStyle = qlText(0.35);
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(hx, pad.t); ctx.lineTo(hx, h - pad.b); ctx.stroke();
+      ctx.fillStyle = AMBER;
+      ctx.beginPath(); ctx.arc(hx, y(survival(pv, N_CLAIMS)), 4, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+  const requestDraw = makeRafDraw(draw);
+
+  function setCursor(i: number | null) {
+    cursor = i === null || isNaN(i) ? null : i;
+    if (cursor === null) crossReadout.set(null);
+    else {
+      const pv = cursorP(cursor);
+      crossReadout.set({
+        acc: `${(pv * 100).toFixed(1)}%`,
+        surv: `${(survival(pv, N_CLAIMS) * 100).toFixed(1)}%`,
+      });
+    }
+    requestDraw();
+  }
+
+  qlfAttachCrosshair(canvas, crossInput, CROSS_N, 44, 14, setCursor);
+  const onResize = () => requestDraw();
+  window.addEventListener('resize', onResize);
+  // The container may lack layout at init (fonts/first paint); the observer
+  // fires once layout exists and again on any container resize.
+  const ro = new ResizeObserver(() => requestDraw());
+  ro.observe(canvasWrap);
+  cleanups.push(() => { ro.disconnect(); window.removeEventListener('resize', onResize); });
+  setCursor(null);
+}
+
+// ---- quantlab-analyst: 2. one real repair (static before/after) ----
+const QLA_NUM_TOKEN = /(\[[FM]\d+\]?)|(-?\$?\d[\d,]*(?:\.\d+)?%?(?:[BMK]\b)?)/g;
+
+function qlaTokenize(text: string): Array<{ type: string; text: string }> {
+  const tokens: Array<{ type: string; text: string }> = [];
+  let last = 0;
+  let m: RegExpExecArray | null;
+  QLA_NUM_TOKEN.lastIndex = 0;
+  while ((m = QLA_NUM_TOKEN.exec(text)) !== null) {
+    if (m.index > last) tokens.push({ type: 'text', text: text.slice(last, m.index) });
+    if (m[1]) tokens.push({ type: 'cite', text: m[1] });
+    else tokens.push({ type: 'num', text: m[2] });
+    last = m.index + m[0].length;
+  }
+  if (last < text.length) tokens.push({ type: 'text', text: text.slice(last) });
+  return tokens;
+}
+
+function initQlaGate(node: HTMLElement, fixer: any) {
+  const body = qlaShell(node, 'one real repair', `from the fixer logs · ${fixer.ticker} · excerpt`);
+
+  const beforeTokens = qlaTokenize(fixer.before);
+  const afterTokens = qlaTokenize(fixer.after);
+  const badSet = new Set<number>();
+  const fixedCites = new Set<string>();
+  beforeTokens.forEach((tok, i) => {
+    if (tok.type !== 'num') return;
+    if (fixer.violations.some((v: string) => tok.text.indexOf(v) !== -1)) {
+      badSet.add(i);
+      for (let j = i + 1; j < beforeTokens.length && j < i + 4; j++) {
+        if (beforeTokens[j].type === 'cite') { fixedCites.add(beforeTokens[j].text.replace(']', '')); break; }
+      }
+    }
+  });
+  const goodSet = new Set<number>();
+  afterTokens.forEach((tok, i) => {
+    if (tok.type !== 'cite') return;
+    if (!fixedCites.has(tok.text.replace(']', ''))) return;
+    for (let j = i - 1; j >= 0 && j > i - 4; j--) {
+      if (afterTokens[j].type === 'num') { goodSet.add(j); break; }
+    }
+  });
+
+  function renderExcerpt(title: string, tokenList: Array<{ type: string; text: string }>, markSet: Set<number>, markClass: string) {
+    const col = qlaEl('div', 'qla-fixer-col');
+    col.appendChild(qlaEl('div', 'qla-fixer-col-title', title));
+    const box = qlaEl('div', 'qla-memo');
+    tokenList.forEach((tok, i) => {
+      if (markSet.has(i)) box.appendChild(qlaEl('mark', markClass, tok.text));
+      else box.appendChild(document.createTextNode(tok.text));
+    });
+    col.appendChild(box);
+    return col;
+  }
+  const report = qlaEl('div', 'qla-gate-report-strip');
+  report.appendChild(qlaEl('span', 'qla-gate-report-label', "the fixer's input · the gate's report:"));
+  fixer.violations.forEach((v: string) => report.appendChild(qlaEl('span', 'qla-gate-chip', v)));
+  report.appendChild(qlaEl('span', 'qla-gate-report-tail', 'untraceable → rewrite'));
+  body.appendChild(report);
+
+  const fixerGrid = qlaEl('div', 'qla-fixer-grid');
+  fixerGrid.appendChild(renderExcerpt(`before: rejected by the gate, ${fixer.violations.length} untraceable numbers`, beforeTokens, badSet, 'qla-mark-bad'));
+  fixerGrid.appendChild(renderExcerpt('after: one pass of the fixer', afterTokens, goodSet, 'qla-mark-good'));
+  body.appendChild(fixerGrid);
+}
+
+// ---- quantlab-analyst: 3. you be the judge (blind A/B game) ----
+function initQlaJudge(node: HTMLElement, judgePairs: any[]) {
+  const body = qlaShell(node, 'you be the judge', 'real memos, numbers already verified · which reads like the frontier model?');
+
+  const status = qlaEl('p', 'qla-judge-status', '');
+  body.appendChild(status);
+  const grid = qlaEl('div', 'qla-judge-grid');
+  body.appendChild(grid);
+  const controls = qlaEl('div', 'qla-judge-controls');
+  body.appendChild(controls);
+  const feedback = qlaEl('p', 'qla-judge-feedback', '');
+  feedback.setAttribute('aria-live', 'polite');
+  body.appendChild(feedback);
+  const scoreLine = qlaEl('p', 'qla-judge-score', '');
+  scoreLine.setAttribute('aria-live', 'polite');
+  body.appendChild(scoreLine);
+
+  const ROUNDS = 3;
+  let order: number[] = [];
+  let round = 0;
+  let correct = 0;
+
+  function shuffle<T>(arr: T[]): T[] {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  // Pair-consistent trimming: both memos cut near one shared target length so
+  // the side-by-side panels end at visibly matched lengths.
+  function cutPoints(text: string) {
+    const paras: number[] = [];
+    const sents: number[] = [];
+    let m: RegExpExecArray | null;
+    const pRe = /\n\n/g;
+    while ((m = pRe.exec(text)) !== null) paras.push(m.index);
+    const sRe = /\. /g;
+    while ((m = sRe.exec(text)) !== null) sents.push(m.index + 1);
+    return { paras, sents };
+  }
+  function nearestIn(list: number[], target: number, lo: number, hi: number): number | null {
+    let best: number | null = null;
+    list.forEach((i) => {
+      if (i >= lo && i <= hi && (best === null || Math.abs(i - target) < Math.abs(best - target))) best = i;
+    });
+    return best;
+  }
+  function bestBoundary(text: string, target: number, lo: number, hi: number): number {
+    const { paras, sents } = cutPoints(text);
+    const p = nearestIn(paras, target, lo, hi);
+    if (p !== null) return p;
+    const s = nearestIn(sents, target, lo, hi);
+    if (s !== null) return s;
+    return Math.min(target, text.length);
+  }
+  const cutAt = (text: string, idx: number) => (idx >= text.length ? text : `${text.slice(0, idx).trimEnd()} …`);
+  const trimmedPairs = judgePairs.map((pair) => {
+    const shared = Math.min(bestBoundary(pair.teacher, 700, 600, 800), bestBoundary(pair.ours, 700, 600, 800));
+    return {
+      ticker: pair.ticker,
+      teacher: cutAt(pair.teacher, bestBoundary(pair.teacher, shared, shared - 140, shared + 140)),
+      ours: cutAt(pair.ours, bestBoundary(pair.ours, shared, shared - 140, shared + 140)),
+    };
+  });
+
+  // One fixed panel height for every round: measure the tallest post-trim
+  // excerpt at the real two-column track width (two probe columns needed —
+  // with an empty grid, auto-fit collapses to one full-width track).
+  let bodyHeight = 0;
+  function measurePanels() {
+    const probeCols = [0, 1].map(() => {
+      const col = qlaEl('div', 'qla-judge-col qla-judge-probe');
+      const panel = qlaEl('div', 'qla-judge-panel');
+      panel.appendChild(qlaEl('div', 'qla-judge-panel-label', 'memo A'));
+      panel.appendChild(qlaEl('div', 'qla-judge-panel-body', ''));
+      col.appendChild(panel);
+      return col;
+    });
+    probeCols.forEach((col) => grid.appendChild(col));
+    const probeBody = probeCols[0].querySelector('.qla-judge-panel-body') as HTMLElement;
+    let max = 0;
+    trimmedPairs.forEach((tp) => {
+      [tp.teacher, tp.ours].forEach((text) => {
+        probeBody.textContent = text;
+        max = Math.max(max, probeBody.offsetHeight);
+      });
+    });
+    probeCols.forEach((col) => grid.removeChild(col));
+    bodyHeight = max;
+    grid.querySelectorAll<HTMLElement>('.qla-judge-panel-body').forEach((b) => {
+      b.style.height = `${bodyHeight}px`;
+    });
+  }
+
+  function makePanel(label: string, text: string) {
+    const panel = qlaEl('div', 'qla-judge-panel');
+    panel.appendChild(qlaEl('div', 'qla-judge-panel-label', `memo ${label}`));
+    const bodyEl = qlaEl('div', 'qla-judge-panel-body', text);
+    if (bodyHeight) bodyEl.style.height = `${bodyHeight}px`;
+    panel.appendChild(bodyEl);
+    return panel;
+  }
+
+  function renderRound() {
+    grid.textContent = '';
+    controls.textContent = '';
+    feedback.textContent = '';
+    feedback.className = 'qla-judge-feedback';
+    scoreLine.textContent = '';
+    const pair = trimmedPairs[order[round]];
+    const teacherIsA = Math.random() < 0.5;
+    status.textContent = `round ${round + 1} of ${ROUNDS} · ${pair.ticker}`;
+    const panelA = makePanel('A', teacherIsA ? pair.teacher : pair.ours);
+    const panelB = makePanel('B', teacherIsA ? pair.ours : pair.teacher);
+    const guessButtons: HTMLButtonElement[] = [];
+
+    ['A', 'B'].forEach((letter) => {
+      const col = qlaEl('div', 'qla-judge-col');
+      col.appendChild(letter === 'A' ? panelA : panelB);
+      const btn = qlaEl('button', 'qla-btn qla-judge-guess', `memo ${letter} is Sonnet`) as HTMLButtonElement;
+      btn.type = 'button';
+      btn.addEventListener('click', () => {
+        if (btn.disabled) return;
+        const guessedTeacherA = letter === 'A';
+        const right = guessedTeacherA === teacherIsA;
+        if (right) correct += 1;
+        round += 1;
+        const picked = letter === 'A' ? panelA : panelB;
+        picked.classList.add(right ? 'is-pick-correct' : 'is-pick-wrong');
+        feedback.className = `qla-judge-feedback ${right ? 'is-correct' : 'is-wrong'}`;
+        feedback.textContent = right ? 'Correct. That one was Sonnet.' : "Not this time. The other memo was Sonnet's.";
+        guessButtons.forEach((b) => { b.disabled = true; });
+        if (round < ROUNDS) {
+          const next = qlaEl('button', 'qla-btn qla-btn-accent', 'next round') as HTMLButtonElement;
+          next.type = 'button';
+          next.addEventListener('click', renderRound);
+          controls.appendChild(next);
+          next.focus();
+        } else {
+          finish();
+        }
+      });
+      guessButtons.push(btn);
+      col.appendChild(btn);
+      grid.appendChild(col);
+    });
+  }
+
+  function finish() {
+    status.textContent = 'all rounds played';
+    scoreLine.textContent = `You went ${correct}/${ROUNDS}.`;
+    const again = qlaEl('button', 'qla-btn qla-btn-accent', 'play again') as HTMLButtonElement;
+    again.type = 'button';
+    again.addEventListener('click', start);
+    controls.appendChild(again);
+  }
+
+  function start() {
+    order = shuffle(judgePairs.map((_, i) => i)).slice(0, ROUNDS);
+    round = 0;
+    correct = 0;
+    renderRound();
+  }
+  measurePanels();
+  // Re-measure once real fonts are in (guarded: the swap may already have
+  // discarded this widget by the time fonts resolve).
+  if (document.fonts?.ready) {
+    document.fonts.ready.then(() => { if (node.isConnected) measurePanels(); }).catch(() => {});
+  }
+  const onResize = () => measurePanels();
+  window.addEventListener('resize', onResize);
+  cleanups.push(() => window.removeEventListener('resize', onResize));
+  start();
+}
+
+// ---- quantlab-analyst: 4. the roster ----
+function initQlaRoster(node: HTMLElement, roster: any) {
+  const models = roster.models as any[];
+  const body = qlaShell(node, 'the roster', `every model, same company (${roster.ticker}) · real memos, every number checked by the gate`);
+
+  const passVal = (m: any) => parseInt(m.passRate, 10); // "n/a" -> NaN, skipped
+  const TEACHER = parseInt(roster.teacherPass, 10);
+  let selected = models.length - 1;
+
+  const canvasWrap = qlaEl('div', 'qla-compound-canvas-wrap');
+  const canvas = document.createElement('canvas');
+  canvas.className = 'qla-compound-canvas';
+  canvas.style.cursor = 'pointer';
+  canvas.setAttribute('role', 'img');
+  canvasWrap.appendChild(canvas);
+  body.appendChild(canvasWrap);
+
+  const controls = qlaEl('div', 'qla-roster-controls');
+  const selLabel = qlaEl('label', 'qla-roster-label', 'model:');
+  const select = document.createElement('select');
+  select.className = 'qla-roster-select';
+  select.setAttribute('aria-label', 'Choose a model to inspect its memo');
+  models.forEach((m, i) => {
+    const opt = document.createElement('option');
+    opt.value = String(i);
+    opt.textContent = m.name;
+    select.appendChild(opt);
+  });
+  selLabel.setAttribute('for', 'qlaRosterSelect');
+  select.id = 'qlaRosterSelect';
+  controls.appendChild(selLabel);
+  controls.appendChild(select);
+  body.appendChild(controls);
+
+  const desc = qlaEl('p', 'qla-roster-desc', '');
+  body.appendChild(desc);
+  const stats = qlaEl('div', 'qla-roster-stats');
+  const statPass = qlaEl('span', 'qla-roster-stat', '');
+  const statAcc = qlaEl('span', 'qla-roster-stat', '');
+  const statMemo = qlaEl('span', 'qla-roster-stat', '');
+  const statVerdict = qlaEl('span', 'qla-roster-verdict', '');
+  stats.appendChild(statPass);
+  stats.appendChild(statAcc);
+  stats.appendChild(statMemo);
+  stats.appendChild(statVerdict);
+  body.appendChild(stats);
+
+  body.appendChild(qlfLegend([
+    { cls: 'qla-sw-good', label: 'traced to evidence' },
+    { cls: 'qla-sw-bad', label: 'failed the gate' },
+    { cls: 'qlf-sw-muted', label: 'plain text: not a claim (years, ids)' },
+  ]));
+
+  const memoPane = qlaEl('div', 'qla-memo qla-roster-memo');
+  memoPane.setAttribute('tabindex', '0');
+  memoPane.setAttribute('aria-label', 'The selected model’s memo with verified and violating numbers highlighted');
+  body.appendChild(memoPane);
+
+  function renderMemo(m: any) {
+    memoPane.textContent = '';
+    m.segments.forEach((seg: any) => {
+      if (seg.t === 'ok') memoPane.appendChild(qlaEl('mark', 'qla-mark-good', seg.s));
+      else if (seg.t === 'bad') memoPane.appendChild(qlaEl('mark', 'qla-mark-bad', seg.s));
+      else memoPane.appendChild(document.createTextNode(seg.s));
+    });
+    memoPane.scrollTop = 0;
+  }
+
+  function drawChart() {
+    const rect = canvas.parentElement!.getBoundingClientRect();
+    const w = Math.max(300, rect.width);
+    const h = 190;
+    const ctx = sizeCanvas(canvas, w, h);
+    canvas.style.height = `${h}px`;
+    ctx.clearRect(0, 0, w, h);
+
+    const pad = { l: 40, r: 14, t: 16, b: 34 };
+    const pw = w - pad.l - pad.r;
+    const ph = h - pad.t - pad.b;
+    const x = (i: number) => pad.l + (models.length === 1 ? pw / 2 : (i / (models.length - 1)) * pw);
+    const y = (v: number) => pad.t + (1 - v / 100) * ph;
+
+    ctx.font = '600 10px Inter, sans-serif';
+    ctx.lineWidth = 1;
+    [0, 25, 50, 75, 100].forEach((g) => {
+      ctx.strokeStyle = qlText(0.1);
+      ctx.beginPath(); ctx.moveTo(pad.l, y(g)); ctx.lineTo(w - pad.r, y(g)); ctx.stroke();
+      ctx.fillStyle = qlText(0.45);
+      ctx.textAlign = 'right';
+      ctx.fillText(`${g}%`, pad.l - 5, y(g) + 3);
+    });
+
+    ctx.setLineDash([4, 4]);
+    ctx.strokeStyle = qlText(0.5);
+    ctx.beginPath(); ctx.moveTo(pad.l, y(TEACHER)); ctx.lineTo(w - pad.r, y(TEACHER)); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = qlText(0.55);
+    ctx.textAlign = 'left';
+    ctx.fillText(`teacher ${TEACHER}%`, pad.l + 4, y(TEACHER) - 5);
+
+    ctx.strokeStyle = AMBER;
+    ctx.globalAlpha = 0.55;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    let started = false;
+    models.forEach((m, i) => {
+      const v = passVal(m);
+      if (isNaN(v)) return;
+      if (!started) { ctx.moveTo(x(i), y(v)); started = true; }
+      else ctx.lineTo(x(i), y(v));
+    });
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+
+    models.forEach((m, i) => {
+      const v = passVal(m);
+      const isSel = i === selected;
+      // Selection reads in the darker text-amber; unselected dots in muted ink.
+      if (!isNaN(v)) {
+        ctx.fillStyle = isSel ? QL_TEXT_AMBER : qlText(0.5);
+        ctx.beginPath(); ctx.arc(x(i), y(v), isSel ? 6 : 3.5, 0, Math.PI * 2); ctx.fill();
+        if (isSel) {
+          ctx.strokeStyle = QL_TEXT_AMBER;
+          ctx.lineWidth = 1.5;
+          ctx.beginPath(); ctx.arc(x(i), y(v), 9, 0, Math.PI * 2); ctx.stroke();
+        }
+      }
+      ctx.fillStyle = isSel ? QL_TEXT_AMBER : qlText(0.5);
+      ctx.font = isSel ? '700 10px Inter, sans-serif' : '600 10px Inter, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(m.id, x(i), h - 18);
+      if (isSel && !isNaN(v)) {
+        ctx.font = '700 11px Inter, sans-serif';
+        ctx.fillText(`${v}%`, x(i), y(v) - 12);
+      }
+    });
+
+    canvas.setAttribute('aria-label',
+      `Cited-pass rate by model in training order, teacher at ${TEACHER}% for reference. Selected: ${models[selected].name} at ${models[selected].passRate}.`);
+  }
+  const requestDraw = makeRafDraw(drawChart);
+
+  function selectModel(i: number) {
+    selected = i;
+    const m = models[i];
+    select.value = String(i);
+    desc.textContent = m.desc;
+    statPass.textContent = `cited pass ${m.passRate}`;
+    statAcc.textContent = `per-number ${m.acc}`;
+    statMemo.textContent = `this memo: ${m.memoOk} verified · ${m.memoBad} untraceable`;
+    statVerdict.textContent = m.memoPassed ? 'gate: PASS' : 'gate: FAIL';
+    statVerdict.classList.toggle('is-pass', m.memoPassed);
+    renderMemo(m);
+    requestDraw();
+  }
+
+  const onCanvasClick = (e: MouseEvent) => {
+    const rect = canvas.getBoundingClientRect();
+    const pad = { l: 40, r: 14 };
+    const pw = Math.max(1, rect.width - pad.l - pad.r);
+    const rel = (e.clientX - rect.left - pad.l) / pw;
+    const i = Math.max(0, Math.min(models.length - 1, Math.round(rel * (models.length - 1))));
+    selectModel(i);
+  };
+  canvas.addEventListener('click', onCanvasClick);
+  select.addEventListener('change', () => selectModel(parseInt(select.value, 10)));
+
+  const onResize = () => requestDraw();
+  window.addEventListener('resize', onResize);
+  cleanups.push(() => window.removeEventListener('resize', onResize));
+  selectModel(selected);
+}
+
+// ---- quantlab-analyst: 5. calibrated compression (imatrix explainer) ----
+function initQlaQuant(node: HTMLElement) {
+  // Conceptual explainer, not measured data — authored constants (see the
+  // original's rationale). Three blocks, each with its own fitted mini-ladder.
+  type Wt = { v: number; imp?: boolean; level?: number };
+  const blocks: Array<{ label: string; lo: number; hi: number; weights: Wt[] }> = [
+    {
+      label: 'block 1', lo: -1.02, hi: -0.34,
+      weights: [{ v: -0.98 }, { v: -0.90 }, { v: -0.83 }, { v: -0.76 }, { v: -0.575, imp: true }, { v: -0.46 }, { v: -0.40 }, { v: -0.36 }],
+    },
+    {
+      label: 'block 2', lo: -0.34, hi: 0.34,
+      weights: [{ v: -0.29 }, { v: -0.22 }, { v: -0.15 }, { v: -0.08 }, { v: 0.02, imp: true }, { v: 0.14 }, { v: 0.22 }, { v: 0.30 }],
+    },
+    {
+      label: 'block 3', lo: 0.34, hi: 1.02,
+      weights: [{ v: 0.37 }, { v: 0.45 }, { v: 0.56, imp: true }, { v: 0.585, imp: true }, { v: 0.61, imp: true }, { v: 0.72 }, { v: 0.86 }, { v: 0.99 }],
+    },
+  ];
+  const R = 3;
+  const IMP_WEIGHT = 12;
+
+  // Honest miniature of the real fit: grid-search scale/offset per block,
+  // minimizing (optionally importance-weighted) squared rounding error.
+  function fitLadder(block: (typeof blocks)[number], weighted: boolean): number[] {
+    const span = block.hi - block.lo;
+    const STEPS = 96;
+    let best: { err: number; off: number; step: number } | null = null;
+    for (let a = 0; a < STEPS; a++) {
+      const step = span * (0.05 + (a / (STEPS - 1)) * 0.40);
+      const maxOff = block.hi - (R - 1) * step;
+      if (maxOff < block.lo) continue;
+      for (let b = 0; b < STEPS; b++) {
+        const off = block.lo + (b / (STEPS - 1)) * (maxOff - block.lo);
+        let err = 0;
+        block.weights.forEach((wt) => {
+          let d = Infinity;
+          for (let k = 0; k < R; k++) d = Math.min(d, Math.abs(wt.v - (off + k * step)));
+          err += (weighted && wt.imp ? IMP_WEIGHT : 1) * d * d;
+        });
+        if (best === null || err < best.err) best = { err, off, step };
+      }
+    }
+    const rungs: number[] = [];
+    for (let k = 0; k < R; k++) rungs.push(best!.off + k * best!.step);
+    return rungs;
+  }
+  const LADDERS: Record<string, number[][]> = {
+    naive: blocks.map((b) => fitLadder(b, false)),
+    calibrated: blocks.map((b) => fitLadder(b, true)),
+  };
+  const body = qlaShell(node, 'compression, calibrated', 'how imatrix quantization works · every weight snaps to its nearest rung');
+
+  let mode = 'naive';
+
+  const toggle = qlaEl('div', 'qlf-mode-toggle');
+  toggle.setAttribute('role', 'group');
+  toggle.setAttribute('aria-label', 'Rung placement mode');
+  const naiveBtn = qlaEl('button', 'qla-btn qlf-mode-btn', 'naive 4-bit') as HTMLButtonElement;
+  const calBtn = qlaEl('button', 'qla-btn qlf-mode-btn', 'calibrated (imatrix)') as HTMLButtonElement;
+  naiveBtn.type = 'button';
+  calBtn.type = 'button';
+  toggle.appendChild(naiveBtn);
+  toggle.appendChild(calBtn);
+  body.appendChild(toggle);
+
+  body.appendChild(qlfLegend([
+    { cls: 'qlf-sw-muted', label: 'weight' },
+    { cls: 'qla-sw-amber', label: 'important weight' },
+    { cls: 'qlf-sw-rung', label: 'rung (quantization level)' },
+  ]));
+
+  const canvasWrap = qlaEl('div', 'qla-compound-canvas-wrap');
+  const canvas = document.createElement('canvas');
+  canvas.className = 'qla-compound-canvas';
+  canvas.setAttribute('role', 'img');
+  canvas.setAttribute('aria-label', 'Number line of weight values split into three blocks, each with its own evenly spaced ladder of three quantization rungs. In the naive state each ladder is fitted to minimize average error and the important weights sit visibly off-rung. In the calibrated state the same ladders are refitted with importance-weighted error, so blocks holding important weights shift their scale and offset to land those weights near rungs, at the cost of larger error on the same blocks’ unimportant weights.');
+  canvasWrap.appendChild(canvas);
+  body.appendChild(canvasWrap);
+
+  // Both captions share one grid cell so toggling never shifts layout.
+  const captions = qlaEl('div', 'qla-imx-captions');
+  const naiveCap = qlaEl('p', undefined, 'Each block of weights gets its own evenly spaced ladder, fitted to minimize average error. Every weight counts equally.');
+  const calCap = qlaEl('p', undefined, 'Same ladders, refitted: errors on heavily used weights count for more, so the fit protects them.');
+  captions.appendChild(naiveCap);
+  captions.appendChild(calCap);
+  body.appendChild(captions);
+  body.appendChild(qlaEl('p', 'qlf-chip-note', 'dashed lines divide the blocks · simplified; real blocks hold 32 weights'));
+
+  function nearestRung(rungs: number[], v: number): number {
+    let best = rungs[0];
+    rungs.forEach((r) => { if (Math.abs(r - v) < Math.abs(best - v)) best = r; });
+    return best;
+  }
+
+  // Beeswarm stacking within each block (see the original's rationale).
+  const MIN_GAP = 0.09;
+  blocks.forEach((block) => {
+    const lastAt: number[] = [];
+    block.weights.forEach((wt) => {
+      let level = 0;
+      while (lastAt[level] !== undefined && wt.v - lastAt[level] < MIN_GAP) level += 1;
+      lastAt[level] = wt.v;
+      wt.level = level;
+    });
+  });
+
+  function draw() {
+    const rect = canvas.parentElement!.getBoundingClientRect();
+    const w = Math.max(280, rect.width);
+    const h = 210;
+    const ctx = sizeCanvas(canvas, w, h);
+    canvas.style.height = `${h}px`;
+    ctx.clearRect(0, 0, w, h);
+
+    const pad = { l: 24, r: 24 };
+    const pw = w - pad.l - pad.r;
+    const x = (v: number) => pad.l + ((v + 1.02) / 2.04) * pw;
+    const axisY = h - 34;
+    const rowH = 15;
+    const dotY = (wt: Wt) => axisY - 18 - (wt.level || 0) * rowH;
+    const rungTop = 26;
+    const ladders = LADDERS[mode];
+
+    ctx.strokeStyle = qlText(0.3);
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(pad.l, axisY); ctx.lineTo(w - pad.r, axisY); ctx.stroke();
+    ctx.fillStyle = qlText(0.5);
+    ctx.font = '600 11px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('weight value', w / 2, h - 12);
+
+    ctx.strokeStyle = qlText(0.18);
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 5]);
+    [blocks[1].lo, blocks[2].lo].forEach((bv) => {
+      ctx.beginPath(); ctx.moveTo(x(bv), axisY + 8); ctx.lineTo(x(bv), 8); ctx.stroke();
+    });
+    ctx.setLineDash([]);
+    ctx.fillStyle = qlText(0.45);
+    blocks.forEach((block) => ctx.fillText(block.label, x((block.lo + block.hi) / 2), 16));
+
+    ctx.strokeStyle = qlText(0.4);
+    ctx.lineWidth = 1.5;
+    ladders.forEach((rungs) => {
+      rungs.forEach((r) => {
+        ctx.beginPath(); ctx.moveTo(x(r), axisY + 8); ctx.lineTo(x(r), rungTop); ctx.stroke();
+      });
+    });
+
+    // error lines first (under the dots), then the dots
+    blocks.forEach((block, bi) => {
+      block.weights.forEach((wt) => {
+        const rx = x(nearestRung(ladders[bi], wt.v));
+        const wx = x(wt.v);
+        const wy = dotY(wt);
+        ctx.save();
+        ctx.globalAlpha = 0.6;
+        ctx.strokeStyle = wt.imp ? QL_TEXT_AMBER : qlText(0.6);
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(wx, wy); ctx.lineTo(rx, wy); ctx.stroke();
+        ctx.restore();
+      });
+    });
+    blocks.forEach((block) => {
+      block.weights.forEach((wt) => {
+        ctx.fillStyle = wt.imp ? QL_TEXT_AMBER : QL_DOT;
+        ctx.beginPath(); ctx.arc(x(wt.v), dotY(wt), 4, 0, Math.PI * 2); ctx.fill();
+      });
+    });
+  }
+  const requestDraw = makeRafDraw(draw);
+
+  function setMode(next: string) {
+    mode = next;
+    const naiveActive = mode === 'naive';
+    naiveBtn.classList.toggle('is-active', naiveActive);
+    calBtn.classList.toggle('is-active', !naiveActive);
+    naiveBtn.setAttribute('aria-pressed', naiveActive ? 'true' : 'false');
+    calBtn.setAttribute('aria-pressed', naiveActive ? 'false' : 'true');
+    naiveCap.classList.toggle('is-off', !naiveActive);
+    calCap.classList.toggle('is-off', naiveActive);
+    requestDraw();
+  }
+
+  naiveBtn.addEventListener('click', () => setMode('naive'));
+  calBtn.addEventListener('click', () => setMode('calibrated'));
+
+  const onResize = () => requestDraw();
+  window.addEventListener('resize', onResize);
+  const ro = new ResizeObserver(() => requestDraw());
+  ro.observe(canvasWrap);
+  cleanups.push(() => { ro.disconnect(); window.removeEventListener('resize', onResize); });
+  setMode('naive');
+}
+
+// ---- quantlab-research: 1. the lookahead cheat ----
+function initQlfLookahead(node: HTMLElement, la: any) {
+  const body = qlaShell(node, 'the lookahead cheat', 'SPY weekly · toy momentum: buy if close > close 4 weeks ago');
+
+  const n = la.close.length;
+  const signal = new Array(n).fill(false);
+  for (let i = 4; i < n; i++) signal[i] = la.close[i] > la.close[i - 4];
+
+  const cheatEq = [1];
+  const honestEq = [1];
+  const holdEq = [1];
+  for (let i = 1; i < n; i++) {
+    holdEq.push(holdEq[i - 1] * (la.close[i] / la.close[i - 1]));
+    cheatEq.push(cheatEq[i - 1] * (signal[i - 1] ? la.close[i] / la.close[i - 1] : 1));
+    honestEq.push(honestEq[i - 1] * (signal[i - 1] ? la.close[i] / la.open[i] : 1));
+  }
+  const finalPct = (eq: number[]) => (eq[eq.length - 1] - 1) * 100;
+  const fmtPct = (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(0)}%`;
+
+  const readout = qlaEl('div', 'qlf-la-readout');
+  function makeStat(label: string, cls: string) {
+    const box = qlaEl('div', `qlf-la-stat ${cls}`);
+    const big = qlaEl('span', 'qlf-la-big', '');
+    box.appendChild(big);
+    box.appendChild(qlaEl('span', 'qlf-la-stat-label', label));
+    readout.appendChild(box);
+    return { box, big };
+  }
+  const cheatStat = makeStat('cheat · total return', 'qlf-la-stat-cheat');
+  const honestStat = makeStat('honest · total return', 'qlf-la-stat-honest');
+  const holdStat = makeStat('buy & hold · total return', 'qlf-la-stat-hold');
+  cheatStat.big.textContent = fmtPct(finalPct(cheatEq));
+  honestStat.big.textContent = fmtPct(finalPct(honestEq));
+  holdStat.big.textContent = fmtPct(finalPct(holdEq));
+  body.appendChild(readout);
+  body.appendChild(qlaEl('p', 'qlf-la-window-note', `cumulative over the charted window (${la.dates[0].slice(0, 4)}–${la.dates[n - 1].slice(0, 4)}), from the backtest`));
+
+  const canvasWrap = qlaEl('div', 'qla-compound-canvas-wrap');
+  const canvas = document.createElement('canvas');
+  canvas.className = 'qla-compound-canvas';
+  canvas.setAttribute('role', 'img');
+  canvas.setAttribute('aria-label', `Equity curves for the same momentum strategy: ${fmtPct(finalPct(cheatEq))} when cheating by trading at the signal close, ${fmtPct(finalPct(honestEq))} when honestly trading at the next open, with buy-and-hold at ${fmtPct(finalPct(holdEq))} for reference`);
+  body.appendChild(qlfLegend([
+    { cls: 'qlf-sw-warn', label: 'cheat' },
+    { cls: 'qlf-sw-accent', label: 'honest' },
+    { cls: 'qlf-sw-muted', label: 'buy & hold' },
+  ]));
+  canvasWrap.appendChild(canvas);
+  const crossInput = qlfCrosshairInput(n, 'Step through dates to inspect all three equity curves');
+  canvasWrap.appendChild(crossInput);
+  body.appendChild(canvasWrap);
+
+  const crossReadout = qlfReadout([
+    { key: 'date', label: 'date', width: 10 },
+    { key: 'cheat', label: 'cheat', width: 6 },
+    { key: 'honest', label: 'honest', width: 6 },
+    { key: 'hold', label: 'buy & hold', width: 6 },
+  ]);
+  body.appendChild(crossReadout.row);
+
+  const caption = qlaEl('p', 'qla-compound-takeaway');
+  caption.textContent = `Toy rule: buy when this week's close is above the close four weeks ago, otherwise stay flat. The cheat trades at the same close the signal was computed from, which is impossible in live trading, and that alone produces ${fmtPct(finalPct(cheatEq))}. Forced to wait for the next open, the same strategy makes ${fmtPct(finalPct(honestEq))}, less than buy-and-hold. The only difference is when the trade happens.`;
+  body.appendChild(caption);
+
+  let cursor: number | null = null;
+  const eqPct = (eq: number[], i: number) => fmtPct((eq[i] - 1) * 100);
+
+  function draw() {
+    const rect = canvas.parentElement!.getBoundingClientRect();
+    const w = Math.max(280, rect.width);
+    const h = 260;
+    const ctx = sizeCanvas(canvas, w, h);
+    canvas.style.height = `${h}px`;
+    ctx.clearRect(0, 0, w, h);
+
+    const pad = { l: 44, r: 14, t: 14, b: 26 };
+    const pw = w - pad.l - pad.r;
+    const ph = h - pad.t - pad.b;
+    const maxV = Math.max(cheatEq[n - 1], honestEq[n - 1], holdEq[n - 1]) * 1.05;
+    const minV = 0.9;
+    const x = (i: number) => pad.l + (i / (n - 1)) * pw;
+    const y = (v: number) => pad.t + (1 - (v - minV) / (maxV - minV)) * ph;
+
+    ctx.strokeStyle = qlText(0.12);
+    ctx.fillStyle = qlText(0.5);
+    ctx.font = '600 11px Inter, sans-serif';
+    ctx.lineWidth = 1;
+    const gridStep = maxV > 2.5 ? 0.5 : 0.25;
+    for (let g = 1; g <= maxV; g += gridStep) {
+      ctx.beginPath(); ctx.moveTo(pad.l, y(g)); ctx.lineTo(w - pad.r, y(g)); ctx.stroke();
+      ctx.textAlign = 'right';
+      ctx.fillText(`$${g.toFixed(2)}`, pad.l - 6, y(g) + 4);
+    }
+    [0, Math.floor(n / 2), n - 1].forEach((i) => {
+      ctx.textAlign = i === 0 ? 'left' : i === n - 1 ? 'right' : 'center';
+      ctx.fillText(la.dates[i], x(i), h - 8);
+    });
+
+    function plot(eq: number[], color: string, width: number, alpha: number) {
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.strokeStyle = color;
+      ctx.lineWidth = width;
+      ctx.beginPath();
+      for (let i = 0; i < n; i++) {
+        i === 0 ? ctx.moveTo(x(i), y(eq[i])) : ctx.lineTo(x(i), y(eq[i]));
+      }
+      ctx.stroke();
+      ctx.restore();
+    }
+    ctx.setLineDash([4, 4]);
+    plot(holdEq, qlText(0.55), 1.5, 1);
+    ctx.setLineDash([]);
+    plot(cheatEq, QL_WARN, 2.5, 1);
+    plot(honestEq, AMBER, 2.5, 1);
+
+    if (cursor !== null) {
+      const cx = x(cursor);
+      ctx.strokeStyle = qlText(0.35);
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(cx, pad.t); ctx.lineTo(cx, h - pad.b); ctx.stroke();
+      ([[cheatEq, QL_WARN], [honestEq, AMBER], [holdEq, qlText(0.55)]] as Array<[number[], string]>).forEach((pair) => {
+        ctx.fillStyle = pair[1];
+        ctx.beginPath(); ctx.arc(cx, y(pair[0][cursor!]), 4, 0, Math.PI * 2); ctx.fill();
+      });
+    }
+  }
+  const requestDraw = makeRafDraw(draw);
+
+  function setCursor(i: number | null) {
+    cursor = i === null || isNaN(i) ? null : i;
+    crossReadout.set(cursor === null ? null : {
+      date: la.dates[cursor],
+      cheat: eqPct(cheatEq, cursor),
+      honest: eqPct(honestEq, cursor),
+      hold: eqPct(holdEq, cursor),
+    });
+    requestDraw();
+  }
+
+  qlfAttachCrosshair(canvas, crossInput, n, 44, 14, setCursor);
+  setCursor(null);
+  const onResize = () => requestDraw();
+  window.addEventListener('resize', onResize);
+  cleanups.push(() => window.removeEventListener('resize', onResize));
+}
+
+// ---- quantlab-research: 2. kalman vs rolling OLS ----
+function initQlfKalman(node: HTMLElement, km: any) {
+  const body = qlaShell(node, 'kalman vs rolling OLS hedge ratio', 'best pair · selection 2016-2020, traded 2021+ · same target, two estimators');
+
+  const n = km.dates.length;
+  const splitIdx = qlfNearestIndex(km.dates, km.split_date);
+  const ols = km.rolling_ols_beta as Array<number | null>;
+
+  // Clamp the y-range so rolling OLS's wildest swings don't crush the kalman
+  // detail; clipped points get small edge markers instead.
+  const Y_LO = -0.5;
+  const Y_HI = 1.5;
+
+  const canvasWrap = qlaEl('div', 'qla-compound-canvas-wrap');
+  const canvas = document.createElement('canvas');
+  canvas.className = 'qla-compound-canvas';
+  canvas.setAttribute('role', 'img');
+  const olsVals = ols.filter((v): v is number => v !== null);
+  canvas.setAttribute('aria-label', `Hedge ratio over time: a 250-day rolling OLS estimate that whipsaws between ${Math.min(...olsVals).toFixed(1)} and ${Math.max(...olsVals).toFixed(1)}, versus a Kalman-filtered estimate that stays between ${Math.min(...km.kalman_beta).toFixed(2)} and ${Math.max(...km.kalman_beta).toFixed(2)} while tracking the same underlying level, with the 2016-2020 selection window shaded`);
+  body.appendChild(qlfLegend([
+    { cls: 'qlf-sw-accent', label: 'kalman filter' },
+    { cls: 'qlf-sw-warn', label: '250-day rolling OLS (textbook method)' },
+    { cls: 'qlf-sw-window', label: 'selection window (pair chosen here)' },
+  ]));
+  canvasWrap.appendChild(canvas);
+  const crossInput = qlfCrosshairInput(n, 'Step through dates to compare the rolling OLS and Kalman hedge ratios');
+  canvasWrap.appendChild(crossInput);
+  body.appendChild(canvasWrap);
+
+  const readout = qlfReadout([
+    { key: 'date', label: 'date', width: 10 },
+    { key: 'kalman', label: 'kalman β', width: 6 },
+    { key: 'ols', label: 'rolling OLS β', width: 6 },
+    { key: 'gap', label: 'gap', width: 7 },
+  ]);
+  body.appendChild(readout.row);
+
+  let cursor: number | null = null;
+
+  function draw() {
+    const rect = canvas.parentElement!.getBoundingClientRect();
+    const w = Math.max(280, rect.width);
+    const h = 240;
+    const ctx = sizeCanvas(canvas, w, h);
+    canvas.style.height = `${h}px`;
+    ctx.clearRect(0, 0, w, h);
+
+    const pad = { l: 44, r: 14, t: 22, b: 26 };
+    const pw = w - pad.l - pad.r;
+    const ph = h - pad.t - pad.b;
+    const lo = Y_LO, hi = Y_HI;
+    const x = (i: number) => pad.l + (i / (n - 1)) * pw;
+    const y = (v: number) => pad.t + (1 - (v - lo) / (hi - lo)) * ph;
+    const yClamped = (v: number) => y(Math.max(lo, Math.min(hi, v)));
+
+    ctx.strokeStyle = qlText(0.12);
+    ctx.fillStyle = qlText(0.5);
+    ctx.font = '600 11px Inter, sans-serif';
+    ctx.lineWidth = 1;
+    for (let g = lo; g <= hi + 1e-9; g += 0.5) {
+      ctx.beginPath(); ctx.moveTo(pad.l, y(g)); ctx.lineTo(w - pad.r, y(g)); ctx.stroke();
+      ctx.textAlign = 'right';
+      ctx.fillText(g.toFixed(1), pad.l - 6, y(g) + 4);
+    }
+    [0, Math.floor(n / 2), n - 1].forEach((i) => {
+      ctx.textAlign = i === 0 ? 'left' : i === n - 1 ? 'right' : 'center';
+      ctx.fillText(km.dates[i].slice(0, 7), x(i), h - 8);
+    });
+
+    // selection window shading + boundary where trading begins
+    const sx = x(splitIdx);
+    ctx.fillStyle = qlText(0.09);
+    ctx.fillRect(pad.l, pad.t, sx - pad.l, ph);
+    ctx.strokeStyle = qlText(0.55);
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(sx, pad.t); ctx.lineTo(sx, h - pad.b); ctx.stroke();
+
+    // rolling OLS: jagged; nulls break the line, clipped values get markers
+    ctx.strokeStyle = QL_WARN;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    let pen = false;
+    for (let i = 0; i < n; i++) {
+      if (ols[i] === null) { pen = false; continue; }
+      const yy = yClamped(ols[i] as number);
+      if (!pen) { ctx.moveTo(x(i), yy); pen = true; }
+      else ctx.lineTo(x(i), yy);
+    }
+    ctx.stroke();
+    ctx.fillStyle = QL_WARN;
+    for (let i = 0; i < n; i++) {
+      const v = ols[i];
+      if (v === null || (v >= lo && v <= hi)) continue;
+      const above = v > hi;
+      const ex = x(i);
+      const ey = above ? pad.t : h - pad.b;
+      ctx.beginPath();
+      ctx.moveTo(ex, ey);
+      ctx.lineTo(ex - 3.5, ey + (above ? 6 : -6));
+      ctx.lineTo(ex + 3.5, ey + (above ? 6 : -6));
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // kalman track
+    ctx.strokeStyle = AMBER;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    for (let i = 0; i < n; i++) {
+      i === 0 ? ctx.moveTo(x(i), y(km.kalman_beta[i])) : ctx.lineTo(x(i), y(km.kalman_beta[i]));
+    }
+    ctx.stroke();
+
+    if (cursor !== null) {
+      const cx = x(cursor);
+      ctx.strokeStyle = qlText(0.35);
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(cx, pad.t); ctx.lineTo(cx, h - pad.b); ctx.stroke();
+      ctx.fillStyle = AMBER;
+      ctx.beginPath(); ctx.arc(cx, y(km.kalman_beta[cursor]), 5, 0, Math.PI * 2); ctx.fill();
+      if (ols[cursor] !== null) {
+        ctx.fillStyle = QL_WARN;
+        ctx.beginPath(); ctx.arc(cx, yClamped(ols[cursor] as number), 4, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+  }
+  const requestDraw = makeRafDraw(draw);
+
+  function setCursor(i: number | null) {
+    cursor = i === null || isNaN(i) ? null : i;
+    if (cursor === null) readout.set(null);
+    else {
+      const kb = km.kalman_beta[cursor];
+      const ob = ols[cursor];
+      readout.set({
+        date: km.dates[cursor],
+        kalman: kb.toFixed(3),
+        ols: ob === null ? '—' : ob.toFixed(3),
+        gap: ob === null ? '—' : `${kb - ob >= 0 ? '+' : ''}${(kb - ob).toFixed(3)}`,
+      });
+    }
+    requestDraw();
+  }
+
+  qlfAttachCrosshair(canvas, crossInput, n, 44, 14, setCursor);
+  const onResize = () => requestDraw();
+  window.addEventListener('resize', onResize);
+  cleanups.push(() => window.removeEventListener('resize', onResize));
+  setCursor(null);
+}
+
+// ---- quantlab-research: 3. the survivorship wedge ----
+function initQlfSurvivorship(node: HTMLElement, sv: any) {
+  const body = qlaShell(node, 'the survivorship wedge', 'survivors-only universe vs the ETF that held the losers');
+
+  const n = sv.dates.length;
+  const endGapPct = (sv.survivors[n - 1] / sv.rsp[n - 1] - 1) * 100;
+
+  const canvasWrap = qlaEl('div', 'qla-compound-canvas-wrap');
+  const canvas = document.createElement('canvas');
+  canvas.className = 'qla-compound-canvas';
+  canvas.setAttribute('role', 'img');
+  canvas.setAttribute('aria-label', `Cumulative growth of one dollar: today's S&P survivors reach $${sv.survivors[n - 1].toFixed(2)} while the real equal-weight ETF reaches $${sv.rsp[n - 1].toFixed(2)}, a widening wedge of pure survivorship bias`);
+  body.appendChild(qlfLegend([
+    { cls: 'qlf-sw-warn', label: 'survivors only' },
+    { cls: 'qlf-sw-accent', label: 'RSP (held the losers)' },
+    { cls: 'qlf-sw-gap', label: 'survivorship wedge' },
+  ]));
+  canvasWrap.appendChild(canvas);
+  const crossInput = qlfCrosshairInput(n, 'Step through dates to inspect both curves and the survivorship gap');
+  canvasWrap.appendChild(crossInput);
+  body.appendChild(canvasWrap);
+
+  const crossReadout = qlfReadout([
+    { key: 'date', label: 'date', width: 10 },
+    { key: 'survivors', label: 'survivors', width: 6 },
+    { key: 'rsp', label: 'RSP', width: 6 },
+    { key: 'gap', label: 'gap', width: 5 },
+  ]);
+  body.appendChild(crossReadout.row);
+
+  let cursor: number | null = null;
+
+  const meter = qlaEl('div', 'qlf-meter');
+  meter.appendChild(qlaEl('div', 'qla-gate-report-title', 'what the headline is really worth'));
+
+  const YEARS = 9;
+  const measuredPct = sv.premium_yr * 100;
+  const adjusted = ((1 + sv.momentum_headline) / Math.pow(1 + sv.premium_yr, YEARS) - 1) * 100;
+  const big = qlaEl('p', 'qlf-meter-big is-at-measured');
+  big.textContent = `+840% claimed → roughly +${Math.round(adjusted)}% after removing the measured ${measuredPct.toFixed(1)}%/yr bias, compounded over ${YEARS} years`;
+  meter.appendChild(big);
+  meter.appendChild(qlaEl('p', 'qla-compound-takeaway', 'A first-order correction, not a re-backtest: the proper fix is a point-in-time universe. This shows the approximate size of the effect.'));
+  body.appendChild(meter);
+
+  function draw() {
+    const rect = canvas.parentElement!.getBoundingClientRect();
+    const w = Math.max(280, rect.width);
+    const h = 250;
+    const ctx = sizeCanvas(canvas, w, h);
+    canvas.style.height = `${h}px`;
+    ctx.clearRect(0, 0, w, h);
+
+    const pad = { l: 44, r: 60, t: 14, b: 26 };
+    const pw = w - pad.l - pad.r;
+    const ph = h - pad.t - pad.b;
+    const maxV = Math.max(sv.survivors[n - 1], sv.rsp[n - 1]) * 1.05;
+    const x = (i: number) => pad.l + (i / (n - 1)) * pw;
+    const y = (v: number) => pad.t + (1 - (v - 0.9) / (maxV - 0.9)) * ph;
+
+    ctx.strokeStyle = qlText(0.12);
+    ctx.fillStyle = qlText(0.5);
+    ctx.font = '600 11px Inter, sans-serif';
+    ctx.lineWidth = 1;
+    for (let g = 1; g <= maxV; g += 1) {
+      ctx.beginPath(); ctx.moveTo(pad.l, y(g)); ctx.lineTo(w - pad.r, y(g)); ctx.stroke();
+      ctx.textAlign = 'right';
+      ctx.fillText(`$${g}`, pad.l - 6, y(g) + 4);
+    }
+    [0, Math.floor(n / 2), n - 1].forEach((i) => {
+      ctx.textAlign = i === 0 ? 'left' : i === n - 1 ? 'right' : 'center';
+      ctx.fillText(sv.dates[i].slice(0, 7), x(i), h - 8);
+    });
+
+    // shaded wedge between the curves (projects-red tint on light)
+    ctx.beginPath();
+    for (let i = 0; i < n; i++) ctx.lineTo(x(i), y(sv.survivors[i]));
+    for (let i = n - 1; i >= 0; i--) ctx.lineTo(x(i), y(sv.rsp[i]));
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(209,61,89,0.13)';
+    ctx.fill();
+
+    function plot(series: number[], color: string) {
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      for (let i = 0; i < n; i++) {
+        i === 0 ? ctx.moveTo(x(i), y(series[i])) : ctx.lineTo(x(i), y(series[i]));
+      }
+      ctx.stroke();
+    }
+    plot(sv.survivors, QL_WARN);
+    plot(sv.rsp, AMBER);
+
+    if (cursor !== null) {
+      const cx = x(cursor);
+      ctx.strokeStyle = qlText(0.35);
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(cx, pad.t); ctx.lineTo(cx, h - pad.b); ctx.stroke();
+      ctx.fillStyle = QL_WARN;
+      ctx.beginPath(); ctx.arc(cx, y(sv.survivors[cursor]), 4, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = AMBER;
+      ctx.beginPath(); ctx.arc(cx, y(sv.rsp[cursor]), 4, 0, Math.PI * 2); ctx.fill();
+    }
+
+    ctx.font = '700 11px Inter, sans-serif';
+
+    // endpoint gap bracket
+    const gx = x(n - 1) + 2;
+    ctx.strokeStyle = qlText(0.5);
+    ctx.beginPath();
+    ctx.moveTo(gx, y(sv.survivors[n - 1]) + 8);
+    ctx.lineTo(gx, y(sv.rsp[n - 1]) - 8);
+    ctx.stroke();
+    ctx.fillStyle = qlText(0.7);
+    ctx.save();
+    ctx.translate(gx + 12, (y(sv.survivors[n - 1]) + y(sv.rsp[n - 1])) / 2 + 14);
+    ctx.rotate(-Math.PI / 2);
+    ctx.textAlign = 'center';
+    ctx.fillText(`+${endGapPct.toFixed(0)}% gap`, 0, 0);
+    ctx.restore();
+  }
+  const requestDraw = makeRafDraw(draw);
+
+  function setCursor(i: number | null) {
+    cursor = i === null || isNaN(i) ? null : i;
+    crossReadout.set(cursor === null ? null : {
+      date: sv.dates[cursor],
+      survivors: `$${sv.survivors[cursor].toFixed(2)}`,
+      rsp: `$${sv.rsp[cursor].toFixed(2)}`,
+      gap: `+${((sv.survivors[cursor] / sv.rsp[cursor] - 1) * 100).toFixed(0)}%`,
+    });
+    requestDraw();
+  }
+
+  qlfAttachCrosshair(canvas, crossInput, n, 44, 60, setCursor);
+  const onResize = () => requestDraw();
+  window.addEventListener('resize', onResize);
+  cleanups.push(() => window.removeEventListener('resize', onResize));
+  setCursor(null);
+}
+
+// ---- quantlab-systems: risk gate playground (same rules as risk.py) ----
+function initQlfRiskGate(node: HTMLElement) {
+  const LIMITS = { gross: 100000, perSymbol: 40000, dailyLoss: 5000, allowed: ['AAPL', 'MSFT', 'SPY'] };
+  const state: { positions: Record<string, number>; dayPnl: number; killed: boolean } = { positions: {}, dayPnl: 0, killed: false };
+
+  const body = qlaShell(node, 'risk gate playground', 'every order proposes itself · same rules as risk.py');
+
+  // 1. status strip: same fixed height in both states (no layout shift)
+  const statusStrip = qlaEl('div', 'qlf-status-strip', 'risk service: ACTIVE');
+  statusStrip.setAttribute('role', 'status');
+  statusStrip.setAttribute('aria-live', 'polite');
+  body.appendChild(statusStrip);
+
+  // 2. limits row
+  const limitsWrap = qlaEl('div', 'qlf-risk-row');
+  limitsWrap.appendChild(qlaEl('span', 'qlf-btn-group-label', 'limits'));
+  const limitsRow = qlaEl('div', 'qlf-limits-row');
+  ([
+    ['gross cap', `$${LIMITS.gross / 1000}k`],
+    ['per-symbol cap', `$${LIMITS.perSymbol / 1000}k`],
+    ['daily loss limit', `$${LIMITS.dailyLoss / 1000}k`],
+    ['allowed', LIMITS.allowed.join(' ')],
+  ] as Array<[string, string]>).forEach((pair) => {
+    const field = qlaEl('span', 'qlf-readout-field');
+    field.appendChild(qlaEl('span', 'qlf-readout-label', pair[0]));
+    field.appendChild(qlaEl('span', 'qlf-limits-value', pair[1]));
+    limitsRow.appendChild(field);
+  });
+  limitsWrap.appendChild(limitsRow);
+  body.appendChild(limitsWrap);
+
+  // 3. current state: three fixed-height tiles
+  const stateWrap = qlaEl('div', 'qlf-risk-row');
+  stateWrap.appendChild(qlaEl('span', 'qlf-btn-group-label', 'current state'));
+  const tiles = qlaEl('div', 'qlf-state-tiles');
+  type Tile = { tile: HTMLElement; body: HTMLElement; val?: HTMLElement; sub?: HTMLElement };
+  function makeTile(label: string): Tile {
+    const tile = qlaEl('div', 'qlf-state-tile');
+    tile.appendChild(qlaEl('span', 'qlf-state-label', label));
+    const tileBody = qlaEl('div', 'qlf-state-body');
+    tile.appendChild(tileBody);
+    tiles.appendChild(tile);
+    return { tile, body: tileBody };
+  }
+  function makeValueTile(label: string): Required<Tile> {
+    const t = makeTile(label) as Required<Tile>;
+    t.body.classList.add('qlf-state-body-center');
+    t.val = qlaEl('span', 'qlf-state-value', '');
+    t.sub = qlaEl('span', 'qlf-state-sub', '');
+    t.body.appendChild(t.val);
+    t.body.appendChild(t.sub);
+    return t;
+  }
+  const grossTile = makeValueTile('gross exposure');
+  const pnlTile = makeValueTile('day p&l');
+  const posTile = makeTile('positions');
+  const posLines = LIMITS.allowed.map((sym) => {
+    const line = qlaEl('div', 'qlf-pos-line');
+    line.appendChild(qlaEl('span', 'qlf-pos-sym', sym));
+    const amt = qlaEl('span', 'qlf-pos-amt', '—');
+    line.appendChild(amt);
+    posTile.body.appendChild(line);
+    return { sym, amt };
+  });
+  stateWrap.appendChild(tiles);
+  body.appendChild(stateWrap);
+
+  const pulseTimers = new Set<number>();
+  function pulse(el: HTMLElement) {
+    el.classList.remove('qlf-pulse');
+    void el.offsetWidth;
+    el.classList.add('qlf-pulse');
+    const id = window.setTimeout(() => { el.classList.remove('qlf-pulse'); pulseTimers.delete(id); }, 700);
+    pulseTimers.add(id);
+  }
+  cleanups.push(() => pulseTimers.forEach((id) => clearTimeout(id)));
+
+  function setTile(t: Required<Tile>, text: string, sub: string) {
+    if (t.val.textContent === text && t.sub.textContent === sub) return;
+    t.val.textContent = text;
+    t.sub.textContent = sub;
+    pulse(t.tile);
+  }
+  function setPositions() {
+    let changed = false;
+    posLines.forEach((line) => {
+      const held = state.positions[line.sym] || 0;
+      const text = held !== 0 ? qlfMoney(held) : '—';
+      if (line.amt.textContent !== text) {
+        line.amt.textContent = text;
+        line.amt.classList.toggle('is-held', held !== 0);
+        changed = true;
+      }
+    });
+    if (changed) pulse(posTile.tile);
+  }
+
+  // 4. audit log
+  const logWrap = qlaEl('div', 'qlf-risk-row');
+  logWrap.appendChild(qlaEl('span', 'qlf-btn-group-label', 'audit log (append-only)'));
+  const log = qlaEl('div', 'qlf-audit-log');
+  log.setAttribute('role', 'log');
+  log.setAttribute('aria-label', 'Risk service audit log');
+  log.setAttribute('tabindex', '0');
+  logWrap.appendChild(log);
+  body.appendChild(logWrap);
+
+  // 5. button groups
+  const bottomBar = qlaEl('div', 'qlf-risk-bottom');
+  function makeGroup(label: string, rowClass?: string) {
+    const group = qlaEl('div', 'qlf-btn-group');
+    group.appendChild(qlaEl('span', 'qlf-btn-group-label', label));
+    const row = qlaEl('div', `qlf-risk-buttons${rowClass ? ` ${rowClass}` : ''}`);
+    group.appendChild(row);
+    bottomBar.appendChild(group);
+    return row;
+  }
+  const orderRow = makeGroup('propose orders', 'qlf-order-row');
+  const controlRow = makeGroup('controls');
+  body.appendChild(bottomBar);
+
+  const gross = () => Object.keys(state.positions).reduce((s, k) => s + Math.abs(state.positions[k]), 0);
+
+  function renderState() {
+    setTile(grossTile, `${qlfMoney(gross())} / ${qlfMoney(LIMITS.gross)}`, `${Math.round((gross() / LIMITS.gross) * 100)}% of cap`);
+    setTile(pnlTile, qlfMoney(state.dayPnl), state.killed ? 'kill switch tripped' : `kill switch at ${qlfMoney(-LIMITS.dailyLoss)}`);
+    pnlTile.val.classList.toggle('is-negative', state.dayPnl < 0);
+    setPositions();
+    statusStrip.textContent = state.killed ? 'KILL SWITCH TRIPPED' : 'risk service: ACTIVE';
+    statusStrip.classList.toggle('is-tripped', state.killed);
+    node.querySelector('.qla-visual')!.classList.toggle('qlf-is-killed', state.killed);
+    orderRow.querySelectorAll('button[data-buy]').forEach((b) => {
+      b.setAttribute('aria-disabled', state.killed ? 'true' : 'false');
+    });
+  }
+
+  function appendLog(approved: boolean | null, text: string, reasons?: string[]) {
+    const line = qlaEl('div', `qlf-audit-line ${approved === null ? '' : approved ? 'is-approved' : 'is-rejected'}`);
+    const ts = new Date().toTimeString().slice(0, 8);
+    line.appendChild(qlaEl('span', 'qlf-audit-ts', ts));
+    if (approved !== null) line.appendChild(qlaEl('span', 'qlf-audit-verdict', approved ? 'APPROVED' : 'REJECTED'));
+    line.appendChild(qlaEl('span', 'qlf-audit-text', reasons && reasons.length ? `${text}: ${reasons.join('; ')}` : text));
+    const atBottom = log.scrollHeight - log.scrollTop - log.clientHeight < 24;
+    log.appendChild(line);
+    if (atBottom) log.scrollTop = log.scrollHeight;
+  }
+
+  function checkOrder(symbol: string, notional: number) {
+    const current = state.positions[symbol] || 0;
+    const reducing = notional < 0 && current > 0;
+    if (reducing) return { ok: true, reasons: ['reduces exposure'] };
+    const reasons: string[] = [];
+    if (state.killed) reasons.push(`kill switch active (day P&L ${qlfMoney(state.dayPnl)} breached ${qlfMoney(-LIMITS.dailyLoss)})`);
+    if (LIMITS.allowed.indexOf(symbol) === -1) reasons.push(`${symbol} not in allowed-symbol list`);
+    if (Math.abs(current + notional) > LIMITS.perSymbol) reasons.push(`per-symbol cap: ${symbol} would be ${qlfMoney(Math.abs(current + notional))} > ${qlfMoney(LIMITS.perSymbol)}`);
+    if (gross() - Math.abs(current) + Math.abs(current + notional) > LIMITS.gross) reasons.push(`gross exposure would exceed cap: ${qlfMoney(gross() - Math.abs(current) + Math.abs(current + notional))} > ${qlfMoney(LIMITS.gross)}`);
+    return { ok: reasons.length === 0, reasons };
+  }
+
+  function placeOrder(symbol: string, notional: number, viaFlatten?: boolean) {
+    const label = `${notional >= 0 ? 'BUY' : 'SELL'} ${qlfMoney(Math.abs(notional))} ${symbol}${viaFlatten ? ' [flatten]' : ''}`;
+    const res = checkOrder(symbol, notional);
+    if (res.ok) {
+      state.positions[symbol] = (state.positions[symbol] || 0) + notional;
+      let reasons = notional < 0 ? res.reasons : [];
+      if (viaFlatten && state.killed) reasons = ['flatten allowed under kill switch; reducing orders are always permitted'];
+      appendLog(true, label, reasons);
+    } else {
+      appendLog(false, label, res.reasons);
+    }
+    renderState();
+  }
+
+  function makeBtn(row: HTMLElement, label: string, handler: () => void, extraClass?: string | null, isBuy?: boolean) {
+    const btn = qlaEl('button', `qla-btn qlf-risk-btn${extraClass ? ` ${extraClass}` : ''}`, label) as HTMLButtonElement;
+    btn.type = 'button';
+    if (isBuy) btn.dataset.buy = '1';
+    btn.addEventListener('click', handler);
+    row.appendChild(btn);
+    return btn;
+  }
+
+  makeBtn(orderRow, '+$25k AAPL', () => placeOrder('AAPL', 25000), null, true);
+  makeBtn(orderRow, '+$35k MSFT', () => placeOrder('MSFT', 35000), null, true);
+  makeBtn(orderRow, '+$15k AAPL', () => placeOrder('AAPL', 15000), null, true);
+  makeBtn(orderRow, '+$40k SPY', () => placeOrder('SPY', 40000), null, true);
+  makeBtn(orderRow, '+$10k TSLA', () => placeOrder('TSLA', 10000), null, true);
+
+  function markPnl(delta: number) {
+    state.dayPnl += delta;
+    appendLog(null, `mark-to-market: day P&L now ${qlfMoney(state.dayPnl)}`);
+    const breached = state.dayPnl <= -LIMITS.dailyLoss;
+    if (breached && !state.killed) {
+      state.killed = true;
+      appendLog(false, 'KILL SWITCH TRIPPED', [`day P&L ${qlfMoney(state.dayPnl)} breached daily loss limit ${qlfMoney(-LIMITS.dailyLoss)}; halting all new buys`]);
+    } else if (!breached && state.killed) {
+      state.killed = false;
+      appendLog(null, `day P&L recovered above ${qlfMoney(-LIMITS.dailyLoss)}; kill switch released`);
+    }
+    renderState();
+  }
+  makeBtn(controlRow, 'simulate a -$6k day', () => markPnl(-6000), 'qlf-risk-btn-warn');
+  makeBtn(controlRow, 'simulate +$3k day', () => markPnl(3000));
+  makeBtn(controlRow, 'flatten', () => {
+    const syms = Object.keys(state.positions).filter((k) => state.positions[k] > 0);
+    if (!syms.length) {
+      appendLog(null, 'flatten: already flat');
+      renderState();
+      return;
+    }
+    syms.forEach((sym) => placeOrder(sym, -state.positions[sym], true));
+  });
+  makeBtn(controlRow, 'reset', () => {
+    state.positions = {};
+    state.dayPnl = 0;
+    state.killed = false;
+    appendLog(null, 'RESET: state cleared. the audit log itself is append-only');
+    renderState();
+  });
+
+  appendLog(null, 'risk service online · propose an order');
+  renderState();
+}
+
+// ---- entry points: query placeholders, fetch data, init ----
+function initQuantlabVisuals() {
+  const compoundNode = document.getElementById('qla-compound-visual');
+  const gateNode = document.getElementById('qla-gate-visual');
+  const judgeNode = document.getElementById('qla-judge-visual');
+  const rosterNode = document.getElementById('qla-roster-visual');
+  const quantNode = document.getElementById('qla-quant-visual');
+  if (!compoundNode && !gateNode && !judgeNode && !rosterNode && !quantNode) return;
+
+  if (compoundNode) initQlaCompound(compoundNode);
+  if (quantNode) initQlaQuant(quantNode);
+
+  if (gateNode || judgeNode || rosterNode) {
+    // A swap can land before the fetch resolves; `disposed` (set by the swap's
+    // cleanup) stops us from initializing into a detached subtree.
+    let disposed = false;
+    cleanups.push(() => { disposed = true; });
+    fetch('/assets/data/quantlab-visual-data.json')
+      .then((res) => (res.ok ? res.json() : Promise.reject(new Error(`HTTP ${res.status}`))))
+      .then((data) => {
+        if (disposed) return;
+        if (gateNode && data.fixer) initQlaGate(gateNode, data.fixer);
+        if (judgeNode && Array.isArray(data.judgePairs) && data.judgePairs.length) initQlaJudge(judgeNode, data.judgePairs);
+        if (rosterNode && data.roster && Array.isArray(data.roster.models)) initQlaRoster(rosterNode, data.roster);
+      })
+      .catch((err) => {
+        // visuals are progressive enhancement; the article reads fine without them
+        console.warn('quantlab-analyst visuals: data fetch failed', err);
+      });
+  }
+}
+
+function initQuantlabFinVisuals() {
+  const lookaheadNode = document.getElementById('qlf-lookahead-visual');
+  const kalmanNode = document.getElementById('qlf-kalman-visual');
+  const survivorshipNode = document.getElementById('qlf-survivorship-visual');
+  const riskNode = document.getElementById('qlf-risk-visual');
+  if (!lookaheadNode && !kalmanNode && !survivorshipNode && !riskNode) return;
+
+  if (riskNode) initQlfRiskGate(riskNode);
+
+  if (lookaheadNode || kalmanNode || survivorshipNode) {
+    let disposed = false;
+    cleanups.push(() => { disposed = true; });
+    fetch('/assets/data/quantlab-fin-data.json')
+      .then((res) => (res.ok ? res.json() : Promise.reject(new Error(`HTTP ${res.status}`))))
+      .then((data) => {
+        if (disposed) return;
+        if (lookaheadNode && data.lookahead) initQlfLookahead(lookaheadNode, data.lookahead);
+        if (kalmanNode && data.kalman) initQlfKalman(kalmanNode, data.kalman);
+        if (survivorshipNode && data.survivorship) initQlfSurvivorship(survivorshipNode, data.survivorship);
+      })
+      .catch((err) => {
+        console.warn('quantlab visuals: data fetch failed', err);
+      });
+  }
+}
+
+// ============================================================
 // wiring
 // ============================================================
 function initWidgets() {
@@ -1560,6 +3180,8 @@ function initWidgets() {
   initLcmDemo();
   initThemePalette();
   initDemoPlayer();
+  initQuantlabVisuals();
+  initQuantlabFinVisuals();
 }
 function cleanupWidgets() {
   while (cleanups.length) {
