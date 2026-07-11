@@ -5041,6 +5041,9 @@ function initQlaQuant(node, cleanups) {
     // prose calls them "the amber weights"); the light-theme site accent is
     // a muted brown that vanishes against normal-weight dots.
     const qlaImp = () => (isLightTheme() ? '#C77800' : '#FFCC80');
+    // Opaque equivalent of qlfTextColor(0.55) pre-blended onto each theme's
+    // background: dots must be solid or the connector line ghosts through.
+    const qlaDot = () => (isLightTheme() ? '#90817B' : '#8B8A92');
     // Conceptual explainer, not measured data. Authored constants so the
     // render is identical on every load. Three weight blocks, each with its
     // own uniformly spaced mini-ladder (a scale and offset fitted to that
@@ -5238,7 +5241,7 @@ function initQlaQuant(node, cleanups) {
         });
         blocks.forEach(block => {
             block.weights.forEach(wt => {
-                ctx.fillStyle = wt.imp ? qlaImp() : qlfTextColor(0.55);
+                ctx.fillStyle = wt.imp ? qlaImp() : qlaDot();
                 ctx.beginPath();
                 ctx.arc(x(wt.v), dotY(wt), 4, 0, Math.PI * 2);
                 ctx.fill();
