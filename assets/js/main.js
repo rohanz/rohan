@@ -5043,6 +5043,10 @@ function initQlaRoster(node, roster, cleanups) {
 // 5. Calibrated compression: how imatrix quantization works
 // ------------------------------------------------------------
 function initQlaQuant(node, cleanups) {
+    // Important weights stay literally amber in BOTH themes (the article's
+    // prose calls them "the amber weights"); the light-theme site accent is
+    // a muted brown that vanishes against normal-weight dots.
+    const qlaImp = () => (isLightTheme() ? '#C77800' : '#FFCC80');
     // Conceptual explainer, not measured data. Authored constants so the
     // render is identical on every load. Three weight blocks, each with its
     // own uniformly spaced mini-ladder (a scale and offset fitted to that
@@ -5122,7 +5126,7 @@ function initQlaQuant(node, cleanups) {
 
     body.appendChild(qlfLegend([
         { cls: 'qlf-sw-muted', label: 'weight' },
-        { cls: 'qlf-sw-accent', label: 'important weight' },
+        { cls: 'qla-sw-amber', label: 'important weight' },
         { cls: 'qlf-sw-rung', label: 'rung (quantization level)' }
     ]));
 
@@ -5229,7 +5233,7 @@ function initQlaQuant(node, cleanups) {
                 const wy = dotY(wt);
                 ctx.save();
                 ctx.globalAlpha = 0.6;
-                ctx.strokeStyle = wt.imp ? qlfAccent() : qlfTextColor(0.6);
+                ctx.strokeStyle = wt.imp ? qlaImp() : qlfTextColor(0.6);
                 ctx.lineWidth = 2;
                 ctx.beginPath();
                 ctx.moveTo(wx, wy);
@@ -5240,7 +5244,7 @@ function initQlaQuant(node, cleanups) {
         });
         blocks.forEach(block => {
             block.weights.forEach(wt => {
-                ctx.fillStyle = wt.imp ? qlfAccent() : qlfTextColor(0.55);
+                ctx.fillStyle = wt.imp ? qlaImp() : qlfTextColor(0.55);
                 ctx.beginPath();
                 ctx.arc(x(wt.v), dotY(wt), 4, 0, Math.PI * 2);
                 ctx.fill();

@@ -3810,6 +3810,8 @@ body.image-lightbox-open {
     border-radius: 3px;
 }
 
+.qlf-legend-swatch.qla-sw-amber { background: #FFCC80; }
+[data-theme="light"] .qlf-legend-swatch.qla-sw-amber { background: #C77800; }
 .qlf-legend-swatch.qla-sw-good { background: #66BB6A; }
 .qlf-legend-swatch.qla-sw-bad { background: #E05555; }
 [data-theme="light"] .qlf-legend-swatch.qla-sw-good { background: #2E7D32; }
