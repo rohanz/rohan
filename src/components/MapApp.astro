@@ -22,7 +22,25 @@ const projects = (await getCollection('projects'))
 
 // Filter pills: one per unique technology across all projects, matching the
 // full tag set from the original site (wraps to two centered rows if needed).
-const filterTags = Array.from(new Set(projects.flatMap((p) => p.data.technologies))).sort();
+// CURATED filter pills, not the raw union: with 10 projects the union is ~38
+// tags in five rows — a wall where most filters match one project. This set is
+// one row, spans every listed project (each matches >=1 pill), and keeps only
+// tags that genuinely partition the work. Python is deliberately absent (it
+// matches 8/10 — a filter that filters nothing). Cards still show their full
+// technology lists; guard below drops any curated tag that stops existing.
+const CURATED_TAGS = [
+  'AI Agents',
+  'Machine Learning',
+  'Quant Finance',
+  'C++',
+  'DSP',
+  'React',
+  'Data Pipelines',
+  'Real-Time',
+  'UI/UX Design',
+];
+const allTags = new Set(projects.flatMap((p) => p.data.technologies));
+const filterTags = CURATED_TAGS.filter((t) => allTags.has(t));
 
 const stats = [
   { value: '1.3m+', label: 'streams' },
