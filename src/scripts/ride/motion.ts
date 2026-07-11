@@ -27,7 +27,7 @@ export const MAP_SCALE = 2.8; // zoom while riding
 // profile — same 0.8s ramp time, but they peak below RIDE_VTOP because there's no
 // room to reach it (see trapezoid, which caps vp at dist/rampSpan). Every longer
 // trip reaches the full top speed.
-export const RIDE_VTOP = 1600;
+export const RIDE_VTOP = 1900;
 export const RIDE_RAMP = 0.8;
 // The two ramps use DIFFERENT velocity curves, on purpose:
 //  • ACCEL — SMOOTHERSTEP velocity S(x)=6x⁵−15x⁴+10x³ (zero 1st AND 2nd derivative
