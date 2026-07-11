@@ -4457,7 +4457,7 @@ function initQlaCompound(node, cleanups) {
     }
 
     function qlaTextColor(a) { return isLightTheme() ? `rgba(62,39,35,${a})` : `rgba(232,230,227,${a})`; }
-    function qlaAccent() { return isLightTheme() ? '#8D6E63' : '#FFCC80'; }
+    function qlaAccent() { return qlfAccent(); }
 
     function draw() {
         const rect = canvas.parentElement.getBoundingClientRect();
@@ -5037,10 +5037,6 @@ function initQlaRoster(node, roster, cleanups) {
 // 5. Calibrated compression: how imatrix quantization works
 // ------------------------------------------------------------
 function initQlaQuant(node, cleanups) {
-    // Important weights stay literally amber in BOTH themes (the article's
-    // prose calls them "the amber weights"); the light-theme site accent is
-    // a muted brown that vanishes against normal-weight dots.
-    const qlaImp = () => (isLightTheme() ? '#C77800' : '#FFCC80');
     // Opaque equivalent of qlfTextColor(0.55) pre-blended onto each theme's
     // background: dots must be solid or the connector line ghosts through.
     const qlaDot = () => (isLightTheme() ? '#90817B' : '#8B8A92');
@@ -5230,7 +5226,7 @@ function initQlaQuant(node, cleanups) {
                 const wy = dotY(wt);
                 ctx.save();
                 ctx.globalAlpha = 0.6;
-                ctx.strokeStyle = wt.imp ? qlaImp() : qlfTextColor(0.6);
+                ctx.strokeStyle = wt.imp ? qlfAccent() : qlfTextColor(0.6);
                 ctx.lineWidth = 2;
                 ctx.beginPath();
                 ctx.moveTo(wx, wy);
@@ -5241,7 +5237,7 @@ function initQlaQuant(node, cleanups) {
         });
         blocks.forEach(block => {
             block.weights.forEach(wt => {
-                ctx.fillStyle = wt.imp ? qlaImp() : qlaDot();
+                ctx.fillStyle = wt.imp ? qlfAccent() : qlaDot();
                 ctx.beginPath();
                 ctx.arc(x(wt.v), dotY(wt), 4, 0, Math.PI * 2);
                 ctx.fill();
@@ -5283,7 +5279,9 @@ function initQlaQuant(node, cleanups) {
 let qlfCleanup = null;
 
 function qlfTextColor(a) { return isLightTheme() ? `rgba(62,39,35,${a})` : `rgba(232,230,227,${a})`; }
-function qlfAccent() { return isLightTheme() ? '#8D6E63' : '#FFCC80'; }
+// Chart-series amber: bright in dark mode, dark amber in light (the muted
+// brown site accent is invisible against chart greys and isn't amber).
+function qlfAccent() { return isLightTheme() ? '#C77800' : '#FFCC80'; }
 function qlfWarn() { return isLightTheme() ? '#B23B3B' : '#E05555'; }
 
 function qlfNearestIndex(dates, target) {

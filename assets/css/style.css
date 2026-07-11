@@ -3941,7 +3941,8 @@ body.image-lightbox-open {
     background: currentColor;
 }
 
-.qlf-sw-accent { color: var(--accent); }
+.qlf-sw-accent { color: #FFCC80; }
+[data-theme="light"] .qlf-sw-accent { color: #C77800; }
 .qlf-sw-warn { color: #E05555; }
 [data-theme="light"] .qlf-sw-warn { color: #B23B3B; }
 .qlf-sw-muted { color: var(--text-muted); }
