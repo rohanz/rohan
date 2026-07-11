@@ -23,6 +23,7 @@ const { title, description, lineId, hex, signName, ogImage } = Astro.props;
         <span class="logo-sub">system map</span>
       </a>
       <h1 class="sign-title">{signName}</h1>
+      <a class="sign-back" href={`/${lineId}`}>&lsaquo; back</a>
     </header>
     <main id="main" class="page-body">
       <span class="spine" style={`background:${hex}`} aria-hidden="true">

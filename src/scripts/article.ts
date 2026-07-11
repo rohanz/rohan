@@ -153,6 +153,12 @@ function buildRail(toc: HTMLElement): Map<string, SVGCircleElement> {
   const inner = toc.querySelector<HTMLElement>('.toc-inner');
   const circleFor = new Map<string, SVGCircleElement>();
   if (!svg || !inner) return circleFor;
+  // Short screens: the section list overflows its box and scrolls, but the
+  // scrollbar is hidden by design — without a cue the list just looks CUT OFF
+  // mid-item above the prev/next nav. Mark the overflowing state so the CSS can
+  // fade the bottom edge as a scroll affordance. Re-evaluated on every rebuild
+  // (init, font load, resize), which is exactly when overflow can change.
+  inner.classList.toggle('is-scrollable', inner.scrollHeight > inner.clientHeight + 2);
 
   const rows = Array.from(toc.querySelectorAll<HTMLElement>('ol li'));
   if (!rows.length) return circleFor;

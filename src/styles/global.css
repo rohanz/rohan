@@ -52,12 +52,34 @@ img { max-width: 100%; display: block; }
 
 /* Full-width station-sign header shared by inner pages */
 .sign-header {
-  position: relative;
+  /* Sticky: the signage bar (and its back affordance) stays put while the
+     article scrolls beneath — like station signage you can always look up at.
+     z-index above the article's fixed train-toc (5); below the lightbox (3000). */
+  position: sticky;
+  top: 0;
+  z-index: 20;
   color: #fff;
   padding: 1.15rem clamp(1rem, 4vw, 3rem);
   display: flex; align-items: center; justify-content: space-between; gap: 1rem;
   view-transition-name: var(--sign-vt);
 }
+/* "Go back" pill, top-right of the persistent signage bar. Deliberately quiet —
+   an outlined chip in the bar's own white, brightening on hover. */
+.sign-header .sign-back {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #fff;
+  text-decoration: none;
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  border-radius: 999px;
+  padding: 0.32rem 0.9rem;
+  white-space: nowrap;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.sign-header .sign-back:hover { background: #fff; color: var(--ink); }
+/* Narrow screens: the absolutely-centered title would collide with the pill —
+   phones keep today's layout and use browser back. */
+@media (max-width: 760px) { .sign-header .sign-back { display: none; } }
 /* Left: the rohan.jk mark (same as the map header) — white logo, no box. */
 .sign-header .logo { display: flex; align-items: baseline; gap: 0.7rem; color: #fff; text-decoration: none; }
 .sign-header .logo img { filter: brightness(0) invert(1); align-self: center; }

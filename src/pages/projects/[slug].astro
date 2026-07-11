@@ -157,6 +157,14 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
     }
   }
   .train-toc .toc-inner { position: relative; flex: 0 1 auto; min-height: 0; overflow-y: auto; scrollbar-width: none; }
+  /* Scroll affordance for short screens: when the list overflows (article.ts
+     toggles .is-scrollable), fade its bottom edge so it reads as "more below"
+     instead of cut off mid-item. Fade lifts once scrolled to the end via the
+     mask staying put — the last item scrolls up out of the faded band. */
+  .train-toc .toc-inner.is-scrollable {
+    mask-image: linear-gradient(to bottom, black calc(100% - 26px), transparent);
+    -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 26px), transparent);
+  }
   .train-toc .toc-inner::-webkit-scrollbar { display: none; }
   .train-toc :global(.toc-rail) { position: absolute; top: 0; left: 0; width: 44px; pointer-events: none; }
   .train-toc :global(.toc-rail path) {
