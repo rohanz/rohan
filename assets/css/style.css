@@ -3879,13 +3879,6 @@ body.image-lightbox-open {
     padding: 0.5rem 0.7rem;
     border: 1px solid var(--border-subtle);
     border-radius: 6px;
-    opacity: 0.6;
-    transition: opacity 0.25s ease, border-color 0.25s ease;
-}
-
-.qlf-la-stat.is-emphasized {
-    opacity: 1;
-    border-color: var(--border-hover);
 }
 
 .qlf-la-stat-hold {
@@ -3903,10 +3896,11 @@ body.image-lightbox-open {
 
 .qlf-la-stat-cheat .qlf-la-big { color: #E05555; }
 [data-theme="light"] .qlf-la-stat-cheat .qlf-la-big { color: #B23B3B; }
-.qlf-la-stat-honest .qlf-la-big { color: var(--accent); }
+.qlf-la-stat-honest .qlf-la-big { color: #FFCC80; }
+[data-theme="light"] .qlf-la-stat-honest .qlf-la-big { color: #C77800; }
 
 .qlf-la-stat-label {
-    color: var(--text-muted);
+    color: var(--text-secondary);
     font-size: 0.8rem;
 }
 

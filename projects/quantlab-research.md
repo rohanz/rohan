@@ -61,7 +61,7 @@ The +840% is the one that stands out, of course. Maybe those finance hopefuls I 
 
 Momentum, specifically, gets flattered: momentum buys recent winners, and a survivors-only universe is *made of* winners: every stock that cratered and got delisted has been removed from the list of things the strategy could have bought. So the bias doesn't inflate all strategies equally; it most inflates the strategy that chases the survivors' defining trait.
 
-Below: my survivors against RSP, and what the +840% headline looks like after the measured haircut.
+Below: my survivors against <span class="gloss-term" data-gloss="The equal-weight S&P 500 ETF from a moment ago: it held the losers as they fell out of the index, so it shows reality without survivorship bias.">RSP</span>, and what the +840% headline looks like after the measured haircut.
 
 <div id="qlf-survivorship-visual"></div>
 

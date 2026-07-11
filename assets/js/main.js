@@ -5455,8 +5455,8 @@ function initQlfLookahead(node, la, cleanups) {
         readout.appendChild(box);
         return { box, big };
     }
-    const cheatStat = makeStat('cheat · total return', 'qlf-la-stat-cheat is-emphasized');
-    const honestStat = makeStat('honest · total return', 'qlf-la-stat-honest is-emphasized');
+    const cheatStat = makeStat('cheat · total return', 'qlf-la-stat-cheat');
+    const honestStat = makeStat('honest · total return', 'qlf-la-stat-honest');
     const holdStat = makeStat('buy & hold · total return', 'qlf-la-stat-hold');
     cheatStat.big.textContent = fmtPct(finalPct(cheatEq));
     honestStat.big.textContent = fmtPct(finalPct(honestEq));
