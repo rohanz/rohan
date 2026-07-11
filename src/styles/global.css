@@ -265,3 +265,14 @@ h1, h2, h3, h4,
 .sign-header, .sign-header .sign-title, .sign-header .logo {
   font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
+
+/* Accordion TOC (article pages): h3 sub-stops collapse when their h2 group is
+   not the section being read — article.ts toggles this only when the fully
+   expanded list would overflow its box. Lives here (not [slug].astro) purely
+   for file-ownership reasons; the .train-toc scope keeps it article-only. */
+.train-toc li.sub.collapsed { display: none; }
+/* Dense tier for mostly-h2 TOCs that still overflow with subs collapsed —
+   tighter type + rhythm before falling back to scrolling (article.ts). */
+.train-toc.dense li { margin-bottom: 0.55rem; }
+.train-toc.dense a { font-size: 0.86rem; }
+.train-toc.dense li.sub a { font-size: 0.78rem; }
