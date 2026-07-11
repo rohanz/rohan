@@ -5139,7 +5139,7 @@ function initQlaQuant(node, cleanups) {
     captions.appendChild(naiveCap);
     captions.appendChild(calCap);
     body.appendChild(captions);
-    body.appendChild(qlaEl('p', 'qlf-chip-note', 'simplified; real blocks hold 32 weights'));
+    body.appendChild(qlaEl('p', 'qlf-chip-note', 'dashed lines divide the blocks · simplified; real blocks hold 32 weights'));
 
     function nearestRung(rungs, v) {
         let best = rungs[0];
