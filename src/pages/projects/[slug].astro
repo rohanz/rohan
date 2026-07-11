@@ -6,9 +6,16 @@ import { lineById } from '../../data/system';
 
 export async function getStaticPaths() {
   const projects = (await getCollection('projects')).sort((a, b) => a.data.order - b.data.order);
+  // Unlisted projects still get a built page, but they don't participate in
+  // the prev/next chain: `ordered` (which drives getProjectNav) holds listed
+  // entries only, so an unlisted page shows no prev/next and no listed page
+  // ever links to it.
+  const ordered = projects
+    .filter((p) => !p.data.unlisted)
+    .map((p) => ({ slug: p.id, title: p.data.title })) as NavItem[];
   return projects.map((project) => ({
     params: { slug: project.id },
-    props: { project, ordered: projects.map((p) => ({ slug: p.id, title: p.data.title })) as NavItem[] },
+    props: { project, ordered },
   }));
 }
 

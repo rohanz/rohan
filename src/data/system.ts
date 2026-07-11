@@ -97,7 +97,7 @@ export const LINES: Line[] = [
     hex: CTA.red,
     nav: { href: '/projects', name: 'Projects' },
     points: [
-      [-1500, 500],
+      [-1900, 500],
       [120, 500],
       [240, 380],
       [840, 380],
@@ -106,13 +106,17 @@ export const LINES: Line[] = [
       [420, 380],
       [240, 380],
       [120, 500],
-      [-1500, 500],
+      [-1900, 500],
     ],
     stations: [],
     platform: {
       perPage: 3,
       axis: 'h',
       stops: [
+        // Ten stops (one per LISTED project card) on the off-screen platform
+        // run; the line's leftward run above extends to -1900 to cover them.
+        [-1800, 500],
+        [-1600, 500],
         [-1400, 500],
         [-1200, 500],
         [-1000, 500],

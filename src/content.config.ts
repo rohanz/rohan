@@ -10,6 +10,10 @@ const projects = defineCollection({
     image: z.string(),
     technologies: z.array(z.string()),
     order: z.number(),
+    // Unlisted projects still get a built page (reachable by URL and
+    // cross-links) but are excluded from the projects platform (cards,
+    // tag pills, paging) and from prev/next/all-projects navigation.
+    unlisted: z.boolean().default(false),
   }),
 });
 

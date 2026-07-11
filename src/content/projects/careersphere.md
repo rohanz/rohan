@@ -2,7 +2,7 @@
 title: careersphere
 summary: "A PyCon Singapore 2026 champion project that maps a person's skills to realistic career moves using OpenAI, SkillsFuture data, live job signals, and a 3D role sphere."
 image: /assets/images/projects/careersphere/banner.webp
-order: 1
+order: 3
 technologies:
   - Python
   - OpenAI

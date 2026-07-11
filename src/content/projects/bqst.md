@@ -2,7 +2,7 @@
 title: bqst
 summary: "An audio mastering plugin built in C++/JUCE, combining custom DSP, saturation design, oversampling, preset management, DAW validation, and a polished hardware-inspired interface."
 image: /assets/images/projects/bqst/banner.webp
-order: 2
+order: 4
 technologies:
   - C++
   - JUCE

@@ -2,7 +2,7 @@
 title: This Website
 summary: A zero-dependency, single-page portfolio site with real-time audio visualizations, canvas-rendered backgrounds, and a Markdown-driven project system - all in vanilla JS.
 image: /assets/images/projects/website/banner.webp
-order: 8
+order: 10
 technologies:
   - JavaScript
   - Web Audio API

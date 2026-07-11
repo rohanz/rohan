@@ -13,7 +13,12 @@ interface Props {
 }
 const { title, description, initialView } = Astro.props;
 
-const projects = (await getCollection('projects')).sort((a, b) => a.data.order - b.data.order);
+// Unlisted projects (pages that exist but don't ride the line) are excluded
+// from the platform entirely: no card, no tag-pill contribution, and — since
+// paging is derived from the rendered cards — no page count impact.
+const projects = (await getCollection('projects'))
+  .filter((p) => !p.data.unlisted)
+  .sort((a, b) => a.data.order - b.data.order);
 
 // Filter pills: one per unique technology across all projects, matching the
 // full tag set from the original site (wraps to two centered rows if needed).
