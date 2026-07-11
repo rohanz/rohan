@@ -4583,7 +4583,7 @@ function qlaTokenize(text) {
 }
 
 function initQlaGate(node, fixer) {
-    const body = qlaShell(node, 'one real repair', `from the fixer logs · ${fixer.ticker}`);
+    const body = qlaShell(node, 'one real repair', `from the fixer logs · ${fixer.ticker} · excerpt`);
 
     // Map each violation to its anchoring citation in `before`, so the
     // corrected number (same citation) can be highlighted in `after`.
