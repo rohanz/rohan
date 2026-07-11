@@ -1439,17 +1439,17 @@ export class MapView {
     const { duration: cruise, ease: cruiseEase } = trapezoid(sampler.total);
     const rideEnd = RIDE_AT + cruise;
     tl.to(prog, { p: 1, duration: cruise, ease: cruiseEase, onUpdate: moveSample }, RIDE_AT);
-    // Fade every other line out so the platform is revealed as the camera arrives.
-    // Fired at the END OF THE CRUISE, not mid-brake: setFades spawns ~35 opacity
-    // tweens in one frame (the heaviest single frame of the ride), and landing
-    // that burst inside the braking window read as a hitch right as the ramp-down
-    // began. The cruise has frame budget to spare; the fade still completes just
-    // before arrival.
-    // Timed so the 0.55s fade FINISHES as the brake begins: ~35 groups at
-    // intermediate opacity each need their own composite surface, and letting
-    // that overlap the braking window stacked raster cost exactly where the
-    // ramp-down judder was felt. On the shortest rides it starts mid-cruise.
-    tl.call(() => this.setFades(line, 0, 0.55), undefined, Math.max(RIDE_AT + 0.1, rideEnd - RIDE_RAMP - 0.6));
+    // Fade every other line out WITH THE ARRIVAL, not during the travel — the
+    // world staying visible for the whole ride is the design (an earlier perf
+    // pass moved this fade to complete by brake-start, which on short rides
+    // dimmed the map moments after departure — wrong). Fired at the brake's
+    // TAIL (last 0.2s, camera nearly stopped, echo layers already display:none)
+    // so the 0.6s fade plays out across the arrival reveal zoom. Perf note: the
+    // ~35 intermediate-opacity group surfaces now overlap the reveal instead of
+    // the cruise/brake — measured clean there (reveals run with zero dropped
+    // frames post image-warming), and the one window it must never overlap is
+    // the cruise/brake judder zone, which it no longer touches.
+    tl.call(() => this.setFades(line, 0, 0.6), undefined, rideEnd - 0.2);
     // Clear the echo/motion-blur exactly as the ride reaches the last tick, which is
     // where the reveal picks up — no held pause between them (the ride decelerates to
     // ~0 velocity into the tick and the reveal soft-launches from ~0).
@@ -1745,8 +1745,9 @@ export class MapView {
     // Fade everything but the new line as B arrives — fired at end-of-cruise, not
     // mid-brake, so the ~35-tween creation burst lands where the frame budget is
     // free (see toPlatform's matching comment).
-    // Completes as the brake begins — see toPlatform's matching comment.
-    tl.call(() => this.setFades(toLine, 0, 0.55), undefined, Math.max(rideStart + 0.1, rideEnd - RIDE_RAMP - 0.6));
+    // Fades WITH THE ARRIVAL, from the brake's tail across the reveal zoom —
+    // see toPlatform's matching comment (the world stays visible during travel).
+    tl.call(() => this.setFades(toLine, 0, 0.6), undefined, rideEnd - 0.2);
     // Clear the echo/motion-blur exactly as B's ride reaches the last tick, where
     // the reveal picks up — no held pause between them.
     tl.call(() => { this.echo.k = 0; this.apply(); }, undefined, rideEnd);
