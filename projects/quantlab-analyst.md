@@ -75,7 +75,7 @@ If I couldn't teach the model to be right the first time, maybe I could teach it
 
 Repair is a smaller task than writing, so I tried it with the 8B, using 354 training examples of the form *here's a memo you wrote + here's the gate's list of untraceable numbers → here's the corrected memo*. One small fine-tune later, the fixer existed (v5 in the roster below), and the controls were clean: an untrained model, handed the exact same list of wrong numbers, fixes almost none of them (1 in 20). The trained fixer repairs about two-thirds of the failures in one round, and 19 out of 20 across two rounds, even on drafts written by *different, bigger models it never saw in training*, including the 14B writer that outsized it.
 
-That's the system's engine: **draft → gate → targeted repair → gate again**. No human in the loop, and no number unchecked. Below is one real repair from the test set.
+That's the system's engine: **draft → gate → targeted repair → gate again**. No human in the loop, and no number unchecked. Below is one real repair from the test set: the gate's report on top is the exact input the fixer received, and the two panels are the draft before and after its pass.
 
 <div id="qla-gate-visual"></div>
 
@@ -124,9 +124,9 @@ The final production pair is v6 (writes) and v5 (repairs), with the gate between
 ## learnings: frustrating but necessary
 
 1. **Verification beats imitation for reliability.** Four attempts to train correctness *in* failed (more training, stricter prompts, and two flavours of preference training). The one fine-tune that paid for itself was trained on the verifier's own feedback, and it works as a loop.
-2. **Error-correction is a small, learnable, transferable skill.** 354 examples taught an 8B to out-repair models twice its size, across model families.
-3. **Precision needed scale × data.** Size alone helped modestly. Size plus a doubled corpus converted a 95% writer into a 99.1% writer. The failed experiments are what make that conclusion trustworthy.
-4. **Controls and pre-registration did real work.** Every system number has a matching control; my pre-registered predictions were wrong in both directions several times, and the research log says so each time.
+2. **Error correction is a small, learnable, transferable skill.** 354 examples taught an 8B to out-repair models twice its size, across model families.
+3. **Precision needed scale × data.** Size alone helped a little. Size plus a doubled corpus converted a 95% writer into a 99.1% writer. The failed experiments are what make that conclusion trustworthy.
+4. **Controls and pre-registration are necessary.** Every system number has a matching control; my pre-registered predictions were wrong in both directions several times, and the research log says so each time.
 5. **Fine-tuning tunes what you aim it at, and nothing else.** The gate metrics I optimised reached frontier level; the prose quality I never targeted didn't move, even when I finally targeted it directly. Verifiability and quality are different axes, and this system honestly claims only one.
 
 Under the hood this project exercised most of the modern fine-tuning toolkit end to end, on consumer hardware: QLoRA SFT and its scaling behaviour, three DPO designs (two instructive failures, one negative with a twist), <span class="gloss-term" data-gloss="When a model optimises a loophole in the metric instead of the goal, like citing fewer numbers so fewer can be wrong.">reward-hacking</span> diagnosis, <span class="gloss-term" data-gloss="Building training data from the model's own outputs, so the examples match what it actually writes rather than an idealised style.">on-policy data generation</span>, <span class="gloss-term" data-gloss="Using a third model to blind-compare outputs. Judges prefer whichever answer they read first, so every comparison is run twice with positions swapped.">LLM-as-judge</span> evaluation with position-debiasing, quantization-aware measurement, and importance-matrix compression. Each choice is documented with the evidence that forced it.

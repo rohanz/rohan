@@ -4620,6 +4620,16 @@ function initQlaGate(node, fixer) {
         col.appendChild(box);
         return col;
     }
+    // The mechanism, not just the outcome: show the exact input the fixer
+    // received (the gate's violation report) above the before/after panels.
+    const report = qlaEl('div', 'qla-gate-report-strip');
+    report.appendChild(qlaEl('span', 'qla-gate-report-label', "the fixer's input · the gate's report:"));
+    fixer.violations.forEach(v => {
+        report.appendChild(qlaEl('span', 'qla-gate-chip', v));
+    });
+    report.appendChild(qlaEl('span', 'qla-gate-report-tail', 'untraceable → rewrite'));
+    body.appendChild(report);
+
     const fixerGrid = qlaEl('div', 'qla-fixer-grid');
     fixerGrid.appendChild(renderExcerpt(`before: rejected by the gate, ${fixer.violations.length} untraceable numbers`, beforeTokens, badSet, 'qla-mark-bad'));
     fixerGrid.appendChild(renderExcerpt('after: one pass of the fixer', afterTokens, goodSet, 'qla-mark-good'));
@@ -4643,6 +4653,9 @@ function initQlaJudge(node, judgePairs, cleanups) {
     const feedback = qlaEl('p', 'qla-judge-feedback', '');
     feedback.setAttribute('aria-live', 'polite');
     body.appendChild(feedback);
+    const scoreLine = qlaEl('p', 'qla-judge-score', '');
+    scoreLine.setAttribute('aria-live', 'polite');
+    body.appendChild(scoreLine);
 
     const ROUNDS = 3;
     let order = [];
@@ -4751,6 +4764,7 @@ function initQlaJudge(node, judgePairs, cleanups) {
         controls.textContent = '';
         feedback.textContent = '';
         feedback.className = 'qla-judge-feedback';
+        scoreLine.textContent = '';
         const pair = trimmedPairs[order[round]];
         const teacherIsA = Math.random() < 0.5;
         status.textContent = `round ${round + 1} of ${ROUNDS} · ${pair.ticker}`;
@@ -4795,6 +4809,8 @@ function initQlaJudge(node, judgePairs, cleanups) {
     }
 
     function finish() {
+        // round 3's correct/wrong verdict stays in `feedback`;
+        // the final score gets its own line below it.
         status.textContent = 'all rounds played';
         const closings = [
             `You went 0/${ROUNDS}. The AI judge went 50/50 for Sonnet.`,
@@ -4802,8 +4818,7 @@ function initQlaJudge(node, judgePairs, cleanups) {
             `You went 2/${ROUNDS}. The AI judge went 50/50 for Sonnet.`,
             `You went 3/${ROUNDS}. You matched the judge's 50/50 for Sonnet.`
         ];
-        feedback.className = 'qla-judge-feedback';
-        feedback.textContent = closings[correct];
+        scoreLine.textContent = closings[correct];
         const again = qlaEl('button', 'qla-btn qla-btn-accent', 'play again');
         again.type = 'button';
         again.addEventListener('click', start);
