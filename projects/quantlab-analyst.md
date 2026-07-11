@@ -1,5 +1,5 @@
 ---
-title: "distilling a financial analyst: small open models, frontier accuracy"
+title: "distilling a financial analyst: small open models to frontier accuracy"
 summary: "Fine-tuning small open-source models (Qwen3 8B and 14B, QLoRA on one RTX 4090) into a financial memo system where every number is mechanically verified: a tuned writer, a tuned repair model, and a deterministic gate that together match a frontier model on provable correctness. Every experiment pre-registered, including the failures."
 image: assets/images/projects/quantlab-analyst/banner.webp
 technologies:
