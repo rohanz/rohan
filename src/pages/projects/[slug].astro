@@ -81,17 +81,18 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
 
 <style>
   .article-layout { position: relative; display: grid; grid-template-columns: 1fr; justify-items: center; }
-  .article { max-width: 760px; width: 100%; min-width: 0; }
-  /* While the fixed train-toc is visible (>=1000px) the centered 760px column
-     must CLEAR it. Centering alone only clears once 50vw-380px covers the TOC's
-     ~252px right edge, i.e. from ~1264px wide; between 1000 and 1263 the
-     centered column slid UNDER the fixed rail (hero drawn over the section
-     labels). In that band only, reserve the rail's column and left-align the
-     article in the remaining space; at >=1264px the original centered layout
-     already clears and is left untouched. */
-  @media (min-width: 1000px) and (max-width: 1263px) {
-    .article-layout { justify-items: start; padding-left: 216px; }
-    .article { max-width: min(760px, calc(100vw - 216px - 5rem)); }
+  /* Blog-post measure: ~70ch at the body size — long lines read worse. */
+  .article { max-width: 680px; width: 100%; min-width: 0; }
+  /* While the fixed train-toc is visible (>=1000px) the centered 680px column
+     must CLEAR it. Centering alone only clears once 50vw-340px covers the TOC's
+     ~232px right edge, i.e. from ~1144px wide; below that the centered column
+     slid UNDER the fixed rail (hero drawn over the section labels). In that
+     band only, reserve the rail's column and left-align the article in the
+     remaining space; from 1144px the centered layout already clears and is
+     left untouched. */
+  @media (min-width: 1000px) and (max-width: 1143px) {
+    .article-layout { justify-items: start; padding-left: 196px; }
+    .article { max-width: min(680px, calc(100vw - 196px - 5rem)); }
   }
 
   .article-banner {
@@ -151,8 +152,9 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
       /* Track the centered article column so the rail keeps a constant, tight
          offset from the body instead of drifting to the far margin on wide
          screens (the article is 760px wide and centered). */
-      left: max(1.25rem, calc(50vw - 608px));
-      width: 216px;
+      /* article half-width 340 + rail width 196 + 12px gap */
+      left: max(1.25rem, calc(50vw - 548px));
+      width: 196px;
       z-index: 5;
     }
   }
@@ -177,15 +179,15 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
   }
   .train-toc :global(.toc-rail circle.is-current) { fill: #f9c25e; }
   .train-toc ol { list-style: none; margin: 0; padding: 0.4rem 0; position: relative; }
-  .train-toc li { position: relative; margin: 0 0 1.05rem; }
+  .train-toc li { position: relative; margin: 0 0 0.85rem; }
   .train-toc li:last-child { margin-bottom: 0; }
   .train-toc a {
     display: block; text-decoration: none; color: var(--muted);
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    font-size: 1.05rem; font-weight: 600; line-height: 1.25;
+    font-size: 0.95rem; font-weight: 600; line-height: 1.25;
     padding-left: 32px;
   }
-  .train-toc li.sub a { font-size: 0.92rem; padding-left: 48px; }
+  .train-toc li.sub a { font-size: 0.84rem; padding-left: 48px; }
   .train-toc a:hover .toc-label { color: var(--ink); }
   .train-toc a.is-current .toc-label { color: var(--ink); }
 
