@@ -82,6 +82,17 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
 <style>
   .article-layout { position: relative; display: grid; grid-template-columns: 1fr; justify-items: center; }
   .article { max-width: 760px; width: 100%; min-width: 0; }
+  /* While the fixed train-toc is visible (>=1000px) the centered 760px column
+     must CLEAR it. Centering alone only clears once 50vw-380px covers the TOC's
+     ~252px right edge, i.e. from ~1264px wide; between 1000 and 1263 the
+     centered column slid UNDER the fixed rail (hero drawn over the section
+     labels). In that band only, reserve the rail's column and left-align the
+     article in the remaining space; at >=1264px the original centered layout
+     already clears and is left untouched. */
+  @media (min-width: 1000px) and (max-width: 1263px) {
+    .article-layout { justify-items: start; padding-left: 216px; }
+    .article { max-width: min(760px, calc(100vw - 216px - 5rem)); }
+  }
 
   .article-banner {
     width: 100%; height: auto; border-radius: var(--radius);

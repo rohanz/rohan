@@ -68,3 +68,25 @@ test('widening after paging the About platform re-clamps to visible cards', asyn
   await page.waitForTimeout(900);
   expect(await visCards(page, 'about')).toBeGreaterThan(0);
 });
+
+// Project ARTICLE pages: the fixed train-toc must never overlap the article
+// column, and the article must never spill the right edge — at any width where
+// the toc is visible. (Bug this caught: between 1000-1263px the centered 760px
+// column slid under the fixed rail — hero image drawn over the section labels.)
+test('article column clears the train-toc at every toc-visible width', async ({ page }) => {
+  for (const width of [1000, 1100, 1200, 1300, 1440, 1720]) {
+    await page.setViewportSize({ width, height: 850 });
+    await page.goto('/projects/careersphere', { waitUntil: 'networkidle' });
+    await page.waitForTimeout(500);
+    const m = await page.evaluate(() => {
+      const toc = document.querySelector('.train-toc');
+      const a = document.querySelector('.article')!.getBoundingClientRect();
+      const t = toc ? toc.getBoundingClientRect() : null;
+      return { tocRight: t ? t.right : null, artLeft: a.left, artRight: a.right, vw: innerWidth };
+    });
+    if (m.tocRight !== null) {
+      expect(m.artLeft, `toc overlap at ${width}px`).toBeGreaterThanOrEqual(m.tocRight);
+    }
+    expect(m.artRight, `right spill at ${width}px`).toBeLessThanOrEqual(m.vw);
+  }
+});
