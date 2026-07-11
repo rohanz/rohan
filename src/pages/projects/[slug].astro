@@ -372,7 +372,10 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
   .bqst-drive-module { display: grid; justify-items: center; gap: 0.55rem; }
   .bqst-knob-stage { width: 138px; height: 138px; position: relative; display: grid; place-items: center; cursor: grab; touch-action: none; outline: none; }
   .bqst-knob-stage.is-dragging { cursor: grabbing; }
-  .bqst-knob-stage:focus-visible { outline: 2px solid var(--w-accent); outline-offset: 4px; border-radius: 50%; }
+  /* Keyboard focus ring only — .pointer-grab marks pointer-initiated focus (see
+     article-widgets.ts: programmatic focus() inherits input modality, and the
+     first-ever grab after page load counted as keyboard, flashing this ring). */
+  .bqst-knob-stage:focus-visible:not(.pointer-grab) { outline: 2px solid var(--w-accent); outline-offset: 4px; border-radius: 50%; }
   .bqst-knob-ticks { position: absolute; inset: 0; pointer-events: none; }
   .bqst-knob-ticks::before {
     content: ''; position: absolute; left: 50%; top: 50%; width: 138px; height: 138px;

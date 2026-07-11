@@ -575,6 +575,13 @@ function initBqstDspLab() {
     activeKnobControl = control;
     knobDragStartY = event.clientY;
     knobDragStartValue = driveDbFor(control.type);
+    // Mark this focus as pointer-initiated BEFORE the programmatic focus():
+    // .focus() inherits the browser's current input modality, and right after
+    // page load that modality is still "keyboard" — so the very first knob grab
+    // matched :focus-visible and flashed the red keyboard ring (and never again
+    // once pointer modality was established). The class scopes the ring in CSS
+    // to true keyboard focus only; it clears on blur so Tab still shows it.
+    control.stage.classList.add('pointer-grab');
     control.stage.focus();
     control.stage.setPointerCapture?.(event.pointerId);
     control.stage.classList.add('is-dragging');
@@ -597,6 +604,9 @@ function initBqstDspLab() {
     if (control.stage) {
       control.stage.addEventListener('pointerdown', onPointerDown);
       control.stage.addEventListener('keydown', onKeyDown);
+      // Clear the pointer-focus mark when focus leaves, so a subsequent Tab
+      // focus (true keyboard) gets the visible ring again.
+      control.stage.addEventListener('blur', () => control.stage.classList.remove('pointer-grab'));
     }
     driveListeners.push({ control, onInput, onPointerDown, onKeyDown });
   });

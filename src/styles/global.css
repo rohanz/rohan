@@ -64,7 +64,10 @@ img { max-width: 100%; display: block; }
      centering comes from the flex row; only horizontal padding remains. */
   height: var(--topbar-h);
   box-sizing: border-box;
-  padding: 0 clamp(1rem, 4vw, 3rem);
+  /* EXACTLY the map top-bar's horizontal padding (1.6rem) — the article bar
+     used a viewport clamp, so the logo sat ~26px further right and visibly
+     jumped sideways at every platform↔article transition. */
+  padding: 0 1.6rem;
   display: flex; align-items: center; justify-content: space-between; gap: 1rem;
   view-transition-name: var(--sign-vt);
 }
@@ -166,7 +169,15 @@ img { max-width: 100%; display: block; }
 :root.streaking::view-transition-old(sign-music):only-child,
 :root.streaking::view-transition-old(sign-projects):only-child,
 :root.streaking::view-transition-old(sign-about):only-child {
-  animation: none; opacity: 1; mix-blend-mode: normal;
+  /* Exiting to a platform: the lone old bar stacks ABOVE the incoming root
+     sweep, so it must be CLIPPED AWAY in the edge's wake (the mirror of
+     streak-reveal) — held static it lingered over the new bar and popped. */
+  animation: streak-conceal 520ms cubic-bezier(0.7, 0, 0.3, 1) both;
+  mix-blend-mode: normal;
+}
+@keyframes streak-conceal {
+  from { clip-path: inset(0 0 0 0); }    /* fully visible */
+  to   { clip-path: inset(0 0 0 100%); } /* consumed from the left, in the wake */
 }
 @keyframes streak-run {
   from { transform: translateX(calc(-1 * var(--streak-w))); }
