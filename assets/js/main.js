@@ -4812,13 +4812,7 @@ function initQlaJudge(node, judgePairs, cleanups) {
         // round 3's correct/wrong verdict stays in `feedback`;
         // the final score gets its own line below it.
         status.textContent = 'all rounds played';
-        const closings = [
-            `You went 0/${ROUNDS}. The AI judge went 50/50 for Sonnet.`,
-            `You went 1/${ROUNDS}. The AI judge went 50/50 for Sonnet.`,
-            `You went 2/${ROUNDS}. The AI judge went 50/50 for Sonnet.`,
-            `You went 3/${ROUNDS}. You matched the judge's 50/50 for Sonnet.`
-        ];
-        scoreLine.textContent = closings[correct];
+        scoreLine.textContent = `You went ${correct}/${ROUNDS}.`;
         const again = qlaEl('button', 'qla-btn qla-btn-accent', 'play again');
         again.type = 'button';
         again.addEventListener('click', start);

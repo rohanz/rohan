@@ -3584,8 +3584,12 @@ body.image-lightbox-open {
 
 /* --- judge final-score line (separate from per-round feedback) --- */
 .qla-judge-score {
-    margin: 0.15rem 0 0;
-    min-height: 1.3em; /* reserved so the finish never reflows */
+    /* one reserved line, same recipe as the feedback row: appearing at
+       round 3 must not change the visual's height */
+    margin: 0;
+    min-height: 1.7em;
+    line-height: 1.7;
+    text-align: center;
     color: var(--text-primary);
     font-weight: 600;
     font-size: 0.9rem;
