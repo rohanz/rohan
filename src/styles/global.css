@@ -59,7 +59,12 @@ img { max-width: 100%; display: block; }
   top: 0;
   z-index: 20;
   color: #fff;
-  padding: 1.15rem clamp(1rem, 4vw, 3rem);
+  /* EXACTLY the map pages' bar height (was padding-driven ≈80px vs the map's
+     74px — a visible jump at every page↔article transition). Vertical
+     centering comes from the flex row; only horizontal padding remains. */
+  height: var(--topbar-h);
+  box-sizing: border-box;
+  padding: 0 clamp(1rem, 4vw, 3rem);
   display: flex; align-items: center; justify-content: space-between; gap: 1rem;
   view-transition-name: var(--sign-vt);
 }
@@ -143,6 +148,25 @@ img { max-width: 100%; display: block; }
 :root.streaking::view-transition-new(root) {
   animation: streak-reveal 520ms cubic-bezier(0.7, 0, 0.3, 1) both;
   mix-blend-mode: normal;
+}
+
+/* The article signage bar is its own VT group (sign-*) so prev/next article
+   navs MORPH the bar. But entering from / leaving to a platform page there is
+   no counterpart element: Chromium would give the lone snapshot an independent
+   default cross-fade that ignores the sweeping edge. :only-child is exactly
+   the no-counterpart case — sweep a lone NEW bar in with the same clip as the
+   root, and hold a lone OLD bar static beneath (it is covered by the wake,
+   like the outgoing root). Paired article↔article snapshots are untouched. */
+:root.streaking::view-transition-new(sign-music):only-child,
+:root.streaking::view-transition-new(sign-projects):only-child,
+:root.streaking::view-transition-new(sign-about):only-child {
+  animation: streak-reveal 520ms cubic-bezier(0.7, 0, 0.3, 1) both;
+  mix-blend-mode: normal;
+}
+:root.streaking::view-transition-old(sign-music):only-child,
+:root.streaking::view-transition-old(sign-projects):only-child,
+:root.streaking::view-transition-old(sign-about):only-child {
+  animation: none; opacity: 1; mix-blend-mode: normal;
 }
 @keyframes streak-run {
   from { transform: translateX(calc(-1 * var(--streak-w))); }
