@@ -611,10 +611,10 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
   .qlf-legend { display: flex; justify-content: flex-end; gap: 0.3rem 1rem; flex-wrap: wrap; margin: 0.4rem 0 0.3rem; color: rgba(26,26,26,0.72); font-size: 0.78rem; }
   .qlf-legend-item { display: inline-flex; align-items: center; gap: 0.35rem; }
   .qlf-legend-swatch { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: currentColor; }
-  .qlf-sw-accent { color: #f9c25e; }
+  .qlf-sw-series { color: var(--w-accent); } /* primary series: projects red */
+  .qlf-sw-accent { color: #f9c25e; } /* second series in comparisons: amber */
   .qlf-sw-warn { color: var(--line-projects); }
   .qlf-sw-muted { color: var(--w-muted); }
-  .qlf-legend-swatch.qla-sw-amber { background: #f9c25e; }
   .qlf-legend-swatch.qla-sw-good { background: #2e7d32; }
   .qlf-legend-swatch.qla-sw-bad { background: var(--line-projects); }
   .qlf-legend-swatch.qlf-sw-gap { background: rgba(209,61,89,0.14); box-shadow: inset 0 0 0 1px rgba(209,61,89,0.45); }
@@ -662,7 +662,7 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
     margin: 0.7rem 0 0.3rem; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: 700;
     font-size: 1.25rem; color: var(--w-ink); font-variant-numeric: tabular-nums;
   }
-  .qlf-meter-big.is-at-measured { color: #f9c25e; }
+  .qlf-meter-big.is-at-measured { color: var(--w-accent); }
 
   /* risk gate playground */
   .qlf-risk-row { margin-top: 0.8rem; }
@@ -682,8 +682,9 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
   .qlf-pos-amt { color: var(--w-muted); }
   .qlf-pos-amt.is-held { color: var(--w-ink); }
   .qlf-state-value.is-negative { color: #b52e49; }
-  .qlf-state-tile.qlf-pulse { border-color: var(--w-accent); animation: qlf-tile-pulse 0.6s ease; }
-  @keyframes qlf-tile-pulse { 0% { background: rgba(209,61,89,0.12); } 100% { background: transparent; } }
+  /* pulse stays ink-toned: in this visual red is reserved for danger (REJECTED / kill switch) */
+  .qlf-state-tile.qlf-pulse { border-color: rgba(26,26,26,0.45); animation: qlf-tile-pulse 0.6s ease; }
+  @keyframes qlf-tile-pulse { 0% { background: rgba(26,26,26,0.08); } 100% { background: transparent; } }
   @media (prefers-reduced-motion: reduce) { .qlf-state-tile.qlf-pulse { animation: none; } }
   .qlf-risk-bottom { display: flex; gap: 0.8rem 2rem; flex-wrap: wrap; margin-top: 0.9rem; }
   .qlf-risk-bottom .qlf-order-row { max-width: 100%; }

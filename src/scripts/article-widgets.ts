@@ -1554,14 +1554,13 @@ function initDemoPlayer() {
 // Ported from the original site's main.js (initQuantlabVisuals /
 // initQuantlabFinVisuals). Light theme only: the original's isLightTheme
 // branches are collapsed and the palette follows the article's settled rules —
-// amber (#f9c25e) for plot SERIES, projects red (#d13d59) for warn/accent
-// chrome, ink for text/grids, cream card background. Text-sized accents (stat
-// numbers, meter line) use a darker amber (#f9c25e) because series amber is
-// too light to read as text on cream.
+// single-series visuals use projects red (#d13d59) for the primary series;
+// comparison visuals use red for the primary/first series and amber (#f9c25e)
+// for the second; ink for text/grids, cream card background. Semantic colors
+// (verified-green #2e7d32, danger red) keep their meaning.
 // ============================================================
 
 const QL_WARN = RED; // "cheat"/"survivors"/violations — the projects red
-const QL_TEXT_AMBER = '#f9c25e'; // text-weight amber (matches .lcm-chord)
 // Opaque equivalent of ink@0.55 pre-blended onto the cream card (#e8e4db):
 // the quant explainer's dots must be solid or the connector line ghosts through.
 const QL_DOT = '#777571';
@@ -1721,7 +1720,7 @@ function initQlaCompound(node: HTMLElement) {
   canvas.setAttribute('role', 'img');
   canvas.setAttribute('aria-label', 'Curve of memo survival rate versus per-number accuracy at 40 claims per memo, with markers for v2.1 at the 95.4% wall and the teacher at 99.8%');
   body.appendChild(qlfLegend([
-    { cls: 'qlf-sw-accent', label: 'survival curve' },
+    { cls: 'qlf-sw-series', label: 'survival curve' },
     { cls: 'qlf-sw-muted', label: 'measured models' },
   ]));
   canvasWrap.appendChild(canvas);
@@ -1779,7 +1778,7 @@ function initQlaCompound(node: HTMLElement) {
     ctx.textAlign = 'left';
     ctx.fillText('the wall', x(WALL_P) + 6, pad.t + 12);
 
-    ctx.strokeStyle = AMBER;
+    ctx.strokeStyle = RED;
     ctx.lineWidth = 2.5;
     ctx.beginPath();
     for (let i = 0; i <= 160; i++) {
@@ -1805,7 +1804,7 @@ function initQlaCompound(node: HTMLElement) {
       ctx.strokeStyle = qlText(0.35);
       ctx.lineWidth = 1;
       ctx.beginPath(); ctx.moveTo(hx, pad.t); ctx.lineTo(hx, h - pad.b); ctx.stroke();
-      ctx.fillStyle = AMBER;
+      ctx.fillStyle = RED;
       ctx.beginPath(); ctx.arc(hx, y(survival(pv, N_CLAIMS)), 4, 0, Math.PI * 2); ctx.fill();
     }
   }
@@ -2179,7 +2178,7 @@ function initQlaRoster(node: HTMLElement, roster: any) {
     ctx.textAlign = 'left';
     ctx.fillText(`teacher ${TEACHER}%`, pad.l + 4, y(TEACHER) - 5);
 
-    ctx.strokeStyle = AMBER;
+    ctx.strokeStyle = RED;
     ctx.globalAlpha = 0.55;
     ctx.lineWidth = 1.5;
     ctx.beginPath();
@@ -2196,17 +2195,17 @@ function initQlaRoster(node: HTMLElement, roster: any) {
     models.forEach((m, i) => {
       const v = passVal(m);
       const isSel = i === selected;
-      // Selection reads in the darker text-amber; unselected dots in muted ink.
+      // Selection reads in the projects red; unselected dots in muted ink.
       if (!isNaN(v)) {
-        ctx.fillStyle = isSel ? QL_TEXT_AMBER : qlText(0.5);
+        ctx.fillStyle = isSel ? RED : qlText(0.5);
         ctx.beginPath(); ctx.arc(x(i), y(v), isSel ? 6 : 3.5, 0, Math.PI * 2); ctx.fill();
         if (isSel) {
-          ctx.strokeStyle = QL_TEXT_AMBER;
+          ctx.strokeStyle = RED;
           ctx.lineWidth = 1.5;
           ctx.beginPath(); ctx.arc(x(i), y(v), 9, 0, Math.PI * 2); ctx.stroke();
         }
       }
-      ctx.fillStyle = isSel ? QL_TEXT_AMBER : qlText(0.5);
+      ctx.fillStyle = isSel ? RED : qlText(0.5);
       ctx.font = isSel ? '700 10px Inter, sans-serif' : '600 10px Inter, sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText(m.id, x(i), h - 18);
@@ -2320,7 +2319,7 @@ function initQlaQuant(node: HTMLElement) {
 
   body.appendChild(qlfLegend([
     { cls: 'qlf-sw-muted', label: 'weight' },
-    { cls: 'qla-sw-amber', label: 'important weight' },
+    { cls: 'qlf-sw-series', label: 'important weight' },
     { cls: 'qlf-sw-rung', label: 'rung (quantization level)' },
   ]));
 
@@ -2410,7 +2409,7 @@ function initQlaQuant(node: HTMLElement) {
         const wy = dotY(wt);
         ctx.save();
         ctx.globalAlpha = 0.6;
-        ctx.strokeStyle = wt.imp ? QL_TEXT_AMBER : qlText(0.6);
+        ctx.strokeStyle = wt.imp ? RED : qlText(0.6);
         ctx.lineWidth = 2;
         ctx.beginPath(); ctx.moveTo(wx, wy); ctx.lineTo(rx, wy); ctx.stroke();
         ctx.restore();
@@ -2418,7 +2417,7 @@ function initQlaQuant(node: HTMLElement) {
     });
     blocks.forEach((block) => {
       block.weights.forEach((wt) => {
-        ctx.fillStyle = wt.imp ? QL_TEXT_AMBER : QL_DOT;
+        ctx.fillStyle = wt.imp ? RED : QL_DOT;
         ctx.beginPath(); ctx.arc(x(wt.v), dotY(wt), 4, 0, Math.PI * 2); ctx.fill();
       });
     });
@@ -2615,8 +2614,8 @@ function initQlfKalman(node: HTMLElement, km: any) {
   const olsVals = ols.filter((v): v is number => v !== null);
   canvas.setAttribute('aria-label', `Hedge ratio over time: a 250-day rolling OLS estimate that whipsaws between ${Math.min(...olsVals).toFixed(1)} and ${Math.max(...olsVals).toFixed(1)}, versus a Kalman-filtered estimate that stays between ${Math.min(...km.kalman_beta).toFixed(2)} and ${Math.max(...km.kalman_beta).toFixed(2)} while tracking the same underlying level, with the 2016-2020 selection window shaded`);
   body.appendChild(qlfLegend([
-    { cls: 'qlf-sw-accent', label: 'kalman filter' },
-    { cls: 'qlf-sw-warn', label: '250-day rolling OLS (textbook method)' },
+    { cls: 'qlf-sw-series', label: 'kalman filter' },
+    { cls: 'qlf-sw-accent', label: '250-day rolling OLS (textbook method)' },
     { cls: 'qlf-sw-window', label: 'selection window (pair chosen here)' },
   ]));
   canvasWrap.appendChild(canvas);
@@ -2673,7 +2672,7 @@ function initQlfKalman(node: HTMLElement, km: any) {
     ctx.beginPath(); ctx.moveTo(sx, pad.t); ctx.lineTo(sx, h - pad.b); ctx.stroke();
 
     // rolling OLS: jagged; nulls break the line, clipped values get markers
-    ctx.strokeStyle = QL_WARN;
+    ctx.strokeStyle = AMBER;
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     let pen = false;
@@ -2684,7 +2683,7 @@ function initQlfKalman(node: HTMLElement, km: any) {
       else ctx.lineTo(x(i), yy);
     }
     ctx.stroke();
-    ctx.fillStyle = QL_WARN;
+    ctx.fillStyle = AMBER;
     for (let i = 0; i < n; i++) {
       const v = ols[i];
       if (v === null || (v >= lo && v <= hi)) continue;
@@ -2700,7 +2699,7 @@ function initQlfKalman(node: HTMLElement, km: any) {
     }
 
     // kalman track
-    ctx.strokeStyle = AMBER;
+    ctx.strokeStyle = RED;
     ctx.lineWidth = 2.5;
     ctx.beginPath();
     for (let i = 0; i < n; i++) {
@@ -2713,10 +2712,10 @@ function initQlfKalman(node: HTMLElement, km: any) {
       ctx.strokeStyle = qlText(0.35);
       ctx.lineWidth = 1;
       ctx.beginPath(); ctx.moveTo(cx, pad.t); ctx.lineTo(cx, h - pad.b); ctx.stroke();
-      ctx.fillStyle = AMBER;
+      ctx.fillStyle = RED;
       ctx.beginPath(); ctx.arc(cx, y(km.kalman_beta[cursor]), 5, 0, Math.PI * 2); ctx.fill();
       if (ols[cursor] !== null) {
-        ctx.fillStyle = QL_WARN;
+        ctx.fillStyle = AMBER;
         ctx.beginPath(); ctx.arc(cx, yClamped(ols[cursor] as number), 4, 0, Math.PI * 2); ctx.fill();
       }
     }
