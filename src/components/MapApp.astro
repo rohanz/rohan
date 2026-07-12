@@ -575,6 +575,12 @@ const tech = [
     background: #fff;
     border-radius: 12px;
     overflow: hidden;
+    /* Fill the anchor's (JS-equalized) height and pin .tags to the bottom, so
+       the per-page height equalization reads as one uniform strip — a shorter
+       card's slack lands between summary and tags, not as bottom whitespace. */
+    height: 100%;
+    display: flex;
+    flex-direction: column;
     /* No drop shadow — a hairline border gives just enough edge definition on the
        map background without the heavy lifted look. */
     border: 1px solid rgba(26, 26, 26, 0.12);
@@ -600,6 +606,7 @@ const tech = [
     display: flex;
     flex-direction: column;
     min-height: 200px;
+    flex: 1; /* body absorbs the equalized height; .tags below pins to bottom */
   }
   /* Title: closer to the original's weight (700, not 800). Capped at two lines so
      a long name can't unbalance the card; the flex column + body min-height keep

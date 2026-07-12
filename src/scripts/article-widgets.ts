@@ -1556,12 +1556,12 @@ function initDemoPlayer() {
 // branches are collapsed and the palette follows the article's settled rules —
 // amber (#f9c25e) for plot SERIES, projects red (#d13d59) for warn/accent
 // chrome, ink for text/grids, cream card background. Text-sized accents (stat
-// numbers, meter line) use a darker amber (#b8802a) because series amber is
+// numbers, meter line) use a darker amber (#f9c25e) because series amber is
 // too light to read as text on cream.
 // ============================================================
 
 const QL_WARN = RED; // "cheat"/"survivors"/violations — the projects red
-const QL_TEXT_AMBER = '#b8802a'; // text-weight amber (matches .lcm-chord)
+const QL_TEXT_AMBER = '#f9c25e'; // text-weight amber (matches .lcm-chord)
 // Opaque equivalent of ink@0.55 pre-blended onto the cream card (#e8e4db):
 // the quant explainer's dots must be solid or the connector line ghosts through.
 const QL_DOT = '#777571';

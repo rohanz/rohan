@@ -283,13 +283,19 @@ export class MapView {
   _projCardH: number | null = null;
   measureProjectCardH() {
     if (this.view !== 'projects') return;
-    // One batched read of the on-page cards (display !== 'none'); no writes
-    // between the getBoundingClientRect calls, so at most one reflow total.
+    // Clear → read → set, each phase batched (two reflows total, at a
+    // non-per-frame moment). The CLEAR matters: cards carry the inline height
+    // this method sets (below), so measuring without clearing would read a
+    // previous page's equalized height and inflate forever.
+    const visible = this.cardsFor('projects').filter((c) => c.style.display !== 'none');
+    visible.forEach((c) => (c.style.height = ''));
     let max = 0;
-    for (const card of this.cardsFor('projects')) {
-      if (card.style.display === 'none') continue;
-      max = Math.max(max, card.getBoundingClientRect().height);
-    }
+    for (const card of visible) max = Math.max(max, card.getBoundingClientRect().height);
+    // EQUALIZE: every card on the page takes the tallest card's height, so the
+    // row reads as one uniform strip (with the curated tags most cards are a
+    // single tag-row apart — the CSS pins .tags to the card bottom so the
+    // shorter cards' slack lands between summary and tags, not below them).
+    if (max > 0) visible.forEach((c) => (c.style.height = `${Math.ceil(max)}px`));
     // 0 (cards not yet laid out) is not cached; placeProjectPaging falls back
     // to an estimate until a real measurement lands.
     if (max > 0 && max !== this._projCardH) {

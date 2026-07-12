@@ -243,8 +243,16 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
   body.page-projects .station-here { display: none; }
 
   /* Legacy classes carried over from the old site's markdown bodies. */
-  .gloss-term { border-bottom: 1px dotted var(--line-projects); cursor: help; }
-  .gloss-term:hover, .gloss-term:focus-visible { border-bottom-style: solid; outline: none; }
+  /* Glossary terms: a soft amber HIGHLIGHT + solid underline (mirrors the
+     original site's treatment — the dotted underline alone was too easy to
+     miss). The highlight is the affordance, so no cursor:help question mark. */
+  .gloss-term {
+    background: rgba(249, 194, 94, 0.22);
+    border-bottom: 1px solid rgba(249, 194, 94, 0.85);
+    border-radius: 3px;
+    padding: 0.02em 0.12em;
+  }
+  .gloss-term:hover, .gloss-term:focus-visible { background: rgba(249, 194, 94, 0.38); outline: none; }
   /* Floating glossary tooltip (positioned by article.ts). */
   .gloss-tooltip {
     position: fixed;
@@ -457,7 +465,7 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
   /* Live chord monitor piano */
   .lcm-demo { margin: 1.5rem 0 0.5rem; }
   .lcm-readout { height: 6.5rem; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; margin-bottom: 1.25rem; overflow: hidden; }
-  .lcm-chord { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 2.6rem; font-weight: 800; color: #b8802a; line-height: 1.1; white-space: nowrap; }
+  .lcm-chord { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 2.6rem; font-weight: 800; color: #f9c25e; line-height: 1.1; white-space: nowrap; }
   .lcm-chord.lcm-empty { color: var(--w-muted); font-size: 1.4rem; font-weight: 500; }
   .lcm-notes { margin-top: 0.5rem; font-size: 1.05rem; letter-spacing: 0.04em; color: var(--w-ink); min-height: 1.4rem; white-space: nowrap; }
   .lcm-alts { margin-top: 0.35rem; font-size: 0.85rem; color: var(--w-muted); min-height: 1.1rem; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -605,7 +613,7 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
   .qlf-sw-accent { color: #f9c25e; }
   .qlf-sw-warn { color: var(--line-projects); }
   .qlf-sw-muted { color: var(--w-muted); }
-  .qlf-legend-swatch.qla-sw-amber { background: #b8802a; }
+  .qlf-legend-swatch.qla-sw-amber { background: #f9c25e; }
   .qlf-legend-swatch.qla-sw-good { background: #2e7d32; }
   .qlf-legend-swatch.qla-sw-bad { background: var(--line-projects); }
   .qlf-legend-swatch.qlf-sw-gap { background: rgba(209,61,89,0.14); box-shadow: inset 0 0 0 1px rgba(209,61,89,0.45); }
@@ -637,7 +645,7 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
     line-height: 1.1; font-variant-numeric: tabular-nums; color: var(--w-ink);
   }
   .qlf-la-stat-cheat .qlf-la-big { color: var(--line-projects); }
-  .qlf-la-stat-honest .qlf-la-big { color: #b8802a; }
+  .qlf-la-stat-honest .qlf-la-big { color: #f9c25e; }
   .qlf-la-stat-label { color: rgba(26,26,26,0.72); font-size: 0.8rem; }
   .qlf-la-window-note { margin: 0.35rem 0 0.7rem; color: var(--w-muted); font-size: 0.78rem; }
   .qlf-chip-note { margin: 0.4rem 0 0; color: var(--w-muted); font-size: 0.78rem; }
@@ -653,7 +661,7 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
     margin: 0.7rem 0 0.3rem; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: 700;
     font-size: 1.25rem; color: var(--w-ink); font-variant-numeric: tabular-nums;
   }
-  .qlf-meter-big.is-at-measured { color: #b8802a; }
+  .qlf-meter-big.is-at-measured { color: #f9c25e; }
 
   /* risk gate playground */
   .qlf-risk-row { margin-top: 0.8rem; }
