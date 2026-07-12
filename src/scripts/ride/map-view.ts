@@ -13,7 +13,6 @@ import { filletPoints } from '../../lib/fillet';
 import { stopMusicPlayback, primeMusicSizing } from '../music-player';
 import {
   MAP_SCALE,
-  RIDE_RAMP,
   trapezoid,
   VW_RHO,
   REVEAL_EASE,

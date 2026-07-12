@@ -160,11 +160,7 @@ function buildRail(toc: HTMLElement): Map<string, SVGCircleElement> {
   // (init, font load, resize), which is exactly when overflow can change.
   inner.classList.toggle('is-scrollable', inner.scrollHeight > inner.clientHeight + 2);
 
-  // Collapsed sub-stops (accordion mode, below) are display:none — their rects
-  // are zero, so they must not contribute rail ticks.
-  const rows = Array.from(toc.querySelectorAll<HTMLElement>('ol li')).filter(
-    (li) => li.offsetParent !== null,
-  );
+  const rows = Array.from(toc.querySelectorAll<HTMLElement>('ol li'));
   if (!rows.length) return circleFor;
   const innerTop = inner.getBoundingClientRect().top;
   const pts = rows
@@ -250,68 +246,13 @@ function initToc(article: HTMLElement) {
     alignTop();
     circleFor = buildRail(toc);
     circleFor.forEach((c, s) => c.classList.toggle('is-current', s === current));
-    refreshAccordion();
   });
 
   let current = '';
 
-  // ---- Accordion sub-stops -------------------------------------------------
-  // Long TOCs (quantlab-analyst: 13 items) cannot fit short laptop viewports at
-  // readable sizes. Transit-native answer: every h2 "station" is always shown,
-  // but h3 "sub-stops" expand only for the section currently being read — like
-  // branch detail appearing on the stretch of line you are riding. Enabled ONLY
-  // when the fully-expanded list overflows its box, so short TOCs keep their
-  // full overview.
-  const tocRows = Array.from(toc.querySelectorAll<HTMLElement>('ol li'));
-  const parentH2 = new Map<string, string>(); // any slug -> its h2 group slug
-  {
-    let lastH2 = '';
-    tocRows.forEach((li) => {
-      const slug = li.querySelector<HTMLAnchorElement>('a[data-target]')?.dataset.target;
-      if (!slug) return;
-      if (!li.classList.contains('sub')) lastH2 = slug;
-      parentH2.set(slug, lastH2);
-    });
-  }
-  const inner = toc.querySelector<HTMLElement>('.toc-inner');
-  let accordion = false;
-  let expandedH2 = '';
-  const measureAccordionNeed = () => {
-    if (!inner || !parentH2.size) return false;
-    // Measure with everything expanded — that is the state the decision is about.
-    tocRows.forEach((li) => li.classList.remove('collapsed'));
-    return inner.scrollHeight > inner.clientHeight + 2;
-  };
-  const applyAccordion = (h2: string) => {
-    expandedH2 = h2;
-    tocRows.forEach((li) => {
-      if (!li.classList.contains('sub')) return;
-      const slug = li.querySelector<HTMLAnchorElement>('a[data-target]')?.dataset.target ?? '';
-      li.classList.toggle('collapsed', accordion && parentH2.get(slug) !== h2);
-    });
-    // Second tier, evaluated at THIS choke point so it can never go stale:
-    // articles that are mostly h2 stations (quantlab-analyst: 11) can still
-    // overflow with every sub collapsed — densify the type/rhythm before
-    // falling back to scrolling.
-    if (inner) {
-      toc.classList.remove('dense');
-      if (inner.scrollHeight > inner.clientHeight + 2) toc.classList.add('dense');
-    }
-    // Row visibility/size changed → tick positions changed: redraw the rail
-    // and re-apply the current highlight to the fresh circles.
-    circleFor = buildRail(toc);
-    circleFor.forEach((c, s) => c.classList.toggle('is-current', s === current));
-  };
-  const refreshAccordion = () => {
-    accordion = measureAccordionNeed();
-    applyAccordion(parentH2.get(current) ?? '');
-  };
-
   const setCurrent = (slug: string) => {
     if (slug === current) return;
     current = slug;
-    const group = parentH2.get(slug) ?? '';
-    if (accordion && group !== expandedH2) applyAccordion(group);
     ticks.forEach((t) => t.classList.toggle('is-current', t.dataset.target === slug));
     circleFor.forEach((c, s) => c.classList.toggle('is-current', s === slug));
   };
@@ -409,16 +350,13 @@ function initToc(article: HTMLElement) {
     clearTimeout(resizeTimer);
     resizeTimer = window.setTimeout(() => {
       alignTop();
-      // Re-decides accordion + dense against the new box, and rebuilds the rail.
-      refreshAccordion();
+      circleFor = buildRail(toc);
+      circleFor.forEach((c, s) => c.classList.toggle('is-current', s === current));
     }, 150);
   };
   window.addEventListener('resize', onResize);
 
   computeActive();
-  // Initial accordion/dense decision — computeActive has just set `current`, so
-  // the right h2 group expands on first paint (fonts.ready re-runs it later).
-  refreshAccordion();
 
   cleanups.push(() => {
     disposed = true;
