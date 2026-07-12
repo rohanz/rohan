@@ -1139,8 +1139,8 @@ body {
 .detail-header-column {
     position: sticky;
     top: 0;
-    width: 180px;
-    min-width: 180px;
+    width: 210px;
+    min-width: 210px;
     min-height: 70vh;
     align-self: flex-start;
     display: flex;
@@ -1221,12 +1221,12 @@ body {
 }
 
 .toc-h2 {
-    font-size: 1.05rem;
+    font-size: 1.1rem;
 }
 
 .toc-h3 {
     padding-left: 2rem;
-    font-size: 0.9rem;
+    font-size: 0.95rem;
 }
 
 .toc-h3.active::before {
@@ -1313,7 +1313,7 @@ body {
     min-width: 0;
     color: rgba(232, 230, 227, 0.72);
     line-height: 1.7;
-    font-size: 1.05rem;
+    font-size: 1.1rem; /* ~17.6px, matches the transit site's reading size */
 }
 
 [data-theme="light"] .detail-body {
@@ -2885,6 +2885,20 @@ body.image-lightbox-open {
    ============================================================ */
 /* tap-active is applied by JS only on confirmed taps, not swipes */
 
+
+/* Small laptops / tablet landscape: the 400px sidebar eats half the
+   viewport, so slim it before the full mobile collapse takes over. */
+@media (min-width: 769px) and (max-width: 1180px) {
+    .sidebar {
+        width: 300px;
+        left: -300px;
+    }
+    .main-content {
+        margin-left: 300px;
+        max-width: calc(100vw - 300px);
+        padding: 7rem 2.5rem;
+    }
+}
 
 /* ============================================================
    MOBILE RESPONSIVENESS
