@@ -243,16 +243,17 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
   body.page-projects .station-here { display: none; }
 
   /* Legacy classes carried over from the old site's markdown bodies. */
-  /* Glossary terms: a soft amber HIGHLIGHT + solid underline (mirrors the
-     original site's treatment — the dotted underline alone was too easy to
-     miss). The highlight is the affordance, so no cursor:help question mark. */
+  /* Glossary terms: a soft projects-red HIGHLIGHT + solid underline (mirrors
+     the original site's treatment — the dotted underline alone was too easy to
+     miss). Ink text on the tint keeps it distinct from links, which are
+     red TEXT. The highlight is the affordance, so no cursor:help. */
   .gloss-term {
-    background: rgba(249, 194, 94, 0.22);
-    border-bottom: 1px solid rgba(249, 194, 94, 0.85);
+    background: rgba(209, 61, 89, 0.1);
+    border-bottom: 1px solid rgba(209, 61, 89, 0.55);
     border-radius: 3px;
     padding: 0.02em 0.12em;
   }
-  .gloss-term:hover, .gloss-term:focus-visible { background: rgba(249, 194, 94, 0.38); outline: none; }
+  .gloss-term:hover, .gloss-term:focus-visible { background: rgba(209, 61, 89, 0.2); outline: none; }
   /* Floating glossary tooltip (positioned by article.ts). */
   .gloss-tooltip {
     position: fixed;
