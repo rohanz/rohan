@@ -1842,7 +1842,11 @@ export class MapView {
       tag === 'all'
         ? cards.map((_, i) => i)
         : cards.reduce<number[]>((acc, c, i) => {
-            if ((c.getAttribute('data-tech') ?? '').split('|').includes(tag)) acc.push(i);
+            // A pill's data-filter may alias several underlying tags ('||'-joined,
+            // e.g. finance → Quant Finance/Backtesting): OR across them.
+            const wanted = tag.split('||');
+            const techs = (c.getAttribute('data-tech') ?? '').split('|');
+            if (wanted.some((t) => techs.includes(t))) acc.push(i);
             return acc;
           }, []);
 
