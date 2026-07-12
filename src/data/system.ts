@@ -33,6 +33,42 @@ export interface Line {
 export const HOME: Point = [420, 380];
 export const VIEWBOX = { w: 1000, h: 700 };
 
+// ---------------------------------------------------------------------------
+// Content-count-driven platform geometry. The projects and music platforms
+// carry exactly one stop per content entry, so the stop lists (and the line
+// runs that must overshoot them) are GENERATED from these two counts rather
+// than hand-listed — adding a project/track is a one-constant bump here, and
+// the line extends automatically. A vitest guard (system.test.ts) cross-checks
+// each count against the actual content source (src/content/projects/*.md,
+// src/data/music.json) so the map can never silently disagree with the site.
+// Plain loops only: this module is client-bundled (no fs / astro imports).
+export const PROJECT_STOP_COUNT = 10;
+export const MUSIC_STOP_COUNT = 4;
+
+// Projects: stops march right-to-left at 200 pitch, LAST stop anchored at
+// [0, 500] (the array stays in display order, leftmost/first project first,
+// so leftmost = [-(n-1)*200, 500]).
+const PROJECT_STOP_PITCH = 200;
+const projectStops: Point[] = [];
+for (let i = 0; i < PROJECT_STOP_COUNT; i++) {
+  projectStops.push([-(PROJECT_STOP_COUNT - 1 - i) * PROJECT_STOP_PITCH, 500]);
+}
+// The line's leftward run (and the ride's terminus) overshoots the leftmost
+// stop by 100 world units, so the platform never parks on a visible end cap.
+const PROJECTS_LINE_END_X = -(PROJECT_STOP_COUNT - 1) * PROJECT_STOP_PITCH - 100;
+
+// Music: stops climb bottom-to-top at 100 pitch, BOTTOM stop anchored at
+// [600, 100] (array in display order, topmost/first track first, so
+// topmost = [600, 100 - (n-1)*100]).
+const MUSIC_STOP_PITCH = 100;
+const musicStops: Point[] = [];
+for (let i = 0; i < MUSIC_STOP_COUNT; i++) {
+  musicStops.push([600, 100 - (MUSIC_STOP_COUNT - 1 - i) * MUSIC_STOP_PITCH]);
+}
+// Same 100-unit overshoot past the topmost stop; this is also where the
+// off-top destination roundel sits (the ride's last point).
+const MUSIC_LINE_END_Y = 100 - (MUSIC_STOP_COUNT - 1) * MUSIC_STOP_PITCH - 100;
+
 // Real CTA palette.
 export const CTA = {
   red: '#d13d59',
@@ -60,27 +96,24 @@ export const LINES: Line[] = [
       [240, 560],
       [420, 380],
       [600, 200],
-      [600, -300],
+      [600, MUSIC_LINE_END_Y],
     ],
     ride: [
       [420, 380],
       [600, 200],
-      [600, -300],
+      [600, MUSIC_LINE_END_Y],
     ],
     stations: [{ id: 'home', name: 'HOME', kind: 'home', at: [420, 380] }],
     platform: {
       perPage: 4,
       axis: 'v',
-      stops: [
-        [600, -200],
-        [600, -100],
-        [600, 0],
-        [600, 100],
-      ],
+      // One stop per track (MUSIC_STOP_COUNT), generated above: bottom stop
+      // pinned at [600, 100], climbing at 100 pitch.
+      stops: musicStops,
     },
-    // Left leg terminates just short of the projects line's own end (-1500), so
-    // the two parallel lines don't end flush; the other end is the off-top
-    // destination roundel [600,-300].
+    // Left leg terminates well short of the projects line's own (generated)
+    // end at PROJECTS_LINE_END_X, so the two parallel lines don't end flush;
+    // the other end is the off-top destination roundel [600, MUSIC_LINE_END_Y].
     terminals: [[-1440, 560]],
     ticks: [
       [-1160, 560],
@@ -97,7 +130,7 @@ export const LINES: Line[] = [
     hex: CTA.red,
     nav: { href: '/projects', name: 'Projects' },
     points: [
-      [-1900, 500],
+      [PROJECTS_LINE_END_X, 500],
       [120, 500],
       [240, 380],
       [840, 380],
@@ -106,26 +139,16 @@ export const LINES: Line[] = [
       [420, 380],
       [240, 380],
       [120, 500],
-      [-1900, 500],
+      [PROJECTS_LINE_END_X, 500],
     ],
     stations: [],
     platform: {
       perPage: 3,
       axis: 'h',
-      stops: [
-        // Ten stops (one per LISTED project card) on the off-screen platform
-        // run; the line's leftward run above extends to -1900 to cover them.
-        [-1800, 500],
-        [-1600, 500],
-        [-1400, 500],
-        [-1200, 500],
-        [-1000, 500],
-        [-800, 500],
-        [-600, 500],
-        [-400, 500],
-        [-200, 500],
-        [0, 500],
-      ],
+      // One stop per LISTED project card (PROJECT_STOP_COUNT), generated
+      // above on the off-screen platform run; the line's leftward run
+      // extends to PROJECTS_LINE_END_X to cover them.
+      stops: projectStops,
     },
     terminals: [[840, 380]],
     ticks: [

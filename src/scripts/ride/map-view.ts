@@ -32,9 +32,14 @@ const AMBER = '#f9c25e';
 const PROJECTS_TRACK_Y = 0.3;
 const CX = VIEWBOX.w / 2;
 const CY = VIEWBOX.h / 2;
-// Fallback for the "← Back" paging button's width when it's hidden (so backWidth()
-// need not measure it, avoiding a reflow) — tuned to its real rendered ~95px.
-const BACK_BTN_FALLBACK_W = 95;
+// Rendered height of the paging buttons. Fixed by CSS (constant font-size +
+// padding, single line, no wrapping), so it's a constant here rather than a
+// measurement — placeProjectPaging needs it per frame for the fold-collision
+// pin and must never force a layout read on the reveal path. (Measured 45px
+// rendered: 0.95rem line + 2×0.65rem padding.)
+const EDGE_BTN_H = 45;
+// Gap between the bottom edge of a project card and the paging button under it.
+const EDGE_BTN_GAP = 16;
 
 // Music-row visuals, laid out onto the map grid. Music stops sit at world x=600
 // on the 50-unit (one-square) grid; each visual is CENTRED on the grid column at
@@ -268,24 +273,39 @@ export class MapView {
     // next call re-measures rather than sticking at 0 until clearMetrics().
     return w > 0 ? (this._railW = w) : 0;
   }
-  /** Rendered width of the "← Back" paging button, memoized for the same reason as
-   *  railWidth() (read per-frame in placeProjectPaging). Returns the fixed CSS
-   *  fallback WITHOUT measuring when the button is hidden (page 0 — which is where
-   *  every arrival reveal sits), so the reveal never triggers a reflow to read it. */
-  _backW: number | null = null;
-  backWidth(): number {
-    if (this._backW !== null) return this._backW;
-    const back = document.getElementById('more-prev');
-    if (!back || back.hidden) return BACK_BTN_FALLBACK_W; // hidden → fallback, no reflow
-    const w = back.getBoundingClientRect().width;
-    return w > 0 ? (this._backW = w) : BACK_BTN_FALLBACK_W;
+  /** Tallest VISIBLE project card, memoized for the same reason as railWidth()
+   *  (read per-frame in placeProjectPaging, which hangs the paging buttons under
+   *  the cards). Card heights vary per project — tag rows wrap differently — so
+   *  this can't be derived; it must be measured. It only changes when the visible
+   *  set changes (page turn, filter) or on resize, so measureProjectCardH() is
+   *  called ONCE from those non-per-frame moments (showUI / cardsIn) and the
+   *  per-frame path reads the cache. Cleared by clearMetrics(). */
+  _projCardH: number | null = null;
+  measureProjectCardH() {
+    if (this.view !== 'projects') return;
+    // One batched read of the on-page cards (display !== 'none'); no writes
+    // between the getBoundingClientRect calls, so at most one reflow total.
+    let max = 0;
+    for (const card of this.cardsFor('projects')) {
+      if (card.style.display === 'none') continue;
+      max = Math.max(max, card.getBoundingClientRect().height);
+    }
+    // 0 (cards not yet laid out) is not cached; placeProjectPaging falls back
+    // to an estimate until a real measurement lands.
+    if (max > 0 && max !== this._projCardH) {
+      this._projCardH = max;
+      // A settled camera means placeCards won't run again on its own — so a
+      // changed height must re-place NOW, or the buttons would keep a position
+      // computed from the previous page's (stale) tallest card.
+      this.placeCards();
+    }
   }
   /** Drop every viewport-derived memo so the next read re-measures. Called on
    *  resize and after late reflows (fonts, bio photo). */
   clearMetrics() {
     this._metrics = null;
     this._railW = null;
-    this._backW = null;
+    this._projCardH = null;
   }
 
   metrics() {
@@ -349,16 +369,27 @@ export class MapView {
       const frac = Math.max(0.16, (this.railWidth() + stopR + 56) / rect.width);
       return { s, x: slice[0][0] - (toWorldX(frac) - CX) / s, y: cy0 - 20 };
     }
-    // axis 'h' (projects): anchor the leftmost stop so its card — centered on
-    // the stop (xPercent -50) — clears the docked left rail even when the
-    // cards are small; on wide screens this floors at 30%. The track parks at
-    // PROJECTS_TRACK_Y with the one-row filter bar above it.
+    // axis 'h' (projects): center the page's stop CLUSTER on the CONTENT
+    // REGION right of the docked rail — the same convention aboutGeom uses
+    // (targetX = midpoint of railLeft → width − marginR) — not on the raw
+    // viewport, which read as the cards listing left. The centroid handles
+    // short pages naturally (the last page's single stop centers on itself).
+    // The track parks at PROJECTS_TRACK_Y with the one-row filter bar above it.
     const s = rect.width / k / 900;
     const pitchPx = rect.width * 0.2222;
     const cardHalf = Math.max(150, pitchPx * 0.62) / 2;
     const railRight = this.railWidth();
-    const frac = Math.max(0.3, (railRight + 24 + cardHalf) / rect.width);
-    return { s, x: slice[0][0] - (toWorldX(frac) - CX) / s, y: slice[0][1] - (toWorldY(PROJECTS_TRACK_Y) - CY) / s };
+    const cx = slice.reduce((a, s2) => a + s2[0], 0) / slice.length;
+    const targetX = (railRight + 24 + (rect.width - 24)) / 2;
+    // Rail-clearance floor, kept from the old anchor but applied to the whole
+    // cluster's LEFT EDGE: the leftmost card (centered on its stop, xPercent
+    // -50) must never slide under the rail when the region is narrow. The
+    // leftmost stop sits (slice[0].x − centroid.x)·s·k px left of wherever the
+    // centroid lands, so raise the centroid target until the floor holds.
+    const leftOffsetPx = (slice[0][0] - cx) * s * k; // ≤ 0
+    const minCentroidX = railRight + 24 + cardHalf - leftOffsetPx;
+    const anchorX = Math.max(targetX, minCentroidX);
+    return { s, x: cx - (toWorldX(anchorX / rect.width) - CX) / s, y: slice[0][1] - (toWorldY(PROJECTS_TRACK_Y) - CY) / s };
   }
 
   /** The combined zoom+pan "swoop" — one continuous motion that BOTH rescales
@@ -841,20 +872,30 @@ export class MapView {
     }
   }
 
-  /** Anchor the "More projects →" button just past the RIGHT edge of the current
-   *  page's card cluster, instead of pinning it to the far viewport edge — so it
-   *  hugs the cards like the left "← Back" button hugs the docked rail, reading as
-   *  symmetric rather than stranded out at the right margin. Desktop only; the
-   *  mobile layout (buttons in the bottom corners) is left to CSS. */
+  /** Hang the paging buttons BELOW the outer cards of the current page: "← Back"
+   *  centered under the FIRST (leftmost) visible card, "More projects →" centered
+   *  under the LAST (rightmost) — so paging reads as part of the card row rather
+   *  than furniture stranded at the viewport edges. Desktop only; the mobile
+   *  layout (buttons in the bottom corners) is left to CSS. PER-FRAME PATH: this
+   *  runs on every reveal-pan frame, so it may only combine worldToScreen math
+   *  with cached values — the one measured input (tallest visible card, heights
+   *  vary with each project's tag rows) comes from the _projCardH memo, refreshed
+   *  by measureProjectCardH() at non-per-frame moments (showUI / cardsIn). */
   placeProjectPaging(p: NonNullable<Line['platform']>, cardWidth: number, order: number[], from: number, per: number) {
     const more = document.getElementById('more-next');
-    if (!more) return;
+    const back = document.getElementById('more-prev');
+    if (!more || !back) return;
     if (window.innerWidth <= 768 || this.pagingPan) {
       // Mobile layout is CSS-driven; and while a page-turn pan is running the
       // buttons are faded out and must NOT be re-positioned (else they'd drift).
       if (window.innerWidth <= 768) {
-        more.style.left = '';
-        more.style.right = '';
+        for (const btn of [more, back]) {
+          btn.style.left = '';
+          btn.style.right = '';
+          btn.style.top = '';
+          btn.style.bottom = '';
+          btn.style.transform = '';
+        }
       }
       return;
     }
@@ -863,16 +904,36 @@ export class MapView {
     const firstStop = p.stops[from];
     const lastStop = p.stops[from + Math.max(0, count - 1)];
     if (!firstStop || !lastStop) return;
-    // Mirror the LEFT spacing exactly: measure how far the "← Back" button's RIGHT
-    // edge stands in front of the first card (Back is pinned at railWidth+20, so
-    // its width matters — using its left edge overshoots on wide screens), then
-    // give "More →" that same gap past the last card so the two read symmetric.
-    const backW = this.backWidth();
-    const firstCardLeft = this.worldToScreen(firstStop)[0] - cardWidth / 2;
-    const gap = Math.max(16, firstCardLeft - (this.railWidth() + 20 + backW));
-    const rightEdge = this.worldToScreen(lastStop)[0] + cardWidth / 2;
-    more.style.right = 'auto';
-    more.style.left = `${Math.round(rightEdge + gap)}px`;
+    const { rect } = this.metrics();
+    // Cards are centered on their stop (xPercent -50) and hang 0.055 of the
+    // stage below the track, so the button row starts at card-top + tallest
+    // visible card + gap. Until the first real measurement lands (_projCardH
+    // null on the reveal's earliest frames) estimate from the card width: thumb
+    // (0.56w) + the ~210px non-thumb content budget (same model as the width
+    // cap in placeCards).
+    const cardTop = this.worldToScreen(firstStop)[1] + 0.055 * rect.height;
+    const cardH = this._projCardH ?? cardWidth * 0.56 + 210;
+    // The card-height cap already guarantees cards end ≥16px above the stage
+    // bottom, but that leaves no room for a button UNDER them on short stages —
+    // so pin the button's bottom edge at (stage bottom − 12) when the natural
+    // position would pass it.
+    const top = Math.round(
+      Math.min(cardTop + cardH + EDGE_BTN_GAP, rect.height - 12 - EDGE_BTN_H),
+    );
+    // Center each button on its card's stop. translateX(-50%) inline (the
+    // buttons' CSS centering was top/translateY, now overridden) — safe from
+    // GSAP: cardsIn only tweens the buttons' autoAlpha, never x/y, so it
+    // preserves this transform.
+    for (const [btn, stop] of [[back, firstStop], [more, lastStop]] as const) {
+      btn.style.right = 'auto';
+      btn.style.left = `${Math.round(this.worldToScreen(stop)[0])}px`;
+      btn.style.top = `${top}px`;
+      // Neutralize the ≤1000px CSS `bottom: 22px` corner pose: with BOTH top
+      // and bottom set on an auto-height absolute box the button would stretch
+      // vertically in the 769–1000px window.
+      btn.style.bottom = 'auto';
+      btn.style.transform = 'translateX(-50%)';
+    }
   }
 
   /** Pack a music row's visuals onto the map grid, left→right from just past the
@@ -1065,6 +1126,10 @@ export class MapView {
       sec.hidden = sec.getAttribute('data-content') !== id;
     });
     this.placeCards();
+    // placeCards has just sized/laid out the page's cards, and the camera is
+    // settled — the cheap, non-per-frame moment to take the one batched card-
+    // height read that placeProjectPaging's per-frame math depends on.
+    this.measureProjectCardH();
     // showUI runs AFTER the camera has settled (see the ride timelines), so this
     // is the still moment to do the music platform's one expensive canvas resize:
     // size all 16 canvases synchronously now, against their final layout, so the
@@ -1100,6 +1165,11 @@ export class MapView {
     // the bar is already visible then, so re-fading it flashed the pills out and
     // back in. Gating on the current opacity skips that on re-renders.
     if (id === 'projects') {
+      // Every path that changes the visible card set (page turn, filter click,
+      // first reveal) funnels through cardsIn, so refreshing the card-height
+      // memo here keeps placeProjectPaging's below-card anchor honest without
+      // ever measuring on a per-frame path.
+      this.measureProjectCardH();
       const filterBar = document.getElementById('filter-bar');
       if (filterBar && parseFloat(getComputedStyle(filterBar).opacity) < 0.5)
         instant

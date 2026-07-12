@@ -1,5 +1,17 @@
 import { describe, it, expect } from 'vitest';
-import { LINES, NAV_LINES, HOME, VIEWBOX, lineById, type Point } from './system';
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import {
+  LINES,
+  NAV_LINES,
+  HOME,
+  VIEWBOX,
+  lineById,
+  PROJECT_STOP_COUNT,
+  MUSIC_STOP_COUNT,
+  type Point,
+} from './system';
 
 function offCanvas([x, y]: Point): boolean {
   return x < 0 || x > VIEWBOX.w || y < 0 || y > VIEWBOX.h;
@@ -126,5 +138,44 @@ describe('transit system integrity (v2 mesh)', () => {
         }
       }
     }
+  });
+});
+
+// system.ts can't read the content itself (it's client-bundled — no fs), so
+// its stop counts are hand-maintained constants. These guards are what keeps
+// them honest: they count the REAL content and fail loudly when it drifts.
+describe('content-count-driven geometry guards', () => {
+  it('PROJECT_STOP_COUNT matches the listed project entries', () => {
+    const dir = fileURLToPath(new URL('../content/projects', import.meta.url));
+    const listed = readdirSync(dir)
+      .filter((f) => f.endsWith('.md'))
+      .filter((f) => {
+        // Frontmatter only (first --- block): an `unlisted: true` in the body
+        // prose must not exclude a project.
+        const src = readFileSync(join(dir, f), 'utf8');
+        const fm = src.split(/^---$/m)[1] ?? '';
+        return !/^unlisted:\s*true\s*$/m.test(fm);
+      });
+    expect(
+      listed.length,
+      `src/content/projects has ${listed.length} listed entries (frontmatter without \`unlisted: true\`) ` +
+        `but PROJECT_STOP_COUNT is ${PROJECT_STOP_COUNT}. Bump PROJECT_STOP_COUNT in src/data/system.ts — ` +
+        `the projects line and its stop run extend automatically from the constant.`,
+    ).toBe(PROJECT_STOP_COUNT);
+    expect(lineById('projects').platform!.stops).toHaveLength(PROJECT_STOP_COUNT);
+  });
+
+  it('MUSIC_STOP_COUNT matches the tracks in music.json', () => {
+    // MapApp.astro renders one platform row per entry of src/data/music.json.
+    const tracks = JSON.parse(
+      readFileSync(fileURLToPath(new URL('music.json', import.meta.url)), 'utf8'),
+    ) as unknown[];
+    expect(
+      tracks.length,
+      `src/data/music.json has ${tracks.length} tracks but MUSIC_STOP_COUNT is ${MUSIC_STOP_COUNT}. ` +
+        `Bump MUSIC_STOP_COUNT in src/data/system.ts — the music line and its stop run extend ` +
+        `automatically from the constant.`,
+    ).toBe(MUSIC_STOP_COUNT);
+    expect(lineById('music').platform!.stops).toHaveLength(MUSIC_STOP_COUNT);
   });
 });

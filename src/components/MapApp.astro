@@ -307,8 +307,11 @@ const tech = [
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
   }
 
-  /* Edge paging buttons: vertically centered on the left/right edges of the
-     map stage; the engine sets their background to the current line's hex. */
+  /* Edge paging buttons. The engine sets their background to the current
+     line's hex, and on desktop projects (the only view that ever shows them)
+     placeProjectPaging overrides top/left/transform inline each layout pass,
+     centering each button BELOW its outer card — the edge-anchored pose here
+     only covers the instant before the first placement. */
   .edge-btn {
     position: absolute;
     top: 50%;
@@ -333,9 +336,9 @@ const tech = [
   }
   .edge-btn:hover { filter: brightness(1.12); }
   .edge-btn[hidden] { display: none; }
+  /* Pre-placement fallbacks only (see above): right edge / just right of the
+     fixed docked-rail width (--rail-w). */
   .edge-btn-right { right: 20px; }
-  /* Clears the docked left rail: anchored just right of the fixed rail width
-     (--rail-w), so it follows the rail at every breakpoint. */
   .edge-btn-left { left: calc(var(--rail-w) + 20px); }
 
   /* On narrow viewports the right-edge paging button competes with the

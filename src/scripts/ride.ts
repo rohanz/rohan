@@ -243,6 +243,11 @@ function init() {
           mv.updateMoreButtons();
           mv.cardsIn(mv.view, true);
         }
+        // Resize rescales project cards (width tracks the stop pitch), so the
+        // just-cleared card-height memo must be refilled at this non-per-frame
+        // moment; measureProjectCardH re-places if the height changed. (The
+        // pageChanged path already did this via cardsIn.)
+        mv.measureProjectCardH();
       } else {
         // Keep Home centered in the visible region as the rail width / viewport
         // changes.
@@ -267,6 +272,10 @@ function init() {
       return;
     }
     mv.placeCards();
+    // The reflow may have changed card heights (fonts re-metric the tag rows),
+    // and clearMetrics just dropped the card-height memo the paging buttons
+    // hang from — re-measure now (re-places again itself if the height moved).
+    mv.measureProjectCardH();
   };
   document.fonts?.ready.then(lateReflow);
   const bioPhoto = document.querySelector<HTMLImageElement>('.card-about-photo .photo');
