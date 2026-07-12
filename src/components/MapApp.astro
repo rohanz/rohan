@@ -39,6 +39,7 @@ const CURATED_PILLS: { label: string; match: string[] }[] = [
   { label: 'web scraping', match: ['Web Scraping'] },
   { label: 'dsp', match: ['DSP', 'Signal Processing', 'Real-Time Audio'] },
   { label: 'cloud infra', match: ['Google Cloud'] },
+  { label: 'devops', match: ['DevOps'] },
 ];
 const allTags = new Set(projects.flatMap((p) => p.data.technologies));
 const filterTags = CURATED_PILLS.filter((p) => p.match.some((t) => allTags.has(t)));

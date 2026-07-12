@@ -8,6 +8,7 @@ technologies:
   - AI Agents
   - Data Pipelines
   - Google Cloud
+  - DevOps
   - PostgreSQL
 ---
 
