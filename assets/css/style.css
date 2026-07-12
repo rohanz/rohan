@@ -590,7 +590,9 @@ body {
 .main-content {
     flex: 1;
     margin-left: var(--sidebar-w);
-    padding: 7rem 4rem;
+    /* horizontal padding scales down on laptops so the article column keeps
+       its reading width instead of donating it to gutters */
+    padding: 7rem clamp(1.5rem, 3.5vw, 4rem);
     max-width: calc(100vw - var(--sidebar-w));
     overflow-y: scroll;
     height: 100vh;
@@ -1134,7 +1136,7 @@ body {
 
 .project-detail-view.detail-active {
     display: flex;
-    gap: 4rem;
+    gap: clamp(2rem, 3vw, 4rem);
     /* Center content column on full viewport, clamped at 0 for smaller screens */
     margin-left: max(0px, calc(50vw - 980px - 8rem));
 }
