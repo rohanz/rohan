@@ -1530,7 +1530,26 @@ function displayProjects(projects) {
     const isLocalDev = ['localhost', '127.0.0.1'].includes(window.location.hostname);
     const listed = projects.filter(p => !p.unlisted || isLocalDev);
 
-    // Build filter tags from all technologies
+    // Curated filter pills, not the raw union (ported from the transit
+    // site): the union of every project's technologies is a five-row wall
+    // where most filters match one project. One row of skills-level pills,
+    // each matching one or more underlying tags (data-filter carries them
+    // '||'-joined; filterProjectCards ORs across them). Pills whose tags no
+    // longer exist are dropped automatically.
+    // Ordered left-to-right by employer signal for a CE student:
+    // AI-engineering skills first, then domain depth, then infrastructure.
+    const CURATED_FILTERS = [
+        { label: 'ai agents', match: ['AI Agents'] },
+        { label: 'fine-tuning', match: ['Fine-tuning', 'QLoRA'] },
+        { label: 'evals', match: ['Evals'] },
+        { label: 'machine learning', match: ['Machine Learning'] },
+        { label: 'finance', match: ['Finance', 'Backtesting'] },
+        { label: 'dsp', match: ['DSP'] },
+        { label: 'data pipelines', match: ['Data Pipelines'] },
+        { label: 'cloud infra', match: ['Cloud Infra'] },
+        { label: 'devops', match: ['DevOps'] },
+        { label: 'web scraping', match: ['Web Scraping'] }
+    ];
     const allTechs = new Set();
     listed.forEach(p => {
         const techs = Array.isArray(p.technologies) ? p.technologies : [];
@@ -1538,8 +1557,8 @@ function displayProjects(projects) {
     });
 
     let filterHTML = '<button class="filter-tag active" data-filter="all" aria-pressed="true">all</button>';
-    Array.from(allTechs).sort().forEach(tech => {
-        filterHTML += `<button class="filter-tag" data-filter="${DOMPurify.sanitize(tech)}" aria-pressed="false">${DOMPurify.sanitize(tech)}</button>`;
+    CURATED_FILTERS.filter(f => f.match.some(t => allTechs.has(t))).forEach(f => {
+        filterHTML += `<button class="filter-tag" data-filter="${DOMPurify.sanitize(f.match.join('||'))}" aria-pressed="false">${DOMPurify.sanitize(f.label)}</button>`;
     });
     filterBar.innerHTML = filterHTML;
 
@@ -1597,7 +1616,8 @@ function filterProjectCards() {
 
     setTimeout(() => {
         grid.querySelectorAll('.project-card').forEach(card => {
-            const match = activeFilter === 'all' || (card.dataset.techs || '').split(',').includes(activeFilter);
+            const cardTechs = (card.dataset.techs || '').split(',');
+            const match = activeFilter === 'all' || activeFilter.split('||').some(t => cardTechs.includes(t));
             card.classList.toggle('hidden', !match);
         });
         grid.classList.remove('filtering');

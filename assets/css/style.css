@@ -14,7 +14,12 @@
     /* Sidebar scales with the viewport: ~345px on a 13" laptop, capped at
        400px on desktops, never below 280px. Everything that offsets around
        the sidebar uses this variable. */
-    --sidebar-w: clamp(280px, 24vw, 400px);
+    --sidebar-w: clamp(250px, 21vw, 400px);
+    --content-pad: clamp(1.5rem, 3.5vw, 4rem);
+    /* Half the free space between sidebar and a viewport-centred 800px
+       article, after the 210px TOC. Negative when the viewport is too
+       narrow to centre; consumers clamp it. */
+    --detail-half: calc((50vw - var(--sidebar-w) - 210px - min(400px, 44vw)) / 2);
     /* Dark theme (default) */
     --bg-primary: #1a1a2e;
     --bg-secondary: #16213e;
@@ -592,7 +597,9 @@ body {
     margin-left: var(--sidebar-w);
     /* horizontal padding scales down on laptops so the article column keeps
        its reading width instead of donating it to gutters */
-    padding: 7rem clamp(1.5rem, 3.5vw, 4rem);
+    /* right gutter floored at 5.5rem so the floating contact rail never
+       overlaps the article in the non-centred viewport band */
+    padding: 7rem max(var(--content-pad), 5.5rem) 7rem var(--content-pad);
     max-width: calc(100vw - var(--sidebar-w));
     overflow-y: scroll;
     height: 100vh;
@@ -635,6 +642,11 @@ body {
     animation: sectionFadeOut 0.4s ease-in forwards !important;
 }
 
+@keyframes sectionFadeInFlat {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
 @keyframes sectionFadeOut {
     from { opacity: 1; }
     to { opacity: 0; }
@@ -647,7 +659,10 @@ body {
     }
     100% {
         opacity: 1;
-        transform: translateY(0);
+        /* must end at none, not translateY(0): fill-mode retains the final
+           transform, and a retained transform on the section turns the
+           detail rail's position: fixed into position: absolute */
+        transform: none;
     }
 }
 
@@ -970,16 +985,23 @@ body {
 }
 
 #projects.section.active {
-    animation: sectionFadeIn 0.7s var(--ease-out-expo) forwards;
+    /* Opacity-only entrance: sectionFadeIn animates transform, and with
+       fill-mode: forwards Chrome retains an identity matrix even when the
+       keyframe ends at 'none' - which creates a containing block and turns
+       the detail rail's position: fixed into absolute. */
+    animation: sectionFadeInFlat 0.7s var(--ease-out-expo) forwards;
     transform: none;
 }
 
 /* Grid view */
 .projects-grid-view {
     padding: 0 2rem 1.5rem;
-    max-width: 1200px;
-    margin-left: max(0px, calc(50vw - 600px - var(--sidebar-w) - 4rem));
+    max-width: 1480px;
+    /* Viewport-centred (like the article view, so grid -> detail doesn't
+       jump sideways); when the viewport is too narrow the grid just fills
+       the region right of the sidebar. */
     margin-right: auto;
+    margin-left: max(0px, calc(50vw - 740px - var(--sidebar-w) - var(--content-pad)));
 }
 
 /* Filter bar */
@@ -993,12 +1015,12 @@ body {
 }
 
 .filter-tag {
-    padding: 0.4rem 1rem;
+    padding: 0.5rem 1.15rem;
     background: transparent;
     border: 1px solid var(--border-subtle);
     border-radius: 2px;
     color: var(--text-secondary);
-    font-size: 0.8rem;
+    font-size: 0.9rem;
     font-weight: 500;
     font-family: inherit;
     text-transform: lowercase;
@@ -1023,8 +1045,8 @@ body {
 .projects-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 1.5rem;
-    max-width: 1400px;
+    gap: 2rem;
+    max-width: 1480px;
     transition: opacity 0.25s ease;
 }
 
@@ -1060,7 +1082,10 @@ body {
 
 .project-card-image {
     width: 100%;
-    height: 180px;
+    /* fixed ratio, not fixed height: the crop window stays the same shape
+       (the old 357x180 feel) no matter how wide the cards get */
+    aspect-ratio: 2 / 1;
+    height: auto;
     object-fit: cover;
     display: block;
     border-bottom: 1px solid var(--border-subtle);
@@ -1136,24 +1161,36 @@ body {
 
 .project-detail-view.detail-active {
     display: flex;
-    gap: clamp(2rem, 3vw, 4rem);
-    /* Center content column on full viewport, clamped at 0 for smaller screens */
-    margin-left: max(0px, calc(50vw - 980px - 8rem));
+    /* Geometry: the article column is viewport-centred (exactly, once the
+       viewport is wide enough; best-effort below that), and the TOC sits
+       centred in the gap between the sidebar and the article: equal space
+       on both of its sides via margin-left + gap sharing --detail-half. */
+    gap: max(2rem, var(--detail-half));
+}
+
+.project-detail-view.detail-active .detail-content-column {
+    /* The fixed TOC is out of flow, so the article reserves its own space:
+       viewport-centred when the viewport allows, otherwise just clear of the
+       210px rail. Same --detail-half geometry as the rail's left offset. */
+    margin-left: max(
+        calc(max(0px, var(--detail-half) - var(--content-pad)) + 210px + 4rem),
+        calc(50vw - min(400px, 44vw) - var(--sidebar-w) - var(--content-pad))
+    );
 }
 
 /* Left column - TOC + nav, sticky */
 .detail-header-column {
-    /* Sticky offsets measure from the scrollport inset by main-content's
-       7rem top padding, so top: 0 pins the column at that padding line,
-       identical at rest and while scrolling. The viewport-tied height makes
-       the prev/all/next nav (margin-top: auto) hold ONE fixed spot near the
-       bottom regardless of TOC length - like the transit site's rail. */
-    position: sticky;
-    top: 0;
+    /* FIXED, not sticky: sticky releases when the article's bottom scrolls
+       into view (the column can't escape its parent), which made the TOC and
+       nav drift up at the end of long articles. Fixed pins them for the whole
+       read, like the transit site's rail. The left offset mirrors the flex
+       geometry it replaced (sidebar + padding + centring margin). */
+    position: fixed;
+    top: 7rem;
+    left: calc(var(--sidebar-w) + var(--content-pad) + max(0px, var(--detail-half) - var(--content-pad)));
     width: 210px;
     min-width: 210px;
     height: calc(100vh - 8rem);
-    align-self: flex-start;
     display: flex;
     flex-direction: column;
     padding: 0 0 2rem;
@@ -1266,7 +1303,8 @@ body {
     background: none;
     border: none;
     color: var(--text-primary);
-    font-size: 1rem;
+    padding: 0 0 0 1rem; /* same left indent as .toc-item */
+    font-size: 1.15rem; /* match .toc-h2 so the rail reads as one family */
     font-weight: 600;
     font-family: inherit;
     text-transform: lowercase;
@@ -1324,7 +1362,7 @@ body {
     min-width: 0;
     color: rgba(232, 230, 227, 0.72);
     line-height: 1.7;
-    font-size: 1.2rem; /* ~19.2px; calibrated to Rohan's preferred reading
+    font-size: 1.25rem; /* 20px; calibrated to Rohan's preferred reading
                           size (the transit site at his habitual 110% zoom) */
 }
 
@@ -2452,7 +2490,7 @@ body.image-lightbox-open {
 
 @keyframes detailFadeIn {
     from { opacity: 0; transform: translateY(20px); }
-    to   { opacity: 1; transform: translateY(0); }
+    to   { opacity: 1; transform: none; } /* see sectionFadeIn note */
 }
 
 @keyframes detailFadeOut {
@@ -2480,15 +2518,16 @@ body.image-lightbox-open {
     to   { opacity: 0; transform: translateX(80px); }
 }
 
-/* Small laptop: tighter TOC */
-@media (min-width: 1101px) and (max-width: 1400px) {
-    .project-detail-view.detail-active {
-        gap: 2rem;
+/* Laptop: 2 bigger cards per row (cards were shrinking to ~285px at three
+   across), and compact filter pills so the curated set keeps to one row */
+@media (min-width: 1101px) and (max-width: 1560px) {
+    .projects-grid {
+        grid-template-columns: repeat(2, 1fr);
     }
 
-    .detail-header-column {
-        width: 140px;
-        min-width: 140px;
+    .filter-tag {
+        padding: 0.32rem 0.58rem;
+        font-size: 0.74rem;
     }
 }
 
