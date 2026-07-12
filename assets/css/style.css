@@ -1232,7 +1232,7 @@ body {
 }
 
 .toc-h2 {
-    font-size: 1.1rem;
+    font-size: 1.15rem;
 }
 
 .toc-h3 {
@@ -1311,7 +1311,7 @@ body {
 }
 
 .detail-summary {
-    font-size: 1.1rem;
+    font-size: 1.2rem;
     color: var(--accent-dim);
     font-weight: 500;
     font-style: italic;
@@ -1324,7 +1324,8 @@ body {
     min-width: 0;
     color: rgba(232, 230, 227, 0.72);
     line-height: 1.7;
-    font-size: 1.1rem; /* ~17.6px, matches the transit site's reading size */
+    font-size: 1.2rem; /* ~19.2px; calibrated to Rohan's preferred reading
+                          size (the transit site at his habitual 110% zoom) */
 }
 
 [data-theme="light"] .detail-body {
