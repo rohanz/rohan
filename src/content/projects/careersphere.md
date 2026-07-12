@@ -11,7 +11,7 @@ technologies:
   - 3D Visualization
   - DuckDB
   - Data Pipelines
-  - Google Cloud
+  - Cloud Infra
 ---
 
 <p class="download-actions">

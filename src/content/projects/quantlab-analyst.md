@@ -9,7 +9,7 @@ technologies:
   - LLM Systems
   - QLoRA
   - Evals
-  - Quant Finance
+  - Finance
 ---
 
 ## the conception

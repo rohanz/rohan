@@ -39,7 +39,7 @@ const CY = VIEWBOX.h / 2;
 // rendered: 0.95rem line + 2×0.65rem padding.)
 const EDGE_BTN_H = 45;
 // Gap between the bottom edge of a project card and the paging button under it.
-const EDGE_BTN_GAP = 16;
+const EDGE_BTN_GAP = 30;
 
 // Music-row visuals, laid out onto the map grid. Music stops sit at world x=600
 // on the 50-unit (one-square) grid; each visual is CENTRED on the grid column at

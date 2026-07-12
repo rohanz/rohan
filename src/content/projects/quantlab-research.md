@@ -5,7 +5,7 @@ image: /assets/images/projects/quantlab-research/banner.webp
 order: 2
 technologies:
   - Python
-  - Quant Finance
+  - Finance
   - Backtesting
   - DSP
   - Machine Learning

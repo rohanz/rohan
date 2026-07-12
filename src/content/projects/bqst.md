@@ -7,8 +7,6 @@ technologies:
   - C++
   - JUCE
   - DSP
-  - Real-Time Audio
-  - Signal Processing
   - Product Design
 ---
 

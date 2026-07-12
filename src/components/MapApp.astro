@@ -30,15 +30,15 @@ const projects = (await getCollection('projects'))
 // technology lists; a pill whose aliases all vanish from the content is
 // dropped automatically rather than rendering a dead filter.
 const CURATED_PILLS: { label: string; match: string[] }[] = [
-  { label: 'finance', match: ['Quant Finance', 'Backtesting'] },
+  { label: 'finance', match: ['Finance', 'Backtesting'] },
   { label: 'machine learning', match: ['Machine Learning'] },
   { label: 'fine-tuning', match: ['Fine-tuning', 'QLoRA'] },
   { label: 'evals', match: ['Evals'] },
   { label: 'ai agents', match: ['AI Agents'] },
   { label: 'data pipelines', match: ['Data Pipelines'] },
   { label: 'web scraping', match: ['Web Scraping'] },
-  { label: 'dsp', match: ['DSP', 'Signal Processing', 'Real-Time Audio'] },
-  { label: 'cloud infra', match: ['Google Cloud'] },
+  { label: 'dsp', match: ['DSP'] },
+  { label: 'cloud infra', match: ['Cloud Infra'] },
   { label: 'devops', match: ['DevOps'] },
 ];
 const allTags = new Set(projects.flatMap((p) => p.data.technologies));
