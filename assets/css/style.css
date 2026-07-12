@@ -1137,11 +1137,16 @@ body {
 
 /* Left column - TOC + nav, sticky */
 .detail-header-column {
+    /* Sticky offsets measure from the scrollport inset by main-content's
+       7rem top padding, so top: 0 pins the column at that padding line,
+       identical at rest and while scrolling. The viewport-tied height makes
+       the prev/all/next nav (margin-top: auto) hold ONE fixed spot near the
+       bottom regardless of TOC length - like the transit site's rail. */
     position: sticky;
     top: 0;
     width: 210px;
     min-width: 210px;
-    min-height: 70vh;
+    height: calc(100vh - 8rem);
     align-self: flex-start;
     display: flex;
     flex-direction: column;
