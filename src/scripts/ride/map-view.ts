@@ -25,6 +25,11 @@ import {
 } from './motion';
 
 const AMBER = '#f9c25e';
+// Projects platform: the track's parked vertical position as a fraction of the
+// stage. Was 0.42 (centered-ish) when the filter bar wrapped to five rows; with
+// the curated ONE-ROW pill bar the track parks higher so the tags sit above the
+// line and the cards get the extra room below.
+const PROJECTS_TRACK_Y = 0.3;
 const CX = VIEWBOX.w / 2;
 const CY = VIEWBOX.h / 2;
 // Fallback for the "← Back" paging button's width when it's hidden (so backWidth()
@@ -346,15 +351,14 @@ export class MapView {
     }
     // axis 'h' (projects): anchor the leftmost stop so its card — centered on
     // the stop (xPercent -50) — clears the docked left rail even when the
-    // cards are small; on wide screens this floors at 30%. The track sits at
-    // 42% down so the wrapped filter bar above never reaches the stops,
-    // ticks, or cards.
+    // cards are small; on wide screens this floors at 30%. The track parks at
+    // PROJECTS_TRACK_Y with the one-row filter bar above it.
     const s = rect.width / k / 900;
     const pitchPx = rect.width * 0.2222;
     const cardHalf = Math.max(150, pitchPx * 0.62) / 2;
     const railRight = this.railWidth();
     const frac = Math.max(0.3, (railRight + 24 + cardHalf) / rect.width);
-    return { s, x: slice[0][0] - (toWorldX(frac) - CX) / s, y: slice[0][1] - (toWorldY(0.42) - CY) / s };
+    return { s, x: slice[0][0] - (toWorldX(frac) - CX) / s, y: slice[0][1] - (toWorldY(PROJECTS_TRACK_Y) - CY) / s };
   }
 
   /** The combined zoom+pan "swoop" — one continuous motion that BOTH rescales
@@ -736,8 +740,8 @@ export class MapView {
       const [ax] = this.worldToScreen(p.stops[0]);
       const [bx] = this.worldToScreen(p.stops[1]);
       cardWidth = Math.abs(bx - ax) * 0.62;
-      // Height-aware cap: at the PARKED pose the track sits at 0.42 of the
-      // stage and the cards hang 0.055 below it, so the vertical room a card
+      // Height-aware cap: at the PARKED pose the track sits at PROJECTS_TRACK_Y
+      // of the stage and the cards hang 0.055 below it, so the vertical room a card
       // can occupy is a fixed fraction of the stage height. Cap the width so
       // thumb (0.56w) + the non-thumb content budget (~210px: body min-height
       // 200 + border, measured on a settled desktop card) stays above the
@@ -746,7 +750,7 @@ export class MapView {
       // makes card width jitter during the reveal swoop. On ordinary large
       // screens (1280×760+) the cap is far above the pitch width and never
       // binds, so desktop rendering is byte-for-byte unchanged.
-      const avail = rect.height * (1 - 0.42 - 0.055) - 16;
+      const avail = rect.height * (1 - PROJECTS_TRACK_Y - 0.055) - 16;
       const maxW = (avail - 210) / 0.56;
       // Genuinely short stages (small laptops): even a minimum-width card
       // can't fit a full 0.56w thumb, so trim the thumb ratio instead of

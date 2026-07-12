@@ -680,13 +680,13 @@ const tech = [
     position: absolute;
     top: calc(var(--topbar-h) + 4px);
     /* A centered block within the content region to the RIGHT of the docked
-       rail, sized so the full ~31-tag set falls into ~4 tidy rows (roughly
-       8 pills/row) rather than a tall 6-row stack — wider and shorter reads
-       neater and stays well clear of the track below. Centering via
+       rail. Sized for the CURATED one-row pill set (~11 pills ≈ 1020px): on
+       ordinary laptops and up it reads as a single row above the track; it
+       wraps to two tidy rows only on narrower stages. Centering via
        margin-inline:auto between the rail edge and the viewport edge. */
     left: var(--rail-w);
     right: 0;
-    max-width: 680px;
+    max-width: 1040px;
     margin-inline: auto;
     display: flex;
     flex-wrap: wrap;
