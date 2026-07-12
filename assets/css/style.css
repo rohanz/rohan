@@ -1161,7 +1161,8 @@ body {
 
 /* TOC sidebar */
 .detail-toc {
-    margin-top: 0.5rem;
+    /* align the first TOC item with the hero banner's top edge */
+    margin-top: 1.5rem;
 }
 
 .toc-list {
