@@ -11,6 +11,10 @@
 }
 
 :root {
+    /* Sidebar scales with the viewport: ~345px on a 13" laptop, capped at
+       400px on desktops, never below 280px. Everything that offsets around
+       the sidebar uses this variable. */
+    --sidebar-w: clamp(280px, 24vw, 400px);
     /* Dark theme (default) */
     --bg-primary: #1a1a2e;
     --bg-secondary: #16213e;
@@ -215,12 +219,12 @@ body {
    SIDEBAR
    ============================================================ */
 .sidebar {
-    width: 400px;
+    width: var(--sidebar-w);
     background-color: var(--sidebar-bg);
     padding: 7rem 0 3rem 0;
     position: fixed;
     height: 100vh;
-    left: -400px;
+    left: calc(-1 * var(--sidebar-w));
     top: 0;
     z-index: var(--z-sidebar);
     transition: left 0.7s var(--ease-spring);
@@ -585,9 +589,9 @@ body {
    ============================================================ */
 .main-content {
     flex: 1;
-    margin-left: 400px;
+    margin-left: var(--sidebar-w);
     padding: 7rem 4rem;
-    max-width: calc(100vw - 400px);
+    max-width: calc(100vw - var(--sidebar-w));
     overflow-y: scroll;
     height: 100vh;
 }
@@ -670,7 +674,7 @@ body {
    ============================================================ */
 .music-list {
     max-width: 1200px;
-    margin-left: max(0px, calc(50vw - 600px - 400px - 4rem));
+    margin-left: max(0px, calc(50vw - 600px - var(--sidebar-w) - 4rem));
     margin-right: auto;
 }
 
@@ -972,7 +976,7 @@ body {
 .projects-grid-view {
     padding: 0 2rem 1.5rem;
     max-width: 1200px;
-    margin-left: max(0px, calc(50vw - 600px - 400px - 4rem));
+    margin-left: max(0px, calc(50vw - 600px - var(--sidebar-w) - 4rem));
     margin-right: auto;
 }
 
@@ -2890,20 +2894,6 @@ body.image-lightbox-open {
    ============================================================ */
 /* tap-active is applied by JS only on confirmed taps, not swipes */
 
-
-/* Small laptops / tablet landscape: the 400px sidebar eats half the
-   viewport, so slim it before the full mobile collapse takes over. */
-@media (min-width: 769px) and (max-width: 1180px) {
-    .sidebar {
-        width: 300px;
-        left: -300px;
-    }
-    .main-content {
-        margin-left: 300px;
-        max-width: calc(100vw - 300px);
-        padding: 7rem 2.5rem;
-    }
-}
 
 /* ============================================================
    MOBILE RESPONSIVENESS
