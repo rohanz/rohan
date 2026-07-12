@@ -6,7 +6,8 @@ technologies:
   - Python
   - AI Agents
   - Data Pipelines
-  - Google Cloud
+  - Cloud Infra
+  - DevOps
   - PostgreSQL
 ---
 

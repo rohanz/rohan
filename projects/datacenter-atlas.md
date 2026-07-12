@@ -5,6 +5,7 @@ image: assets/images/projects/datacenter/banner.webp
 technologies:
   - Python
   - AI Agents
+  - Data Pipelines
   - Web Scraping
   - SQL
   - Geospatial

@@ -4,7 +4,7 @@ summary: "The strategy-research arm of a miniature trading firm: a backtesting e
 image: assets/images/projects/quantlab-research/banner.webp
 technologies:
   - Python
-  - Quant Finance
+  - Finance
   - Backtesting
   - DSP
   - Machine Learning
