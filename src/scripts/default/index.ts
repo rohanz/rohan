@@ -38,6 +38,30 @@ export function init() {
   const html = document.documentElement;
   if (!html.classList.contains('theme-default')) return;
 
+  // The original SPA keeps one fixed sidebar alive for the whole session and
+  // toggles its `show` class as routes change. DefaultLayout persists this same
+  // node across Astro swaps so section-to-section and article navigation do not
+  // replay the entrance. Initial non-home loads begin from the CSS-hidden state,
+  // then take the original left/top transition exactly once here.
+  const sidebar = document.getElementById('sidebar');
+  sidebar?.classList.toggle('show', location.pathname !== '/');
+
+  // Persisting the node also persists its old active-link state, so refresh that
+  // small piece of route-owned markup after every swap.
+  const activeSection = location.pathname === '/music'
+    ? 'music'
+    : location.pathname === '/about'
+      ? 'about'
+      : location.pathname.startsWith('/projects')
+        ? 'projects'
+        : null;
+  sidebar?.querySelectorAll<HTMLElement>('.nav-link').forEach((link) => {
+    const active = link.dataset.section === activeSection;
+    link.classList.toggle('active', active);
+    if (active) link.setAttribute('aria-current', 'page');
+    else link.removeAttribute('aria-current');
+  });
+
   // Theme restoration must precede every canvas draw.
   use(theme, () => theme.init());
 

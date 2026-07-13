@@ -3,6 +3,46 @@ import { expect, test, type Page } from '@playwright/test';
 const visibleCards = (page: Page) =>
   page.locator('#projectsGrid .project-card:not(.hidden):not([hidden])');
 
+test('classic sidebar slides once at the home boundary and persists across inner routes', async ({ page }) => {
+  await page.addInitScript(() => {
+    (window as Window & { __sidebarTransitions?: string[] }).__sidebarTransitions = [];
+    document.addEventListener('transitionrun', (event) => {
+      if ((event.target as HTMLElement).id === 'sidebar') {
+        (window as Window & { __sidebarTransitions?: string[] }).__sidebarTransitions?.push(event.propertyName);
+      }
+    });
+  });
+
+  const transitionCount = () => page.evaluate(() =>
+    (window as Window & { __sidebarTransitions?: string[] }).__sidebarTransitions?.filter(name => name === 'left').length ?? 0,
+  );
+
+  await page.goto('/music', { waitUntil: 'networkidle' });
+  const sidebar = page.locator('#sidebar');
+  await expect.poll(transitionCount).toBe(1);
+  await expect(sidebar).toHaveCSS('left', '0px');
+  await expect(sidebar).toHaveCSS('transition-duration', '0.7s');
+  await expect(sidebar).toHaveCSS('transition-timing-function', 'cubic-bezier(0.32, 0.81, 0.55, 0.97)');
+  const hiddenLeft = -(await sidebar.evaluate(element => element.getBoundingClientRect().width));
+  await sidebar.evaluate(element => element.setAttribute('data-persistence-check', 'same-node'));
+
+  await page.locator('.nav-link[data-section="projects"]').click();
+  await expect(page).toHaveURL(/\/projects\/?$/);
+  await expect(sidebar).toHaveAttribute('data-persistence-check', 'same-node');
+  await expect(page.locator('.nav-link.active')).toHaveAttribute('data-section', 'projects');
+  expect(await transitionCount()).toBe(1);
+
+  await page.locator('.project-card').first().click();
+  await expect(page).toHaveURL(/\/projects\/.+/);
+  await expect(sidebar).toHaveAttribute('data-persistence-check', 'same-node');
+  expect(await transitionCount()).toBe(1);
+
+  await page.locator('.logo-link').click();
+  await expect(page).toHaveURL(/\/$/);
+  await expect.poll(transitionCount).toBe(2);
+  await expect.poll(async () => (await sidebar.boundingBox())?.x).toBeCloseTo(hiddenLeft, 1);
+});
+
 test('grid pills filter cards, aliases match, and all resets', async ({ page }) => {
   await page.goto('/projects', { waitUntil: 'networkidle' });
   const initial = await visibleCards(page).count();

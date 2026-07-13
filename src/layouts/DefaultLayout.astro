@@ -93,7 +93,7 @@ const personLd = JSON.stringify({
     <canvas id="asciiGrid" class="ascii-grid" aria-hidden="true"></canvas>
     <div class="noise-overlay" aria-hidden="true"></div>
     <div class="container">
-      <nav class:list={["sidebar", { show: section !== 'homepage' }]} id="sidebar" aria-label="Primary">
+      <nav class="sidebar" id="sidebar" aria-label="Primary" transition:persist="classic-sidebar">
         <div class="logo"><h1><a class="logo-link" href="/" aria-label="rohan.jk - home">rohan.jk</a></h1></div>
         <ul class="nav-menu">
           <li class="nav-item"><a class:list={["nav-link magnetic-target", { active: activeSection === 'music' }]} aria-current={activeSection === 'music' ? 'page' : undefined} href="/music" data-section="music">music</a></li>
