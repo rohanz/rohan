@@ -1930,7 +1930,12 @@ function showProjectGrid(instant) {
         detailView.classList.remove('detail-active');
         gridView.style.display = '';
         gridView.classList.remove('grid-fade-in'); // clear any prior entrance animation
-        gridView.scrollTop = gridScrollTop;
+        // Land at the top, same as clicking "projects" in the nav: restoring
+        // the old scroll position dumped readers at the grid's bottom after
+        // a long article.
+        gridView.scrollTop = 0;
+        const mc = cachedMainContent || document.getElementById('mainContent');
+        if (mc) mc.scrollTop = 0;
         currentDetailIndex = -1;
     }
 
