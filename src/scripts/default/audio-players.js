@@ -99,18 +99,21 @@ function displayMusic(tracks) {
                 <div class="music-header">
                     ${track.coverUrl ? `<img src="${track.coverUrl}" alt="${DOMPurify.sanitize(track.title)} cover" class="music-cover img-fade" onload="this.classList.add('loaded')">` : ''}
                     <div class="music-header-text">
-                        <h3 class="music-title">${DOMPurify.sanitize(track.title)}</h3>
+                        <h3 class="music-title gloss-term" data-gloss="${DOMPurify.sanitize(track.summary)}" tabindex="0" aria-describedby="gloss-tooltip">${DOMPurify.sanitize(track.title)}</h3>
                         ${track.artist ? `<p class="music-artist">${DOMPurify.sanitize(track.artist)}</p>` : ''}
-                        ${track.summary ? `<p class="music-summary">${DOMPurify.sanitize(track.summary)}</p>` : ''}
+                        ${links.length ? `<div class="music-links">${links.join('')}</div>` : ''}
                     </div>
                 </div>
                 ${track.audioSnippetUrl ? `
                 <div class="waveform-player" data-audio-url="${track.audioSnippetUrl}">
-                    <button class="waveform-play-btn" aria-label="Play snippet" aria-pressed="false">
+                    <button class="waveform-play-btn" aria-label="Play snippet of ${DOMPurify.sanitize(track.title)}" aria-pressed="false">
                         <i class="fas fa-play"></i>
                     </button>
-                    <canvas class="waveform-canvas" height="56" aria-hidden="true"></canvas>
-                    <div class="audio-meters">
+                    <div class="meter-group waveform-meter-group" aria-hidden="true">
+                        <canvas class="waveform-canvas" height="56"></canvas>
+                        <span class="meter-label">wave</span>
+                    </div>
+                    <div class="audio-meters" aria-hidden="true">
                         <div class="meter-group">
                             <canvas class="frequency-canvas" width="280" height="110"></canvas>
                             <span class="meter-label">freq</span>
@@ -125,7 +128,6 @@ function displayMusic(tracks) {
                         </div>
                     </div>
                 </div>` : ''}
-                ${links.length ? `<div class="music-links">${links.join('')}</div>` : ''}
             </div>
         `;
 

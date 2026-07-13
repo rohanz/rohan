@@ -130,6 +130,7 @@ test('music and BQST media assets expose headless-safe readiness and duration', 
   await page.locator('.waveform-play-btn').first().click();
   await expect.poll(() => page.locator('#audio-player').evaluate((a: HTMLAudioElement) => a.readyState)).toBeGreaterThanOrEqual(1);
   expect(await page.locator('#audio-player').evaluate((a: HTMLAudioElement) => Number.isFinite(a.duration) && a.duration > 0)).toBeTruthy();
+  await expect.poll(() => page.locator('#audio-player').evaluate((a: HTMLAudioElement) => a.currentTime)).toBeGreaterThan(0);
 
   await page.goto('/projects/bqst', { waitUntil: 'networkidle' });
   for (const src of ['/assets/audio/bqst/drums-clean.wav', '/assets/audio/bqst/drums-bqst.wav']) {
@@ -146,4 +147,28 @@ test('music and BQST media assets expose headless-safe readiness and duration', 
     expect(state.duration).toBeGreaterThan(0);
   }
   await expect(page.locator('.bqst-audio-demo')).toHaveClass(/is-ready/);
+});
+
+test('classic music rows follow the platform order and reveal descriptions from their titles', async ({ page }) => {
+  await page.goto('/music', { waitUntil: 'networkidle' });
+
+  const firstRow = page.locator('.music-item').first();
+  await expect(firstRow.locator('.music-summary')).toHaveCount(0);
+  expect(await firstRow.locator('.music-content').evaluate(el =>
+    Array.from(el.children).map(child => child.className),
+  )).toEqual(['music-header', 'waveform-player']);
+
+  const title = firstRow.locator('.music-title');
+  const tooltip = page.locator('#gloss-tooltip');
+  await title.hover();
+  await expect(tooltip).toBeVisible();
+  await expect(tooltip).toContainText('hyperpop/pop rock song');
+  await page.mouse.move(0, 0);
+  await expect(tooltip).toBeHidden();
+
+  await title.focus();
+  await expect(title).toBeFocused();
+  await expect(tooltip).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(tooltip).toBeHidden();
 });

@@ -12,9 +12,15 @@ function initGlossaryInteractions() {
 
     const tooltip = document.createElement('div');
     glossTooltip = tooltip;
+    tooltip.id = 'gloss-tooltip';
     tooltip.className = 'gloss-tooltip';
     tooltip.setAttribute('role', 'tooltip');
+    tooltip.setAttribute('aria-hidden', 'true');
     document.body.appendChild(tooltip);
+
+    document.querySelectorAll('.gloss-term[data-gloss]').forEach(term => {
+        if (!term.hasAttribute('aria-describedby')) term.setAttribute('aria-describedby', tooltip.id);
+    });
 
     let activeTerm = null;
     let activeFragTop = null;
@@ -55,6 +61,7 @@ function initGlossaryInteractions() {
         tooltip.textContent = text;
         tooltip.style.maxHeight = '';
         tooltip.classList.add('is-visible');
+        tooltip.setAttribute('aria-hidden', 'false');
 
         // Anchor to the line fragment under the cursor and centre on that fragment, in a
         // fixed spot (it does not follow the cursor). A single-line term has one fragment;
@@ -103,6 +110,7 @@ function initGlossaryInteractions() {
         activeTerm = null;
         activeFragTop = null;
         tooltip.classList.remove('is-visible');
+        tooltip.setAttribute('aria-hidden', 'true');
     }
 
     listen(document, 'mouseover', event => {
@@ -128,6 +136,25 @@ function initGlossaryInteractions() {
         if (term) hideTooltip(term);
     });
 
+    listen(document, 'focusin', event => {
+        const term = event.target.closest?.('.gloss-term');
+        // Touch taps can move focus before their click arrives. Let the click
+        // own that toggle; :focus-visible still covers an attached keyboard.
+        if (term && (!isTouchLike() || term.matches(':focus-visible'))) showTooltip(term);
+    });
+
+    listen(document, 'focusout', event => {
+        const term = event.target.closest?.('.gloss-term');
+        if (term) hideTooltip(term);
+    });
+
+    listen(document, 'keydown', event => {
+        if (event.key === 'Escape' && activeTerm) {
+            hideTooltip();
+            event.stopPropagation();
+        }
+    });
+
     listen(document, 'click', event => {
         const term = event.target.closest?.('.gloss-term');
         if (!term) {
@@ -138,7 +165,10 @@ function initGlossaryInteractions() {
         if (!isTouchLike()) return;
         event.preventDefault();
         if (term === activeTerm && tooltip.classList.contains('is-visible')) hideTooltip();
-        else showTooltip(term, event.clientY);
+        else {
+            term.focus({ preventScroll: true });
+            showTooltip(term, event.clientY);
+        }
     });
 
     listen(window, 'scroll', () => hideTooltip(), { passive: true });
