@@ -208,7 +208,7 @@ export class MapView {
   }
   /** Projects filter: indices (into cardsFor('projects')) of cards that
    *  match the active filter pill, in original order. Display slot j on
-   *  the current page maps to card `order[page * perPage + j]`. Other
+   *  the current page maps to card `order[pageFrom(view, page) + j]`. Other
    *  views keep the identity order (no filtering UI). */
   order: number[] = [];
 
@@ -360,7 +360,8 @@ export class MapView {
       return { s: g.s, x: g.x, y: g.y };
     }
     const per = this.perPageFor(line.id as LineId);
-    const slice = p.stops.slice(page * per, (page + 1) * per);
+    const fromStop = this.pageFrom(line.id as LineId, page);
+    const slice = p.stops.slice(fromStop, fromStop + per);
     const cy0 = slice.reduce((a, s2) => a + s2[1], 0) / slice.length;
     const { rect, k, cropX, cropY } = this.metrics();
     const toWorldX = (fx: number) => (fx * rect.width + cropX) / k;
@@ -686,6 +687,20 @@ export class MapView {
     return Math.max(1, Math.ceil(this.orderFor(id).length / this.perPageFor(id)));
   }
 
+  /** First card index for a platform page — a CLAMPED window, not a naive
+   *  page*per offset: the final page pans by only the remainder, so it always
+   *  shows a full window of cards (re-showing the tail of the previous page)
+   *  instead of stranding 1-2 cards alone (10 projects at 3/page ends 7,8,9 —
+   *  not a lone 9). Every consumer of a page's start index (camera parkPose,
+   *  placeCards, placeDividers, aboutGeom) must use this, or the camera and
+   *  the cards disagree about where the page is. About stays pair-aligned:
+   *  its count and perPage are both even, so the clamp preserves parity. */
+  pageFrom(id: LineId, page: number): number {
+    const per = this.perPageFor(id);
+    const count = this.orderFor(id).length;
+    return Math.max(0, Math.min(page * per, count - per));
+  }
+
   /** About (diagonal) layout: camera zoom/pan + a single uniform card size
    *  for the current page, derived together so cards are the SAME width and
    *  share a min-height, are evenly pitched along the 45° run, and the whole
@@ -750,7 +765,7 @@ export class MapView {
     const targetY = rect.height * 0.5;
     const X = cx - ((targetX + cropX) / k - CX) / s;
     const Y = cy - ((targetY + cropY) / k - CY) / s;
-    return { s, x: X, y: Y, cardW, cardH, per: perCards, from: page * perCards };
+    return { s, x: X, y: Y, cardW, cardH, per: perCards, from: this.pageFrom('about', page) };
   }
 
   placeCards() {
@@ -768,7 +783,7 @@ export class MapView {
     const cards = this.cardsFor(this.view);
     const order = this.orderFor(this.view);
     const per = this.perPageFor(this.view);
-    const from = this.page * per;
+    const from = this.pageFrom(this.view as LineId, this.page);
     const about = p.axis === 'd' ? this.aboutGeom(this.page) : null;
     cards.forEach((card) => {
       card.style.display = 'none';
@@ -1044,7 +1059,7 @@ export class MapView {
     const p = line.platform!;
     const per = this.perPageFor(this.view);
     const { rect } = this.metrics();
-    const from = this.page * per;
+    const from = this.pageFrom(this.view as LineId, this.page);
     const stops: Point[] = [];
     for (let j = 0; j < per; j++) {
       const s = p.stops[from + j];
