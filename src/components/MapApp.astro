@@ -75,7 +75,6 @@ const tech = [
     <a id="logo" class="logo" href="/" aria-label="rohan.jk — home">
       <img src="/logo.svg" width="34" height="34" alt="" />
       <span class="logo-name">rohan.jk</span>
-      <span class="logo-sub">system map</span>
     </a>
     <span id="bar-section" class="bar-section"></span>
   </header>
@@ -249,7 +248,6 @@ const tech = [
      straight on the coloured bar with no card behind it. */
   .logo img { filter: brightness(0) invert(1); align-self: center; }
   .logo-name { font-weight: 800; font-size: 1.7rem; letter-spacing: 0.005em; }
-  .logo-sub { font-weight: 300; font-size: 1.35rem; color: #d7d2c8; }
   /* Centered on the bar as a whole (not relative to the logo), so the
      platform label stays put regardless of logo width. */
   .bar-section {
@@ -291,7 +289,6 @@ const tech = [
   @media (max-width: 768px) {
     .top-bar { height: 60px; }
     .logo-name { font-size: 1.3rem; }
-    .logo-sub { font-size: 1.05rem; }
     .map-stage { height: calc(100dvh - 60px); padding: 0; }
   }
 
@@ -602,10 +599,12 @@ const tech = [
      the title + summary sit at the top — mirroring the original site's cards. The
      min-height fixes every card to one size regardless of tag count. */
   .card-project .body {
-    padding: 0.6rem 0.7rem 0.7rem;
+    padding: calc(0.6rem * var(--card-scale, 1)) calc(0.7rem * var(--card-scale, 1)) calc(0.7rem * var(--card-scale, 1));
     display: flex;
     flex-direction: column;
-    min-height: 200px;
+    /* min-height grows with the box on big monitors (--card-scale, set by
+       placeCards) so the card's proportions hold and it doesn't read sparse. */
+    min-height: calc(200px * var(--card-scale, 1));
     flex: 1; /* body absorbs the equalized height; .tags below pins to bottom */
   }
   /* Title: closer to the original's weight (700, not 800). Capped at two lines so
@@ -613,7 +612,7 @@ const tech = [
      every card the same height regardless of how many lines it actually uses. */
   .card-project h3 {
     margin: 0 0 0.3rem;
-    font-size: clamp(0.82rem, 1.05vw, 1rem);
+    font-size: calc(clamp(0.82rem, 1.05vw, 1rem) * var(--card-scale, 1));
     font-weight: 700;
     line-height: 1.25;
     display: -webkit-box;
@@ -625,7 +624,7 @@ const tech = [
      grey) and up to three lines rather than two. */
   .card-project .summary {
     margin: 0;
-    font-size: clamp(0.68rem, 0.8vw, 0.8rem);
+    font-size: calc(clamp(0.68rem, 0.8vw, 0.8rem) * var(--card-scale, 1));
     color: var(--muted-2);
     line-height: 1.5;
     display: -webkit-box;
@@ -642,9 +641,14 @@ const tech = [
     margin-top: auto;
     padding: 0;
     display: flex;
+    /* Tags aim for a SINGLE row per card. flex-wrap stays `wrap` (not nowrap) as
+       a graceful-overflow safety net: a tag-heavy card (e.g. careersphere's 8
+       techs) drops the overflow to a second row rather than truncating or
+       spilling past the card edge — the standing rule is show ALL techs. Most
+       cards fit one row at the tightened pill metrics below. */
     flex-wrap: wrap;
     align-content: flex-start;
-    gap: 0.28rem;
+    gap: calc(0.2rem * var(--card-scale, 1));
   }
   /* Match the .filter-tag pills above exactly (font, weight, colour, white fill,
      border, squared 3px corners, lowercase) — just a smaller font to fit the
@@ -652,14 +656,14 @@ const tech = [
   .card-project .tags li {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
     font-weight: 500;
-    font-size: clamp(0.56rem, 0.56vw, 0.58rem);
+    font-size: calc(clamp(0.58rem, 0.52vw, 0.62rem) * var(--card-scale, 1));
     text-transform: lowercase;
     white-space: nowrap;
     color: var(--tag-ink);
     background: rgba(255, 255, 255, 0.92);
     border: 1px solid rgba(26, 26, 26, 0.2);
     border-radius: 3px;
-    padding: 0.22rem 0.5rem;
+    padding: calc(0.16rem * var(--card-scale, 1)) calc(0.4rem * var(--card-scale, 1));
   }
   /* Short laptop screens: below ~700px of viewport height the parked track
      (0.42 of the stage, pinned there by the filter bar just above it) leaves
@@ -696,13 +700,16 @@ const tech = [
        margin-inline:auto between the rail edge and the viewport edge. */
     left: var(--rail-w);
     right: 0;
-    max-width: 1040px;
+    /* The pill set grows with --card-scale (big-monitor card bump), so the
+       band's cap must grow in lock-step or the enlarged pills wrap to a
+       second row on exactly the screens with the most room. */
+    max-width: calc(1040px * var(--card-scale, 1));
     margin-inline: auto;
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
     align-content: flex-start;
-    gap: 0.4rem 0.45rem;
+    gap: calc(0.4rem * var(--card-scale, 1)) calc(0.45rem * var(--card-scale, 1));
     padding: 0.1rem 0.3rem;
     pointer-events: auto;
   }
@@ -719,14 +726,16 @@ const tech = [
     font: inherit;
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
     font-weight: 500;
-    font-size: 0.7rem;
+    /* Grows with --card-scale (set on #platform-ui by placeCards) so the pills
+       track the big-monitor card bump in lock-step with the card tags. */
+    font-size: calc(0.74rem * var(--card-scale, 1));
     text-align: center;
     text-transform: lowercase;
     color: var(--tag-ink);
     background: rgba(255, 255, 255, 0.92);
     border: 1px solid rgba(26, 26, 26, 0.2);
     border-radius: 3px;
-    padding: 0.32rem 0.7rem;
+    padding: calc(0.32rem * var(--card-scale, 1)) calc(0.7rem * var(--card-scale, 1));
     cursor: pointer;
     transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
   }

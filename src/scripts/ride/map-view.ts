@@ -30,6 +30,14 @@ const AMBER = '#f9c25e';
 // the curated ONE-ROW pill bar the track parks higher so the tags sit above the
 // line and the cards get the extra room below.
 const PROJECTS_TRACK_Y = 0.3;
+// Project card width as a fraction of the on-screen stop pitch (before the
+// per-tier size boost). ~0.68 leaves a clear gutter between adjacent cards
+// while giving the tag row enough width to keep most cards' techs on one line.
+// USED IN TWO PLACES that must stay in lock-step: placeCards() (the card's own
+// width) and the projects camera framing (cardHalf, the rail-clearance floor
+// for the leftmost card) — bump both together or the left card can slide under
+// the rail.
+const CARD_PITCH_FRAC = 0.68;
 const CX = VIEWBOX.w / 2;
 const CY = VIEWBOX.h / 2;
 // Rendered height of the paging buttons. Fixed by CSS (constant font-size +
@@ -383,7 +391,7 @@ export class MapView {
     // The track parks at PROJECTS_TRACK_Y with the one-row filter bar above it.
     const s = rect.width / k / 900;
     const pitchPx = rect.width * 0.2222;
-    const cardHalf = Math.max(150, pitchPx * 0.62) / 2;
+    const cardHalf = Math.max(150, pitchPx * CARD_PITCH_FRAC) / 2;
     const railRight = this.railWidth();
     const cx = slice.reduce((a, s2) => a + s2[0], 0) / slice.length;
     const targetX = (railRight + 24 + (rect.width - 24)) / 2;
@@ -769,14 +777,27 @@ export class MapView {
     // Project cards scale with the actual on-screen stop pitch (which is
     // itself proportional to viewport size) instead of a fixed px width, so
     // they're never cramped on small screens or undersized on big monitors.
-    // Sized to ~62% of the pitch (not the full pitch) so there's a clear
-    // gutter between adjacent cards rather than them touching edge-to-edge.
+    // Sized to CARD_PITCH_FRAC of the pitch (not the full pitch) so there's a
+    // clear gutter between adjacent cards rather than them touching edge-to-edge.
     let cardWidth: number | null = null;
     let thumbRatio = 0.56;
+    // Content scale for the card's own type/padding (via --card-scale), kept in
+    // lock-step with how much the card box actually grew past its base pitch
+    // width — so a bigger box never reads sparse. 1 on ordinary screens.
+    let cardScale = 1;
     if (this.view === 'projects' && p.stops.length > 1) {
       const [ax] = this.worldToScreen(p.stops[0]);
       const [bx] = this.worldToScreen(p.stops[1]);
-      cardWidth = Math.abs(bx - ax) * 0.62;
+      const baseW = Math.abs(bx - ax) * CARD_PITCH_FRAC;
+      // Desktop size bump: the raw pitch-derived card reads a touch small, so
+      // grow it across the whole desktop range — a gentle nudge on laptops
+      // (~1.06 at 1280, ~1.10 at 1440/1512, where vertical/horizontal space is
+      // tightest) ramping to a fuller ~1.22 on big monitors (≥1920). Flat below
+      // 1280 (tablets/phones keep the raw fit) and capped above 1920. Applied on
+      // top of the pitch width, then still subject to the height-aware maxW cap
+      // below so the row never overshoots the stage.
+      const boost = Math.max(1, Math.min(1.22, 1.06 + ((rect.width - 1280) / (1920 - 1280)) * 0.16));
+      cardWidth = baseW * boost;
       // Height-aware cap: at the PARKED pose the track sits at PROJECTS_TRACK_Y
       // of the stage and the cards hang 0.055 below it, so the vertical room a card
       // can occupy is a fixed fraction of the stage height. Cap the width so
@@ -795,6 +816,14 @@ export class MapView {
       // query trims the text budget in tandem (see .card-project rules).
       if (maxW < 150) thumbRatio = 0.44;
       cardWidth = Math.max(150, Math.min(cardWidth, maxW));
+      // Derive the effective content scale from the width that actually landed
+      // (the maxW cap may have eaten some of the boost). Never below 1, so a
+      // height-capped small screen keeps its floored type rather than shrinking.
+      cardScale = Math.max(1, cardWidth / baseW);
+      // Expose the same scale on the platform container so the FILTER pills above
+      // the track grow in lock-step with the card tags — keeping the two tag sets
+      // reading as one system (owner rule: card tags match the filter pills).
+      this.ui?.style.setProperty('--card-scale', String(cardScale));
     }
 
     for (let j = 0; j < per; j++) {
@@ -805,6 +834,7 @@ export class MapView {
       card.style.display = '';
       if (cardWidth !== null) {
         card.style.width = `${cardWidth}px`;
+        card.style.setProperty('--card-scale', String(cardScale));
         const thumb = this.thumbFor(card);
         if (thumb) thumb.style.height = `${cardWidth * thumbRatio}px`;
       }
