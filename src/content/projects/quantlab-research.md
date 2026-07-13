@@ -1,5 +1,6 @@
 ---
 title: "quant strategy research: strategies, and the ways backtests lie"
+barTitle: "quantlab: research"
 summary: "The strategy-research arm of a miniature trading firm: a backtesting engine that makes cheating structurally impossible, pairs trading with Kalman-adaptive hedging, factor strategies with survivorship bias measured at +4.6%/yr instead of disclaimed, and an ML layer that lost to its baseline."
 image: /assets/images/projects/quantlab-research/banner.webp
 order: 2

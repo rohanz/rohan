@@ -1,5 +1,6 @@
 ---
 title: live chord monitor
+barTitle: "live chord monitor"
 summary: "A real-time MIDI and computer-keyboard chord monitor: a root-agnostic chord-detection engine with correct enharmonic spelling, built as a signed and notarized macOS app in Electron, React, and TypeScript."
 image: /assets/images/projects/live-chord-monitor/banner.webp
 order: 8

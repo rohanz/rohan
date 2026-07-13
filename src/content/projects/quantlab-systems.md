@@ -1,5 +1,6 @@
 ---
 title: "building a trading firm's machinery: matching engine, risk controls, live execution"
+barTitle: "quantlab: systems"
 summary: "The execution arm of a miniature trading firm, built as a reality check on the backtests: a deterministic C++ limit order book at 10M ops/sec, a risk-control gateway no strategy can bypass, and a live paper-trading pipeline that measures how far live results drift from what the backtest promised."
 image: /assets/images/projects/quantlab-systems/banner.webp
 order: 11

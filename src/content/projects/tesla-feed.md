@@ -1,5 +1,6 @@
 ---
 title: Tesla Supercharger Tracker
+barTitle: "supercharger tracker"
 summary: A data pipeline that tracks the entire global Tesla Supercharger network, performing schema-driven field-level change detection to maintain a complete audit trail of infrastructure evolution.
 image: /assets/images/projects/tesla/banner.webp
 order: 9

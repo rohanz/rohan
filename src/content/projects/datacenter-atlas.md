@@ -1,5 +1,6 @@
 ---
 title: Data Center Atlas
+barTitle: "data center atlas"
 summary: An automated pipeline that discovers, extracts, and consolidates 11,000+ data center facilities worldwide using AI agents, vision-based PDF extraction, and geospatial deduplication.
 image: /assets/images/projects/datacenter/banner.webp
 order: 6

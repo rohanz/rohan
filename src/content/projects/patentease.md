@@ -1,5 +1,6 @@
 ---
 title: PatentEase
+barTitle: "patentease"
 summary: A mobile patent management system that simplifies the submission, tracking, and management of patent applications, featuring an ML-powered similarity checker and integration with Singapore's IPOS patent database.
 image: /assets/images/projects/patent/banner.webp
 order: 7

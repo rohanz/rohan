@@ -1,5 +1,6 @@
 ---
 title: yourcast!
+barTitle: "yourcast"
 summary: A serverless application that generates personalized 3-5 minute AI-narrated podcasts based on user-selected topics, aggregating stories from 200+ RSS feeds and processing 16,000+ articles daily.
 image: /assets/images/projects/yourcast/banner.webp
 order: 5
