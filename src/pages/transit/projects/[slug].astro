@@ -89,14 +89,14 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
 <style>
   .article-layout { position: relative; display: grid; grid-template-columns: 1fr; justify-items: center; }
   /* Reading column + body size match the original site's detail page exactly:
-     a 760px column (was the original's 800 — trimmed a step for readability, Rohan's call) with 1.25rem (20px) / 1.7 body text. Headings/title/summary
+     an 800px column (matches classic mode — Rohan re-widened 2026-07-14 after a 760 interlude) with 1.25rem (20px) / 1.7 body text. Headings/title/summary
      set their own sizes below, so only paragraphs & lists inherit this. */
-  .article { max-width: 760px; width: 100%; min-width: 0; font-size: 1.25rem; line-height: 1.7; }
+  .article { max-width: 800px; width: 100%; min-width: 0; font-size: 1.25rem; line-height: 1.7; }
   /* Geometry replicated from the ORIGINAL site's detail view (--detail-half):
      the article column is VIEWPORT-centred once the viewport is wide enough,
      and the TOC floats centred in the gutter between the destinations rail
      and the article — equal air on both of its sides (--half = half the free
-     space between the rail and a viewport-centred 760px article, after the
+     space between the rail and a viewport-centred 800px article, after the
      212px TOC). When the viewport is too narrow to centre (--half negative;
      with a 300px rail that's everything below ~2080px) the max() clamps take
      over exactly like the original's: the TOC sits one content-pad (--cpad,
@@ -104,7 +104,7 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
      clears the TOC column by 4rem — the original's measured 64.0px gap at
      both 1440 and 1280 (its .detail-content-column margin-left reserves
      `210px + 4rem` past the fixed TOC). The max() against the pure centred
-     position (50vw - 380px) is also the rail-collision guard: the article's
+     position (50vw - 400px) is also the rail-collision guard: the article's
      left edge can never fall below rail + cpad + toc width + 4rem, so the centred
      column can't slide under the rail. */
   .article-layout {
@@ -113,10 +113,10 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
        194px — anything that wraps here wraps there too). */
     --toc-w: 248px;
     --cpad: clamp(1.5rem, 3.5vw, 4rem);
-    --half: calc((50vw - var(--rail-w, 0px) - var(--toc-w) - 380px) / 2);
+    --half: calc((50vw - var(--rail-w, 0px) - var(--toc-w) - 400px) / 2);
     /* One shared gutter on BOTH sides of the TOC (rail→TOC and TOC→article are
        always equal — Rohan's laptop-round call, replacing the fixed 4rem body
-       gap). --half is exactly the gutter that puts a 760px article at the
+       gap). --half is exactly the gutter that puts an 800px article at the
        viewport centre, so wide screens keep the centred column; when that
        would squeeze below --cpad (laptops), the article slides left toward
        the TOC instead and the two gutters stay symmetric. */
@@ -131,7 +131,7 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
          detail pages (see the :has() rule in the global block) so it starts
          at x=0 — subtract only its own left padding to get the margin. */
       margin-left: calc(var(--article-left) - clamp(1rem, 4vw, 3rem));
-      max-width: min(760px, calc(100vw - var(--article-left) - 2.5rem));
+      max-width: min(800px, calc(100vw - var(--article-left) - 2.5rem));
     }
   }
 
