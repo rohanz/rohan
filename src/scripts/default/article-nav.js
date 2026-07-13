@@ -20,11 +20,28 @@ export function init(root = document) {
         .filter(Boolean);
     if (!items.length || !headings.length) return;
 
+    const mainContent = root.querySelector('#mainContent') || document.getElementById('mainContent');
+    const mainContentScrolls = Boolean(
+        mainContent
+        && mainContent.scrollHeight > mainContent.clientHeight + 2
+        && ['auto', 'scroll'].includes(getComputedStyle(mainContent).overflowY)
+    );
+    const scrollTarget = mainContentScrolls ? mainContent : window;
+    const scrollElement = mainContentScrolls ? mainContent : document.scrollingElement;
     let clickTarget = null;
     let settleTimer = 0;
+    const settleClick = () => {
+        if (!clickTarget) return;
+        clearTimeout(settleTimer);
+        settleTimer = window.setTimeout(() => {
+            const landedTarget = clickTarget;
+            clickTarget = null;
+            setActive(items, landedTarget);
+        }, 180);
+    };
     const compute = () => {
         if (clickTarget) return;
-        if (innerHeight + scrollY >= document.documentElement.scrollHeight - 4) {
+        if (scrollElement.scrollTop + scrollElement.clientHeight >= scrollElement.scrollHeight - 12) {
             setActive(items, headings[headings.length - 1].id);
             return;
         }
@@ -36,11 +53,7 @@ export function init(root = document) {
         setActive(items, active.id);
     };
     const onScroll = () => {
-        clearTimeout(settleTimer);
-        settleTimer = window.setTimeout(() => {
-            clickTarget = null;
-            compute();
-        }, 140);
+        settleClick();
         compute();
     };
     const onClick = event => {
@@ -51,20 +64,27 @@ export function init(root = document) {
         event.preventDefault();
         clickTarget = item.dataset.target;
         setActive(items, clickTarget);
-        const top = heading.getBoundingClientRect().top + scrollY - 90;
-        scrollTo({ top, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+        const behavior = matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+        if (mainContentScrolls) {
+            const containerTop = mainContent.getBoundingClientRect().top;
+            const top = mainContent.scrollTop + heading.getBoundingClientRect().top - containerTop - innerHeight * 0.5;
+            mainContent.scrollTo({ top: Math.max(0, top), behavior });
+        } else {
+            const top = heading.getBoundingClientRect().top + scrollY - innerHeight * 0.5;
+            scrollTo({ top: Math.max(0, top), behavior });
+        }
         history.replaceState(null, '', `#${clickTarget}`);
-        onScroll();
+        settleClick();
     };
 
     const toc = root.querySelector('#detailToc');
     toc.addEventListener('click', onClick);
-    window.addEventListener('scroll', onScroll, { passive: true });
+    scrollTarget.addEventListener('scroll', onScroll, { passive: true });
     compute();
     cleanups.push(() => {
         clearTimeout(settleTimer);
         toc.removeEventListener('click', onClick);
-        window.removeEventListener('scroll', onScroll);
+        scrollTarget.removeEventListener('scroll', onScroll);
     });
 }
 

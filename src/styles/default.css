@@ -1699,8 +1699,17 @@ html.theme-default .article-image-button {
     cursor: zoom-in;
 }
 
-html.theme-default .article-image-button img {
+/* Natural-width centring applies to BODY images only — the hero banner keeps
+   its own full-article-width rule (.detail-hero-image), which this generic
+   selector would otherwise override by source order. */
+html.theme-default .article-image-button img:not(.detail-hero-image) {
+    width: auto;
+    max-width: 100%;
     margin: 0 auto;
+}
+
+html.theme-default .article-image-button.is-portrait img {
+    max-width: min(350px, 100%);
 }
 
 html.theme-default .article-image-button::after {

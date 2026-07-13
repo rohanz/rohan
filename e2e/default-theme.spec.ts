@@ -25,13 +25,39 @@ test('grid pills filter cards, aliases match, and all resets', async ({ page }) 
 
 test('article TOC scroll-spy updates while the fixed rail and project nav stay pinned', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 820 });
-  await page.goto('/projects/careersphere', { waitUntil: 'networkidle' });
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/projects/quantlab-analyst', { waitUntil: 'networkidle' });
   const rail = page.locator('#detailHeaderColumn');
   await expect(rail).toHaveCSS('position', 'fixed');
   const before = await rail.boundingBox();
+  const items = page.locator('#detailToc .toc-item');
+  const first = items.first();
+  await expect(first).toHaveClass(/active/);
+
+  const scrolledItem = page.locator('#detailToc .toc-item.toc-h2').nth(2);
+  const scrolledSlug = await scrolledItem.getAttribute('data-target');
+  await page.locator('#mainContent').evaluate((element, target) => {
+    const heading = document.getElementById(target!);
+    if (!heading) throw new Error(`Missing heading: ${target}`);
+    const top = element.scrollTop + heading.getBoundingClientRect().top - innerHeight * 0.5 + 1;
+    element.scrollTo(0, top);
+  }, scrolledSlug);
+  await expect(scrolledItem).toHaveClass(/active/);
+
+  const clickItem = page.locator('#detailToc .toc-item.toc-h3').first();
+  const clickSlug = await clickItem.getAttribute('data-target');
+  const parentIndex = Number(await clickItem.getAttribute('data-parent-index'));
+  await clickItem.click();
+  await expect(clickItem).toHaveClass(/active/);
+  await expect(items.nth(parentIndex)).toHaveClass(/parent-active/);
+  await page.waitForTimeout(220);
+  await expect(clickItem).toHaveClass(/active/);
+  expect(await page.locator('#mainContent').evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
+  expect(page.url()).toContain(`#${clickSlug}`);
+
   const last = page.locator('#detailToc .toc-item').last();
   const slug = await last.getAttribute('data-target');
-  await page.evaluate(() => scrollTo(0, document.documentElement.scrollHeight));
+  await page.locator('#mainContent').evaluate((element) => element.scrollTo(0, element.scrollHeight));
   await expect(last).toHaveClass(/active/);
   const after = await rail.boundingBox();
   expect(after?.x).toBeCloseTo(before!.x, 0);

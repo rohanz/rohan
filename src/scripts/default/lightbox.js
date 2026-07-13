@@ -86,6 +86,17 @@ function prepareExpandableArticleImages(container) {
             button.appendChild(img);
             trigger = button;
         }
+        if (img.closest('.detail-body')) {
+            const classify = () => {
+                if (!img.naturalWidth || !img.naturalHeight) return;
+                const isPortrait = img.naturalHeight > img.naturalWidth * 1.3;
+                img.classList.toggle('img-portrait', isPortrait);
+                img.classList.toggle('img-landscape', !isPortrait);
+                trigger.classList.toggle('is-portrait', isPortrait);
+            };
+            if (img.complete) classify();
+            else listen(img, 'load', classify, { once: true });
+        }
         if (trigger.dataset.lightboxReady) return;
         trigger.dataset.lightboxReady = 'true';
         trigger.addEventListener('click', event => {
