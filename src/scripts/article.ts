@@ -256,7 +256,20 @@ function initToc(article: HTMLElement) {
   const setCurrent = (slug: string) => {
     if (slug === current) return;
     current = slug;
-    ticks.forEach((t) => t.classList.toggle('is-current', t.dataset.target === slug));
+    // When the current section is an h3, its parent h2 stays highlighted too
+    // (the original's parent-active), so the top-level context never drops out
+    // of the rail while reading a subsection.
+    let parentSlug = '';
+    const idx = headings.findIndex((h) => h.id === slug);
+    if (idx >= 0 && headings[idx].tagName === 'H3') {
+      for (let i = idx - 1; i >= 0; i--) {
+        if (headings[i].tagName === 'H2') { parentSlug = headings[i].id; break; }
+      }
+    }
+    ticks.forEach((t) => {
+      t.classList.toggle('is-current', t.dataset.target === slug);
+      t.classList.toggle('is-parent', !!parentSlug && t.dataset.target === parentSlug);
+    });
     circleFor.forEach((c, s) => c.classList.toggle('is-current', s === slug));
   };
 
@@ -278,9 +291,14 @@ function initToc(article: HTMLElement) {
       setCurrent(headings[headings.length - 1].id);
       return;
     }
+    // Viewport-proportional trigger lines, matching the original site: a
+    // section goes current when its heading crosses ~mid-screen (50% of the
+    // viewport for h2s, 38% for h3s — subsections trigger higher). The old
+    // fixed 140px line made the switch feel late, worse the taller the screen.
     let active = headings[0];
     for (const h of headings) {
-      if (h.getBoundingClientRect().top <= 140) active = h;
+      const trigger = window.innerHeight * (h.tagName === 'H3' ? 0.38 : 0.5);
+      if (h.getBoundingClientRect().top <= trigger) active = h;
       else break;
     }
     setCurrent(active.id);

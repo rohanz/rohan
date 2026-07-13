@@ -79,6 +79,9 @@ const dests = NAV_LINES.map((l) => ({
     border-radius: 8px;
     overflow: hidden;
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.28);
+    /* The container carries the white fill: .board-body alone left the
+       fast-travel + socials rows transparent (map showed through). */
+    background: #fff;
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
   }
   .board-title {

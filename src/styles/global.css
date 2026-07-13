@@ -224,7 +224,10 @@ img { max-width: 100%; display: block; }
    all three platforms). All platform content is framed into the clean region
    to the RIGHT of this rail (see ride.ts, which measures the rail width), so
    nothing ever overlaps it. */
-body.home { --rail-w: 300px; }
+/* body.page's 300px base lives HERE (not in the detail-rail block below) so
+   the 1024px narrowing can override it — a later unconditional rule at equal
+   specificity would win over the media query and freeze the rail at 300. */
+body.home, body.page { --rail-w: 300px; }
 @media (max-width: 1024px) { body.home, body.page { --rail-w: 250px; } }
 @media (max-width: 768px) { body.home { --rail-w: 210px; } }
 
@@ -265,7 +268,8 @@ body.page #station-board .board-body { flex: 1 1 auto; }
    viewport-centred (the article/TOC clear the rail via [slug].astro's
    geometry). Rail links are ordinary page navigations. Hidden below 1000px
    alongside the train-toc — small screens keep the full column. */
-body.page { --rail-w: 300px; }
+/* --rail-w for body.page is set alongside body.home's near the top of the
+   rail block, above the responsive narrowing media queries. */
 @media (min-width: 1000px) {
   body.page #station-board {
     position: fixed;

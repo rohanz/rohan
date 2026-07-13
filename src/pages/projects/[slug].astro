@@ -246,6 +246,9 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
   .train-toc li.sub a { font-size: 0.95rem; padding-left: 48px; }
   .train-toc a:hover .toc-label { color: var(--ink); }
   .train-toc a.is-current .toc-label { color: var(--ink); }
+  /* Parent h2 stays inked while one of its h3s is current (original's
+     parent-active), keeping the section context visible in the rail. */
+  .train-toc a.is-parent .toc-label { color: var(--ink); }
 
   /* Prev / all projects / next, in the left rail (desktop) — mirrors the original
      site's minimal sidebar nav (three lowercase links, dimmed until hover). The

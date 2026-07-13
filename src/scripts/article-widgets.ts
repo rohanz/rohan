@@ -1288,7 +1288,6 @@ function initThemePalette() {
     { color: '#fa6b49', label: 'orange' },
     { color: '#e488ad', label: 'pink' },
     { color: '#fae933', label: 'yellow' },
-    { color: '#33b4e5', label: 'blue' },
     { color: '#8a8578', label: 'muted' },
   ];
   const swatches = (colors: { color: string; label: string }[]) =>
