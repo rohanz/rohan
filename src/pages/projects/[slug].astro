@@ -1,0 +1,63 @@
+---
+import DefaultLayout from '../../layouts/DefaultLayout.astro';
+import { getCollection, render } from 'astro:content';
+import { getProjectNav, type NavItem } from '../../lib/projectNav';
+
+export async function getStaticPaths() {
+  const projects = (await getCollection('projects')).sort((a, b) => a.data.order - b.data.order);
+  const listed = projects.filter((project) => !project.data.unlisted);
+  const ordered = listed.map((project) => ({ slug: project.id, title: project.data.title })) as NavItem[];
+  return projects.map((project) => ({ params: { slug: project.id }, props: { project, ordered } }));
+}
+
+const { project, ordered } = Astro.props;
+const { Content, headings } = await render(project);
+const { prev, next } = getProjectNav(ordered, project.id);
+const h2h3 = headings.filter((heading) => heading.depth === 2 || heading.depth === 3);
+const firstH2 = h2h3.findIndex((heading) => heading.depth === 2);
+const toc = firstH2 === -1 ? [] : h2h3.slice(firstH2);
+const parentIndices = toc.map((heading, index) => {
+  if (heading.depth === 2) return undefined;
+  for (let cursor = index - 1; cursor >= 0; cursor -= 1) if (toc[cursor].depth === 2) return cursor;
+  return undefined;
+});
+const ogImage = `/assets/images/og/${project.id}.png`;
+---
+<DefaultLayout title={`${project.data.title} - rohan.jk`} description={project.data.summary} section="projects" ogImage={ogImage}>
+  <section id="projects" class="section active">
+    <div class="projects-grid-view" id="projectsGridView" hidden></div>
+    <div class="project-detail-view detail-active" id="projectDetailView">
+      <div class="detail-header-column" id="detailHeaderColumn">
+        <nav class="detail-toc" id="detailToc" aria-label="section navigation">
+          <ul class="toc-list">
+            {toc.map((heading, index) => (
+              <li>
+                <a
+                  href={`#${heading.slug}`}
+                  class:list={["toc-item", heading.depth === 2 ? 'toc-h2' : 'toc-h3', { active: index === 0, 'has-children': heading.depth === 2 && toc[index + 1]?.depth === 3 }]}
+                  data-target={heading.slug}
+                  data-index={index}
+                  data-parent-index={parentIndices[index]}
+                >{heading.text}</a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+        <nav class="detail-sidebar-nav" aria-label="project navigation">
+          {prev ? <a class="detail-nav-link" id="detailPrevBtn" data-dir="prev" href={`/projects/${prev.slug}`}><span class="nav-arrow">‹</span> prev</a> : <span class="detail-nav-link is-disabled" id="detailPrevBtn" aria-disabled="true"><span class="nav-arrow">‹</span> prev</span>}
+          <a class="detail-nav-link" id="detailBackBtn" href="/projects">all projects</a>
+          {next ? <a class="detail-nav-link" id="detailNextBtn" data-dir="next" href={`/projects/${next.slug}`}>next <span class="nav-arrow">›</span></a> : <span class="detail-nav-link is-disabled" id="detailNextBtn" aria-disabled="true">next <span class="nav-arrow">›</span></span>}
+        </nav>
+      </div>
+      <div class="detail-content-column" id="detailContentColumn">
+        <div class="detail-content" id="detailContent">
+          <img src={project.data.image} alt={project.data.title} class="detail-hero-image img-fade loaded" />
+          <h2 class="detail-title">{project.data.title}</h2>
+          <p class="detail-summary">{project.data.summary}</p>
+          <div class="detail-body"><Content /></div>
+          <div class="detail-tags">{project.data.technologies.map((tag) => <span class="detail-tag">{tag}</span>)}</div>
+        </div>
+      </div>
+    </div>
+  </section>
+</DefaultLayout>

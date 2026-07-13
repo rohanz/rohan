@@ -1,0 +1,4524 @@
+/* Generated mechanically from the original site's assets/css/style.css.
+   Every source rule and comment is preserved; selectors are scoped so the
+   default and transit themes can coexist without CSS bleed. */
+/* ============================================================
+   RESET & CUSTOM PROPERTIES
+   ============================================================ */
+html.theme-default *,
+html.theme-default *::before,
+html.theme-default *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+:root.theme-default {
+    /* Sidebar scales with the viewport: ~345px on a 13" laptop, capped at
+       400px on desktops, never below 280px. Everything that offsets around
+       the sidebar uses this variable. */
+    --sidebar-w: clamp(250px, 21vw, 400px);
+    --content-pad: clamp(1.5rem, 3.5vw, 4rem);
+    /* Half the free space between sidebar and a viewport-centred 800px
+       article, after the 210px TOC. Negative when the viewport is too
+       narrow to centre; consumers clamp it. */
+    --detail-half: calc((50vw - var(--sidebar-w) - 210px - min(400px, 44vw)) / 2);
+    /* Dark theme (default) */
+    --bg-primary: #1a1a2e;
+    --bg-secondary: #16213e;
+    --bg-card: rgba(255, 255, 255, 0.04);
+    --bg-card-hover: rgba(255, 255, 255, 0.08);
+    --border-subtle: rgba(255, 255, 255, 0.06);
+    --border-hover: rgba(255, 204, 128, 0.2);
+    --accent: #FFCC80;
+    --accent-amber: #FFCC80;
+    --accent-dim: rgba(255, 204, 128, 0.6);
+    --accent-glow: rgba(255, 204, 128, 0.15);
+    --text-primary: #e8e6e3;
+    --text-secondary: rgba(232, 230, 227, 0.55);
+    --text-muted: rgba(232, 230, 227, 0.35);
+    --sidebar-bg: #0f0f23;
+    --shadow-color: rgba(255, 204, 128, 0.15);
+    --noise-opacity: 0.03;
+    --mobile-nav-height: 125px;
+    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-spring: cubic-bezier(0.32, 0.81, 0.55, 0.97);
+    /* z-index scale */
+    --z-base: 1;
+    --z-content: 2;
+    --z-overlay: 100;
+    --z-nav: 500;
+    --z-sidebar: 1000;
+    --z-noise: 9999;
+}
+
+/* Light theme */
+html.theme-default[data-theme="light"] {
+    --bg-primary: #FFF8E1;
+    --bg-secondary: #FFF8E1;
+    --bg-card: rgba(62, 39, 35, 0.06);
+    --bg-card-hover: rgba(62, 39, 35, 0.1);
+    --border-subtle: rgba(62, 39, 35, 0.1);
+    --border-hover: rgba(141, 110, 99, 0.4);
+    --accent: #8D6E63;
+    --accent-amber: #FFCC80;
+    --accent-dim: #A1887F;
+    --accent-glow: rgba(141, 110, 99, 0.15);
+    --text-primary: #3E2723;
+    --text-secondary: #6D4C41;
+    --text-muted: #A1887F;
+    --sidebar-bg: #3E2723;
+    --shadow-color: #D0C4BE;
+    --filter-active-text: #FFF8E1;
+    --noise-opacity: 0;
+}
+
+/* Keep sidebar text light in light theme */
+html.theme-default[data-theme="light"] .sidebar {
+    --text-primary: #FFF8E1;
+    --text-secondary: rgba(255, 248, 225, 0.6);
+    --text-muted: rgba(255, 248, 225, 0.4);
+    --accent-dim: rgba(255, 204, 128, 0.6);
+    --border-subtle: rgba(255, 248, 225, 0.1);
+}
+
+/* Keep floating contact icons visible in light theme */
+html.theme-default[data-theme="light"] .floating-contact {
+    --text-muted: #A1887F;
+}
+
+/* Skip navigation link (a11y) */
+html.theme-default .skip-nav {
+    position: absolute;
+    top: -100%;
+    left: 1rem;
+    padding: 0.75rem 1.5rem;
+    background: var(--accent);
+    color: var(--bg-primary);
+    font-weight: 600;
+    border-radius: 0 0 8px 8px;
+    z-index: calc(var(--z-noise) + 1);
+    transition: top 0.2s ease;
+    text-decoration: none;
+}
+
+html.theme-default .skip-nav:focus {
+    top: 0;
+}
+
+/* Screen-reader-only utility (visually hidden, still announced) */
+html.theme-default .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* Global keyboard focus indicator */
+html.theme-default a:focus-visible,
+html.theme-default button:focus-visible,
+html.theme-default [tabindex]:focus-visible,
+html.theme-default .nav-link:focus-visible,
+html.theme-default .homepage-menu-item:focus-visible,
+html.theme-default .project-card:focus-visible,
+html.theme-default .filter-tag:focus-visible,
+html.theme-default .detail-nav-link:focus-visible,
+html.theme-default .music-link:focus-visible,
+html.theme-default .contact-link:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+    border-radius: 4px;
+}
+
+/* Focused section target should not show a focus ring (focus moved programmatically) */
+html.theme-default .section:focus,
+html.theme-default .section:focus-visible,
+html.theme-default .main-content:focus {
+    outline: none;
+}
+
+/* Reduced motion: disable all animations for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+    html.theme-default *,
+html.theme-default *::before,
+html.theme-default *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+
+    html.theme-default .homepage-name,
+html.theme-default .homepage-logo,
+html.theme-default .homepage-menu {
+        opacity: 1 !important;
+        transform: none !important;
+    }
+
+    html.theme-default .homepage-menu {
+        opacity: 1 !important;
+        transform: none !important;
+    }
+
+    html.theme-default .testimonials-scroll-container {
+        animation: none !important;
+    }
+}
+
+/* ============================================================
+   UTILITIES
+   ============================================================ */
+html.theme-default .img-fade {
+    background: var(--bg2, var(--bg-secondary));
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+html.theme-default .img-fade.loaded {
+    opacity: 1;
+}
+
+/* ============================================================
+   BASE
+   ============================================================ */
+html.theme-default body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    line-height: 1.6;
+    text-transform: lowercase;
+    overflow: hidden;
+    height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Noise texture overlay */
+html.theme-default .noise-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-noise);
+    pointer-events: none;
+    opacity: var(--noise-opacity, 0.035);
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+    background-size: 256px 256px;
+}
+
+/* Particle dust canvas */
+html.theme-default #particleDust {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+}
+
+html.theme-default .container {
+    display: flex;
+    min-height: 100vh;
+    position: relative;
+    z-index: var(--z-content);
+}
+
+/* ============================================================
+   SIDEBAR
+   ============================================================ */
+html.theme-default .sidebar {
+    width: var(--sidebar-w);
+    background-color: var(--sidebar-bg);
+    padding: 7rem 0 3rem 0;
+    position: fixed;
+    height: 100vh;
+    left: calc(-1 * var(--sidebar-w));
+    top: 0;
+    z-index: var(--z-sidebar);
+    transition: left 0.7s var(--ease-spring);
+    border-right: 1px solid var(--border-subtle);
+}
+
+html.theme-default .sidebar.show {
+    left: 0;
+}
+
+html.theme-default .logo {
+    text-align: center;
+    margin-bottom: 4rem;
+    padding: 0 2rem;
+}
+
+html.theme-default .logo h1 {
+    color: var(--text-primary);
+    font-family: 'Chillax', 'Inter', sans-serif;
+    font-size: 2.2rem;
+    font-weight: 600;
+    letter-spacing: -0.5px;
+}
+
+html.theme-default .logo-link {
+    color: var(--text-primary);
+    text-decoration: none;
+    transition: color 0.3s ease;
+    cursor: pointer;
+}
+
+@media (hover: hover) {
+    html.theme-default .logo-link:hover {
+        color: var(--accent);
+    }
+}
+
+html.theme-default .nav-menu {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    height: calc(100vh - 200px);
+    margin-top: -8rem;
+    list-style: none;
+}
+
+html.theme-default .nav-link {
+    display: block;
+    padding: 2rem;
+    color: var(--text-primary);
+    text-decoration: none;
+    font-family: 'Chillax', 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 2rem;
+    text-align: center;
+    cursor: pointer;
+    width: 100%;
+    transition: color 0.3s ease, transform 0.3s ease;
+}
+
+@media (hover: hover) {
+    html.theme-default .nav-link:hover {
+        color: var(--accent-amber);
+    }
+}
+
+html.theme-default .nav-link.active {
+    color: #8D6E63;
+}
+
+/* ============================================================
+   HOMEPAGE - GRAVITY DROP
+   ============================================================ */
+html.theme-default .homepage {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+
+html.theme-default .section.homepage {
+    padding-right: 0;
+}
+
+html.theme-default .homepage-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    position: relative;
+    z-index: 2;
+}
+
+html.theme-default .homepage-name-container {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 1rem;
+    position: relative;
+    margin-bottom: 4rem;
+}
+
+/* Homepage logo */
+html.theme-default .homepage-logo {
+    width: 4.5rem;
+    height: 4.5rem;
+    display: inline-block;
+    color: var(--text-primary);
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.8s ease,
+                transform 0.8s ease,
+                color 1.5s ease;
+    align-self: baseline;
+}
+
+html.theme-default .homepage-logo.animate {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+html.theme-default .homepage-logo path {
+    fill: currentColor;
+}
+
+html.theme-default .homepage-logo.fade-to-amber {
+    color: var(--accent-amber);
+}
+
+/* Homepage name */
+html.theme-default .homepage-name {
+    font-family: 'Chillax', 'Inter', sans-serif;
+    font-size: 5.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    opacity: 0;
+    transform: translateY(10px);
+    position: relative;
+    transition: opacity 0.8s ease, transform 0.8s ease;
+    margin: 0;
+}
+
+html.theme-default .homepage-name.animate {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Name shadow */
+html.theme-default .homepage-name-wrapper {
+    position: relative;
+}
+
+html.theme-default .homepage-name-shadow {
+    position: absolute;
+    left: -3px;
+    top: -3px;
+    color: var(--shadow-color, rgba(255, 204, 128, 0.15));
+    z-index: -1;
+    opacity: 0 !important;
+    font-family: 'Chillax', 'Inter', sans-serif;
+    font-size: 5.5rem;
+    font-weight: 700;
+    pointer-events: none;
+    transition: opacity 1.5s ease, transform 0.8s ease;
+}
+
+html.theme-default .homepage-name-shadow.animate {
+    opacity: 1 !important;
+}
+
+html.theme-default .homepage-name.fade-out {
+    opacity: 0;
+    transform: translateY(-30px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+html.theme-default .homepage-name-shadow.fade-out {
+    opacity: 0 !important;
+    transform: translateY(-30px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+html.theme-default .homepage-logo.fade-out {
+    opacity: 0;
+    transform: translateY(-30px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+/* ASCII 3D background */
+html.theme-default .ascii-grid {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html.theme-default .ascii-grid {
+        display: none;
+    }
+}
+
+/* Homepage menu */
+html.theme-default .homepage-menu {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 3rem;
+    width: 100%;
+    max-width: 900px;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.8s ease, transform 0.8s var(--ease-out-expo);
+    margin-top: -3rem;
+}
+
+html.theme-default .homepage-menu.animate {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+html.theme-default .homepage-menu-item {
+    font-family: 'Chillax', 'Inter', sans-serif;
+    font-size: 2.5rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-decoration: none;
+    padding: 1.8rem 3.5rem;
+    border-radius: 30px;
+    transition: color 0.3s ease, transform 0.3s ease;
+    cursor: pointer;
+    flex: 1;
+    min-width: 0;
+    text-align: center;
+    white-space: nowrap;
+}
+
+@media (hover: hover) {
+    html.theme-default .homepage-menu-item:hover {
+        color: var(--accent-amber);
+        transform: translateY(-3px);
+    }
+}
+
+/* Tap feedback — only on non-touch devices or via JS .tap-active class */
+@media (hover: hover) {
+    html.theme-default .homepage-menu-item:active,
+html.theme-default .nav-link:active,
+html.theme-default .project-card:active,
+html.theme-default .music-link:active,
+html.theme-default .filter-tag:active,
+html.theme-default .waveform-play-btn:active {
+        opacity: 0.7;
+    }
+}
+
+/* Touch tap feedback — applied by JS after confirming it's a tap, not a swipe */
+html.theme-default .tap-active {
+    opacity: 0.7;
+}
+
+html.theme-default .music-item:active .music-title {
+    color: var(--accent);
+}
+
+html.theme-default .homepage-menu.fade-out {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+/* ============================================================
+   FLOATING CONTACT
+   ============================================================ */
+html.theme-default .floating-contact {
+    position: fixed;
+    right: 2rem;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 500;
+    opacity: 0;
+    transition: opacity 0.8s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+html.theme-default .floating-contact.show {
+    opacity: 1;
+}
+
+html.theme-default .floating-contact.homepage-active {
+    opacity: 0;
+    pointer-events: none;
+}
+
+html.theme-default .contact-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+html.theme-default .contact-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 50px;
+    height: 50px;
+    transition: all 0.3s ease;
+    text-decoration: none;
+}
+
+@media (hover: hover) {
+    html.theme-default .contact-link:hover {
+        transform: translateX(-5px) scale(1.2);
+    }
+
+    html.theme-default .contact-link:hover i {
+        color: var(--accent);
+    }
+}
+
+html.theme-default .contact-link i {
+    font-size: 2rem;
+    color: var(--text-muted);
+    transition: color 0.3s ease;
+}
+
+/* Theme toggle */
+html.theme-default .theme-toggle {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+}
+
+/* Smooth theme transitions */
+html.theme-default .theme-transitioning,
+html.theme-default .theme-transitioning *,
+html.theme-default .theme-transitioning *::before,
+html.theme-default .theme-transitioning *::after {
+    transition: background-color 0.4s ease,
+                color 0.4s ease,
+                border-color 0.4s ease,
+                box-shadow 0.4s ease !important;
+}
+
+/* Light theme: show moon icon, dark theme: show sun icon */
+html.theme-default[data-theme="light"] .theme-toggle .fa-sun::before {
+    content: "\f186"; /* moon icon */
+}
+
+/* ============================================================
+   MAIN CONTENT
+   ============================================================ */
+html.theme-default .main-content {
+    flex: 1;
+    margin-left: var(--sidebar-w);
+    /* horizontal padding scales down on laptops so the article column keeps
+       its reading width instead of donating it to gutters */
+    /* right gutter floored at 5.5rem so the floating contact rail never
+       overlaps the article in the non-centred viewport band */
+    padding: 7rem max(var(--content-pad), 5.5rem) 7rem var(--content-pad);
+    max-width: calc(100vw - var(--sidebar-w));
+    overflow-y: scroll;
+    height: 100vh;
+}
+
+html.theme-default .main-content.homepage-active {
+    margin-left: 0;
+    max-width: 100vw;
+    padding: 0;
+    overflow: hidden;
+}
+
+/* ============================================================
+   SECTIONS - TRANSITIONS
+   ============================================================ */
+html.theme-default .section {
+    display: none;
+    height: auto;
+    overflow: visible;
+    padding-right: 1rem;
+}
+
+html.theme-default .section.active {
+    display: block;
+    opacity: 0;
+    transform: translateY(30px);
+    animation: sectionFadeIn 0.7s var(--ease-out-expo) forwards;
+}
+
+html.theme-default .homepage.active {
+    display: flex !important;
+    opacity: 1 !important;
+    transform: none !important;
+    animation: none !important;
+    position: fixed !important;
+}
+
+html.theme-default .section.fade-out {
+    transform: translateY(0) !important;
+    animation: sectionFadeOut 0.4s ease-in forwards !important;
+}
+
+@keyframes sectionFadeInFlat {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes sectionFadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+
+@keyframes sectionFadeIn {
+    0% {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    100% {
+        opacity: 1;
+        /* must end at none, not translateY(0): fill-mode retains the final
+           transform, and a retained transform on the section turns the
+           detail rail's position: fixed into position: absolute */
+        transform: none;
+    }
+}
+
+/* Staggered children entry */
+html.theme-default .section.active .stagger-child {
+    opacity: 0;
+    transform: translateY(20px);
+    animation: staggerIn 0.5s var(--ease-out-expo) forwards;
+}
+
+html.theme-default .section.active .stagger-child:nth-child(1) { animation-delay: 0.05s; }
+html.theme-default .section.active .stagger-child:nth-child(2) { animation-delay: 0.1s; }
+html.theme-default .section.active .stagger-child:nth-child(3) { animation-delay: 0.15s; }
+html.theme-default .section.active .stagger-child:nth-child(4) { animation-delay: 0.2s; }
+html.theme-default .section.active .stagger-child:nth-child(5) { animation-delay: 0.25s; }
+
+@keyframes staggerIn {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ============================================================
+   MUSIC SECTION
+   ============================================================ */
+html.theme-default .music-list {
+    max-width: 1200px;
+    margin-left: max(0px, calc(50vw - 600px - var(--sidebar-w) - 4rem));
+    margin-right: auto;
+}
+
+html.theme-default .music-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 2rem;
+    transition: all 0.3s ease;
+}
+
+html.theme-default .music-content {
+    flex: 1;
+}
+
+html.theme-default .music-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 1.2rem;
+    padding: 0 0 3rem 2rem;
+}
+
+html.theme-default .music-item:first-child .music-header {
+    padding-top: 0;
+}
+
+html.theme-default .music-cover {
+    width: 100px;
+    height: 100px;
+    border-radius: 6px;
+    object-fit: cover;
+    flex-shrink: 0;
+    border: 1px solid var(--border-subtle);
+    align-self: center;
+}
+
+html.theme-default .music-header-text {
+    flex: 1;
+    min-width: 0;
+}
+
+html.theme-default .music-title {
+    font-size: 1.8rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+    transition: color 0.3s ease;
+    text-transform: none;
+}
+
+@media (hover: hover) {
+    html.theme-default .music-item:hover .music-title {
+        color: var(--accent);
+    }
+}
+
+html.theme-default .music-divider {
+    height: 1px;
+    background: linear-gradient(90deg, var(--border-subtle), transparent);
+    margin: 1rem 0;
+    width: 100%;
+}
+
+html.theme-default .music-links {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    flex-wrap: wrap;
+    padding-left: 2rem;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+}
+
+html.theme-default .music-link {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1.2rem;
+    background: var(--bg-card);
+    color: var(--text-primary);
+    text-decoration: none;
+    border-radius: 25px;
+    border: 1px solid var(--border-subtle);
+    transition: all 0.3s ease;
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+@media (hover: hover) {
+    html.theme-default .music-link:hover {
+        background: var(--bg-card-hover);
+        border-color: var(--border-hover);
+        color: var(--accent);
+        transform: translateY(-2px);
+    }
+}
+
+html.theme-default .music-link i {
+    font-size: 1rem;
+}
+
+html.theme-default .music-artist {
+    color: var(--accent-dim);
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+html.theme-default .music-summary {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    font-weight: 400;
+    line-height: 1.5;
+    margin-top: 0.5rem;
+}
+
+/* Waveform music player */
+html.theme-default .waveform-player {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.5rem 1.25rem;
+    margin-top: 0;
+    min-height: 90px;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+html.theme-default .waveform-play-btn {
+    width: 56px;
+    height: 56px;
+    min-width: 56px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    border: 2px solid var(--accent);
+    background: transparent;
+    color: var(--accent);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    transition: background 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+}
+
+@media (hover: hover) {
+    html.theme-default .waveform-play-btn:hover {
+        background: var(--accent);
+        color: var(--bg-primary);
+        box-shadow: 0 0 20px var(--accent-glow);
+    }
+}
+
+html.theme-default .waveform-play-btn.playing {
+    background: var(--accent);
+    color: var(--bg-primary);
+    box-shadow: 0 0 25px var(--accent-glow);
+    animation: pulseGlow 2s ease-in-out infinite;
+}
+
+@keyframes pulseGlow {
+    0%, 100% { box-shadow: 0 0 20px var(--accent-glow); }
+    50% { box-shadow: 0 0 35px rgba(255, 204, 128, 0.3); }
+}
+
+html.theme-default .waveform-canvas-container {
+    flex: 1;
+    height: 56px;
+    position: relative;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+/* Waveform canvas */
+html.theme-default .waveform-canvas {
+    flex: 0 1 clamp(150px, 17vw, 270px);
+    min-width: 0;
+    max-width: 270px;
+    height: 56px;
+    display: block;
+    border-radius: 6px;
+}
+
+/* Audio meters (VU + Vectorscope) — sit right next to waveform */
+html.theme-default .audio-meters {
+    display: flex;
+    gap: 0.65rem;
+    align-items: flex-end;
+    flex-shrink: 0;
+    flex-grow: 0;
+    min-width: 0;
+}
+
+html.theme-default .meter-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+html.theme-default .meter-label {
+    font-family: 'Chillax', 'Inter', sans-serif;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    text-transform: lowercase;
+}
+
+html.theme-default .vu-meter-canvas {
+    width: clamp(120px, 11vw, 150px);
+    height: 100px;
+    border-radius: 4px;
+    border: 1px solid color-mix(in srgb, var(--text-secondary) 28%, transparent);
+}
+
+html.theme-default .vectorscope-canvas {
+    width: clamp(96px, 9vw, 110px);
+    height: clamp(96px, 9vw, 110px);
+    border-radius: 50%;
+    border: 1px solid color-mix(in srgb, var(--text-secondary) 28%, transparent);
+}
+
+html.theme-default .frequency-canvas {
+    width: clamp(220px, 22vw, 300px);
+    height: 110px;
+    border-radius: 4px;
+    border: 1px solid color-mix(in srgb, var(--text-secondary) 28%, transparent);
+}
+
+html.theme-default[data-theme="light"] .vu-meter-canvas,
+html.theme-default[data-theme="light"] .vectorscope-canvas,
+html.theme-default[data-theme="light"] .frequency-canvas {
+    border-color: rgba(62, 39, 35, 0.24);
+}
+
+/* Disable hover transitions during page transitions */
+@media (hover: hover) {
+    html.theme-default body.is-transitioning .music-item:hover .music-title {
+        color: var(--text-primary) !important;
+    }
+}
+
+@media (max-width: 1180px) {
+    html.theme-default .waveform-player {
+        gap: 0.65rem;
+        padding-inline: 0.75rem;
+    }
+
+    html.theme-default .waveform-canvas {
+        flex-basis: clamp(130px, 15vw, 210px);
+        max-width: 210px;
+    }
+
+    html.theme-default .audio-meters {
+        gap: 0.5rem;
+    }
+
+    html.theme-default .frequency-canvas {
+        width: clamp(190px, 20vw, 245px);
+        height: 96px;
+    }
+
+    html.theme-default .vectorscope-canvas {
+        width: 92px;
+        height: 92px;
+    }
+
+    html.theme-default .vu-meter-canvas {
+        width: 112px;
+        height: 88px;
+    }
+}
+
+@media (max-width: 1180px) and (min-width: 769px) {
+    html.theme-default .audio-meters {
+        display: none;
+    }
+
+    html.theme-default .waveform-canvas {
+        flex: 1 1 0;
+        max-width: none;
+    }
+}
+
+/* ============================================================
+   PROJECTS SECTION - GRID + DETAIL
+   ============================================================ */
+html.theme-default #projects.section {
+    padding: 0;
+    overflow: visible;
+}
+
+html.theme-default #projects.section.active {
+    /* Opacity-only entrance: sectionFadeIn animates transform, and with
+       fill-mode: forwards Chrome retains an identity matrix even when the
+       keyframe ends at 'none' - which creates a containing block and turns
+       the detail rail's position: fixed into absolute. */
+    animation: sectionFadeInFlat 0.7s var(--ease-out-expo) forwards;
+    transform: none;
+}
+
+/* Grid view */
+html.theme-default .projects-grid-view {
+    padding: 0 2rem 1.5rem;
+    max-width: 1480px;
+    /* Viewport-centred (like the article view, so grid -> detail doesn't
+       jump sideways); when the viewport is too narrow the grid just fills
+       the region right of the sidebar. */
+    margin-right: auto;
+    margin-left: max(0px, calc(50vw - 740px - var(--sidebar-w) - var(--content-pad)));
+}
+
+/* Filter bar */
+html.theme-default .projects-filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+html.theme-default .filter-tag {
+    padding: 0.5rem 1.15rem;
+    background: transparent;
+    border: 1px solid var(--border-subtle);
+    border-radius: 2px;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    font-weight: 500;
+    font-family: inherit;
+    text-transform: lowercase;
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+@media (hover: hover) {
+    html.theme-default .filter-tag:hover {
+        border-color: var(--border-hover);
+        color: var(--text-primary);
+    }
+}
+
+html.theme-default .filter-tag.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--filter-active-text, var(--bg-primary));
+}
+
+/* Card grid */
+html.theme-default .projects-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+    max-width: 1480px;
+    transition: opacity 0.25s ease;
+}
+
+html.theme-default .projects-grid.filtering {
+    opacity: 0;
+}
+
+/* Project card */
+html.theme-default .project-card {
+    display: block;
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: pointer;
+    color: inherit;
+    text-decoration: none;
+    transition: transform 0.3s ease,
+                border-color 0.3s ease;
+    text-transform: none;
+}
+
+@media (hover: hover) {
+    html.theme-default .project-card:hover {
+        border-color: var(--border-hover);
+        transform: translateY(-3px);
+    }
+}
+
+html.theme-default .project-card.hidden {
+    display: none;
+}
+
+html.theme-default .project-card-image {
+    width: 100%;
+    /* fixed ratio, not fixed height: the crop window stays the same shape
+       (the old 357x180 feel) no matter how wide the cards get */
+    aspect-ratio: 2 / 1;
+    height: auto;
+    object-fit: cover;
+    display: block;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+html.theme-default .project-card-body {
+    padding: 1.25rem;
+}
+
+html.theme-default .project-card-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+    transition: color 0.3s ease;
+}
+
+/* Local-dev only: unlisted articles get cards with this badge (see displayProjects) */
+html.theme-default .project-card-unlisted-badge {
+    display: inline-block;
+    margin-right: 0.5em;
+    padding: 0.1em 0.5em;
+    border: 1px solid var(--accent);
+    border-radius: 4px;
+    color: var(--accent);
+    font-size: 0.62rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    vertical-align: middle;
+}
+
+@media (hover: hover) {
+    html.theme-default .project-card:hover .project-card-title {
+        color: var(--accent);
+    }
+}
+
+html.theme-default .project-card-summary {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 0.75rem;
+}
+
+html.theme-default .project-card-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+html.theme-default .project-card-tag {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.6rem;
+    background: rgba(255, 204, 128, 0.08);
+    border: 1px solid rgba(255, 204, 128, 0.15);
+    border-radius: 2px;
+    color: var(--accent-dim);
+    font-weight: 500;
+    text-transform: lowercase;
+}
+
+/* Detail view - two-column layout */
+html.theme-default .project-detail-view {
+    display: none;
+    text-transform: none;
+}
+
+html.theme-default .project-detail-view.detail-active {
+    display: flex;
+    /* Geometry: the article column is viewport-centred (exactly, once the
+       viewport is wide enough; best-effort below that), and the TOC sits
+       centred in the gap between the sidebar and the article: equal space
+       on both of its sides via margin-left + gap sharing --detail-half. */
+    gap: max(2rem, var(--detail-half));
+}
+
+html.theme-default .project-detail-view.detail-active .detail-content-column {
+    /* The fixed TOC is out of flow, so the article reserves its own space:
+       viewport-centred when the viewport allows, otherwise just clear of the
+       210px rail. Same --detail-half geometry as the rail's left offset. */
+    margin-left: max(
+        calc(max(0px, var(--detail-half) - var(--content-pad)) + 210px + 4rem),
+        calc(50vw - min(400px, 44vw) - var(--sidebar-w) - var(--content-pad))
+    );
+}
+
+/* Left column - TOC + nav, sticky */
+html.theme-default .detail-header-column {
+    /* FIXED, not sticky: sticky releases when the article's bottom scrolls
+       into view (the column can't escape its parent), which made the TOC and
+       nav drift up at the end of long articles. Fixed pins them for the whole
+       read, like the transit site's rail. The left offset mirrors the flex
+       geometry it replaced (sidebar + padding + centring margin). */
+    position: fixed;
+    top: 7rem;
+    left: calc(var(--sidebar-w) + var(--content-pad) + max(0px, var(--detail-half) - var(--content-pad)));
+    width: 210px;
+    min-width: 210px;
+    height: calc(100vh - 8rem);
+    display: flex;
+    flex-direction: column;
+    padding: 0 0 2rem;
+    z-index: 10;
+}
+
+/* Right column - scrollable content */
+html.theme-default .detail-content-column {
+    flex: 1;
+    max-width: 800px;
+    min-width: 0;
+    box-sizing: border-box;
+    padding-top: 0;
+    padding-bottom: 4rem;
+}
+
+/* TOC sidebar */
+html.theme-default .detail-toc {
+    /* align the first TOC item with the hero banner's top edge */
+    margin-top: 1.5rem;
+}
+
+html.theme-default .toc-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+html.theme-default .toc-item {
+    display: block;
+    width: 100%;
+    padding: 0.4rem 0;
+    padding-left: 1rem;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    color: var(--text-secondary);
+    font-family: inherit;
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-align: left;
+    text-transform: lowercase;
+    transition: all 0.2s ease;
+    opacity: 0.4;
+    position: relative;
+}
+
+@media (hover: hover) {
+    html.theme-default .toc-item:hover {
+        opacity: 0.7;
+        color: var(--text-primary);
+    }
+}
+
+html.theme-default .toc-item.active {
+    color: var(--accent);
+    opacity: 1;
+}
+
+html.theme-default .toc-item.active::before {
+    content: '>';
+    position: absolute;
+    left: 0;
+    color: var(--accent);
+    animation: tocIndicatorIn 0.25s ease forwards;
+}
+
+@keyframes tocIndicatorIn {
+    from { opacity: 0; transform: translateX(-8px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+
+html.theme-default .toc-item.parent-active {
+    opacity: 0.7;
+    color: var(--text-primary);
+}
+
+html.theme-default .toc-h2 {
+    font-size: 1.15rem;
+}
+
+html.theme-default .toc-h3 {
+    padding-left: 2rem;
+    font-size: 0.95rem;
+}
+
+html.theme-default .toc-h3.active::before {
+    left: 1rem;
+}
+
+html.theme-default .toc-anchor {
+    height: 0;
+    margin-top: -0.5rem;
+    padding-top: 0.5rem;
+}
+
+/* Sidebar nav (prev/next/all) */
+html.theme-default .detail-sidebar-nav {
+    margin-top: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding-bottom: 2rem;
+}
+
+html.theme-default .detail-nav-link {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: none;
+    border: none;
+    color: var(--text-primary);
+    padding: 0 0 0 1rem; /* same left indent as .toc-item */
+    font-size: 1.15rem; /* match .toc-h2 so the rail reads as one family */
+    font-weight: 600;
+    font-family: inherit;
+    text-transform: lowercase;
+    cursor: pointer;
+    padding: 0.4rem 0;
+    opacity: 0.5;
+    transition: all 0.2s ease;
+}
+
+@media (hover: hover) {
+    html.theme-default .detail-nav-link:hover:not(:disabled) {
+        color: var(--accent);
+        opacity: 1;
+    }
+}
+
+html.theme-default .detail-nav-link:disabled {
+    opacity: 0.15;
+    cursor: default;
+}
+
+html.theme-default .detail-nav-link .nav-arrow {
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+/* Detail content elements */
+html.theme-default .detail-hero-image {
+    width: 100%;
+    /* no crop: all article banners share a consistent 3:2 ratio, so show
+       them whole; aspect-ratio reserves the space before the image loads */
+    aspect-ratio: 3 / 2;
+    height: auto;
+    object-fit: contain;
+    border-radius: 8px;
+    border: 1px solid var(--border-subtle);
+    margin-bottom: 2rem;
+}
+
+html.theme-default .detail-title {
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 0.75rem;
+}
+
+html.theme-default .detail-summary {
+    font-size: 1.2rem;
+    color: var(--accent-dim);
+    font-weight: 500;
+    font-style: italic;
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+}
+
+html.theme-default .detail-body {
+    max-width: 100%;
+    min-width: 0;
+    color: rgba(232, 230, 227, 0.72);
+    line-height: 1.7;
+    font-size: 1.25rem; /* 20px; calibrated to Rohan's preferred reading
+                          size (the transit site at his habitual 110% zoom) */
+}
+
+html.theme-default[data-theme="light"] .detail-body {
+    color: var(--text-secondary);
+}
+
+html.theme-default .detail-body h2,
+html.theme-default .detail-body h3 {
+    color: var(--text-primary);
+    line-height: 1.2;
+    scroll-margin-top: 2rem;
+}
+
+html.theme-default .detail-body h2 {
+    margin: 2.5rem 0 1rem;
+    font-size: clamp(1.45rem, 2.6vw, 2rem);
+    font-weight: 750;
+    letter-spacing: 0;
+}
+
+html.theme-default[data-theme="light"] .detail-body h2 {
+    color: var(--accent);
+}
+
+html.theme-default .detail-body h3 {
+    margin: 1.7rem 0 0.75rem;
+    font-size: clamp(1.12rem, 1.8vw, 1.35rem);
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: 0;
+}
+
+html.theme-default .detail-body .toc-anchor + h2 {
+    margin-top: 2rem;
+}
+
+html.theme-default .detail-body p {
+    margin-bottom: 1.15em;
+    overflow-wrap: anywhere;
+}
+
+html.theme-default .detail-body > p:last-child {
+    padding-bottom: 40vh;
+}
+
+html.theme-default .detail-body a {
+    color: var(--accent);
+    text-decoration-color: color-mix(in srgb, var(--accent) 48%, transparent);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.18em;
+    transition: color 160ms ease, text-decoration-color 160ms ease;
+    overflow-wrap: anywhere;
+}
+
+@media (hover: hover) {
+    html.theme-default .detail-body a:hover {
+        color: var(--text-primary);
+        text-decoration-color: var(--accent);
+    }
+}
+
+html.theme-default[data-theme="light"] .detail-body a {
+    color: var(--accent);
+    text-decoration-color: color-mix(in srgb, var(--accent) 58%, transparent);
+}
+
+html.theme-default[data-theme="light"] .detail-body a:hover {
+    color: var(--text-primary);
+    text-decoration-color: var(--accent);
+}
+
+html.theme-default .detail-body ul {
+    list-style-type: disc;
+    margin-left: 1.5rem;
+}
+
+html.theme-default .detail-body ul ul {
+    list-style-type: circle;
+    margin-top: 0.25rem;
+}
+
+html.theme-default .detail-body pre {
+    box-sizing: border-box;
+    max-width: 100%;
+    margin: 1.6rem 0;
+    padding: 1rem;
+    overflow-x: auto;
+    border: 1px solid rgba(255, 204, 128, 0.18);
+    border-radius: 8px;
+    background: rgba(12, 12, 20, 0.64);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+html.theme-default[data-theme="light"] .detail-body pre {
+    border-color: rgba(141, 110, 99, 0.16);
+    background: rgba(255, 248, 225, 0.72);
+}
+
+html.theme-default .detail-body code {
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+    font-size: 0.92em;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+html.theme-default .detail-body pre code {
+    display: block;
+    color: rgba(232, 230, 227, 0.86);
+    line-height: 1.55;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+html.theme-default[data-theme="light"] .detail-body pre code {
+    color: var(--text-primary);
+}
+
+html.theme-default .bqst-data-table {
+    box-sizing: border-box;
+    max-width: 100%;
+    width: 100%;
+    table-layout: fixed;
+    margin: 1.4rem 0 1.7rem;
+    border-collapse: collapse;
+    border: 1px solid rgba(255, 204, 128, 0.16);
+    border-radius: 8px;
+    overflow: hidden;
+    font-size: 0.94rem;
+}
+
+html.theme-default .bqst-data-table th,
+html.theme-default .bqst-data-table td {
+    padding: 0.65rem 0.72rem;
+    border-bottom: 1px solid rgba(255, 204, 128, 0.10);
+    text-align: right;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+html.theme-default .bqst-data-table th:first-child,
+html.theme-default .bqst-data-table td:first-child {
+    text-align: left;
+}
+
+html.theme-default .bqst-data-table th {
+    color: var(--accent);
+    background: rgba(255, 204, 128, 0.08);
+    font-weight: 700;
+}
+
+html.theme-default .bqst-data-table tr:last-child td {
+    border-bottom: 0;
+}
+
+html.theme-default[data-theme="light"] .bqst-data-table {
+    border-color: rgba(141, 110, 99, 0.16);
+}
+
+html.theme-default[data-theme="light"] .bqst-data-table th,
+html.theme-default[data-theme="light"] .bqst-data-table td {
+    border-bottom-color: rgba(141, 110, 99, 0.11);
+}
+
+html.theme-default[data-theme="light"] .bqst-data-table th {
+    background: rgba(141, 110, 99, 0.08);
+}
+
+html.theme-default .detail-body .gloss-term {
+    position: relative;
+    display: inline;
+    color: var(--accent);
+    background: rgba(255, 204, 128, 0.12);
+    border-bottom: 1px solid rgba(255, 204, 128, 0.55);
+    border-radius: 3px;
+    padding: 0.02em 0.12em;
+    outline: none;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+html.theme-default[data-theme="light"] .detail-body .gloss-term {
+    background: rgba(141, 110, 99, 0.09);
+    border-bottom-color: rgba(141, 110, 99, 0.45);
+}
+
+html.theme-default .gloss-tooltip {
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 1000;
+    box-sizing: border-box;
+    width: min(280px, calc(100vw - 2rem));
+    overflow-y: auto;
+    padding: 0.65rem 0.75rem;
+    border: 1px solid rgba(255, 204, 128, 0.24);
+    border-radius: 6px;
+    background: rgba(26, 26, 46, 0.96);
+    color: rgba(232, 230, 227, 0.92);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.32);
+    font-size: 0.86rem;
+    font-weight: 500;
+    line-height: 1.45;
+    text-align: left;
+    white-space: normal;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateY(0.25rem);
+    transition: opacity 160ms ease, transform 160ms ease, visibility 160ms ease;
+}
+
+html.theme-default .gloss-tooltip.is-visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+html.theme-default[data-theme="light"] .gloss-tooltip {
+    border-color: rgba(62, 39, 35, 0.14);
+    background: rgba(255, 248, 225, 0.98);
+    color: var(--text-primary);
+    box-shadow: 0 8px 24px rgba(62, 39, 35, 0.16);
+}
+
+html.theme-default .detail-body img {
+    max-width: 100%;
+    width: 100%;
+    height: auto;
+    border-radius: 6px;
+    margin: 1.5rem auto;
+    display: block;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+html.theme-default .article-image-button {
+    position: relative;
+    display: block;
+    width: 100%;
+    margin: 1.5rem auto;
+    padding: 0;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: inherit;
+    cursor: zoom-in;
+}
+
+html.theme-default .article-image-button img {
+    margin: 0 auto;
+}
+
+html.theme-default .article-image-button::after {
+    content: "click to expand";
+    position: absolute;
+    right: 0.65rem;
+    bottom: 0.65rem;
+    padding: 0.34rem 0.52rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: 4px;
+    background: color-mix(in srgb, var(--bg-primary) 84%, transparent);
+    color: var(--accent);
+    font-family: 'Chillax', 'Inter', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0;
+    line-height: 1;
+    opacity: 0.86;
+    transform: translateY(0);
+    transition: opacity 0.18s ease, transform 0.18s ease;
+    pointer-events: none;
+}
+
+html.theme-default[data-theme="light"] .article-image-button::after {
+    background: color-mix(in srgb, var(--bg-primary) 92%, transparent);
+}
+
+@media (hover: hover) {
+    html.theme-default .article-image-button:hover::after {
+        opacity: 1;
+        transform: translateY(-0.08rem);
+    }
+}
+
+html.theme-default .article-image-button:focus-visible::after {
+    opacity: 1;
+    transform: translateY(-0.08rem);
+}
+
+html.theme-default .article-image-button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 4px;
+}
+
+html.theme-default .detail-body img.img-landscape {
+    max-width: 100%;
+}
+
+html.theme-default .detail-body img.img-portrait {
+    max-width: 350px;
+}
+
+/* Demo player in project detail */
+html.theme-default .demo-player {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.5rem 0;
+    margin: 1rem 0 1.5rem;
+    min-height: 120px;
+}
+
+html.theme-default .demo-waveform-canvas {
+    flex: 1 1 0;
+    min-width: 0;
+    height: 56px;
+    display: block;
+}
+
+html.theme-default .demo-meters {
+    display: flex;
+    gap: 0.8rem;
+    align-items: flex-end;
+    flex-shrink: 0;
+}
+
+html.theme-default .demo-meter-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.15rem;
+}
+
+html.theme-default .demo-meter-label {
+    font-family: 'Chillax', 'Inter', sans-serif;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+}
+
+html.theme-default .demo-vu-canvas {
+    width: 190px;
+    height: 130px;
+    border-radius: 4px;
+    display: block;
+}
+
+html.theme-default .demo-vec-canvas {
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    display: block;
+}
+
+/* Theme palette */
+html.theme-default .theme-palette {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin: 1rem 0 1.5rem;
+}
+
+html.theme-default .palette-group {
+    flex: 1;
+    border: 1px solid var(--border-subtle);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+html.theme-default .palette-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.5rem 0.75rem;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+html.theme-default .palette-swatches {
+    display: grid;
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    gap: 0;
+}
+
+html.theme-default .palette-swatch {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    overflow: hidden;
+}
+
+html.theme-default .palette-swatch-color {
+    aspect-ratio: 1;
+}
+
+html.theme-default .palette-swatch-label {
+    font-size: 0.75rem;
+    text-align: center;
+    padding: 0.3rem 0;
+    letter-spacing: 0.02em;
+}
+
+html.theme-default .bqst-asset-strip {
+    box-sizing: border-box;
+    max-width: 100%;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0;
+    margin: 1rem 0 1.5rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: 4px;
+    overflow: hidden;
+    background: var(--bg-card);
+}
+
+html.theme-default .bqst-asset-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+    padding: 1rem 0.8rem 0.55rem;
+    border-right: 1px solid var(--border-subtle);
+}
+
+html.theme-default .bqst-asset-card:nth-child(1),
+html.theme-default .bqst-asset-card:nth-child(2) {
+    background: var(--sidebar-bg);
+}
+
+html.theme-default .bqst-asset-card:nth-child(3) {
+    background: var(--text-secondary);
+}
+
+html.theme-default[data-theme="light"] .bqst-asset-card:nth-child(3) {
+    background: var(--accent);
+}
+
+html.theme-default .bqst-asset-card:last-child {
+    border-right: 0;
+}
+
+html.theme-default .bqst-asset-card img {
+    width: min(72%, 150px);
+    aspect-ratio: 1;
+    object-fit: contain;
+    margin: 0 0 0.65rem;
+    border-radius: 0;
+    box-shadow: none;
+}
+
+html.theme-default .bqst-asset-card .article-image-button {
+    position: static;
+    width: min(72%, 150px);
+    margin: 0 auto 0.65rem;
+}
+
+html.theme-default .bqst-asset-card .article-image-button img {
+    width: 100%;
+    margin: 0;
+}
+
+html.theme-default .bqst-asset-card .article-image-button::after {
+    right: 0.45rem;
+    bottom: 2.05rem;
+    max-width: calc(100% - 0.7rem);
+    padding: 0.28rem 0.4rem;
+    font-size: 0.62rem;
+}
+
+html.theme-default .article-stat-grid {
+    box-sizing: border-box;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0;
+    margin: 1rem 0 1.6rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: 4px;
+    overflow: hidden;
+    background: var(--bg-card);
+}
+
+html.theme-default .article-stat-card {
+    min-width: 0;
+    padding: 1rem;
+    border-right: 1px solid var(--border-subtle);
+}
+
+html.theme-default .article-stat-card:last-child {
+    border-right: 0;
+}
+
+html.theme-default .article-stat-value {
+    display: block;
+    color: var(--accent);
+    font-family: 'Chillax', 'Inter', sans-serif;
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1.15;
+    margin-bottom: 0.35rem;
+}
+
+html.theme-default .article-stat-label {
+    display: block;
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+    line-height: 1.4;
+}
+
+html.theme-default .article-visual-pair {
+    box-sizing: border-box;
+    display: grid;
+    grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+    gap: 1rem;
+    align-items: center;
+    margin: 1rem 0 1.6rem;
+    padding: 1rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: 4px;
+    background: var(--bg-card);
+}
+
+html.theme-default .article-visual-pair img {
+    margin: 0;
+    box-shadow: none;
+    object-fit: contain;
+}
+
+html.theme-default .article-visual-copy {
+    color: var(--text-secondary);
+    font-size: 0.94rem;
+    line-height: 1.65;
+}
+
+html.theme-default .article-visual-copy strong {
+    color: var(--text-primary);
+}
+
+html.theme-default .article-figure {
+    margin: 1rem 0 1.7rem;
+}
+
+html.theme-default .article-figure img {
+    margin-bottom: 0.65rem;
+}
+
+html.theme-default .article-caption {
+    color: var(--text-secondary);
+    font-size: 0.92rem;
+    line-height: 1.55;
+}
+
+html.theme-default .article-caption strong {
+    color: var(--text-primary);
+}
+
+html.theme-default .image-lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 3000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: clamp(1rem, 3vw, 2.5rem);
+    background: rgba(5, 5, 10, 0.88);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.18s ease, visibility 0.18s ease;
+    cursor: zoom-out;
+}
+
+html.theme-default .image-lightbox.is-visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+html.theme-default .image-lightbox-img {
+    max-width: min(96vw, 1600px);
+    max-height: 86vh;
+    object-fit: contain;
+    border-radius: 6px;
+    box-shadow: 0 20px 80px rgba(0, 0, 0, 0.55);
+}
+
+html.theme-default .image-lightbox-hint {
+    position: fixed;
+    left: 50%;
+    bottom: 1.2rem;
+    transform: translateX(-50%);
+    width: min(100% - 2rem, 420px);
+    padding: 0.58rem 0.78rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: 4px;
+    background: color-mix(in srgb, var(--bg-primary) 88%, transparent);
+    color: var(--text-secondary);
+    font-family: 'Chillax', 'Inter', sans-serif;
+    font-size: 0.84rem;
+    font-weight: 600;
+    letter-spacing: 0;
+    text-align: center;
+}
+
+html.theme-default body.image-lightbox-open {
+    overflow: hidden;
+}
+
+html.theme-default .bqst-asset-card span {
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-align: center;
+    letter-spacing: 0.05em;
+}
+
+html.theme-default .bqst-asset-card:nth-child(1) span,
+html.theme-default .bqst-asset-card:nth-child(2) span {
+    color: rgba(255, 248, 225, 0.72);
+}
+
+html.theme-default .bqst-asset-card:nth-child(3) span {
+    color: var(--bg-primary);
+}
+
+/* BQST audio A/B demo */
+html.theme-default .bqst-audio-demo {
+    box-sizing: border-box;
+    max-width: 100%;
+    margin: 1.4rem 0 2rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    background:
+        linear-gradient(135deg, rgba(255, 204, 128, 0.08), transparent 42%),
+        var(--bg-card);
+    overflow: hidden;
+}
+
+html.theme-default .bqst-audio-demo-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.9rem 1rem 0.75rem;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+html.theme-default .bqst-audio-demo-body {
+    padding: 1rem;
+}
+
+html.theme-default .bqst-audio-play {
+    width: 58px;
+    height: 58px;
+    border-radius: 999px;
+    border: 2px solid var(--accent);
+    background: transparent;
+    color: var(--accent);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.08rem;
+    transition: background 180ms ease, color 180ms ease, box-shadow 180ms ease;
+}
+
+html.theme-default .bqst-audio-demo:not(.is-ready) .bqst-audio-play {
+    opacity: 0.62;
+}
+
+@media (hover: hover) {
+    html.theme-default .bqst-audio-play:hover {
+        background: var(--accent);
+        color: var(--bg-primary);
+        box-shadow: 0 0 22px var(--accent-glow);
+    }
+}
+
+html.theme-default .bqst-audio-play.playing {
+    background: var(--accent);
+    color: var(--bg-primary);
+    box-shadow: 0 0 24px var(--accent-glow);
+}
+
+html.theme-default .bqst-audio-main {
+    display: grid;
+    gap: 0.8rem;
+    min-width: 0;
+}
+
+html.theme-default .bqst-audio-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+}
+
+html.theme-default .bqst-audio-toggle {
+    display: inline-grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: min(100%, 280px);
+    padding: 0.2rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--bg-primary) 44%, transparent);
+}
+
+html.theme-default .bqst-audio-toggle button {
+    min-height: 34px;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--text-secondary);
+    font-family: 'Chillax', 'Inter', sans-serif;
+    font-size: 0.92rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 160ms ease, color 160ms ease, box-shadow 160ms ease;
+}
+
+html.theme-default .bqst-audio-toggle button.is-active {
+    background: var(--accent);
+    color: var(--bg-primary);
+    box-shadow: 0 0 18px var(--accent-glow);
+}
+
+html.theme-default .bqst-audio-wave {
+    position: relative;
+    height: 68px;
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    overflow: hidden;
+    background:
+        linear-gradient(180deg,
+            color-mix(in srgb, var(--accent) 8%, transparent),
+            color-mix(in srgb, var(--accent) 3%, transparent));
+}
+
+html.theme-default .bqst-audio-wave canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+html.theme-default .bqst-audio-wave span {
+    position: absolute;
+    inset: 50% 0 auto;
+    height: 1px;
+    background: color-mix(in srgb, var(--text-secondary) 34%, transparent);
+}
+
+html.theme-default .bqst-audio-wave i {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 0;
+    display: block;
+    pointer-events: none;
+    background: linear-gradient(90deg,
+        color-mix(in srgb, var(--accent) 26%, transparent),
+        color-mix(in srgb, var(--accent) 8%, transparent));
+    border-right: 2px solid var(--accent);
+    will-change: width;
+}
+
+/* BQST DSP lab in project detail */
+html.theme-default .bqst-lab {
+    box-sizing: border-box;
+    max-width: 100%;
+    margin: 1.4rem 0 2rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    background:
+        linear-gradient(135deg, rgba(255, 204, 128, 0.08), transparent 42%),
+        var(--bg-card);
+    overflow: hidden;
+}
+
+html.theme-default .bqst-lab-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.9rem 1rem 0.75rem;
+    border-bottom: 1px solid var(--border-subtle);
+    color: var(--text-secondary);
+}
+
+html.theme-default .bqst-lab-kicker {
+    font-family: 'Chillax', 'Inter', sans-serif;
+    font-weight: 700;
+    color: var(--accent);
+    font-size: 1rem;
+}
+
+html.theme-default .bqst-lab-meta {
+    color: var(--text-muted);
+    font-size: 0.82rem;
+}
+
+html.theme-default .bqst-interactive-row {
+    display: grid;
+    grid-template-columns: 162px minmax(0, 1fr);
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.45rem 0.8rem 0 0.25rem;
+}
+
+html.theme-default .bqst-drive-control {
+    display: flex;
+    justify-content: center;
+    padding: 0;
+    color: var(--text-secondary);
+}
+
+html.theme-default .bqst-drive-module {
+    display: grid;
+    justify-items: center;
+    gap: 0.55rem;
+}
+
+html.theme-default .bqst-knob-stage {
+    width: 138px;
+    height: 138px;
+    position: relative;
+    display: grid;
+    place-items: center;
+    cursor: grab;
+    touch-action: none;
+    outline: none;
+}
+
+html.theme-default .bqst-knob-stage.is-dragging {
+    cursor: grabbing;
+}
+
+html.theme-default .bqst-knob-stage:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 4px;
+    border-radius: 50%;
+}
+
+html.theme-default .bqst-knob-ticks {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+html.theme-default .bqst-knob-ticks::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 138px;
+    height: 138px;
+    border-radius: 999px;
+    border: 1.2px solid color-mix(in srgb, var(--text-secondary) 72%, transparent);
+    transform: translate(-50%, -50%);
+}
+
+html.theme-default .bqst-knob-tick {
+    --tick-angle: 0deg;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 1.35px;
+    height: 9px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--text-secondary) 70%, transparent);
+    transform-origin: 50% 69px;
+    transform: translate(-50%, -69px) rotate(var(--tick-angle));
+}
+
+html.theme-default .bqst-knob-tick.bqst-tick-major {
+    width: 2.1px;
+    height: 16px;
+    background: color-mix(in srgb, var(--text-secondary) 88%, transparent);
+}
+
+html.theme-default .bqst-mini-knob {
+    --bqst-knob-angle: 0deg;
+    width: 114px;
+    height: 114px;
+    border-radius: 999px;
+    background: url('../images/projects/bqst/knob-large-cream.webp') center / 128% no-repeat;
+    position: relative;
+    transform: rotate(var(--bqst-knob-angle));
+    transform-origin: center;
+}
+
+html.theme-default .bqst-mini-knob span {
+    display: none;
+}
+
+html.theme-default .bqst-drive-control label {
+    display: grid;
+    justify-items: center;
+    gap: 0.1rem;
+    font-family: 'Chillax', 'Inter', sans-serif;
+    text-align: center;
+}
+
+html.theme-default .bqst-drive-control label span {
+    color: var(--accent);
+    font-weight: 700;
+    line-height: 1;
+}
+
+html.theme-default .bqst-drive-control label strong {
+    color: var(--text-secondary);
+    font-size: 1.12rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+html.theme-default .bqst-drive-control input[type="range"] {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+    width: 1px;
+    height: 1px;
+}
+
+html.theme-default .bqst-visual-canvas {
+    box-sizing: border-box;
+    display: block;
+    max-width: 100%;
+    width: 100%;
+    height: 340px;
+}
+
+html.theme-default .bqst-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.7rem;
+    padding: 0 1rem 0.95rem;
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+}
+
+html.theme-default .bqst-legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+html.theme-default .bqst-legend i {
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: 999px;
+    display: inline-block;
+}
+
+/* Try-it button in articles */
+html.theme-default .detail-body a.try-it-btn {
+    display: inline-block;
+    padding: 0.7rem 1.8rem;
+    background: #FFCC80;
+    color: #1a1a2e;
+    font-family: 'Chillax', 'Inter', sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    text-decoration: none;
+    text-decoration-color: transparent;
+    border-radius: 4px;
+    letter-spacing: 0.02em;
+    transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+    overflow-wrap: normal;
+}
+
+html.theme-default[data-theme="light"] .detail-body a.try-it-btn {
+    background: #8D6E63;
+    color: #FFF8E1;
+}
+
+html.theme-default .detail-body a.try-it-btn:link,
+html.theme-default .detail-body a.try-it-btn:visited {
+    background: #FFCC80;
+    color: #1a1a2e;
+}
+
+html.theme-default[data-theme="light"] .detail-body a.try-it-btn:link,
+html.theme-default[data-theme="light"] .detail-body a.try-it-btn:visited {
+    background: #8D6E63;
+    color: #FFF8E1;
+}
+
+@media (hover: hover) {
+    html.theme-default .detail-body a.try-it-btn:hover {
+        background: #FFD99F;
+        color: #0f0f23;
+        text-decoration-color: transparent;
+        transform: translateY(-1px);
+    }
+
+    html.theme-default[data-theme="light"] .detail-body a.try-it-btn:hover {
+        background: #6D4C41;
+        color: #FFF8E1;
+        text-decoration-color: transparent;
+    }
+}
+
+html.theme-default .detail-body a.try-it-btn:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 3px;
+}
+
+html.theme-default .detail-body .bqst-download-actions,
+html.theme-default .detail-body .download-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+html.theme-default .detail-body a.support-btn {
+    display: inline-block;
+    padding: 0.68rem 1.35rem;
+    color: #FFCC80;
+    font-family: 'Chillax', 'Inter', sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    text-decoration: none;
+    text-decoration-color: transparent;
+    border: 1px solid color-mix(in srgb, #FFCC80 58%, transparent);
+    border-radius: 4px;
+    transition: border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+    overflow-wrap: normal;
+}
+
+html.theme-default[data-theme="light"] .detail-body a.support-btn {
+    color: #6D4C41;
+    border-color: color-mix(in srgb, #8D6E63 55%, transparent);
+}
+
+html.theme-default .detail-body a.support-btn:link,
+html.theme-default .detail-body a.support-btn:visited {
+    color: #FFCC80;
+}
+
+html.theme-default[data-theme="light"] .detail-body a.support-btn:link,
+html.theme-default[data-theme="light"] .detail-body a.support-btn:visited {
+    color: #6D4C41;
+}
+
+@media (hover: hover) {
+    html.theme-default .detail-body a.support-btn:hover {
+        color: #FFD99F;
+        border-color: #FFD99F;
+        text-decoration-color: transparent;
+        transform: translateY(-1px);
+    }
+
+    html.theme-default[data-theme="light"] .detail-body a.support-btn:hover {
+        color: #4E342E;
+        border-color: #6D4C41;
+        text-decoration-color: transparent;
+    }
+}
+
+html.theme-default .detail-body a.support-btn:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 3px;
+}
+
+html.theme-default .detail-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-subtle);
+}
+
+html.theme-default .detail-tag {
+    font-size: 0.8rem;
+    padding: 0.3rem 0.8rem;
+    background: rgba(255, 204, 128, 0.08);
+    border: 1px solid rgba(255, 204, 128, 0.15);
+    border-radius: 2px;
+    color: var(--accent-dim);
+    font-weight: 500;
+    text-transform: lowercase;
+}
+
+/* Detail view animations */
+html.theme-default .detail-content-column.fade-in {
+    animation: detailFadeIn 0.7s var(--ease-out-expo) forwards;
+}
+
+html.theme-default .detail-header-column.fade-in {
+    animation: detailFadeIn 0.7s var(--ease-out-expo) forwards;
+}
+
+html.theme-default .detail-content-column.slide-in-right {
+    animation: slideInRight 0.4s var(--ease-out-expo) forwards;
+}
+
+html.theme-default .detail-content-column.slide-in-left {
+    animation: slideInLeft 0.4s var(--ease-out-expo) forwards;
+}
+
+html.theme-default .detail-content-column.slide-out-left {
+    animation: slideOutLeft 0.3s ease forwards;
+}
+
+html.theme-default .detail-content-column.slide-out-right {
+    animation: slideOutRight 0.3s ease forwards;
+}
+
+html.theme-default .detail-header-column.slide-fade-in {
+    animation: detailFadeIn 0.4s ease forwards;
+}
+
+html.theme-default .detail-header-column.slide-fade-out,
+html.theme-default .detail-content-column.slide-fade-out {
+    animation: detailFadeOut 0.3s ease forwards;
+}
+
+/* Grid fades back in when returning from a detail view (mirrors the detail fade-out) */
+html.theme-default .projects-grid-view.grid-fade-in {
+    animation: detailFadeIn 0.35s ease forwards;
+}
+
+@keyframes detailFadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: none; } /* see sectionFadeIn note */
+}
+
+@keyframes detailFadeOut {
+    from { opacity: 1; }
+    to   { opacity: 0; }
+}
+
+@keyframes slideInRight {
+    from { opacity: 0; transform: translateX(80px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideInLeft {
+    from { opacity: 0; transform: translateX(-80px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideOutLeft {
+    from { opacity: 1; transform: translateX(0); }
+    to   { opacity: 0; transform: translateX(-80px); }
+}
+
+@keyframes slideOutRight {
+    from { opacity: 1; transform: translateX(0); }
+    to   { opacity: 0; transform: translateX(80px); }
+}
+
+/* Laptop: 2 bigger cards per row (cards were shrinking to ~285px at three
+   across), and compact filter pills so the curated set keeps to one row */
+@media (min-width: 1101px) and (max-width: 1560px) {
+    html.theme-default .projects-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    html.theme-default .filter-tag {
+        padding: 0.32rem 0.58rem;
+        font-size: 0.74rem;
+    }
+}
+
+/* Tablet: 2-column grid */
+@media (min-width: 769px) and (max-width: 1100px) {
+    html.theme-default .projects-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    html.theme-default .project-detail-view.detail-active {
+        flex-direction: column;
+    }
+
+    html.theme-default .detail-header-column {
+        display: none;
+    }
+
+    html.theme-default .detail-content-column {
+        max-width: 800px;
+        width: 100%;
+        margin: 0 auto;
+        padding: 0 2rem 4rem;
+    }
+
+    html.theme-default .bento-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    html.theme-default .bento-bio {
+        grid-column: span 2;
+    }
+
+    html.theme-default .bento-marquee {
+        grid-column: span 2;
+    }
+
+    html.theme-default .bento-tech {
+        grid-column: span 1;
+    }
+
+    html.theme-default .about-layout {
+        grid-template-columns: 1fr;
+    }
+
+    html.theme-default .scrolling-testimonials {
+        display: none;
+    }
+}
+
+/* ============================================================
+   ABOUT SECTION - BENTO GRID
+   ============================================================ */
+html.theme-default .bento-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-auto-rows: auto;
+    gap: 1rem;
+    max-width: 1100px;
+    width: 100%;
+}
+
+html.theme-default .bento-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: 16px;
+    padding: 2rem;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    transition: border-color 0.3s ease, transform 0.3s ease;
+    overflow: hidden;
+}
+
+@media (hover: hover) {
+    html.theme-default .bento-card:hover {
+        border-color: var(--border-hover);
+        transform: translateY(-3px);
+    }
+}
+
+html.theme-default .bento-label {
+    font-family: 'Chillax', 'Inter', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+    margin-bottom: 1.2rem;
+}
+
+/* Bio card — spans 2 cols */
+html.theme-default .bento-bio {
+    grid-column: span 2;
+}
+
+html.theme-default .bento-bio-text {
+    font-size: 1.15rem;
+    line-height: 1.7;
+    color: var(--text-secondary);
+    margin-bottom: 1.5rem;
+}
+
+html.theme-default .bento-bio-links {
+    display: flex;
+    gap: 1rem;
+}
+
+html.theme-default .bento-social-link {
+    color: var(--text-muted);
+    font-size: 1.4rem;
+    transition: color 0.3s ease, transform 0.3s ease;
+    text-decoration: none;
+}
+
+@media (hover: hover) {
+    html.theme-default .bento-social-link:hover {
+        color: var(--accent);
+        transform: translateY(-2px);
+    }
+}
+
+/* Photo card */
+html.theme-default .bento-photo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 200px;
+}
+
+html.theme-default .bento-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 10px;
+}
+
+html.theme-default .bento-photo-placeholder {
+    width: 100%;
+    height: 100%;
+    min-height: 160px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    background: var(--bg-card-hover);
+    color: var(--text-muted);
+    font-size: 3rem;
+}
+
+/* Tech stack card */
+html.theme-default .bento-tech {
+    grid-column: span 1;
+}
+
+html.theme-default .bento-tech-icons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem 1.2rem;
+}
+
+html.theme-default .tech-icon {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 2rem;
+    color: var(--text-secondary);
+    transition: color 0.3s ease;
+}
+
+html.theme-default .tech-svg {
+    width: 1em;
+    height: 1em;
+}
+
+html.theme-default .tech-label {
+    font-size: 0.65rem;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    opacity: 0.6;
+}
+
+@media (hover: hover) {
+    html.theme-default .tech-icon:hover {
+        color: var(--accent);
+    }
+}
+
+/* Marquee ticker card — full width */
+html.theme-default .bento-marquee {
+    grid-column: span 3;
+    padding: 0.6rem 0;
+    overflow: hidden;
+    position: relative;
+    background: transparent;
+    border: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    mask: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+    -webkit-mask: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+}
+
+@media (hover: hover) {
+    html.theme-default .bento-marquee:hover {
+        border-color: transparent;
+        transform: none;
+    }
+}
+
+html.theme-default .marquee-track {
+    display: flex;
+    width: max-content;
+    animation: marqueeScroll 25s linear infinite;
+}
+
+html.theme-default .marquee-content {
+    font-family: 'Chillax', 'Inter', sans-serif;
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    white-space: nowrap;
+    letter-spacing: 0.05em;
+}
+
+@keyframes marqueeScroll {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+}
+
+/* Stats card */
+html.theme-default .bento-stats-grid {
+    display: flex;
+    gap: 2.5rem;
+    flex-wrap: wrap;
+}
+
+html.theme-default .stat-item {
+    display: flex;
+    flex-direction: column;
+}
+
+html.theme-default .stat-number {
+    font-family: 'Chillax', 'Inter', sans-serif;
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1;
+    margin-bottom: 0.3rem;
+}
+
+html.theme-default .stat-desc {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    text-transform: lowercase;
+}
+
+/* CV card */
+html.theme-default .bento-cv {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+html.theme-default .cv-download {
+    background: transparent;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    padding: 0.7rem 1.5rem;
+    border-radius: 30px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 0.95rem;
+    margin-bottom: 1rem;
+}
+
+@media (hover: hover) {
+    html.theme-default .cv-download:hover {
+        background: var(--accent);
+        color: var(--bg-primary);
+    }
+}
+
+html.theme-default .bento-cv-sub {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+/* About layout — bento + testimonials side by side */
+html.theme-default .about-layout {
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    gap: 2rem;
+    max-width: 1200px;
+    width: 100%;
+    margin-left: max(0px, calc(50vw - 1056px));
+    margin-right: auto;
+    padding-top: 0;
+}
+
+/* ============================================================
+   SCROLLING TESTIMONIALS
+   ============================================================ */
+html.theme-default .scrolling-testimonials {
+    position: relative;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    mask: linear-gradient(to bottom,
+        transparent 0%,
+        black 20%,
+        black 80%,
+        transparent 100%);
+    -webkit-mask: linear-gradient(to bottom,
+        transparent 0%,
+        black 20%,
+        black 80%,
+        transparent 100%);
+}
+
+html.theme-default .testimonials-scroll-container {
+    display: flex;
+    flex-direction: column;
+    animation: scrollTestimonials 60s linear infinite;
+    width: 100%;
+}
+
+@media (hover: hover) {
+    html.theme-default .scrolling-testimonials:hover .testimonials-scroll-container {
+        animation-play-state: paused !important;
+    }
+}
+
+@keyframes scrollTestimonials {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(-50%); }
+}
+
+html.theme-default .scroll-testimonial {
+    margin-bottom: 4rem;
+    opacity: 0.3;
+    transition: all 0.8s ease;
+    padding: 0 1rem;
+    min-height: 120px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+html.theme-default .scroll-testimonial.center {
+    opacity: 1 !important;
+}
+
+@media (hover: hover) {
+    html.theme-default .scrolling-testimonials:hover .scroll-testimonial {
+        opacity: 0.4;
+    }
+
+    html.theme-default .scrolling-testimonials:hover .scroll-testimonial.center {
+        opacity: 1 !important;
+    }
+}
+
+html.theme-default .scroll-quote {
+    font-size: 1.1rem;
+    line-height: 1.6;
+    color: var(--text-secondary);
+    font-style: italic;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    max-width: 280px;
+    word-wrap: break-word;
+    transition: all 0.8s ease;
+}
+
+html.theme-default .scroll-testimonial.center .scroll-quote {
+    color: var(--text-primary) !important;
+}
+
+html.theme-default .scroll-author {
+    font-size: 1rem;
+    color: var(--accent-dim);
+    font-weight: 600;
+    transition: all 0.8s ease;
+}
+
+html.theme-default .scroll-testimonial.center .scroll-author {
+    color: var(--accent) !important;
+}
+
+/* ============================================================
+   LOADING & ERROR STATES
+   ============================================================ */
+html.theme-default .loading-state {
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-secondary);
+}
+
+/* ============================================================
+   MOBILE TAP EFFECTS
+   ============================================================ */
+/* tap-active is applied by JS only on confirmed taps, not swipes */
+
+
+/* ============================================================
+   MOBILE RESPONSIVENESS
+   ============================================================ */
+@media (max-width: 768px) {
+    html.theme-default body {
+        overflow: auto;
+        height: auto;
+        min-height: 100vh;
+    }
+
+    html.theme-default .sidebar {
+        width: 100%;
+        height: auto;
+        position: fixed;
+        top: -200px;
+        left: 0;
+        padding: 1.25rem 0 0.75rem 0;
+        z-index: 1000;
+        transition: top 0.7s var(--ease-spring), visibility 0s linear 0.7s;
+        visibility: hidden;
+        border-right: none;
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    html.theme-default .sidebar.show {
+        top: 0;
+        visibility: visible;
+        transition: top 0.7s var(--ease-spring), visibility 0s linear 0s;
+    }
+
+    html.theme-default .logo {
+        display: block;
+        text-align: center;
+        margin-bottom: 0.5rem;
+        padding: 0;
+    }
+
+    html.theme-default .logo h1 { font-size: 1.3rem; }
+
+    html.theme-default .nav-menu {
+        display: flex;
+        flex-direction: row;
+        justify-content: center;
+        align-items: center;
+        gap: 2rem;
+        height: auto;
+        margin-top: 0;
+        padding: 0 1rem;
+    }
+
+    html.theme-default .nav-item {
+        flex: 1;
+        text-align: center;
+    }
+
+    html.theme-default .nav-link {
+        padding: 0.75rem 1rem;
+        border-radius: 25px;
+        font-size: 1rem;
+        font-weight: 600;
+    }
+
+    html.theme-default .nav-link.active {
+        font-size: 1rem;
+        color: #8D6E63;
+        transform: translateY(3px);
+    }
+
+    html.theme-default .main-content {
+        margin-left: 0;
+        margin-top: 0;
+        padding: 1rem;
+        max-width: 100vw;
+        height: auto;
+        min-height: 100vh;
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+
+    html.theme-default .main-content.nav-visible {
+        margin-top: var(--mobile-nav-height);
+        min-height: calc(100vh - var(--mobile-nav-height));
+        padding-top: 0;
+    }
+
+    html.theme-default .main-content.homepage-active {
+        margin-top: 0;
+        padding: 1rem;
+        height: 100vh;
+        overflow: hidden;
+    }
+
+    html.theme-default .homepage {
+        padding-top: 0;
+        transition: padding-top 0.7s var(--ease-spring);
+    }
+
+    html.theme-default .homepage.nav-visible {
+        padding-top: 80px;
+    }
+
+    html.theme-default .section {
+        height: auto;
+        min-height: calc(100vh - var(--mobile-nav-height));
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding-bottom: 2rem;
+        padding-right: 0;
+        padding-top: 1.5rem;
+    }
+
+    html.theme-default .floating-contact {
+        display: none;
+    }
+
+    /* Disable cursor effects on mobile */
+    /* Homepage mobile */
+html.theme-default .homepage-name-container {
+        min-width: auto;
+        margin-bottom: 7rem;
+    }
+
+    html.theme-default .homepage-name {
+        font-size: 2.5rem;
+    }
+
+    html.theme-default .homepage-name-shadow {
+        font-size: 2.5rem;
+    }
+
+    html.theme-default .homepage-logo {
+        width: 2.5rem;
+        height: 2.5rem;
+    }
+
+    html.theme-default .homepage-menu {
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    html.theme-default .homepage-menu-item {
+        font-size: 1.4rem;
+    }
+
+    html.theme-default .homepage-content {
+        padding-bottom: 20vh;
+    }
+
+    html.theme-default .projects-filter-bar {
+        display: none;
+    }
+
+    html.theme-default .demo-player {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    html.theme-default .bqst-lab-header {
+        flex-direction: column;
+        gap: 0.2rem;
+    }
+
+    html.theme-default .bqst-audio-demo-header {
+        flex-direction: column;
+        gap: 0.2rem;
+    }
+
+    html.theme-default .bqst-audio-demo-body {
+        padding: 0.9rem;
+    }
+
+    html.theme-default .bqst-audio-controls {
+        align-items: stretch;
+        gap: 0.65rem;
+    }
+
+    html.theme-default .bqst-audio-toggle {
+        flex: 1;
+        width: auto;
+    }
+
+    html.theme-default .bqst-interactive-row {
+        grid-template-columns: 1fr;
+        justify-items: center;
+        padding: 0.8rem 0.5rem 0;
+    }
+
+    html.theme-default .bqst-visual-canvas {
+        height: 320px;
+    }
+
+    html.theme-default .bqst-data-table {
+        table-layout: fixed;
+        font-size: 0.72rem;
+        line-height: 1.25;
+    }
+
+    html.theme-default .bqst-data-table th,
+html.theme-default .bqst-data-table td {
+        padding: 0.5rem 0.32rem;
+    }
+
+    html.theme-default .gloss-tooltip {
+        width: min(260px, calc(100vw - 2rem));
+    }
+
+    html.theme-default .demo-waveform-canvas {
+        width: 100%;
+        height: 48px;
+    }
+
+    html.theme-default .demo-meters {
+        justify-content: center;
+    }
+
+    /* About mobile */
+html.theme-default .about-layout {
+        grid-template-columns: 1fr;
+    }
+
+    html.theme-default .scrolling-testimonials {
+        display: none;
+    }
+
+    html.theme-default .bento-grid {
+        grid-template-columns: 1fr;
+        gap: 0.8rem;
+    }
+
+    html.theme-default .bento-bio,
+html.theme-default .bento-tech,
+html.theme-default .bento-marquee {
+        grid-column: span 1;
+    }
+
+    html.theme-default .bento-card {
+        padding: 1.5rem;
+    }
+
+    html.theme-default .stat-number {
+        font-size: 2rem;
+    }
+
+    html.theme-default .tech-icon {
+        font-size: 1.6rem;
+    }
+
+    /* Projects mobile */
+html.theme-default .projects-grid-view {
+        padding: 1rem;
+        margin-left: 0;
+    }
+
+    html.theme-default .projects-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    html.theme-default .project-card-image {
+        height: 160px;
+    }
+
+    html.theme-default .project-detail-view.detail-active {
+        flex-direction: column;
+        gap: 0.5rem;
+        margin-left: 0;
+        max-width: 100%;
+    }
+
+    html.theme-default .detail-header-column {
+        position: static;
+        width: 100%;
+        min-width: 0;
+        min-height: 0;
+        height: auto;
+        max-height: none;
+        overflow: hidden;
+        padding: 0.75rem 0 0;
+    }
+
+    html.theme-default .detail-header-column > * {
+        width: 100%;
+        transform: none;
+    }
+
+    html.theme-default .detail-toc {
+        display: none;
+    }
+
+    html.theme-default .detail-sidebar-nav {
+        position: static;
+        flex-direction: row;
+        justify-content: center;
+        gap: 2rem;
+        margin-top: 0;
+        margin-bottom: 0.5rem;
+        padding: 0;
+    }
+
+    html.theme-default .detail-sidebar-nav .detail-nav-link {
+        flex: 1;
+        justify-content: center;
+    }
+
+    html.theme-default .detail-content-column {
+        padding: 0 0 2rem;
+    }
+
+    html.theme-default .detail-hero-image {
+        max-height: 220px;
+    }
+
+    html.theme-default .detail-title {
+        font-size: 1.4rem;
+    }
+
+    html.theme-default .detail-body {
+        font-size: 0.95rem;
+        padding-bottom: 2rem;
+    }
+
+    /* Music mobile */
+html.theme-default .music-list {
+        margin-left: 0;
+        max-width: 100%;
+    }
+
+    html.theme-default .music-item {
+        flex-direction: column;
+        gap: 1rem;
+        min-width: 0;
+    }
+
+    html.theme-default .music-header {
+        padding-bottom: 1rem;
+        padding-left: 0;
+        max-width: 100%;
+    }
+
+    html.theme-default .music-content {
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    html.theme-default .music-header-text {
+        overflow: hidden;
+    }
+
+    html.theme-default .music-title {
+        font-size: 1.4rem;
+    }
+
+    html.theme-default .music-cover {
+        align-self: flex-start;
+    }
+
+    html.theme-default .music-links {
+        flex-direction: column;
+        align-items: stretch;
+        padding-left: 0;
+    }
+
+    html.theme-default .music-link {
+        justify-content: center;
+    }
+
+    html.theme-default .waveform-player {
+        padding: 1rem;
+    }
+
+    html.theme-default .waveform-play-btn {
+        width: 48px;
+        height: 48px;
+        min-width: 48px;
+    }
+
+    html.theme-default .waveform-canvas {
+        flex: 1 1 0;
+        max-width: none;
+    }
+
+    html.theme-default .audio-meters {
+        display: none;
+    }
+}
+
+/* ============================================================
+   LIVE CHORD MONITOR — embedded demo
+   ============================================================ */
+html.theme-default .lcm-demo {
+    margin: 1.5rem 0 0.5rem;
+}
+
+html.theme-default .lcm-readout {
+    /* fixed height + centering so the piano never shifts when a chord appears */
+    height: 6.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    margin-bottom: 1.25rem;
+    overflow: hidden;
+}
+
+html.theme-default .lcm-chord {
+    font-family: 'Chillax', 'Inter', sans-serif;
+    font-size: 2.6rem;
+    font-weight: 700;
+    color: var(--accent);
+    line-height: 1.1;
+    white-space: nowrap;
+}
+
+html.theme-default .lcm-chord.lcm-empty {
+    color: var(--text-secondary);
+    font-size: 1.4rem;
+    font-weight: 500;
+}
+
+html.theme-default .lcm-notes {
+    margin-top: 0.5rem;
+    font-size: 1.05rem;
+    letter-spacing: 0.04em;
+    color: var(--text-primary);
+    min-height: 1.4rem;
+    white-space: nowrap;
+}
+
+html.theme-default .lcm-alts {
+    margin-top: 0.35rem;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    min-height: 1.1rem;
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+html.theme-default .lcm-piano {
+    position: relative;
+    display: flex;
+    height: 160px;
+    max-width: 560px;
+    margin: 0 auto;
+    user-select: none;
+    touch-action: none;
+}
+
+html.theme-default .lcm-key {
+    padding: 0;
+    font: inherit;
+    cursor: pointer;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+}
+
+html.theme-default .lcm-key.white {
+    background: #ECEAE3;
+    border: 1px solid #b9b6ad;
+    border-radius: 0 0 5px 5px;
+    margin: 0 1px;
+}
+
+html.theme-default .lcm-key.black {
+    position: absolute;
+    top: 0;
+    width: 2.1rem;
+    height: 62%;
+    transform: translateX(-50%);
+    background: #20202e;
+    border: 2px solid #14141f;
+    border-top: none; /* top edge is flush with the piano top; only sides + bottom need an outline */
+    border-radius: 0 0 4px 4px;
+    z-index: 2;
+}
+
+html.theme-default .lcm-key.active {
+    background: var(--accent);
+    border-color: var(--accent);
+}
+
+/* Keep a dark outline on active black keys so they stay distinct from an
+   adjacent active (also-amber) white key instead of merging into one blob. */
+html.theme-default .lcm-key.black.active {
+    border-color: #14141f;
+}
+
+html.theme-default .lcm-key-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding-bottom: 0.5rem;
+    pointer-events: none;
+}
+
+html.theme-default .lcm-key.white .lcm-key-label { color: #6a6a72; }
+html.theme-default .lcm-key.black .lcm-key-label { color: #cfcfd8; padding-bottom: 0.35rem; }
+html.theme-default .lcm-key.active .lcm-key-label { color: #1a1a2e; }
+
+html.theme-default .lcm-hint {
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-top: 1rem;
+}
+
+
+@media (max-width: 768px) {
+    html.theme-default .article-stat-grid,
+html.theme-default .article-visual-pair {
+        grid-template-columns: 1fr;
+    }
+
+    html.theme-default .article-stat-card {
+        border-right: 0;
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    html.theme-default .article-stat-card:last-child {
+        border-bottom: 0;
+    }
+
+    html.theme-default .lcm-piano { height: 132px; }
+    html.theme-default .lcm-key.black { width: 1.6rem; }
+    html.theme-default .lcm-chord { font-size: 2rem; }
+}
+
+/* ============================================================
+   QUANTLAB ANALYST VISUALS (quantlab-analyst project article)
+   ============================================================ */
+html.theme-default .qla-visual {
+    box-sizing: border-box;
+    max-width: 100%;
+    margin: 1.4rem 0 2rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    background:
+        linear-gradient(135deg, rgba(255, 204, 128, 0.08), transparent 42%),
+        var(--bg-card);
+    overflow: hidden;
+}
+
+html.theme-default .qla-visual-header {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.35rem 1rem;
+    padding: 0.9rem 1rem 0.75rem;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+html.theme-default .qla-visual-kicker {
+    font-family: 'Chillax', 'Inter', sans-serif;
+    font-weight: 700;
+    color: var(--accent);
+    font-size: 1rem;
+}
+
+html.theme-default .qla-visual-meta {
+    color: var(--text-muted);
+    font-size: 0.82rem;
+}
+
+html.theme-default .qla-visual-body {
+    padding: 1rem;
+}
+
+html.theme-default .qla-btn {
+    font-family: 'Chillax', 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 0.88rem;
+    padding: 0.45rem 1.1rem;
+    border-radius: 999px;
+    border: 1px solid var(--border-subtle);
+    background: var(--bg-card);
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+html.theme-default .qla-btn:hover {
+    border-color: var(--border-hover);
+    background: var(--bg-card-hover);
+}
+
+html.theme-default .qla-btn:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+html.theme-default .qla-btn-accent {
+    background: var(--accent);
+    color: var(--bg-primary);
+    border-color: transparent;
+}
+
+html.theme-default .qla-btn-accent:hover {
+    background: var(--accent);
+    border-color: transparent;
+    filter: brightness(1.08);
+}
+
+html.theme-default[data-theme="light"] .qla-btn-accent {
+    color: #FFF8E1;
+}
+
+/* --- 1. compounding slider --- */
+html.theme-default .qla-compound-takeaway {
+    margin: 0.4rem 0 0.8rem;
+    min-height: 2.9em;
+    color: var(--text-secondary);
+    font-size: 0.92rem;
+    font-style: italic;
+}
+
+html.theme-default .qla-compound-canvas {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+}
+
+/* --- 2. gate playground --- */
+html.theme-default .qla-memo {
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    background: var(--bg-card);
+    padding: 0.9rem 1rem;
+    white-space: pre-wrap;
+    font-size: 0.85rem;
+    line-height: 1.55;
+    color: var(--text-secondary);
+}
+
+html.theme-default .qla-mark-bad {
+    background: rgba(224, 85, 85, 0.18);
+    color: #E05555;
+    border-bottom-color: #E05555;
+    font-weight: 700;
+}
+
+html.theme-default[data-theme="light"] .qla-mark-bad {
+    color: #B23B3B;
+    border-bottom-color: #B23B3B;
+}
+
+html.theme-default .qla-mark-bad,
+html.theme-default .qla-mark-good {
+    padding: 0 0.15em;
+    border-radius: 3px;
+}
+
+html.theme-default .qla-mark-good {
+    background: rgba(102, 187, 106, 0.18);
+    color: #66BB6A;
+    font-weight: 700;
+}
+
+/* --- gate report strip: the fixer's input --- */
+html.theme-default .qla-gate-report-strip {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    margin: 0.2rem 0 0.8rem;
+    padding: 0.5rem 0.7rem;
+    border: 1px dashed var(--border-subtle);
+    border-radius: 6px;
+    background: var(--bg-card);
+}
+
+html.theme-default .qla-gate-report-label,
+html.theme-default .qla-gate-report-tail {
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+html.theme-default .qla-gate-chip {
+    font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+    font-size: 0.78rem;
+    padding: 0.08em 0.45em;
+    border-radius: 4px;
+    background: rgba(224, 85, 85, 0.18);
+    color: #E05555;
+    border: 1px solid rgba(224, 85, 85, 0.4);
+}
+
+html.theme-default[data-theme="light"] .qla-gate-chip {
+    background: rgba(178, 59, 59, 0.12);
+    color: #B23B3B;
+    border-color: rgba(178, 59, 59, 0.35);
+}
+
+/* --- judge final-score line (separate from per-round feedback) --- */
+html.theme-default .qla-judge-score {
+    /* one reserved line, same recipe as the feedback row: appearing at
+       round 3 must not change the visual's height */
+    margin: 0;
+    min-height: 1.7em;
+    line-height: 1.7;
+    text-align: center;
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+html.theme-default[data-theme="light"] .qla-mark-good {
+    color: #2E7D32;
+}
+
+html.theme-default .qla-gate-report-title {
+    font-family: 'Chillax', 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    display: flex;
+    gap: 0.7rem;
+    align-items: baseline;
+    flex-wrap: wrap;
+}
+
+html.theme-default .qla-fixer-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 0.9rem;
+}
+
+html.theme-default .qla-fixer-col-title {
+    font-family: 'Chillax', 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    margin-bottom: 0.4rem;
+}
+
+/* --- 3. you be the judge --- */
+html.theme-default .qla-judge-status {
+    font-family: 'Chillax', 'Inter', sans-serif;
+    font-weight: 700;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    margin: 0 0 0.7rem;
+}
+
+html.theme-default .qla-judge-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 0.9rem;
+    margin-bottom: 0.9rem;
+}
+
+html.theme-default .qla-judge-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.7rem;
+}
+
+html.theme-default .qla-judge-col .qla-judge-panel {
+    align-self: stretch;
+}
+
+html.theme-default .qla-judge-probe {
+    visibility: hidden;
+}
+
+html.theme-default .qla-judge-panel {
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    background: var(--bg-card);
+    overflow: hidden;
+}
+
+html.theme-default .qla-judge-panel.is-pick-correct {
+    border-color: #66BB6A;
+    box-shadow: 0 0 0 1px #66BB6A;
+}
+
+html.theme-default[data-theme="light"] .qla-judge-panel.is-pick-correct {
+    border-color: #2E7D32;
+    box-shadow: 0 0 0 1px #2E7D32;
+}
+
+html.theme-default .qla-judge-panel.is-pick-wrong {
+    border-color: #E05555;
+    box-shadow: 0 0 0 1px #E05555;
+}
+
+html.theme-default[data-theme="light"] .qla-judge-panel.is-pick-wrong {
+    border-color: #B23B3B;
+    box-shadow: 0 0 0 1px #B23B3B;
+}
+
+html.theme-default .qla-judge-panel-label {
+    font-family: 'Chillax', 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 0.82rem;
+    color: var(--accent);
+    padding: 0.55rem 0.9rem;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+html.theme-default .qla-judge-panel-body {
+    padding: 0.8rem 0.9rem;
+    white-space: pre-wrap;
+    font-size: 0.83rem;
+    line-height: 1.55;
+    color: var(--text-secondary);
+}
+
+html.theme-default .qla-judge-guess:disabled {
+    opacity: 0.45;
+    cursor: default;
+}
+
+html.theme-default .qla-judge-guess:disabled:hover {
+    border-color: var(--border-subtle);
+    background: var(--bg-card);
+}
+
+html.theme-default .qla-judge-controls {
+    justify-content: center;
+    min-height: 2.6em;
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    margin-top: 0.2rem;
+}
+
+html.theme-default .qla-judge-feedback {
+    /* one line at the inherited 1.7 line-height, reserved exactly */
+    min-height: 1.7em;
+    line-height: 1.7;
+    text-align: center;
+    color: var(--text-primary);
+    font-size: 0.92rem;
+    font-weight: 700;
+    margin: 0.3rem 0 0;
+}
+
+html.theme-default .qla-judge-feedback.is-correct { color: #66BB6A; }
+html.theme-default[data-theme="light"] .qla-judge-feedback.is-correct { color: #2E7D32; }
+html.theme-default .qla-judge-feedback.is-wrong { color: #E05555; }
+html.theme-default[data-theme="light"] .qla-judge-feedback.is-wrong { color: #B23B3B; }
+
+/* --- 4. the roster exhibit --- */
+html.theme-default .qla-roster-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin: 0.7rem 0 0.5rem;
+}
+
+html.theme-default .qla-roster-label {
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+html.theme-default .qla-roster-select {
+    background: var(--bg-card);
+    color: var(--text-primary);
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    padding: 0.35rem 0.6rem;
+    font-family: inherit;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+html.theme-default .qla-roster-select:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+}
+
+html.theme-default .qla-roster-desc {
+    margin: 0 0 0.4rem;
+    min-height: 2.6em; /* two lines: switching models never reflows */
+    color: var(--text-secondary);
+    font-size: 0.88rem;
+    line-height: 1.3;
+}
+
+html.theme-default .qla-roster-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem 1.1rem;
+    margin-bottom: 0.55rem;
+    min-height: 1.4em;
+}
+
+html.theme-default .qla-roster-stat {
+    color: var(--text-muted);
+    font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+    font-size: 0.76rem;
+    font-variant-numeric: tabular-nums;
+}
+
+html.theme-default .qla-roster-verdict {
+    font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+    font-size: 0.76rem;
+    font-weight: 700;
+    color: #E05555;
+}
+
+html.theme-default .qla-roster-verdict.is-pass { color: #66BB6A; }
+html.theme-default[data-theme="light"] .qla-roster-verdict { color: #B23B3B; }
+html.theme-default[data-theme="light"] .qla-roster-verdict.is-pass { color: #2E7D32; }
+
+html.theme-default .qla-roster-memo {
+    height: 300px;
+    min-height: 160px;
+    max-height: 75vh;
+    overflow: auto;
+    margin-top: 0.5rem;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-subtle) transparent;
+}
+
+html.theme-default .qla-roster-memo::-webkit-scrollbar { width: 6px; }
+html.theme-default .qla-roster-memo::-webkit-scrollbar-thumb {
+    background: var(--border-subtle);
+    border-radius: 3px;
+}
+
+html.theme-default .qla-roster-grip {
+    height: 16px;
+    margin-top: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: ns-resize;
+    touch-action: none;
+    border-radius: 4px;
+}
+
+html.theme-default .qla-roster-grip::before {
+    content: '';
+    width: 40px;
+    height: 7px;
+    background: repeating-linear-gradient(
+        to bottom,
+        var(--text-muted) 0 1px,
+        transparent 1px 3px
+    );
+    opacity: 0.55;
+    transition: opacity 0.15s ease;
+}
+
+html.theme-default .qla-roster-grip:hover::before,
+html.theme-default .qla-roster-grip:focus-visible::before {
+    opacity: 1;
+}
+
+html.theme-default .qla-roster-grip:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+}
+
+html.theme-default .qlf-legend-swatch.qla-sw-amber { background: #FFCC80; }
+html.theme-default[data-theme="light"] .qlf-legend-swatch.qla-sw-amber { background: #C77800; }
+html.theme-default .qlf-legend-swatch.qla-sw-good { background: #66BB6A; }
+html.theme-default .qlf-legend-swatch.qla-sw-bad { background: #E05555; }
+html.theme-default[data-theme="light"] .qlf-legend-swatch.qla-sw-good { background: #2E7D32; }
+html.theme-default[data-theme="light"] .qlf-legend-swatch.qla-sw-bad { background: #B23B3B; }
+
+@media (prefers-reduced-motion: reduce) {
+    html.theme-default .qla-btn {
+        transition: none;
+    }
+}
+
+@media (max-width: 640px) {
+    html.theme-default .qla-visual-body {
+        padding: 0.8rem;
+    }
+}
+
+/* ============================================================
+   QUANTLAB FIN VISUALS (quantlab project article)
+   Reuses the qla-visual shell, buttons and slider components.
+   ============================================================ */
+
+/* --- 1. the lookahead cheat --- */
+html.theme-default .qlf-mode-toggle {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+}
+
+html.theme-default .qlf-mode-btn.is-active {
+    background: var(--accent);
+    color: var(--bg-primary);
+    border-color: transparent;
+}
+
+html.theme-default[data-theme="light"] .qlf-mode-btn.is-active {
+    color: #FFF8E1;
+}
+
+html.theme-default .qlf-mode-cheat.is-active {
+    background: #E05555;
+    color: #1a1a1a;
+}
+
+html.theme-default[data-theme="light"] .qlf-mode-cheat.is-active {
+    background: #B23B3B;
+    color: #FFF8E1;
+}
+
+html.theme-default .qlf-la-readout {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 0.7rem;
+    margin-bottom: 0.9rem;
+}
+
+html.theme-default .qlf-la-stat {
+    display: grid;
+    gap: 0.15rem;
+    padding: 0.5rem 0.7rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+}
+
+html.theme-default .qlf-la-stat-hold {
+    opacity: 0.85;
+}
+
+html.theme-default .qlf-la-big {
+    font-family: 'Chillax', 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 1.7rem;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-primary);
+}
+
+html.theme-default .qlf-la-stat-cheat .qlf-la-big { color: #E05555; }
+html.theme-default[data-theme="light"] .qlf-la-stat-cheat .qlf-la-big { color: #B23B3B; }
+html.theme-default .qlf-la-stat-honest .qlf-la-big { color: #FFCC80; }
+html.theme-default[data-theme="light"] .qlf-la-stat-honest .qlf-la-big { color: #C77800; }
+
+html.theme-default .qlf-la-stat-label {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+}
+
+html.theme-default .qlf-la-window-note {
+    margin: 0.35rem 0 0.7rem;
+    color: var(--text-muted);
+    font-size: 0.78rem;
+}
+
+/* --- shared: legends + hover crosshair --- */
+html.theme-default .qlf-legend {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.3rem 1rem;
+    flex-wrap: wrap;
+    margin: 0.4rem 0 0.3rem;
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+}
+
+html.theme-default .qlf-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+html.theme-default .qlf-legend-swatch {
+    display: inline-block;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+html.theme-default .qlf-sw-accent { color: #FFCC80; }
+html.theme-default[data-theme="light"] .qlf-sw-accent { color: #C77800; }
+html.theme-default .qlf-sw-warn { color: #E05555; }
+html.theme-default[data-theme="light"] .qlf-sw-warn { color: #B23B3B; }
+html.theme-default .qlf-sw-muted { color: var(--text-muted); }
+
+html.theme-default .qlf-legend-swatch.qlf-sw-gap {
+    background: rgba(224, 85, 85, 0.16);
+    box-shadow: inset 0 0 0 1px rgba(224, 85, 85, 0.45);
+}
+
+html.theme-default[data-theme="light"] .qlf-legend-swatch.qlf-sw-gap {
+    background: rgba(178, 59, 59, 0.14);
+    box-shadow: inset 0 0 0 1px rgba(178, 59, 59, 0.45);
+}
+
+html.theme-default .qlf-legend-swatch.qlf-sw-window {
+    background: rgba(232, 230, 227, 0.1);
+    box-shadow: inset 0 0 0 1px rgba(232, 230, 227, 0.35);
+}
+
+html.theme-default[data-theme="light"] .qlf-legend-swatch.qlf-sw-window {
+    background: rgba(62, 39, 35, 0.08);
+    box-shadow: inset 0 0 0 1px rgba(62, 39, 35, 0.3);
+}
+
+/* rung swatch: a short vertical tick, matching the canvas rungs */
+html.theme-default .qlf-legend-swatch.qlf-sw-rung {
+    width: 3px;
+    height: 12px;
+    border-radius: 1px;
+    color: var(--text-secondary);
+}
+
+html.theme-default .qlf-crosshair-canvas {
+    touch-action: pan-y;
+    cursor: crosshair;
+}
+
+/* visually-hidden range input: keyboard fallback for the crosshair */
+html.theme-default .qlf-sr-range {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+html.theme-default .qla-compound-canvas-wrap {
+    position: relative;
+}
+
+html.theme-default .qla-compound-canvas-wrap.qlf-cross-focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+    border-radius: 4px;
+}
+
+html.theme-default .qlf-readout {
+    display: flex;
+    gap: 0.4rem 1.4rem;
+    flex-wrap: wrap;
+    margin: 0.5rem 0 0.6rem;
+    /* line up the first field with the chart's plot area (canvas padL = 44px) */
+    padding-left: 44px;
+    transition: opacity 0.15s ease;
+}
+
+html.theme-default .qlf-readout.is-idle {
+    opacity: 0.45;
+}
+
+html.theme-default .qlf-readout-field {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.45rem;
+}
+
+html.theme-default .qlf-readout-label {
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+html.theme-default .qlf-readout-value {
+    display: inline-block;
+    color: var(--text-primary);
+    font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+    font-size: 0.84rem;
+    font-variant-numeric: tabular-nums;
+    border-bottom: 1px solid var(--border-subtle);
+    text-align: right;
+    min-height: 1.3em;
+}
+
+/* --- 2. kalman vs static --- */
+html.theme-default .qlf-chip-note {
+    margin: 0.4rem 0 0;
+    color: var(--text-muted);
+    font-size: 0.78rem;
+}
+
+/* --- imatrix quantization explainer captions --- */
+/* Both captions share one grid cell; the inactive one stays laid out but
+   invisible, so the cell height is the max of the two and toggling never
+   moves anything below the chart. */
+html.theme-default .qla-imx-captions {
+    display: grid;
+    margin-top: 0.4rem;
+}
+
+html.theme-default .qla-imx-captions p {
+    grid-area: 1 / 1;
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.92rem;
+    font-style: italic;
+}
+
+html.theme-default .qla-imx-captions p.is-off {
+    visibility: hidden;
+}
+
+/* --- 3. survivorship wedge + believe-o-meter --- */
+html.theme-default .qlf-meter {
+    margin-top: 1rem;
+    padding-top: 0.9rem;
+    border-top: 1px solid var(--border-subtle);
+}
+
+html.theme-default .qlf-meter-question {
+    margin: 0.5rem 0 0.6rem;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+html.theme-default .qlf-meter-presets {
+    display: flex;
+    gap: 0.45rem;
+    flex-wrap: wrap;
+}
+
+html.theme-default .qlf-meter-btn {
+    font-size: 0.82rem;
+    padding: 0.38rem 0.9rem;
+}
+
+html.theme-default .qlf-meter-btn.is-active {
+    background: var(--accent);
+    color: var(--bg-primary);
+    border-color: transparent;
+}
+
+html.theme-default[data-theme="light"] .qlf-meter-btn.is-active {
+    color: #FFF8E1;
+}
+
+html.theme-default .qlf-meter-big {
+    margin: 0.7rem 0 0.3rem;
+    font-family: 'Chillax', 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 1.25rem;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+}
+
+html.theme-default .qlf-meter-big.is-at-measured {
+    color: var(--accent);
+}
+
+/* --- 4. risk gate playground --- */
+/* full-width stacked rows */
+html.theme-default .qlf-risk-row {
+    margin-top: 0.8rem;
+}
+
+html.theme-default .qlf-risk-row > .qlf-btn-group-label {
+    margin-bottom: 0.3rem;
+}
+
+html.theme-default .qlf-limits-row {
+    display: flex;
+    gap: 0.3rem 1.6rem;
+    flex-wrap: wrap;
+    align-items: baseline;
+}
+
+html.theme-default .qlf-limits-value {
+    color: var(--text-secondary);
+    font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+    font-size: 0.82rem;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+html.theme-default .qlf-state-tiles {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+}
+
+@media (max-width: 560px) {
+    html.theme-default .qlf-state-tiles {
+        grid-template-columns: 1fr;
+    }
+}
+
+html.theme-default .qlf-state-tile {
+    display: grid;
+    grid-template-rows: auto auto;
+    gap: 0.15rem;
+    padding: 0.45rem 0.6rem;
+    min-width: 0;
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    transition: border-color 0.25s ease;
+}
+
+html.theme-default .qlf-state-label {
+    color: var(--text-muted);
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* tile body: exactly three value lines tall in every tile, always */
+html.theme-default .qlf-state-body {
+    display: flex;
+    flex-direction: column;
+    height: 4.2em;
+    min-width: 0;
+    font-size: 0.82rem;
+}
+
+html.theme-default .qlf-state-body-center {
+    justify-content: center;
+    gap: 0.1rem;
+}
+
+html.theme-default .qlf-state-value {
+    color: var(--text-primary);
+    font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+    line-height: 1.4;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+html.theme-default .qlf-state-sub {
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    line-height: 1.4;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+/* positions: one fixed line per allowlisted symbol, amount right-aligned */
+html.theme-default .qlf-pos-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    line-height: 1.4;
+    height: 1.4em;
+    font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+    font-variant-numeric: tabular-nums;
+}
+
+html.theme-default .qlf-pos-sym {
+    color: var(--text-secondary);
+}
+
+html.theme-default .qlf-pos-amt {
+    color: var(--text-muted);
+}
+
+html.theme-default .qlf-pos-amt.is-held {
+    color: var(--text-primary);
+}
+
+html.theme-default .qlf-state-value.is-negative { color: #E05555; }
+html.theme-default[data-theme="light"] .qlf-state-value.is-negative { color: #B23B3B; }
+
+html.theme-default .qlf-state-tile.qlf-pulse {
+    border-color: var(--accent);
+    animation: qlf-tile-pulse 0.6s ease;
+}
+
+@keyframes qlf-tile-pulse {
+    0% { background: rgba(255, 204, 128, 0.18); }
+    100% { background: transparent; }
+}
+
+html.theme-default[data-theme="light"] .qlf-state-tile.qlf-pulse {
+    animation-name: qlf-tile-pulse-light;
+}
+
+@keyframes qlf-tile-pulse-light {
+    0% { background: rgba(141, 110, 99, 0.15); }
+    100% { background: transparent; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html.theme-default .qlf-state-tile.qlf-pulse { animation: none; }
+}
+
+html.theme-default .qlf-risk-bottom {
+    display: flex;
+    gap: 0.8rem 2rem;
+    flex-wrap: wrap;
+    margin-top: 0.9rem;
+}
+
+html.theme-default .qlf-risk-bottom .qlf-order-row {
+    max-width: 100%;
+}
+
+html.theme-default .qlf-btn-group {
+    min-width: 0;
+}
+
+html.theme-default .qlf-btn-group-label {
+    display: block;
+    margin-bottom: 0.35rem;
+    color: var(--text-muted);
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+html.theme-default .qlf-status-strip {
+    display: block;
+    box-sizing: border-box;
+    height: 2.4em;
+    line-height: 2.4em;
+    padding: 0 0.6rem;
+    border-radius: 5px;
+    border: 1px solid var(--border-subtle);
+    color: var(--text-muted);
+    font-family: 'Chillax', 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 0.82rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+html.theme-default .qlf-status-strip.is-tripped {
+    background: rgba(224, 85, 85, 0.15);
+    border-color: #E05555;
+    color: #E05555;
+}
+
+html.theme-default[data-theme="light"] .qlf-status-strip.is-tripped {
+    background: rgba(178, 59, 59, 0.1);
+    border-color: #B23B3B;
+    color: #B23B3B;
+}
+
+html.theme-default .qla-visual.qlf-is-killed {
+    border-color: #E05555;
+}
+
+html.theme-default[data-theme="light"] .qla-visual.qlf-is-killed {
+    border-color: #B23B3B;
+}
+
+html.theme-default .qlf-is-killed [data-buy] {
+    opacity: 0.45;
+}
+
+html.theme-default .qlf-risk-buttons {
+    display: flex;
+    gap: 0.45rem;
+    flex-wrap: wrap;
+}
+
+/* order buttons stay in one straight row; scroll horizontally if tight,
+   wrap only at true mobile widths */
+html.theme-default .qlf-risk-buttons.qlf-order-row {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-hover) transparent;
+}
+
+html.theme-default .qlf-risk-buttons.qlf-order-row::-webkit-scrollbar {
+    height: 5px;
+}
+
+html.theme-default .qlf-risk-buttons.qlf-order-row::-webkit-scrollbar-thumb {
+    background: var(--border-hover);
+    border-radius: 4px;
+}
+
+html.theme-default .qlf-order-row .qlf-risk-btn {
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+    html.theme-default .qlf-risk-buttons.qlf-order-row {
+        flex-wrap: wrap;
+        overflow-x: visible;
+    }
+}
+
+html.theme-default .qlf-risk-btn {
+    font-size: 0.8rem;
+    padding: 0.38rem 0.85rem;
+}
+
+html.theme-default .qlf-risk-btn-warn {
+    color: #E05555;
+    border-color: rgba(224, 85, 85, 0.5);
+}
+
+html.theme-default[data-theme="light"] .qlf-risk-btn-warn {
+    color: #B23B3B;
+    border-color: rgba(178, 59, 59, 0.5);
+}
+
+html.theme-default .qlf-audit-log {
+    height: 280px;
+    overflow-y: auto;
+    padding: 0.5rem 0.6rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    background: var(--bg-primary);
+    font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+    font-size: 0.76rem;
+    line-height: 1.5;
+}
+
+html.theme-default .qlf-audit-log:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+html.theme-default .qlf-audit-line {
+    display: flex;
+    gap: 0.5rem;
+    align-items: baseline;
+    padding: 0.1rem 0;
+    color: var(--text-secondary);
+}
+
+html.theme-default .qlf-audit-ts {
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+
+html.theme-default .qlf-audit-verdict {
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+html.theme-default .qlf-audit-line.is-approved .qlf-audit-verdict { color: #66BB6A; }
+html.theme-default[data-theme="light"] .qlf-audit-line.is-approved .qlf-audit-verdict { color: #2E7D32; }
+html.theme-default .qlf-audit-line.is-rejected .qlf-audit-verdict { color: #E05555; }
+html.theme-default[data-theme="light"] .qlf-audit-line.is-rejected .qlf-audit-verdict { color: #B23B3B; }
+
+/* slim scrollbars for the scrolling panels in the quantlab visuals */
+html.theme-default .qlf-audit-log {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-hover) transparent;
+}
+
+html.theme-default .qlf-audit-log::-webkit-scrollbar {
+    width: 7px;
+    height: 7px;
+}
+
+html.theme-default .qlf-audit-log::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+html.theme-default .qlf-audit-log::-webkit-scrollbar-thumb {
+    background: var(--border-hover);
+    border-radius: 4px;
+}
+
+html.theme-default .qlf-audit-log::-webkit-scrollbar-thumb:hover {
+    background: var(--accent);
+}

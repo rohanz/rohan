@@ -23,7 +23,10 @@ const {
 // thumbnails) have arbitrary aspect ratios, so only emit the width/height
 // meta for the known default.
 const isDefaultOg = ogImage === undefined;
-const canonical = new URL(Astro.url.pathname, Astro.site).href;
+const canonicalPath = Astro.url.pathname === '/transit/'
+  ? '/'
+  : Astro.url.pathname.replace(/^\/transit(?=\/|$)/, '') || '/';
+const canonical = new URL(canonicalPath, Astro.site).href;
 const ogAbs = new URL(ogImage ?? '/assets/images/og.png', Astro.site).href;
 const personLd = JSON.stringify({
   '@context': 'https://schema.org',

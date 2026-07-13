@@ -1,0 +1,62 @@
+---
+import DefaultLayout from '../../layouts/DefaultLayout.astro';
+import { getCollection } from 'astro:content';
+
+const projects = (await getCollection('projects')).sort((a, b) => a.data.order - b.data.order);
+const visibleForFilters = projects.filter((project) => !project.data.unlisted);
+const allTechs = new Set(visibleForFilters.flatMap((project) => project.data.technologies));
+const curatedFilters = [
+  { label: 'ai agents', match: ['AI Agents'] },
+  { label: 'fine-tuning', match: ['Fine-tuning', 'QLoRA'] },
+  { label: 'evals', match: ['Evals'] },
+  { label: 'machine learning', match: ['Machine Learning'] },
+  { label: 'finance', match: ['Finance', 'Backtesting'] },
+  { label: 'dsp', match: ['DSP'] },
+  { label: 'data pipelines', match: ['Data Pipelines'] },
+  { label: 'cloud infra', match: ['Cloud Infra'] },
+  { label: 'devops', match: ['DevOps'] },
+  { label: 'web scraping', match: ['Web Scraping'] },
+].filter((filter) => filter.match.some((tag) => allTechs.has(tag)));
+---
+<DefaultLayout title="projects - rohan.jk" description="Projects by rohan.jk — software, AI, audio, and data engineering builds." section="projects">
+  <section id="projects" class="section active">
+    <div class="projects-grid-view" id="projectsGridView">
+      <div class="projects-filter-bar" id="projectsFilterBar">
+        <button class="filter-tag active" data-filter="all" aria-pressed="true">all</button>
+        {curatedFilters.map((filter) => <button class="filter-tag" data-filter={filter.match.join('||')} aria-pressed="false">{filter.label}</button>)}
+      </div>
+      <div class="projects-grid" id="projectsGrid">
+        {projects.map((project, index) => (
+          <a
+            class:list={["project-card", { hidden: project.data.unlisted }]}
+            hidden={project.data.unlisted}
+            data-unlisted={project.data.unlisted ? '' : undefined}
+            href={`/projects/${project.id}`}
+            data-index={index}
+            data-techs={project.data.technologies.join(',')}
+            style={`animation-delay:${index * 0.05}s`}
+          >
+            <div class="project-card-image-wrap"><img src={project.data.image} alt={project.data.title} class="project-card-image img-fade loaded" loading="lazy" /></div>
+            <div class="project-card-body">
+              <h3 class="project-card-title">{project.data.unlisted && <span class="project-card-unlisted-badge">unlisted</span>}{project.data.title}</h3>
+              <p class="project-card-summary">{project.data.summary}</p>
+              <div class="project-card-tags">{project.data.technologies.map((tag) => <span class="project-card-tag">{tag}</span>)}</div>
+            </div>
+          </a>
+        ))}
+      </div>
+    </div>
+    <div class="project-detail-view" id="projectDetailView" aria-hidden="true">
+      <div class="detail-header-column" id="detailHeaderColumn"><div class="detail-toc" id="detailToc"></div></div>
+      <div class="detail-content-column" id="detailContentColumn"><div class="detail-content" id="detailContent"></div></div>
+    </div>
+  </section>
+  <script is:inline>
+    if (['localhost', '127.0.0.1'].includes(location.hostname)) {
+      document.querySelectorAll('#projectsGrid [data-unlisted]').forEach((card) => {
+        card.hidden = false;
+        card.classList.remove('hidden');
+      });
+    }
+  </script>
+</DefaultLayout>

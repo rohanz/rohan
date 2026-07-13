@@ -1,0 +1,58 @@
+/* Phase 2 static-shell adjustments. The generated default.css above remains a
+   complete, mechanically scoped copy of the source stylesheet. */
+
+/* The build-rendered shell is already at its settled entrance state. Phase 3
+   will restore the source animation lifecycle around astro:page-load. */
+html.theme-default .section.active,
+html.theme-default .section.active .stagger-child {
+  opacity: 1;
+}
+
+/* Article geometry from the hard-won port brief. The section remains on the
+   opacity-only sectionFadeInFlat path: a transformed ancestor would demote the
+   fixed rail in Chrome. */
+html.theme-default #projects.section.active {
+  animation-name: sectionFadeInFlat;
+}
+
+html.theme-default .detail-hero-image {
+  max-height: 400px;
+  aspect-ratio: auto;
+  object-fit: cover;
+}
+
+html.theme-default .detail-summary {
+  font-size: 1.25rem;
+}
+
+html.theme-default .detail-nav-link {
+  padding-left: 1rem;
+  text-decoration: none;
+}
+
+html.theme-default .detail-nav-link.is-disabled {
+  opacity: 0.15;
+  cursor: default;
+}
+
+html.theme-default .toc-item {
+  text-decoration: none;
+}
+
+@media (min-width: 769px) {
+  html.theme-default .main-content {
+    padding-right: max(var(--content-pad), 5.5rem);
+  }
+}
+
+/* Preserve the 2:1 crop at every grid breakpoint. The source tablet rule's
+   old fixed height predates the card geometry decision in the brief. */
+html.theme-default .project-card-image {
+  aspect-ratio: 2 / 1;
+  height: auto;
+  object-fit: cover;
+}
+
+html.theme-default [hidden] {
+  display: none !important;
+}

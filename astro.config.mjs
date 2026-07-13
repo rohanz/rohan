@@ -1,17 +1,24 @@
 import { defineConfig } from 'astro/config';
 import sitemap from '@astrojs/sitemap';
 import rehypeRootAssets from './src/lib/rehype-root-assets.mjs';
+import rehypeHeadingAnchors from './src/lib/rehype-heading-anchors.mjs';
 
 export default defineConfig({
   site: 'https://www.rohanjk.xyz',
   output: 'static',
   prefetch: { prefetchAll: true, defaultStrategy: 'hover' },
-  markdown: { rehypePlugins: [rehypeRootAssets] },
+  markdown: { rehypePlugins: [rehypeRootAssets, rehypeHeadingAnchors] },
   integrations: [
     sitemap({
       filter: (page) => {
         const path = new URL(page).pathname;
-        return path.startsWith('/transit') && path !== '/transit/projects/quantlab-systems/';
+        return (
+          path === '/' ||
+          path === '/music/' ||
+          path === '/projects/' ||
+          path === '/about/' ||
+          (path.startsWith('/projects/') && path !== '/projects/quantlab-systems/')
+        );
       },
     }),
   ],
