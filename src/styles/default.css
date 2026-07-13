@@ -1018,7 +1018,9 @@ html.theme-default[data-theme="light"] .frequency-canvas {
     }
 
     html.theme-default #music .waveform-player {
-        gap: 1rem;
+        position: relative;
+        top: 0.875rem;
+        gap: 0.75rem;
     }
 
     html.theme-default #music .waveform-canvas-container,
@@ -1028,26 +1030,44 @@ html.theme-default[data-theme="light"] .frequency-canvas {
 
     html.theme-default #music .waveform-meter-group {
         flex-basis: clamp(150px, 10vw, 270px);
-        max-width: clamp(270px, 14vw, 356px);
+        max-width: clamp(270px, 13.3vw, 340px);
     }
 
     html.theme-default #music .audio-meters {
-        gap: 1rem;
+        align-items: center;
+        gap: 0.875rem;
+    }
+
+    /* Keep every rendered visual centred on the player's axis. Labels are
+       annotations below that axis, not layout content: leaving them in flow
+       made the play button sit ~11px below the canvases and the shorter VU
+       land on a third centreline. */
+    html.theme-default #music .meter-group {
+        position: relative;
+        gap: 0;
+    }
+
+    html.theme-default #music .meter-label {
+        position: absolute;
+        top: calc(100% + 0.3rem);
+        left: 50%;
+        transform: translateX(-50%);
+        white-space: nowrap;
     }
 
     html.theme-default #music .frequency-canvas {
-        width: clamp(300px, calc(10.3125vw + 132px), 396px);
-        height: clamp(110px, calc(3.75vw + 49px), 145px);
+        width: clamp(280px, calc(5.8333vw + 186.67px), 336px);
+        height: clamp(103px, calc(2.0833vw + 69.67px), 123px);
     }
 
     html.theme-default #music .vectorscope-canvas {
-        width: clamp(110px, calc(3.75vw + 49px), 145px);
-        height: clamp(110px, calc(3.75vw + 49px), 145px);
+        width: clamp(103px, calc(2.0833vw + 69.67px), 123px);
+        height: clamp(103px, calc(2.0833vw + 69.67px), 123px);
     }
 
     html.theme-default #music .vu-meter-canvas {
-        width: clamp(150px, calc(4.375vw + 86px), 198px);
-        height: clamp(100px, calc(2.9167vw + 57.33px), 132px);
+        width: clamp(140px, calc(3.125vw + 90px), 170px);
+        height: clamp(94px, calc(2.0833vw + 60.67px), 114px);
     }
 }
 
