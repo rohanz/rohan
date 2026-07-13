@@ -92,7 +92,6 @@ img { max-width: 100%; display: block; }
 .sign-header .logo { display: flex; align-items: baseline; gap: 0.7rem; color: #fff; text-decoration: none; }
 .sign-header .logo img { filter: brightness(0) invert(1); align-self: center; }
 .sign-header .logo-name { font-weight: 800; font-size: 1.7rem; letter-spacing: 0.005em; }
-.sign-header .logo-sub { font-weight: 300; font-size: 1.35rem; color: rgba(255,255,255,0.82); }
 /* Centre: the page/project title, centred on the bar as a whole. */
 .sign-header .sign-title {
   position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
@@ -225,11 +224,12 @@ img { max-width: 100%; display: block; }
    all three platforms). All platform content is framed into the clean region
    to the RIGHT of this rail (see ride.ts, which measures the rail width), so
    nothing ever overlaps it. */
-body.home { --rail-w: 240px; }
-@media (max-width: 1024px) { body.home { --rail-w: 200px; } }
-@media (max-width: 768px) { body.home { --rail-w: 168px; } }
+body.home { --rail-w: 300px; }
+@media (max-width: 1024px) { body.home, body.page { --rail-w: 250px; } }
+@media (max-width: 768px) { body.home { --rail-w: 210px; } }
 
-body.home #station-board {
+body.home #station-board,
+body.page #station-board {
   position: absolute;
   left: 0;
   top: 0;
@@ -245,16 +245,52 @@ body.home #station-board {
   border-right: 1px solid rgba(0, 0, 0, 0.14);
   box-shadow: 6px 0 22px rgba(0, 0, 0, 0.14);
 }
-body.home #station-board .board-body { flex: 1 1 auto; }
+body.home #station-board .board-body,
+body.page #station-board .board-body { flex: 1 1 auto; }
 /* When the rail narrows on smaller viewports, trim the label type a touch so
    destination names ("About Me") stay on a single line. */
 @media (max-width: 1024px) {
-  body.home #station-board .board-name { font-size: 0.98rem; }
-  body.home #station-board .board-title { font-size: 1rem; }
+  body.home #station-board .board-name,
+  body.page #station-board .board-name { font-size: 1.05rem; }
+  body.home #station-board .board-title,
+  body.page #station-board .board-title { font-size: 1.15rem; }
+}
+
+/* Inner pages carry the SAME docked Destinations rail as the map/platform
+   views (the owner wants no dead left margin on article pages). The rail is
+   fixed (the page scrolls; the map stage doesn't) and starts BELOW the
+   sticky coloured sign-header — top = the header's bottom edge — the same
+   rail/top-bar relation as the map pages. It overlaps the page's left
+   gutter: the page shell is NOT offset and the article column stays
+   viewport-centred (the article/TOC clear the rail via [slug].astro's
+   geometry). Rail links are ordinary page navigations. Hidden below 1000px
+   alongside the train-toc — small screens keep the full column. */
+body.page { --rail-w: 300px; }
+@media (min-width: 1000px) {
+  body.page #station-board {
+    position: fixed;
+    top: var(--topbar-h);
+    /* under the sticky sign-header (z 20), over the article TOC (z 5) */
+    z-index: 15;
+  }
+  /* The current line's row stays lit, mirroring ride.ts's .active row. */
+  body.page-music #station-board .board-link[data-line='music'],
+  body.page-projects #station-board .board-link[data-line='projects'],
+  body.page-about #station-board .board-link[data-line='about'] {
+    background: color-mix(in srgb, var(--line-hex) 14%, transparent);
+  }
+  body.page-music #station-board .board-link[data-line='music'] .board-name,
+  body.page-projects #station-board .board-link[data-line='projects'] .board-name,
+  body.page-about #station-board .board-link[data-line='about'] .board-name {
+    font-weight: 800;
+  }
+}
+@media (max-width: 999px) {
+  body.page #station-board { display: none; }
 }
 
 /* Inner pages sit on the same map land as the homepage world. */
-body.page { background: #e4e1d8; }
+body.page { background: #eae7de; }
 
 /* Print: drop the interactive chrome — the nav rail, the faint map backdrop
    behind article pages, the fixed train-line TOC sidebar (it would overlap

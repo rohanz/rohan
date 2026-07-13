@@ -1,7 +1,7 @@
 ---
 // Faint continuation of the transit mesh behind inner-page content, so every
 // page reads as another place on the same map the ride just crossed.
-import { LINES, VIEWBOX } from '../data/system';
+import { LINES } from '../data/system';
 import { filletPath } from '../lib/fillet';
 
 interface Props {
@@ -9,10 +9,16 @@ interface Props {
   lineId: string;
 }
 const { lineId } = Astro.props;
+// Cropped, HOME-centred window: HOME is [420,380] and the viewBox below
+// (70 160 700 440) is a 700x440 box centred exactly on it. With `slice` the
+// visible area is always a sub-rectangle of this box, and no line endpoint
+// (nearest caps: about's top at y=120 — 40u above the top edge; projects'
+// [840,380] — 70u past the right edge) falls inside it at any reasonable aspect,
+// so no end caps ever show, HOME stays centred, and the mesh reads as zoomed-in.
 ---
 <svg
   class="map-backdrop"
-  viewBox={`0 0 ${VIEWBOX.w} ${VIEWBOX.h}`}
+  viewBox="70 160 700 440"
   preserveAspectRatio="xMidYMid slice"
   aria-hidden="true"
 >
@@ -23,7 +29,7 @@ const { lineId } = Astro.props;
       stroke={line.hex}
       stroke-width={8}
       stroke-linejoin="round"
-      opacity={line.id === lineId ? 0.14 : 0.07}
+      opacity={line.id === lineId ? 0.11 : 0.055}
     />
   ))}
 </svg>

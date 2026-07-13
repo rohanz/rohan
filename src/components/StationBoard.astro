@@ -74,8 +74,8 @@ const dests = NAV_LINES.map((l) => ({
     align-items: center;
     gap: 0.55rem;
     margin: 0;
-    padding: 0.75rem 0.9rem;
-    font-size: 1.1rem;
+    padding: 0.95rem 1.1rem;
+    font-size: 1.35rem;
     font-weight: 700;
     color: #fff;
     background: var(--ink-strong);
@@ -84,13 +84,13 @@ const dests = NAV_LINES.map((l) => ({
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 1.35rem;
-    height: 1.35rem;
+    width: 1.6rem;
+    height: 1.6rem;
     border-radius: 50%;
     background: #fff;
     color: var(--ink-strong);
     font-weight: 700;
-    font-size: 0.88rem;
+    font-size: 1.05rem;
     font-style: normal;
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
     line-height: 1;
@@ -98,18 +98,18 @@ const dests = NAV_LINES.map((l) => ({
        of its box metrics, so nudge it into the visual middle of the disc */
     padding-bottom: 0.05em;
   }
-  .board-body { background: #fff; padding: 0.5rem 0.5rem 0.65rem; }
+  .board-body { background: #fff; padding: 0.65rem 0.6rem 0.8rem; }
   .board-body ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
   .board-link {
     display: flex;
     align-items: center;
-    gap: 0.65rem;
-    padding: 0.5rem 0.55rem;
+    gap: 0.8rem;
+    padding: 0.62rem 0.7rem;
     border-radius: 6px;
     text-decoration: none;
     color: var(--ink-strong);
     font-weight: 700;
-    font-size: 1.2rem;
+    font-size: 1.45rem;
     transition: background 0.15s ease;
   }
   .board-link:hover, .board-link:focus-visible { background: rgba(0, 0, 0, 0.07); }
@@ -123,21 +123,21 @@ const dests = NAV_LINES.map((l) => ({
   /* Legend swatches are short line segments, not dots. Hover simply makes the
      bar LONGER (animating width, not scaleX) so it grows rightward with crisp
      rounded caps and no scale distortion. */
-  .swatch { width: 32px; height: 9px; border-radius: 2px; flex: none; transition: width 0.15s ease; background: var(--line-hex); }
-  .board-link:hover .swatch, .board-link:focus-visible .swatch { width: 46px; }
+  .swatch { width: 40px; height: 11px; border-radius: 2px; flex: none; transition: width 0.15s ease; background: var(--line-hex); }
+  .board-link:hover .swatch, .board-link:focus-visible .swatch { width: 56px; }
   /* Home's row gets a mini version of the map's Home interchange capsule
      (white circle, dark ring) instead of a line-color bar. */
   .swatch-home {
-    width: 16px;
-    height: 16px;
+    width: 19px;
+    height: 19px;
     border-radius: 50%;
     background: #fff;
     border: 3px solid var(--ink-strong);
     box-sizing: border-box;
   }
-  /* Home's swatch is a fixed roundel — keep it at 16px on hover (the base
+  /* Home's swatch is a fixed roundel — keep it at 19px on hover (the base
      .swatch hover rule would otherwise stretch it). */
-  .board-link:hover .swatch-home, .board-link:focus-visible .swatch-home { width: 16px; }
+  .board-link:hover .swatch-home, .board-link:focus-visible .swatch-home { width: 19px; }
 
   /* Bidirectional hover sync: when a MAP line is hovered, #map-3d[data-hl]
      is set, and the matching rail row should show the SAME visual it gets on
@@ -154,7 +154,7 @@ const dests = NAV_LINES.map((l) => ({
   :global(#main:has(#map-3d[data-hl='music'])) .board-link[data-line='music'] .swatch,
   :global(#main:has(#map-3d[data-hl='projects'])) .board-link[data-line='projects'] .swatch,
   :global(#main:has(#map-3d[data-hl='about'])) .board-link[data-line='about'] .swatch {
-    width: 46px;
+    width: 56px;
   }
 
   /* External socials, pinned to the bottom of the rail (the .board-body above
@@ -173,7 +173,7 @@ const dests = NAV_LINES.map((l) => ({
     transition: color 0.18s ease, transform 0.18s ease;
   }
   .social-link:hover, .social-link:focus-visible { color: var(--ink-strong); transform: translateY(-2px); }
-  .social-link svg { display: block; width: 25px; height: 25px; fill: currentColor; }
+  .social-link svg { display: block; width: 29px; height: 29px; fill: currentColor; }
   @media (max-width: 1024px) {
     .board-social { padding: 0.9rem 1rem; }
     .social-link svg { width: 22px; height: 22px; }
