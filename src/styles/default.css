@@ -4709,3 +4709,258 @@ html.theme-default .qlf-audit-log::-webkit-scrollbar-thumb {
 html.theme-default .qlf-audit-log::-webkit-scrollbar-thumb:hover {
     background: var(--accent);
 }
+
+/* ============================================================
+   MUSIC ROWS — transit geometry, classic skin
+
+   At desktop widths the classic page uses the same single-band skeleton as
+   transit: cover/header, play, waveform and the surviving meters all share
+   one centreline. The x values below are the transit row-relative geometry at
+   a 1200px-tall viewport; breakpoint tiers mirror transit's own packer.
+   ============================================================ */
+@media (min-width: 901px) {
+    html.theme-default #music {
+        --music-nav-gap: calc(3.75vw + 75px);
+        --music-row-w: calc(92vw - 372px);
+        --music-row-h: clamp(100px, 6.5vw, 132px);
+        --music-play-x: calc(374px - 4.14vw);
+        --music-wave-x: calc(var(--music-play-x) + 130px);
+    }
+
+    html.theme-default #music .music-list {
+        width: var(--music-row-w);
+        max-width: none;
+        margin-left: calc(var(--music-nav-gap) - var(--content-pad));
+        margin-right: 0;
+    }
+
+    html.theme-default #music .music-item,
+    html.theme-default #music .music-content {
+        width: 100%;
+        height: var(--music-row-h);
+        min-height: var(--music-row-h);
+    }
+
+    html.theme-default #music .music-item {
+        position: relative;
+        overflow: visible;
+    }
+
+    html.theme-default #music .music-content {
+        position: relative;
+        display: block;
+        padding: 0;
+        overflow: visible;
+    }
+
+    html.theme-default #music .music-header {
+        position: absolute;
+        inset: 0 auto 0 0;
+        width: clamp(290px, 21vw, 380px);
+        height: 100%;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 0;
+    }
+
+    html.theme-default #music .music-cover {
+        width: var(--music-row-h);
+        height: var(--music-row-h);
+        align-self: center;
+        flex: none;
+    }
+
+    html.theme-default #music .music-header-text {
+        flex: 1 1 auto;
+        min-width: 0;
+        overflow: visible;
+    }
+
+    html.theme-default #music .music-title {
+        margin: 0 0 0.15rem;
+        white-space: nowrap;
+    }
+
+    html.theme-default #music .music-artist {
+        margin: 0;
+        font-size: clamp(0.82rem, 0.92vw, 1rem);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    html.theme-default #music .music-links {
+        gap: 0.3rem;
+        margin-top: 0.3rem;
+        flex-wrap: nowrap;
+    }
+
+    html.theme-default #music .music-link {
+        gap: 0.3rem;
+        padding: 0.28rem 0.46rem;
+        font-size: 0.65rem;
+        line-height: 1.15;
+    }
+
+    html.theme-default #music .music-link i {
+        font-size: 0.78rem;
+    }
+
+    html.theme-default #music .waveform-player,
+    html.theme-default #music .audio-meters {
+        display: contents;
+    }
+
+    html.theme-default #music .waveform-play-btn,
+    html.theme-default #music .meter-group {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        margin: 0;
+    }
+
+    html.theme-default #music .waveform-play-btn {
+        left: var(--music-play-x);
+        width: 60px;
+        height: 60px;
+        min-width: 60px;
+        padding: 0;
+    }
+
+    html.theme-default #music .meter-group {
+        display: block;
+        gap: 0;
+    }
+
+    html.theme-default #music .waveform-meter-group {
+        left: var(--music-wave-x);
+        width: 201px;
+        height: 101px;
+        min-width: 201px;
+        max-width: none;
+    }
+
+    html.theme-default #music .waveform-canvas,
+    html.theme-default #music .waveform-canvas-container {
+        width: 201px;
+        height: 101px;
+        min-width: 201px;
+        max-width: none;
+    }
+
+    html.theme-default #music .frequency-canvas {
+        display: block;
+        width: 302px;
+        height: 118px;
+    }
+
+    html.theme-default #music .vectorscope-canvas {
+        display: block;
+        width: 131px;
+        height: 131px;
+    }
+
+    html.theme-default #music .vu-meter-canvas {
+        display: block;
+        width: 161px;
+        height: 114px;
+    }
+
+    html.theme-default #music .meter-label {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translateX(-50%);
+        margin-top: 70px;
+        white-space: nowrap;
+    }
+
+    /* 1280 tier: transit retains only the non-negotiable play + wave pair. */
+    html.theme-default #music .audio-meters .meter-group {
+        display: none;
+    }
+
+    /* Transit adds VU before the wider scopes. */
+    @media (min-width: 1360px) {
+        html.theme-default #music .audio-meters .meter-group:last-child {
+            display: block;
+            left: calc(var(--music-wave-x) + 322px);
+        }
+    }
+
+    /* The transit anchor advances one grid column near 1500px. */
+    @media (min-width: 1470px) {
+        html.theme-default #music {
+            --music-play-x: calc(473px - 4vw);
+        }
+    }
+
+    /* Measured transit threshold: hidden at 1560, shown at 1580. */
+    @media (min-width: 1570px) {
+        html.theme-default #music .audio-meters .meter-group:nth-child(2) {
+            display: block;
+            left: calc(var(--music-wave-x) + 237px);
+        }
+
+        html.theme-default #music .audio-meters .meter-group:last-child {
+            left: calc(var(--music-wave-x) + 423px);
+        }
+    }
+
+    @media (min-width: 1441px) {
+        html.theme-default #music {
+            --music-nav-gap: calc(4.1667vw + 69px);
+        }
+    }
+
+    @media (min-width: 1921px) {
+        html.theme-default #music {
+            --music-nav-gap: calc(9.84375vw - 40px);
+            --music-row-w: calc(86.09375vw - 258.75px);
+        }
+    }
+
+    /* Transit frequency threshold is between 1920 and 2000. Once it fits,
+       restore the complete packed order: wave → freq → stereo → VU. */
+    @media (min-width: 1980px) {
+        html.theme-default #music .audio-meters .meter-group:first-child {
+            display: block;
+            left: calc(var(--music-wave-x) + 252px);
+        }
+
+        html.theme-default #music .audio-meters .meter-group:nth-child(2) {
+            left: calc(var(--music-wave-x) + 639px);
+        }
+
+        html.theme-default #music .audio-meters .meter-group:last-child {
+            left: calc(var(--music-wave-x) + 825px);
+        }
+    }
+
+    /* Same transit grid-column advance measured between 2300 and 2400. */
+    @media (min-width: 2350px) {
+        html.theme-default #music {
+            --music-play-x: calc(573px - 4vw);
+        }
+    }
+}
+
+/* Below the point where transit's horizontal platform concept remains useful,
+   return to the existing compact stacked presentation. */
+@media (max-width: 900px) {
+    html.theme-default #music .music-content {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+        padding: 1rem 0;
+    }
+
+    html.theme-default #music .music-header {
+        min-width: 0;
+    }
+
+    html.theme-default #music .audio-meters {
+        display: none;
+    }
+}

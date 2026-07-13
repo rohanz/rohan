@@ -189,14 +189,26 @@ test('music and BQST media assets expose headless-safe readiness and duration', 
   await expect(page.locator('.bqst-audio-demo')).toHaveClass(/is-ready/);
 });
 
-test('classic music rows follow the platform order and reveal descriptions from their titles', async ({ page }) => {
+test('classic music rows use one shared transit-style band and reveal descriptions from their titles', async ({ page }) => {
   await page.goto('/music', { waitUntil: 'networkidle' });
 
   const firstRow = page.locator('.music-item').first();
   await expect(firstRow.locator('.music-summary')).toHaveCount(0);
-  expect(await firstRow.locator('.music-content').evaluate(el =>
-    Array.from(el.children).map(child => child.className),
-  )).toEqual(['music-header', 'waveform-player']);
+  const geometry = await firstRow.evaluate(row => {
+    const rr = row.getBoundingClientRect();
+    const centre = (selector: string) => {
+      const r = row.querySelector<HTMLElement>(selector)!.getBoundingClientRect();
+      return r.top - rr.top + r.height / 2;
+    };
+    return {
+      display: getComputedStyle(row.querySelector('.music-content')!).display,
+      height: rr.height,
+      centres: ['.music-cover', '.waveform-play-btn', '.waveform-canvas'].map(centre),
+    };
+  });
+  expect(geometry.display).toBe('block');
+  expect(geometry.height).toBeGreaterThanOrEqual(99);
+  expect(Math.max(...geometry.centres) - Math.min(...geometry.centres)).toBeLessThanOrEqual(1);
 
   const title = firstRow.locator('.music-title');
   const tooltip = page.locator('#gloss-tooltip');

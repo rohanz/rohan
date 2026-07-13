@@ -588,26 +588,31 @@ function initWaveformPlayer(playerEl) {
     }
 
     function resizeMeterCanvases() {
-        const useRenderedSize = window.matchMedia('(min-width: 1441px)').matches;
         const dpr = window.devicePixelRatio || 1;
         const toDevicePixel = value => Math.round(value * dpr) / dpr;
         if (vecCanvas) {
             const rect = vecCanvas.getBoundingClientRect();
-            vecW = useRenderedSize ? toDevicePixel(rect.width) : 110;
-            vecH = useRenderedSize ? toDevicePixel(rect.height) : 110;
-            sizeCanvas(vecCanvas, vecW, vecH);
+            if (rect.width) {
+                vecW = toDevicePixel(rect.width);
+                vecH = toDevicePixel(rect.height);
+                sizeCanvas(vecCanvas, vecW, vecH);
+            }
         }
         if (freqCanvas) {
             const rect = freqCanvas.getBoundingClientRect();
-            freqW = useRenderedSize ? toDevicePixel(rect.width) : 300;
-            freqH = useRenderedSize ? toDevicePixel(rect.height) : 110;
-            sizeCanvas(freqCanvas, freqW, freqH);
+            if (rect.width) {
+                freqW = toDevicePixel(rect.width);
+                freqH = toDevicePixel(rect.height);
+                sizeCanvas(freqCanvas, freqW, freqH);
+            }
         }
         if (vuCanvas) {
             const rect = vuCanvas.getBoundingClientRect();
-            vuW = useRenderedSize ? toDevicePixel(rect.width) : 150;
-            vuH = useRenderedSize ? toDevicePixel(rect.height) : 100;
-            sizeCanvas(vuCanvas, vuW, vuH);
+            if (rect.width) {
+                vuW = toDevicePixel(rect.width);
+                vuH = toDevicePixel(rect.height);
+                sizeCanvas(vuCanvas, vuW, vuH);
+            }
         }
         if (!isPlaying) drawMetersIdle();
     }
