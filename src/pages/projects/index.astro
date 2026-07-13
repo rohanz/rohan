@@ -25,7 +25,7 @@ const curatedFilters = [
         <button class="filter-tag active" data-filter="all" aria-pressed="true">all</button>
         {curatedFilters.map((filter) => <button class="filter-tag" data-filter={filter.match.join('||')} aria-pressed="false">{filter.label}</button>)}
       </div>
-      <div class="projects-grid" id="projectsGrid">
+      <div class="projects-grid projects-entering" id="projectsGrid">
         {projects.map((project, index) => (
           <a
             class:list={["project-card", { hidden: project.data.unlisted }]}
@@ -34,7 +34,7 @@ const curatedFilters = [
             href={`/projects/${project.id}`}
             data-index={index}
             data-techs={project.data.technologies.join(',')}
-            style={`animation-delay:${index * 0.05}s`}
+            style={`animation-delay:${(index + 1) * 0.05}s`}
           >
             <div class="project-card-image-wrap"><img src={project.data.image} alt={project.data.title} class="project-card-image img-fade loaded" loading="lazy" /></div>
             <div class="project-card-body">

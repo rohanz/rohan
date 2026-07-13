@@ -18,6 +18,20 @@ function initFilterHandlers(root) {
 
     let activeFilter = 'all';
     let filterTimer = null;
+    let entranceTimer = null;
+
+    // Once the page-entry stagger has finished, remove its gate permanently for
+    // this document. Cards returning from display:none after a filter click then
+    // appear immediately instead of replaying their entrance animation.
+    if (grid.classList.contains('projects-entering')) {
+        const delays = [...grid.querySelectorAll('.project-card')].map(card =>
+            Number.parseFloat(getComputedStyle(card).animationDelay) || 0
+        );
+        entranceTimer = window.setTimeout(() => {
+            grid.classList.remove('projects-entering');
+            entranceTimer = null;
+        }, (Math.max(0, ...delays) + 0.55) * 1000);
+    }
     const filterProjectCards = () => {
         grid.classList.add('filtering');
         clearTimeout(filterTimer);
@@ -41,6 +55,7 @@ function initFilterHandlers(root) {
     filterBar.addEventListener('click', onClick);
     cleanupFilter = () => {
         clearTimeout(filterTimer);
+        clearTimeout(entranceTimer);
         grid.classList.remove('filtering');
         filterBar.removeEventListener('click', onClick);
         cleanupFilter = null;

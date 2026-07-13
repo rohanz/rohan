@@ -140,6 +140,17 @@ function displayMusic(tracks) {
         const player = itemEl.querySelector('.waveform-player');
         if (player) initWaveformPlayer(player);
     });
+
+    // The static route shell is visible before this client-rendered list exists.
+    // Keep both the section and its stagger children at their keyframe from-state
+    // until every player/canvas has been built, then start them in the same frame.
+    // This mirrors the original SPA, which activates the section and renders the
+    // players synchronously in one navigation task.
+    const section = musicList.closest('#music.music-pending');
+    if (section) {
+        section.offsetHeight;
+        requestAnimationFrame(() => section.classList.remove('music-pending'));
+    }
 }
 
 function ensureAudioGraph() {

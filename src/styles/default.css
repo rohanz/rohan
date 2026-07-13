@@ -176,6 +176,12 @@ html.theme-default .homepage-menu {
         animation: none !important;
     }
 
+    html.theme-default .projects-grid.projects-entering .project-card {
+        opacity: 1 !important;
+        transform: none !important;
+        animation: none !important;
+    }
+
     html.theme-default .testimonials-scroll-container {
         animation: none !important;
     }
@@ -651,6 +657,21 @@ html.theme-default .section.active {
     animation: sectionFadeIn 0.7s var(--ease-out-expo) forwards;
 }
 
+/* /music's player rows are client-rendered. Hold the shared entrance at its
+   from-state until audio-players.js has built every player, so the section and
+   songs begin together exactly as they do in the original SPA. */
+html.theme-default #music.section.active.music-pending {
+    opacity: 0;
+    transform: translateY(30px);
+    animation: none;
+}
+
+html.theme-default #music.section.active.music-pending .stagger-child {
+    opacity: 0;
+    transform: translateY(20px);
+    animation: none;
+}
+
 html.theme-default .homepage.active {
     display: flex !important;
     opacity: 1 !important;
@@ -712,8 +733,8 @@ html.theme-default .section.active .stagger-child:nth-child(5) { animation-delay
    MUSIC SECTION
    ============================================================ */
 html.theme-default .music-list {
-    max-width: 1200px;
-    margin-left: max(0px, calc(50vw - 600px - var(--sidebar-w) - 4rem));
+    max-width: 1320px;
+    margin-left: max(0px, calc(50vw - 660px - var(--sidebar-w) - 4rem));
     margin-right: auto;
 }
 
@@ -833,7 +854,7 @@ html.theme-default .music-summary {
 html.theme-default .waveform-player {
     display: flex;
     align-items: center;
-    gap: 0.85rem;
+    gap: clamp(1.1rem, 1.5vw, 1.75rem);
     padding: 0.5rem 1.25rem;
     margin-top: 0;
     min-height: 90px;
@@ -899,7 +920,7 @@ html.theme-default .waveform-canvas {
 /* Audio meters (VU + Vectorscope) — sit right next to waveform */
 html.theme-default .audio-meters {
     display: flex;
-    gap: 0.65rem;
+    gap: clamp(1.25rem, 1.6vw, 2rem);
     align-items: flex-end;
     flex-shrink: 0;
     flex-grow: 0;
@@ -947,6 +968,40 @@ html.theme-default[data-theme="light"] .vu-meter-canvas,
 html.theme-default[data-theme="light"] .vectorscope-canvas,
 html.theme-default[data-theme="light"] .frequency-canvas {
     border-color: rgba(62, 39, 35, 0.24);
+}
+
+/* Laptop widths keep every visualizer, but scale the fixed meters down enough
+   to preserve the generous separation without making the waveform overflow.
+   The existing <=1180px rule still sheds the meter cluster entirely. */
+@media (max-width: 1599px) and (min-width: 1181px) {
+    html.theme-default .waveform-player {
+        gap: 1.1rem;
+        padding-inline: 1rem;
+    }
+
+    html.theme-default .waveform-canvas {
+        flex: 1 1 170px;
+        max-width: 250px;
+    }
+
+    html.theme-default .audio-meters {
+        gap: 1.25rem;
+    }
+
+    html.theme-default .frequency-canvas {
+        width: clamp(220px, 18vw, 270px);
+        height: 100px;
+    }
+
+    html.theme-default .vectorscope-canvas {
+        width: 100px;
+        height: 100px;
+    }
+
+    html.theme-default .vu-meter-canvas {
+        width: 130px;
+        height: 94px;
+    }
 }
 
 /* Disable hover transitions during page transitions */
@@ -1074,6 +1129,14 @@ html.theme-default .projects-grid {
 
 html.theme-default .projects-grid.filtering {
     opacity: 0;
+}
+
+/* Page-entry-only project stagger. grid-filter.js removes the gate after the
+   last card settles, so cards shown by later filter clicks never retrigger it. */
+html.theme-default .projects-grid.projects-entering .project-card {
+    opacity: 0;
+    transform: translateY(20px);
+    animation: staggerIn 0.5s var(--ease-out-expo) forwards;
 }
 
 /* Project card */
