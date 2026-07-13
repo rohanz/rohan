@@ -745,7 +745,7 @@ html.theme-default .music-item {
 
 html.theme-default .music-content {
     display: grid;
-    grid-template-columns: minmax(360px, 390px) minmax(0, 1fr);
+    grid-template-columns: minmax(440px, 460px) minmax(0, 1fr);
     align-items: center;
     gap: clamp(1.5rem, 2vw, 2.5rem);
     min-width: 0;
@@ -755,7 +755,7 @@ html.theme-default .music-content {
 html.theme-default .music-header {
     display: flex;
     align-items: center;
-    gap: 1.2rem;
+    gap: 1rem;
     min-width: 0;
 }
 
@@ -777,17 +777,17 @@ html.theme-default .music-header-text {
 html.theme-default .music-title {
     display: inline-block;
     max-width: 100%;
-    font-size: clamp(1.35rem, 1.45vw, 1.8rem);
-    font-weight: 600;
+    font-size: clamp(1.15rem, 1.35vw, 1.5rem);
+    font-weight: 700;
     line-height: 1.2;
-    margin: 0 0 0.45rem;
+    margin: 0 0 0.2rem;
     color: var(--text-primary);
     transition: color 0.3s ease;
     text-transform: none;
 }
 
 html.theme-default .music-title.gloss-term {
-    cursor: help;
+    cursor: default;
     border-bottom: 1px dotted color-mix(in srgb, var(--accent) 68%, transparent);
     outline: none;
 }
@@ -815,8 +815,8 @@ html.theme-default .music-links {
     display: flex;
     gap: 0.45rem;
     align-items: center;
-    flex-wrap: wrap;
-    margin-top: 0.75rem;
+    flex-wrap: nowrap;
+    margin-top: 0.45rem;
 }
 
 html.theme-default .music-link {
