@@ -169,11 +169,14 @@ function buildRail(toc: HTMLElement): Map<string, SVGCircleElement> {
       if (!a) return null;
       const r = a.getBoundingClientRect();
       const sub = li.classList.contains('sub');
+      // Tick sits on the FIRST text line's centre (not the row box centre):
+      // a wrapped label reads as "line 1 at the stop", extra lines hang below.
+      const lineH = parseFloat(getComputedStyle(a).lineHeight) || r.height;
       return {
         slug: a.dataset.target!,
         sub,
         x: sub ? RAIL.h2X + RAIL.jog : RAIL.h2X,
-        y: r.top - innerTop + r.height / 2,
+        y: r.top - innerTop + Math.min(lineH, r.height) / 2,
       };
     })
     .filter((p): p is NonNullable<typeof p> => !!p);

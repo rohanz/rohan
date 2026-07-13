@@ -34,7 +34,7 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
   description={project.data.summary}
   lineId="projects"
   hex={line.hex}
-  signName={project.data.title}
+  signName={project.data.barTitle ?? project.data.title}
   ogImage={project.data.image}
 >
   <div class="article-layout">
@@ -54,15 +54,11 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
         </div>
         <div class="toc-nav">
           {prev && (
-            <a class="toc-nav-link" href={`/projects/${prev.slug}`} data-astro-prefetch="hover">
-              <span class="nav-arrow">‹</span> prev
-            </a>
+            <a class="toc-nav-link toc-nav-prev" href={`/projects/${prev.slug}`} data-astro-prefetch="hover"><span class="nav-arrow">‹</span>prev</a>
           )}
           <a class="toc-nav-link" href="/projects">all projects</a>
           {next && (
-            <a class="toc-nav-link" href={`/projects/${next.slug}`} data-astro-prefetch="hover">
-              next <span class="nav-arrow">›</span>
-            </a>
+            <a class="toc-nav-link toc-nav-next" href={`/projects/${next.slug}`} data-astro-prefetch="hover">next<span class="nav-arrow">›</span></a>
           )}
         </div>
       </nav>
@@ -70,6 +66,10 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
 
     <article class="article">
       <img class="article-banner" src={project.data.image} alt={`${project.data.title} banner`} />
+      <header class="article-header">
+        <h1 class="article-title">{project.data.title}</h1>
+        <p class="article-summary">{project.data.summary}</p>
+      </header>
       <Content />
 
       <nav class="stop-nav" aria-label="project navigation">
@@ -88,18 +88,44 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
 
 <style>
   .article-layout { position: relative; display: grid; grid-template-columns: 1fr; justify-items: center; }
-  /* Blog-post measure: ~70ch at the body size — long lines read worse. */
-  .article { max-width: 680px; width: 100%; min-width: 0; }
-  /* While the fixed train-toc is visible (>=1000px) the centered 680px column
-     must CLEAR it. Centering alone only clears once 50vw-340px covers the TOC's
-     ~248px right edge, i.e. from ~1176px wide; below that the centered column
-     slid UNDER the fixed rail (hero drawn over the section labels). In that
-     band only, reserve the rail's column and left-align the article in the
-     remaining space; from 1144px the centered layout already clears and is
-     left untouched. */
-  @media (min-width: 1000px) and (max-width: 1175px) {
-    .article-layout { justify-items: start; padding-left: 212px; }
-    .article { max-width: min(680px, calc(100vw - 212px - 5rem)); }
+  /* Reading column + body size match the original site's detail page exactly:
+     an 800px column with 1.25rem (20px) / 1.7 body text. Headings/title/summary
+     set their own sizes below, so only paragraphs & lists inherit this. */
+  .article { max-width: 800px; width: 100%; min-width: 0; font-size: 1.25rem; line-height: 1.7; }
+  /* Geometry replicated from the ORIGINAL site's detail view (--detail-half):
+     the article column is VIEWPORT-centred once the viewport is wide enough,
+     and the TOC floats centred in the gutter between the destinations rail
+     and the article — equal air on both of its sides (--half = half the free
+     space between the rail and a viewport-centred 800px article, after the
+     212px TOC). When the viewport is too narrow to centre (--half negative;
+     with a 300px rail that's everything below ~2080px) the max() clamps take
+     over exactly like the original's: the TOC sits one content-pad (--cpad,
+     3.5vw — the original's gutter token) right of the rail and the article
+     clears the TOC column by 4rem — the original's measured 64.0px gap at
+     both 1440 and 1280 (its .detail-content-column margin-left reserves
+     `210px + 4rem` past the fixed TOC). The max() against the pure centred
+     position (50vw - 400px) is also the rail-collision guard: the article's
+     left edge can never fall below rail + cpad + toc width + 4rem, so the centred
+     column can't slide under the rail. */
+  .article-layout {
+    /* 248px column = a 216px label measure at the 1.15rem type, so all but
+       the longest section titles hold ONE line (the original's measure is
+       194px — anything that wraps here wraps there too). */
+    --toc-w: 248px;
+    --cpad: clamp(1.5rem, 3.5vw, 4rem);
+    --half: calc((50vw - var(--rail-w, 0px) - var(--toc-w) - 400px) / 2);
+    --toc-left: calc(var(--rail-w, 0px) + max(var(--cpad), var(--half)));
+    --article-left: max(calc(var(--toc-left) + var(--toc-w) + 4rem), calc(50vw - 400px));
+  }
+  @media (min-width: 1000px) {
+    .article-layout { justify-items: start; }
+    .article {
+      /* --article-left is a viewport coordinate; the page-body is uncapped on
+         detail pages (see the :has() rule in the global block) so it starts
+         at x=0 — subtract only its own left padding to get the margin. */
+      margin-left: calc(var(--article-left) - clamp(1rem, 4vw, 3rem));
+      max-width: min(800px, calc(100vw - var(--article-left) - 2.5rem));
+    }
   }
 
   .article-banner {
@@ -107,8 +133,23 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
     margin: 0 0 2rem; box-shadow: 0 8px 30px rgba(0,0,0,0.12);
   }
 
-  .article :global(h2) { font-size: 1.5rem; font-weight: 800; margin-top: 2.4rem; scroll-margin-top: 90px; }
-  .article :global(h3) { font-size: 1.2rem; font-weight: 700; margin-top: 1.6rem; }
+  /* Title + blurb under the banner (mirrors the original site's detail header:
+     a large accent-coloured title, then an italic dimmed summary). The coloured
+     sign-header bar now carries only the short barTitle label. */
+  .article-header { margin: 0 0 2.4rem; }
+  .article-title {
+    font-size: 2.2rem; font-weight: 800; line-height: 1.15;
+    color: var(--line-projects); margin: 0 0 0.75rem;
+  }
+  .article-summary {
+    font-size: 1.2rem; font-weight: 500; font-style: italic;
+    line-height: 1.6; color: var(--muted); margin: 0;
+  }
+  @media (max-width: 560px) { .article-title { font-size: 1.8rem; } }
+
+  /* Heading sizes match the original site's detail body exactly. */
+  .article :global(h2) { font-size: clamp(1.45rem, 2.6vw, 2rem); font-weight: 750; margin-top: 2.4rem; scroll-margin-top: 90px; }
+  .article :global(h3) { font-size: clamp(1.12rem, 1.8vw, 1.35rem); font-weight: 700; margin-top: 1.6rem; }
   /* Images: centred, not left-aligned. Ones narrower than the column keep their
      natural size and sit centred; wide ones cap at the column width. */
   .article :global(img) {
@@ -156,12 +197,11 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
          between projects — while sitting low enough to leave the section list
          maximum room on short screens. */
       bottom: 2.5rem;
-      /* Track the centered article column so the rail keeps a constant, tight
-         offset from the body instead of drifting to the far margin on wide
-         screens (the article is 760px wide and centered). */
-      /* article half-width 340 + rail width 212 + 12px gap */
-      left: max(1.25rem, calc(50vw - 564px));
-      width: 212px;
+      /* Centred in the rail↔article gutter (or a content-pad off the rail
+         when the gutter is tight) — computed on .article-layout, inherited
+         here. Viewport coordinate, matching this element's fixed positioning. */
+      left: var(--toc-left);
+      width: var(--toc-w, 248px);
       z-index: 5;
     }
   }
@@ -186,17 +226,17 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
   }
   .train-toc :global(.toc-rail circle.is-current) { fill: #f9c25e; }
   .train-toc ol { list-style: none; margin: 0; padding: 0.4rem 0; position: relative; }
-  /* Rhythm + type mirror the ORIGINAL site's sidebar (toc-h2 1.05rem/600,
-     toc-h3 0.9rem, ~0.4rem row padding) — compact through spacing, not tiny type. */
-  .train-toc li { position: relative; margin: 0 0 0.5rem; }
+  /* Type mirrors the ORIGINAL site's sidebar exactly: h2 links 1.15rem,
+     h3 (sub) links 0.95rem, weight 600 — compact through spacing, not tiny type. */
+  .train-toc li { position: relative; margin: 0 0 0.85rem; }
   .train-toc li:last-child { margin-bottom: 0; }
   .train-toc a {
     display: block; text-decoration: none; color: var(--muted);
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    font-size: 0.95rem; font-weight: 600; line-height: 1.2;
+    font-size: 1.15rem; font-weight: 600; line-height: 1.2;
     padding-left: 32px;
   }
-  .train-toc li.sub a { font-size: 0.85rem; padding-left: 48px; }
+  .train-toc li.sub a { font-size: 0.95rem; padding-left: 48px; }
   .train-toc a:hover .toc-label { color: var(--ink); }
   .train-toc a.is-current .toc-label { color: var(--ink); }
 
@@ -218,6 +258,7 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
   /* Match the TOC section links exactly (size/weight/colour come from .train-toc a);
      no extra dimming, so the nav reads as the same family, just lowercased. */
   .toc-nav-link {
+    position: relative;
     text-decoration: none;
     text-transform: lowercase;
     transition: color 0.2s ease;
@@ -226,7 +267,20 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
      `.train-toc a` so it out-specifies the base `.train-toc a { color: muted }`
      rule (which includes the `a` element selector and would otherwise win). */
   .train-toc a.toc-nav-link:hover { color: var(--ink); }
-  .toc-nav-link .nav-arrow { font-weight: 700; font-size: 1.1rem; }
+  .toc-nav-link .nav-arrow { font-weight: 700; font-size: 1.35rem; line-height: 1; }
+  /* Alignment: every nav link's TEXT starts at the 32px column, flush with the
+     TOC section labels and with each other. prev's leading ‹ therefore can't sit
+     in the text flow (it would shove "prev" right of the others, the old
+     misaligned feel), so it hangs absolutely in the gutter between the rail and
+     the text — with clear air (its right edge ends ~9px left of the text
+     column); next's › trails the text after a matching space. */
+  .toc-nav-prev .nav-arrow {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-52%);
+  }
+  .toc-nav-next .nav-arrow { margin-left: 0.45rem; }
 
   .stop-nav { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid rgba(0,0,0,0.1); flex-wrap: wrap; }
   @media (min-width: 1000px) { .stop-nav { display: none; } }
@@ -241,6 +295,14 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
      reads as a stray TOC tick on detail pages — the train-line TOC is the
      station marker here, so hide the spine's. */
   body.page-projects .station-here { display: none; }
+
+  /* Detail pages uncap the page-body (it starts at x=0) so the article can be
+     positioned in raw viewport coordinates — [slug].astro's --article-left —
+     and be genuinely viewport-centred. Scoped via :has(.article-layout) so
+     platform/list pages keep --max. */
+  @media (min-width: 1000px) {
+    .page-body:has(.article-layout) { max-width: none; }
+  }
 
   /* Legacy classes carried over from the old site's markdown bodies. */
   /* Glossary terms: a soft projects-red HIGHLIGHT + solid underline (mirrors
@@ -345,8 +407,9 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
        values read in the section's own colour). */
     --w-accent: var(--line-projects);
     --w-accent-glow: rgba(209,61,89,0.4);
-    /* Widget cards read as the page's cream paper, not stark white. */
-    --w-card: #e8e4db;
+    /* Widget cards/canvases match the page background exactly so they blend
+       into the page rather than reading as a separate card. */
+    --w-card: #eae7de;
     --w-border: rgba(0,0,0,0.12);
     --w-ink: var(--ink);
     --w-muted: var(--muted-2);
@@ -466,7 +529,7 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
   /* Live chord monitor piano */
   .lcm-demo { margin: 1.5rem 0 0.5rem; }
   .lcm-readout { height: 6.5rem; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; margin-bottom: 1.25rem; overflow: hidden; }
-  .lcm-chord { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 2.6rem; font-weight: 800; color: #f9c25e; line-height: 1.1; white-space: nowrap; }
+  .lcm-chord { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 2.6rem; font-weight: 800; color: #33b4e5; line-height: 1.1; white-space: nowrap; }
   .lcm-chord.lcm-empty { color: var(--w-muted); font-size: 1.4rem; font-weight: 500; }
   .lcm-notes { margin-top: 0.5rem; font-size: 1.05rem; letter-spacing: 0.04em; color: var(--w-ink); min-height: 1.4rem; white-space: nowrap; }
   .lcm-alts { margin-top: 0.35rem; font-size: 0.85rem; color: var(--w-muted); min-height: 1.1rem; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -548,7 +611,7 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
   }
   .qla-mark-bad, .qla-mark-good { padding: 0 0.15em; border-radius: 3px; font-weight: 700; }
   .qla-mark-bad { background: rgba(209,61,89,0.14); color: #b52e49; }
-  .qla-mark-good { background: rgba(46,125,50,0.14); color: #2e7d32; }
+  .qla-mark-good { background: rgba(102,187,106,0.14); color: #66bb6a; }
   .qla-gate-report-strip {
     display: flex; align-items: center; flex-wrap: wrap; gap: 0.45rem; margin: 0.2rem 0 0.8rem;
     padding: 0.5rem 0.7rem; border: 1px dashed var(--w-border); border-radius: 6px; background: #f4f1ea;
@@ -575,7 +638,7 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
   .qla-judge-col .qla-judge-panel { align-self: stretch; }
   .qla-judge-probe { visibility: hidden; }
   .qla-judge-panel { border: 1px solid var(--w-border); border-radius: 6px; background: #f4f1ea; overflow: hidden; }
-  .qla-judge-panel.is-pick-correct { border-color: #2e7d32; box-shadow: 0 0 0 1px #2e7d32; }
+  .qla-judge-panel.is-pick-correct { border-color: #66bb6a; box-shadow: 0 0 0 1px #66bb6a; }
   .qla-judge-panel.is-pick-wrong { border-color: var(--line-projects); box-shadow: 0 0 0 1px var(--line-projects); }
   .qla-judge-panel-label {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: 700; font-size: 0.82rem;
@@ -586,7 +649,7 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
   .qla-judge-guess:disabled:hover { border-color: var(--w-border); background: #f4f1ea; }
   .qla-judge-controls { justify-content: center; min-height: 2.6em; display: flex; gap: 0.6rem; flex-wrap: wrap; margin-top: 0.2rem; }
   .qla-judge-feedback { min-height: 1.7em; line-height: 1.7; text-align: center; color: var(--w-ink); font-size: 0.92rem; font-weight: 700; margin: 0.3rem 0 0; }
-  .qla-judge-feedback.is-correct { color: #2e7d32; }
+  .qla-judge-feedback.is-correct { color: #66bb6a; }
   .qla-judge-feedback.is-wrong { color: #b52e49; }
   .qla-judge-score { margin: 0; min-height: 1.7em; line-height: 1.7; text-align: center; color: var(--w-ink); font-weight: 600; font-size: 0.9rem; }
 
@@ -602,7 +665,7 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
   .qla-roster-stats { display: flex; flex-wrap: wrap; gap: 0.35rem 1.1rem; margin-bottom: 0.55rem; min-height: 1.4em; }
   .qla-roster-stat { color: var(--w-muted); font-family: 'SF Mono', 'JetBrains Mono', Menlo, monospace; font-size: 0.76rem; font-variant-numeric: tabular-nums; }
   .qla-roster-verdict { font-family: 'SF Mono', 'JetBrains Mono', Menlo, monospace; font-size: 0.76rem; font-weight: 700; color: #b52e49; }
-  .qla-roster-verdict.is-pass { color: #2e7d32; }
+  .qla-roster-verdict.is-pass { color: #66bb6a; }
   .qla-roster-memo { height: 300px; overflow-y: auto; margin-top: 0.5rem; scrollbar-width: thin; scrollbar-color: rgba(0,0,0,0.18) transparent; }
   .qla-roster-memo::-webkit-scrollbar { width: 6px; }
   .qla-roster-memo::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.18); border-radius: 3px; }
@@ -612,10 +675,10 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
   .qlf-legend-item { display: inline-flex; align-items: center; gap: 0.35rem; }
   .qlf-legend-swatch { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: currentColor; }
   .qlf-sw-series { color: var(--w-accent); } /* primary series: projects red */
-  .qlf-sw-accent { color: #f9c25e; } /* second series in comparisons: amber */
+  .qlf-sw-accent { color: #33b4e5; } /* second series in comparisons: blue */
   .qlf-sw-warn { color: var(--line-projects); }
   .qlf-sw-muted { color: var(--w-muted); }
-  .qlf-legend-swatch.qla-sw-good { background: #2e7d32; }
+  .qlf-legend-swatch.qla-sw-good { background: #66bb6a; }
   .qlf-legend-swatch.qla-sw-bad { background: var(--line-projects); }
   .qlf-legend-swatch.qlf-sw-gap { background: rgba(209,61,89,0.14); box-shadow: inset 0 0 0 1px rgba(209,61,89,0.45); }
   .qlf-legend-swatch.qlf-sw-window { background: rgba(26,26,26,0.08); box-shadow: inset 0 0 0 1px rgba(26,26,26,0.3); }
@@ -646,7 +709,7 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
     line-height: 1.1; font-variant-numeric: tabular-nums; color: var(--w-ink);
   }
   .qlf-la-stat-cheat .qlf-la-big { color: var(--line-projects); }
-  .qlf-la-stat-honest .qlf-la-big { color: #f9c25e; }
+  .qlf-la-stat-honest .qlf-la-big { color: #33b4e5; }
   .qlf-la-stat-label { color: rgba(26,26,26,0.72); font-size: 0.8rem; }
   .qlf-la-window-note { margin: 0.35rem 0 0.7rem; color: var(--w-muted); font-size: 0.78rem; }
   .qlf-chip-note { margin: 0.4rem 0 0; color: var(--w-muted); font-size: 0.78rem; }
@@ -720,6 +783,6 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
   .qlf-audit-line { display: flex; gap: 0.5rem; align-items: baseline; padding: 0.1rem 0; color: rgba(26,26,26,0.78); }
   .qlf-audit-ts { color: var(--w-muted); flex-shrink: 0; }
   .qlf-audit-verdict { font-weight: 700; flex-shrink: 0; }
-  .qlf-audit-line.is-approved .qlf-audit-verdict { color: #2e7d32; }
+  .qlf-audit-line.is-approved .qlf-audit-verdict { color: #66bb6a; }
   .qlf-audit-line.is-rejected .qlf-audit-verdict { color: #b52e49; }
 </style>
