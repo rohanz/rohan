@@ -45,6 +45,21 @@ let globalBound = false;
 let lastSkipAt = -Infinity;
 const SKIP_COOLDOWN = 350; // ms
 
+/** Fast Travel setting (StationBoard's toggle, persisted in sessionStorage —
+ *  same key + storage as the toggle's own script, keep the two in lock-step.
+ *  Session scope is deliberate: every new visit starts OFF. When ON, a rail
+ *  click is NOT intercepted for the camera ride — it falls through to a real
+ *  ClientRouter navigation, so the existing thin streak wipe (wipe.ts) runs and
+ *  lands on the target immediately. Only applies to real anchors; map SVG line
+ *  clicks have no href to navigate, so they keep riding. */
+function fastTravel(): boolean {
+  try {
+    return sessionStorage.getItem('fastTravel') === '1';
+  } catch {
+    return false;
+  }
+}
+
 function urlFor(view: ViewId): string {
   return view === 'map' ? '/' : `/${view}`;
 }
@@ -179,6 +194,10 @@ function init() {
       if (!lineId) return;
       const ev = e as MouseEvent;
       if (ev.metaKey || ev.ctrlKey || ev.shiftKey) return;
+      // Fast Travel ON: let real rail anchors navigate for real (ClientRouter →
+      // streak wipe), skipping the camera ride. Map SVG lines have no href, so
+      // they fall through to the ride below regardless.
+      if (fastTravel() && el instanceof HTMLAnchorElement) return;
       e.preventDefault();
       go(asViewId(lineId)); // validated — a template typo degrades to map, never throws
     });

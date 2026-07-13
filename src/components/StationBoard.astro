@@ -42,6 +42,18 @@ const dests = NAV_LINES.map((l) => ({
       ))}
     </ul>
   </div>
+  <div class="board-fasttravel">
+    <button
+      type="button"
+      id="fast-travel"
+      class="ft-switch"
+      role="switch"
+      aria-checked="false"
+    >
+      <span class="ft-label">Fast Travel</span>
+      <span class="ft-track" aria-hidden="true"><span class="ft-knob"></span></span>
+    </button>
+  </div>
   <div class="board-social">
     {SOCIALS.map((s) => (
       <a
@@ -157,6 +169,68 @@ const dests = NAV_LINES.map((l) => ({
     width: 56px;
   }
 
+  /* Fast Travel switch — secondary chrome, so it reads smaller than the
+     destination rows above. Sits just above the socials, sharing the same
+     hairline divider language. A signage-style pill track + sliding knob;
+     flat by house rule (no box-shadow on the knob). ON tints the track amber
+     (the stop-light #f9c25e) so it reads as a lit signal against the ink rail. */
+  .board-fasttravel {
+    padding: 0.55rem 0.7rem 0.15rem;
+  }
+  .ft-switch {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.8rem;
+    width: 100%;
+    padding: 0.4rem 0.7rem;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--ink-strong);
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-weight: 700;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+  .ft-switch:hover, .ft-switch:focus-visible { background: rgba(0, 0, 0, 0.07); }
+  .ft-label { letter-spacing: 0.01em; }
+  .ft-track {
+    position: relative;
+    flex: none;
+    width: 52px;
+    height: 26px;
+    border-radius: 999px;
+    /* Solid grey fill: a white track vanished against the rail's white body —
+       the off state needs to read as a visible, switchable pill. */
+    background: #d7d2c8;
+    border: 1.5px solid rgba(0, 0, 0, 0.28);
+    box-sizing: border-box;
+    transition: background 0.15s ease, border-color 0.15s ease;
+  }
+  .ft-knob {
+    position: absolute;
+    top: 50%;
+    left: 3px;
+    width: 17px;
+    height: 17px;
+    border-radius: 50%;
+    background: var(--ink-strong);
+    transform: translate(0, -50%);
+    transition: transform 0.18s cubic-bezier(0.4, 0, 0.2, 1), background 0.15s ease;
+  }
+  /* ON = the train-line light blue (the site's speed/motion accent), white
+     knob for contrast. Amber is reserved for the stop-lighting language. */
+  .ft-switch[aria-checked='true'] .ft-track {
+    background: #33b4e5;
+    border-color: #1f92bf;
+  }
+  .ft-switch[aria-checked='true'] .ft-knob {
+    background: #fff;
+    transform: translate(26.5px, -50%);
+  }
+
   /* External socials, pinned to the bottom of the rail (the .board-body above
      flexes to fill, pushing this row down). Muted monochrome icons that darken
      to ink on hover — distinct from the destination rows, not another line. */
@@ -179,3 +253,45 @@ const dests = NAV_LINES.map((l) => ({
     .social-link svg { width: 22px; height: 22px; }
   }
 </style>
+
+<script>
+  // Fast Travel toggle. Persisted in sessionStorage under 'fastTravel' ('1' = on):
+  // it survives page navigations within a visit but every NEW visit starts OFF
+  // (owner's call — off by default, always). The rail renders on EVERY page (map +
+  // detail article pages), so this binds on each astro:page-load against the
+  // freshly-swapped DOM and reflects the stored state. When ON, the ride engine
+  // (ride.ts) lets rail clicks fall through to a real ClientRouter navigation, so
+  // the existing thin streak wipe runs instead of the camera train ride — see the
+  // fastTravel() gate there (it MUST read the same key from the same storage).
+  // Detail-page rails are already real navs; the toggle just renders + persists.
+  const KEY = 'fastTravel';
+  function stored(): boolean {
+    try {
+      return sessionStorage.getItem(KEY) === '1';
+    } catch {
+      return false;
+    }
+  }
+  function bindFastTravel() {
+    const btn = document.getElementById('fast-travel');
+    if (!btn || btn.dataset.bound === '1') return;
+    btn.dataset.bound = '1';
+    const reflect = () => btn.setAttribute('aria-checked', stored() ? 'true' : 'false');
+    reflect();
+    // Native <button role="switch"> handles Space/Enter → click for us, so a
+    // single click listener covers pointer + keyboard activation.
+    btn.addEventListener('click', () => {
+      const next = !stored();
+      try {
+        sessionStorage.setItem(KEY, next ? '1' : '0');
+      } catch {
+        /* storage unavailable — the aria state below still reflects intent */
+      }
+      btn.setAttribute('aria-checked', next ? 'true' : 'false');
+    });
+  }
+  document.addEventListener('astro:page-load', bindFastTravel);
+  // astro:page-load doesn't fire on the very first load in some setups; cover it.
+  if (document.readyState !== 'loading') bindFastTravel();
+  else document.addEventListener('DOMContentLoaded', bindFastTravel);
+</script>
