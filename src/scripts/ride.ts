@@ -207,7 +207,7 @@ function init() {
     });
   };
   document
-    .querySelectorAll<HTMLAnchorElement>('a[data-terminal][data-line]')
+    .querySelectorAll<HTMLAnchorElement>('a[data-terminal][data-line]:not([data-ride-ignore])')
     .forEach((el) => bind(el, el.getAttribute('data-line')));
   document
     .querySelectorAll<SVGPathElement>('[data-ride-line]')

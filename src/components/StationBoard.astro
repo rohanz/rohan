@@ -1,12 +1,14 @@
 ---
 import { NAV_LINES } from '../data/system';
 import { SOCIALS } from '../data/socials';
+import { defaultPathFor } from '../lib/theme-paths';
 const dests = NAV_LINES.map((l) => ({
   id: l.id,
   hex: l.hex,
   name: l.nav.name,
   href: l.nav.href,
 }));
+const classicHref = defaultPathFor(Astro.url.pathname);
 ---
 <nav id="station-board" class="station-board" aria-label="Destinations">
   <h2 class="board-title"><span class="board-icon" aria-hidden="true">i</span> Destinations</h2>
@@ -41,6 +43,14 @@ const dests = NAV_LINES.map((l) => ({
         </li>
       ))}
     </ul>
+  </div>
+  <div class="board-classic">
+    <a
+      class="classic-site-link"
+      href={classicHref}
+      data-theme-pref="default"
+      data-ride-ignore
+    >Classic Site</a>
   </div>
   <div class="board-fasttravel">
     <button
@@ -178,8 +188,27 @@ const dests = NAV_LINES.map((l) => ({
      flat by house rule (no box-shadow on the knob). ON tints the track amber
      (the stop-light #f9c25e) so it reads as a lit signal against the ink rail. */
   .board-fasttravel {
+    padding: 0.15rem 0.7rem 0.15rem;
+  }
+  .board-classic {
     padding: 0.55rem 0.7rem 0.15rem;
   }
+  .classic-site-link {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: 0.4rem 0.7rem;
+    border-radius: 6px;
+    color: var(--ink-strong);
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-weight: 700;
+    font-size: 1.2rem;
+    letter-spacing: 0.01em;
+    line-height: normal;
+    text-decoration: none;
+    transition: background 0.15s ease;
+  }
+  .classic-site-link:hover, .classic-site-link:focus-visible { background: rgba(0, 0, 0, 0.07); }
   .ft-switch {
     display: flex;
     align-items: center;

@@ -2,14 +2,16 @@
 import '../styles/default.css';
 import '../styles/default-phase2.css';
 import { ClientRouter } from 'astro:transitions';
+import { transitPathFor } from '../lib/theme-paths';
 
 interface Props {
   title: string;
   description: string;
-  section?: 'homepage' | 'music' | 'projects' | 'about';
+  section?: 'homepage' | 'music' | 'projects' | 'about' | 'none';
   ogImage?: string;
   canonicalPath?: string;
   mainClass?: string;
+  robots?: string;
 }
 
 const {
@@ -19,10 +21,12 @@ const {
   ogImage = '/assets/images/og.png',
   canonicalPath = Astro.url.pathname,
   mainClass = '',
+  robots = 'index, follow',
 } = Astro.props;
 const canonical = new URL(canonicalPath, Astro.site).href;
 const ogAbs = new URL(ogImage, Astro.site).href;
 const activeSection = section === 'homepage' ? undefined : section;
+const transitHref = transitPathFor(Astro.url.pathname);
 const personLd = JSON.stringify({
   '@context': 'https://schema.org',
   '@type': 'Person',
@@ -48,7 +52,7 @@ const personLd = JSON.stringify({
     <meta name="description" content={description} />
     <meta name="keywords" content="rohan.jk, computer engineering, software developer, ai, machine learning, ntu singapore, portfolio, projects, indie pop" />
     <meta name="author" content="rohan.jk" />
-    <meta name="robots" content="index, follow" />
+    <meta name="robots" content={robots} />
     <meta name="referrer" content="strict-origin-when-cross-origin" />
     <link rel="canonical" href={canonical} />
 
@@ -98,21 +102,34 @@ const personLd = JSON.stringify({
         </ul>
       </nav>
 
+      <nav class="site-controls" aria-label="Site theme controls">
+        <button class="theme-toggle contact-link" id="themeToggle" aria-label="Toggle light/dark theme"><i class="fas fa-sun" aria-hidden="true"></i></button>
+        <a class="site-switch-link" href={transitHref} data-theme-pref="transit">
+          <svg class="site-switch-glyph" viewBox="0 0 28 16" aria-hidden="true">
+            <path d="M3 8h22"></path>
+            <circle cx="3" cy="8" r="2.2"></circle>
+            <circle cx="14" cy="8" r="2.2"></circle>
+            <circle cx="25" cy="8" r="2.2"></circle>
+          </svg>
+          <span>transit map</span>
+        </a>
+      </nav>
+
       <main class:list={["main-content", mainClass]} id="mainContent">
         <slot />
       </main>
 
-      <div class:list={["floating-contact", section === 'homepage' ? 'homepage-active' : 'show']} id="floatingContact" role="region" aria-label="Social links and theme toggle">
+      <div class:list={["floating-contact", section === 'homepage' ? 'homepage-active' : 'show']} id="floatingContact" role="region" aria-label="Social links">
         <div class="contact-item"><a href="https://www.instagram.com/rrohan.jk/" class="contact-link" target="_blank" rel="noopener noreferrer" aria-label="Instagram"><i class="fab fa-instagram" aria-hidden="true"></i></a></div>
         <div class="contact-item"><a href="https://open.spotify.com/artist/3I1V2FxqX2qs3zrUY0fCPp?si=SiJ7DZ_xQXiNG9uy_G1SsQ" class="contact-link" target="_blank" rel="noopener noreferrer" aria-label="Spotify"><i class="fab fa-spotify" aria-hidden="true"></i></a></div>
         <div class="contact-item"><a href="https://github.com/rohanz" class="contact-link" target="_blank" rel="noopener noreferrer" aria-label="GitHub"><i class="fab fa-github" aria-hidden="true"></i></a></div>
         <div class="contact-item"><a href="https://www.linkedin.com/in/rohan-jk" class="contact-link" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn"><i class="fab fa-linkedin-in" aria-hidden="true"></i></a></div>
-        <div class="contact-item"><button class="theme-toggle contact-link" id="themeToggle" aria-label="Toggle light/dark theme"><i class="fas fa-sun" aria-hidden="true"></i></button></div>
       </div>
     </div>
     <audio id="audio-player" preload="metadata"></audio>
     <script>
       import '../scripts/default/index.ts';
+      import '../lib/theme-switch.ts';
     </script>
   </body>
 </html>

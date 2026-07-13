@@ -1,10 +1,58 @@
 ---
-import Layout from '../layouts/Layout.astro';
+import DefaultLayout from '../layouts/DefaultLayout.astro';
 ---
-<Layout title="not found — rohan.jk" description="This stop doesn't exist.">
-  <main id="tt-main" style="min-height:100vh; display:grid; place-content:center; text-align:center; gap:1rem; padding:2rem;">
-    <h1 style="font-size:5rem; font-weight:800; margin:0; color:var(--muted);">404</h1>
-    <p style="font-size:1.2rem; margin:0;">this stop isn't on the map.</p>
-    <a href="/transit" style="font-weight:700; color:var(--line-projects);">back to map</a>
-  </main>
-</Layout>
+<DefaultLayout
+  title="page not found - rohan.jk"
+  description="The page you were looking for does not exist."
+  section="none"
+  mainClass="not-found-main"
+  robots="noindex, follow"
+>
+  <section class="not-found" aria-labelledby="not-found-title">
+    <p class="not-found-code" aria-hidden="true">404</p>
+    <h2 id="not-found-title">page not found</h2>
+    <p>that route does not exist, but the rest of the site is right here.</p>
+    <a class="not-found-home" href="/">back home</a>
+  </section>
+</DefaultLayout>
+
+<style>
+  .not-found {
+    min-height: calc(100vh - 14rem);
+    display: grid;
+    place-content: center;
+    justify-items: center;
+    gap: 1rem;
+    text-align: center;
+  }
+  .not-found-code {
+    color: var(--text-muted);
+    font-family: 'Chillax', 'Inter', sans-serif;
+    font-size: clamp(4.5rem, 12vw, 9rem);
+    font-weight: 600;
+    letter-spacing: -0.06em;
+    line-height: 0.8;
+  }
+  .not-found h2 {
+    color: var(--text-primary);
+    font-family: 'Chillax', 'Inter', sans-serif;
+    font-size: clamp(1.8rem, 4vw, 2.8rem);
+    font-weight: 600;
+  }
+  .not-found p:not(.not-found-code) {
+    max-width: 34rem;
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+  }
+  .not-found-home {
+    margin-top: 0.5rem;
+    color: var(--accent);
+    font-family: 'Chillax', 'Inter', sans-serif;
+    font-weight: 600;
+    text-decoration: none;
+  }
+  .not-found-home:hover { text-decoration: underline; }
+  @media (max-width: 768px) {
+    .not-found { min-height: calc(100vh - 2rem); }
+  }
+</style>

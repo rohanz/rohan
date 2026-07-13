@@ -16,6 +16,78 @@ html.theme-default .floating-contact.homepage-active {
   z-index: var(--z-sidebar);
 }
 
+/* Top-right site controls: light/dark first, same-path transit switch LAST.
+   The tiny three-stop glyph uses currentColor so both palettes and the
+   existing hover/focus language stay in lock-step with the primary nav. */
+html.theme-default .site-controls {
+  position: fixed;
+  top: 1.25rem;
+  right: 2rem;
+  z-index: var(--z-nav);
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+html.theme-default .site-controls .contact-link {
+  width: 44px;
+  height: 44px;
+}
+
+html.theme-default .site-controls .contact-link i {
+  font-size: 1.55rem;
+}
+
+html.theme-default .site-switch-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  min-height: 44px;
+  padding: 0.5rem 0.7rem;
+  border-radius: 8px;
+  color: var(--text-muted);
+  font-family: 'Chillax', 'Inter', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 0.3s ease, transform 0.3s ease, background-color 0.3s ease;
+}
+
+html.theme-default .site-switch-glyph {
+  width: 1.55rem;
+  height: 0.9rem;
+  flex: none;
+  overflow: visible;
+  fill: var(--bg-primary);
+  stroke: currentColor;
+  stroke-width: 2;
+}
+
+@media (hover: hover) {
+  html.theme-default .site-controls .contact-link:hover {
+    transform: translateY(-2px) scale(1.08);
+  }
+
+  html.theme-default .site-switch-link:hover {
+    color: var(--accent);
+    transform: translateY(-2px);
+  }
+}
+
+@media (max-width: 768px) {
+  html.theme-default .site-controls {
+    top: auto;
+    right: 0.75rem;
+    bottom: 0.75rem;
+    padding: 0.15rem 0.35rem;
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--bg-primary) 92%, transparent);
+  }
+}
+
 /* Article geometry from the hard-won port brief. The section remains on the
    opacity-only sectionFadeInFlat path: a transformed ancestor would demote the
    fixed rail in Chrome. */
