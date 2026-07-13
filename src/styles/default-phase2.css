@@ -88,12 +88,6 @@ html.theme-default #projects.section.active {
   animation-name: sectionFadeInFlat;
 }
 
-html.theme-default .detail-hero-image {
-  max-height: 400px;
-  aspect-ratio: auto;
-  object-fit: cover;
-}
-
 html.theme-default .detail-summary {
   font-size: 1.25rem;
 }

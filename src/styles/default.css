@@ -1418,12 +1418,10 @@ html.theme-default .detail-nav-link .nav-arrow {
 
 /* Detail content elements */
 html.theme-default .detail-hero-image {
+    /* Transit-style banner (Rohan's call 2026-07-14): full article width at
+       the image's NATURAL ratio — no aspect-ratio box, no cover/contain crop. */
     width: 100%;
-    /* no crop: all article banners share a consistent 3:2 ratio, so show
-       them whole; aspect-ratio reserves the space before the image loads */
-    aspect-ratio: 3 / 2;
     height: auto;
-    object-fit: contain;
     border-radius: 8px;
     border: 1px solid var(--border-subtle);
     margin-bottom: 2rem;
@@ -3340,10 +3338,6 @@ html.theme-default .projects-grid-view {
 
     html.theme-default .detail-content-column {
         padding: 0 0 2rem;
-    }
-
-    html.theme-default .detail-hero-image {
-        max-height: 220px;
     }
 
     html.theme-default .detail-title {
