@@ -5,7 +5,7 @@ const pref = (page: import('@playwright/test').Page) =>
 
 test('default to transit preserves the current article path and stores preference', async ({ page }) => {
   await page.goto('/projects/careersphere');
-  const switchLink = page.getByRole('link', { name: 'transit map' });
+  const switchLink = page.getByRole('link', { name: 'transit mode' });
   await expect(switchLink).toHaveAttribute('href', '/transit/projects/careersphere');
   await switchLink.click();
   await expect(page).toHaveURL(/\/transit\/projects\/careersphere\/?$/);
