@@ -19,13 +19,13 @@ I follow a lot of different topics - music production, AI, MMA, news, startups, 
 
 So I built yourcast - a personalized AI podcast generator that creates custom 3-5 minute episodes tailored to your interests.
 
-![The yourcast landing page](/assets/images/projects/yourcast/screenshot-landing.webp)
+![The yourcast landing page](assets/images/projects/yourcast/screenshot-landing.webp)
 
 ## Features
 
 yourcast features secure Google authentication, curated topic categories, and the ability to define your own custom topics. One click generates a personalized episode in under two minutes. The built-in player offers full playback controls, chapter timestamps, and source citations for every story - plus an archive to revisit your previous episodes.
 
-![Topic selection and personalization](/assets/images/projects/yourcast/screenshot-personalize.webp)
+![Topic selection and personalization](assets/images/projects/yourcast/screenshot-personalize.webp)
 
 ## How It Works
 
@@ -47,7 +47,7 @@ The podcast scripts are generated using Google's Agent Development Kit (ADK) wit
 
 Eight parallel text-to-speech workers process the script sections concurrently. This parallelization was crucial - it reduced generation time by over 7x compared to sequential processing. The final result is a fully playable episode with chapter markers and source links:
 
-![The built-in podcast player with chapter timestamps](/assets/images/projects/yourcast/screenshot-player.webp)
+![The built-in podcast player with chapter timestamps](assets/images/projects/yourcast/screenshot-player.webp)
 
 ### Infrastructure
 
@@ -58,7 +58,7 @@ The entire system runs serverless on Google Cloud:
 
 This architecture auto-scales from zero to 1000+ instances based on demand, with podcast generation completing in under two minutes.
 
-![System architecture showing the Cloud Run services, Cloud SQL, and Cloud Tasks pipeline](/assets/images/projects/yourcast/architecture.webp)
+![System architecture showing the Cloud Run services, Cloud SQL, and Cloud Tasks pipeline](assets/images/projects/yourcast/architecture.webp)
 
 ## Key Learnings
 

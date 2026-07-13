@@ -45,7 +45,7 @@ As for how it looks, dark and light themes are implemented through ~20 CSS custo
 
 The site is mobile compatible too, re-ordered a little here and there for convenience.
 
-![The mobile homepage](/assets/images/projects/website/mobile-view.webp)
+![The mobile homepage](assets/images/projects/website/mobile-view.webp)
 
 ## Key Learnings
 

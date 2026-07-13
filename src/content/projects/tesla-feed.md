@@ -43,7 +43,7 @@ The `normalize()` function handles the subtle cases that cause false-positive di
 
 Here's a sample of the changelog showing real mutations - stations opening, power upgrades, GPS coordinate corrections, and new cross-reference IDs being added:
 
-![Field-level change detection log showing station mutations](/assets/images/projects/tesla/changelog.webp)
+![Field-level change detection log showing station mutations](assets/images/projects/tesla/changelog.webp)
 
 ## Key Learnings
 

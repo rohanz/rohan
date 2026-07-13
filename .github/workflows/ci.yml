@@ -20,6 +20,17 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Check out main-site content source
+        uses: actions/checkout@v4
+        with:
+          repository: rohanz/rohan
+          path: .sync-source
+
+      - name: Check content sync
+        run: npm run sync-check
+        env:
+          SYNC_SOURCE_DIR: ${{ github.workspace }}/.sync-source
+
       - name: Build (runs astro check)
         run: npm run build
 

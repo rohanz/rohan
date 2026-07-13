@@ -20,7 +20,7 @@ I built PatentEase as a mobile-first solution that handles the entire patent lif
 
 ## Features
 
-![The PatentEase dashboard showing status counters and notification cards](/assets/images/projects/patent/screenshot-dashboard.webp)
+![The PatentEase dashboard showing status counters and notification cards](assets/images/projects/patent/screenshot-dashboard.webp)
 
 - **Real-time dashboard** with notification cards and clickable status counters across four states (approved, in review, pending, rejected)
 - **Streamlined submission** - one form for patents, trademarks, and copyrights, with PDF uploads and auto-generated application numbers (e.g., `PAT-2023-0002`)
@@ -42,7 +42,7 @@ The most technically challenging feature. When a user views a patent's details, 
 
 I built this as a **separate FastAPI microservice** rather than embedding it in the main backend - this kept the ML pipeline isolated, independently deployable, and non-blocking through async file processing. The main app communicates with it via REST, so swapping out the encoding model or scaling the service independently is trivial.
 
-![The similarity checker showing matched patents with confidence scores](/assets/images/projects/patent/screenshot-similarity.webp)
+![The similarity checker showing matched patents with confidence scores](assets/images/projects/patent/screenshot-similarity.webp)
 
 ### Architecture
 
@@ -53,7 +53,7 @@ I chose **Supabase** over a custom backend for a reason - it gave me auth, Postg
 - **Storage**: Patent PDFs uploaded to Supabase object storage with signed URLs generated on-demand (60-second validity for security)
 - **Frontend**: React Native 0.76 + Expo 52 with file-based routing (Expo Router), React Native Paper for Material Design, and Reanimated for fluid animations
 
-![Color-coded patent tracking with status filtering](/assets/images/projects/patent/screenshot-tracking.webp)
+![Color-coded patent tracking with status filtering](assets/images/projects/patent/screenshot-tracking.webp)
 
 ### Testing & Quality
 

@@ -30,7 +30,7 @@ What surprised me was how deep the core problem went. Turning a handful of held 
 
 Live Chord Monitor is a desktop app that listens to every connected MIDI device and the computer keyboard, works out the chord you're playing in real time, and shows both its name and the notes on a <span class="gloss-term" data-gloss="A grand staff is the treble and bass staves joined together, the standard way piano music is written.">grand staff</span>. Settings control the naming style, inversions, sharp or flat spelling, and how long a chord lingers on screen after you let go.
 
-![The Live Chord Monitor app: a held chord named at the top, written out on a grand staff, with the notes lit on the piano below.](/assets/images/projects/live-chord-monitor/app-ui.webp)
+![The Live Chord Monitor app: a held chord named at the top, written out on a grand staff, with the notes lit on the piano below.](assets/images/projects/live-chord-monitor/app-ui.webp)
 
 The chord-detection engine at the centre of it runs right here in the browser. I ported it from the app's TypeScript so you can try it without installing anything. The full source is on <a href="https://github.com/rohanz/live-chord-monitor" target="_blank" rel="noopener noreferrer">github.com/rohanz/live-chord-monitor</a>.
 
