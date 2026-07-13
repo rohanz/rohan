@@ -16,7 +16,7 @@ test('transit to default preserves the current path and is never captured by the
   await page.goto('/transit/projects');
   const switchLink = page.locator('.top-bar .transit-theme-switch');
   await expect(page.locator('[data-theme-pref="default"]')).toHaveCount(1);
-  await expect(switchLink).toHaveAccessibleName('Classic Site');
+  await expect(switchLink).toHaveAccessibleName('Classic Mode');
   await expect(switchLink).toHaveAttribute('href', '/projects');
   await switchLink.click();
   await expect(page).toHaveURL(/\/projects\/?$/);
@@ -29,8 +29,8 @@ test('transit detail header has one switch before the outer back control', async
   await expect(page.locator('[data-theme-pref="default"]')).toHaveCount(1);
   await expect(actions.locator('.transit-theme-switch')).toHaveAttribute('href', '/projects/careersphere');
   await expect(actions.locator('a')).toHaveCount(2);
-  await expect(actions.locator('a').nth(0)).toHaveAccessibleName('Classic Site');
-  await expect(actions.locator('a').nth(1)).toHaveAccessibleName('‹ back');
+  await expect(actions.locator('a').nth(0)).toHaveAccessibleName('‹ back');
+  await expect(actions.locator('a').nth(1)).toHaveAccessibleName('Classic Mode');
 });
 
 test('theme controls hold their responsive corner poses and transit focus treatment', async ({ page }) => {

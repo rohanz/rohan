@@ -30,8 +30,8 @@ const { title, description, lineId, hex, signName, ogImage } = Astro.props;
       </a>
       <h1 class="sign-title">{signName}</h1>
       <div class="sign-header-actions">
-        <TransitThemeSwitch />
         <a class="sign-pill sign-back" href={`/transit/${lineId}`}>&lsaquo; back</a>
+        <TransitThemeSwitch />
       </div>
     </header>
     <main id="tt-main" class="page-body">
