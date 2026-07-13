@@ -11,6 +11,7 @@ import * as qlfVisuals from './qlf-visuals.js';
 import * as bqstVisuals from './bqst-visuals.js';
 import * as legacyWidgets from './legacy-widgets.js';
 import * as gridFilter from './grid-filter.js';
+import * as articleNav from './article-nav.js';
 
 type LifecycleModule = { cleanup: () => void };
 
@@ -49,6 +50,9 @@ export function init() {
   if (document.getElementById('projectsFilterBar'))
     use(gridFilter, () => gridFilter.init(document));
 
+  if (document.querySelector('#detailToc .toc-item'))
+    use(articleNav, () => articleNav.init(document));
+
   if (document.querySelector('.gloss-term'))
     use(gloss, () => gloss.init());
 
@@ -72,6 +76,9 @@ export function init() {
 
   if (document.querySelector('[id^="qlf-"][id$="-visual"]'))
     use(qlfVisuals, () => qlfVisuals.init(document));
+
+  const announcer = document.getElementById('routeAnnouncer');
+  if (announcer) announcer.textContent = `Navigated to ${document.title}`;
 }
 
 document.addEventListener('astro:page-load', init);

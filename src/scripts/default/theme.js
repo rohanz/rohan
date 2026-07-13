@@ -25,9 +25,10 @@ function initThemeToggle() {
     listen(toggle, 'click', () => {
         const current = document.documentElement.getAttribute('data-theme');
         const next = current === 'light' ? 'dark' : 'light';
+        const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
         // Add transition class for smooth color change
-        document.body.classList.add('theme-transitioning');
+        if (!reducedMotion) document.body.classList.add('theme-transitioning');
 
         document.documentElement.setAttribute('data-theme', next);
         localStorage.setItem('default:theme', next);
@@ -41,9 +42,11 @@ function initThemeToggle() {
         window.dispatchEvent(new Event('theme-changed'));
 
         // Remove transition class after animation completes
-        later(() => {
-            document.body.classList.remove('theme-transitioning');
-        }, 500);
+        if (!reducedMotion) {
+            later(() => {
+                document.body.classList.remove('theme-transitioning');
+            }, 500);
+        }
     });
 }
 
