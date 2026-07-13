@@ -823,6 +823,9 @@ html.theme-default .music-link {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    /* Pills never wrap internally ("apple music" was breaking to two lines
+       once the large-screen scaling tier widened the row). */
+    white-space: nowrap;
     padding: 0.42rem 0.72rem;
     background: var(--bg-card);
     color: var(--text-primary);
@@ -979,6 +982,73 @@ html.theme-default[data-theme="light"] .vu-meter-canvas,
 html.theme-default[data-theme="light"] .vectorscope-canvas,
 html.theme-default[data-theme="light"] .frequency-canvas {
     border-color: rgba(62, 39, 35, 0.24);
+}
+
+/* The classic sidebar is wider than transit's docked rail, so matching both
+   transit's row width and its rail-to-row gap exactly is not possible without
+   running off the viewport. Above the unchanged 1440px layout, open the music
+   row toward the right edge and grow its left inset from ~50px to 212px. This
+   lands within 24px of transit for both gap and width at 1920, and within a
+   couple of pixels for both at 2560. Keep this local to #music: article and
+   project reading widths retain their existing caps. */
+@media (min-width: 1441px) {
+    html.theme-default #music {
+        --music-large-gap: min(212px, calc(16.1667vw - 182.4px));
+    }
+
+    html.theme-default #music .music-list {
+        width: calc(100vw - var(--sidebar-w) - var(--music-large-gap));
+        max-width: none;
+        margin-left: calc(var(--music-large-gap) - var(--content-pad));
+        margin-right: 0;
+    }
+
+    html.theme-default #music .music-content {
+        grid-template-columns: clamp(380px, 16.67vw, 460px) minmax(0, 1fr);
+        gap: 2rem;
+        /* Keep the fixed social rail out of the last meter at the tight 1920
+           tier. The flexible waveform absorbs this reserve; row geometry and
+           divider length still track the transit-sized content region. */
+        padding-right: 5.5rem;
+    }
+
+    html.theme-default #music .music-cover {
+        width: clamp(100px, 6.5vw, 132px);
+        height: clamp(100px, 6.5vw, 132px);
+    }
+
+    html.theme-default #music .waveform-player {
+        gap: 1rem;
+    }
+
+    html.theme-default #music .waveform-canvas-container,
+    html.theme-default #music .waveform-canvas {
+        height: clamp(56px, 3.5vw, 74px);
+    }
+
+    html.theme-default #music .waveform-meter-group {
+        flex-basis: clamp(150px, 10vw, 270px);
+        max-width: clamp(270px, 14vw, 356px);
+    }
+
+    html.theme-default #music .audio-meters {
+        gap: 1rem;
+    }
+
+    html.theme-default #music .frequency-canvas {
+        width: clamp(300px, calc(10.3125vw + 132px), 396px);
+        height: clamp(110px, calc(3.75vw + 49px), 145px);
+    }
+
+    html.theme-default #music .vectorscope-canvas {
+        width: clamp(110px, calc(3.75vw + 49px), 145px);
+        height: clamp(110px, calc(3.75vw + 49px), 145px);
+    }
+
+    html.theme-default #music .vu-meter-canvas {
+        width: clamp(150px, calc(4.375vw + 86px), 198px);
+        height: clamp(100px, calc(2.9167vw + 57.33px), 132px);
+    }
 }
 
 /* Laptop widths keep every visualizer, but scale the fixed meters down enough

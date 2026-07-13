@@ -202,22 +202,18 @@ function initWaveformPlayer(playerEl) {
         sizeCanvas(waveCanvas, rect.width, rect.height);
         if (!isPlaying) drawIdle();
     }
-    resizeWaveCanvas();
-    let waveResizeTimer;
-    listen(window, 'resize', () => {
-        clearTimeout(waveResizeTimer);
-        waveResizeTimer = setTimeout(resizeWaveCanvas, 150);
-    });
 
-    // Meter elements — scale for retina
+    // Meter elements — their CSS boxes are the source of truth. The original
+    // fixed logical sizes happened to match the <=1440 layout, but would make
+    // the new large-screen CSS sizes browser-stretched and blurry.
     const vecCanvas = playerEl.querySelector('.vectorscope-canvas');
-    const vecCtx = vecCanvas ? sizeCanvas(vecCanvas, 110, 110) : null;
+    const vecCtx = vecCanvas ? vecCanvas.getContext('2d') : null;
 
     const freqCanvas = playerEl.querySelector('.frequency-canvas');
-    const freqCtx = freqCanvas ? sizeCanvas(freqCanvas, 300, 110) : null;
+    const freqCtx = freqCanvas ? freqCanvas.getContext('2d') : null;
 
     const vuCanvas = playerEl.querySelector('.vu-meter-canvas');
-    const vuCtx = vuCanvas ? sizeCanvas(vuCanvas, 150, 100) : null;
+    const vuCtx = vuCanvas ? vuCanvas.getContext('2d') : null;
     let vuSmoothed = -40;
 
     function getAccentColor() {
@@ -230,9 +226,9 @@ function initWaveformPlayer(playerEl) {
         return isLight ? `rgba(141,110,99,${alpha})` : `rgba(255,204,128,${alpha})`;
     }
 
-    const vuW = 150, vuH = 100;
-    const vecW = 110, vecH = 110;
-    const freqW = 300, freqH = 110;
+    let vuW = 150, vuH = 100;
+    let vecW = 110, vecH = 110;
+    let freqW = 300, freqH = 110;
     const freqBands = 128;
     const freqSmoothed = new Float32Array(freqBands);
     const freqHighlights = new Float32Array(freqBands);
@@ -590,7 +586,43 @@ function initWaveformPlayer(playerEl) {
         drawVecIdle();
         drawFreqIdle();
     }
-    drawMetersIdle();
+
+    function resizeMeterCanvases() {
+        const useRenderedSize = window.matchMedia('(min-width: 1441px)').matches;
+        const dpr = window.devicePixelRatio || 1;
+        const toDevicePixel = value => Math.round(value * dpr) / dpr;
+        if (vecCanvas) {
+            const rect = vecCanvas.getBoundingClientRect();
+            vecW = useRenderedSize ? toDevicePixel(rect.width) : 110;
+            vecH = useRenderedSize ? toDevicePixel(rect.height) : 110;
+            sizeCanvas(vecCanvas, vecW, vecH);
+        }
+        if (freqCanvas) {
+            const rect = freqCanvas.getBoundingClientRect();
+            freqW = useRenderedSize ? toDevicePixel(rect.width) : 300;
+            freqH = useRenderedSize ? toDevicePixel(rect.height) : 110;
+            sizeCanvas(freqCanvas, freqW, freqH);
+        }
+        if (vuCanvas) {
+            const rect = vuCanvas.getBoundingClientRect();
+            vuW = useRenderedSize ? toDevicePixel(rect.width) : 150;
+            vuH = useRenderedSize ? toDevicePixel(rect.height) : 100;
+            sizeCanvas(vuCanvas, vuW, vuH);
+        }
+        if (!isPlaying) drawMetersIdle();
+    }
+
+    function resizePlayerCanvases() {
+        resizeWaveCanvas();
+        resizeMeterCanvases();
+    }
+
+    resizePlayerCanvases();
+    let canvasResizeTimer;
+    listen(window, 'resize', () => {
+        clearTimeout(canvasResizeTimer);
+        canvasResizeTimer = setTimeout(resizePlayerCanvases, 150);
+    });
 
     function drawMetersLive() {
         if (analyserL && analyserR) {
