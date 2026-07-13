@@ -2256,7 +2256,7 @@ html.theme-default .bqst-mini-knob {
     width: 114px;
     height: 114px;
     border-radius: 999px;
-    background: url('../images/projects/bqst/knob-large-cream.webp') center / 128% no-repeat;
+    background: url('/assets/images/projects/bqst/knob-large-cream.webp') center / 128% no-repeat;
     position: relative;
     transform: rotate(var(--bqst-knob-angle));
     transform-origin: center;

@@ -8,6 +8,14 @@ html.theme-default .section.active .stagger-child {
   opacity: 1;
 }
 
+/* Unlike the source SPA, the integrated default tree keeps the theme control
+   available on every route, including the homepage. */
+html.theme-default .floating-contact.homepage-active {
+  opacity: 1;
+  pointer-events: auto;
+  z-index: var(--z-sidebar);
+}
+
 /* Article geometry from the hard-won port brief. The section remains on the
    opacity-only sectionFadeInFlat path: a transformed ancestor would demote the
    fixed rail in Chrome. */

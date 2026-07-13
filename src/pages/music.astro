@@ -1,41 +1,10 @@
 ---
 import DefaultLayout from '../layouts/DefaultLayout.astro';
-import music from '../data/music.json';
 ---
 <DefaultLayout title="music - rohan.jk" description="Music by rohan.jk — releases, previews, and streaming links." section="music">
   <section id="music" class="section active">
     <div class="music-list">
-      {music.map((track, index) => (
-        <>
-          <div class="music-item stagger-child">
-            <div class="music-content">
-              <div class="music-header">
-                <img src={track.cover} alt={`${track.title} cover`} class="music-cover img-fade loaded" />
-                <div class="music-header-text">
-                  <h3 class="music-title">{track.title}</h3>
-                  <p class="music-artist">{track.artist}</p>
-                  <p class="music-summary">{track.summary}</p>
-                </div>
-              </div>
-              <div class="waveform-player" data-audio-url={track.audio}>
-                <button class="waveform-play-btn" aria-label="Play snippet" aria-pressed="false"><i class="fas fa-play" aria-hidden="true"></i></button>
-                <canvas class="waveform-canvas" height="56" aria-hidden="true"></canvas>
-                <div class="audio-meters">
-                  <div class="meter-group"><canvas class="frequency-canvas" width="280" height="110"></canvas><span class="meter-label">freq</span></div>
-                  <div class="meter-group"><canvas class="vectorscope-canvas" width="110" height="110"></canvas><span class="meter-label">stereo</span></div>
-                  <div class="meter-group"><canvas class="vu-meter-canvas" width="76" height="110"></canvas><span class="meter-label">vu</span></div>
-                </div>
-              </div>
-              <div class="music-links">
-                <a href={track.spotifyUrl} class="music-link" target="_blank" rel="noopener noreferrer"><i class="fab fa-spotify" aria-hidden="true"></i> Spotify</a>
-                <a href={track.appleMusicUrl} class="music-link" target="_blank" rel="noopener noreferrer"><i class="fab fa-apple" aria-hidden="true"></i> Apple Music</a>
-                <a href={track.youtubeUrl} class="music-link" target="_blank" rel="noopener noreferrer"><i class="fab fa-youtube" aria-hidden="true"></i> YouTube</a>
-              </div>
-            </div>
-          </div>
-          {index < music.length - 1 && <div class="music-divider"></div>}
-        </>
-      ))}
+      <div class="loading-state">Loading music...</div>
     </div>
   </section>
 </DefaultLayout>

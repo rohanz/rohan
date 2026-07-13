@@ -1,6 +1,7 @@
 ---
 import '../styles/default.css';
 import '../styles/default-phase2.css';
+import { ClientRouter } from 'astro:transitions';
 
 interface Props {
   title: string;
@@ -80,6 +81,7 @@ const personLd = JSON.stringify({
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=block" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="sha384-3B6NwesSXE7YJlcLI9RpRqGf2p/EgVH8BgoKTaUrmKNDkHPStTQ3EyoYjCGXaOTS" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <script is:inline type="application/ld+json" set:html={personLd}></script>
+    <ClientRouter />
   </head>
   <body>
     <a href="#mainContent" class="skip-nav">Skip to content</a>
@@ -109,5 +111,8 @@ const personLd = JSON.stringify({
       </div>
     </div>
     <audio id="audio-player" preload="metadata"></audio>
+    <script>
+      import '../scripts/default/index.ts';
+    </script>
   </body>
 </html>

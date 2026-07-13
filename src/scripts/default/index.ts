@@ -8,6 +8,9 @@ import * as bqstDemo from './bqst-demo.js';
 import * as chordDemo from './chord-demo.js';
 import * as qlaVisuals from './qla-visuals.js';
 import * as qlfVisuals from './qlf-visuals.js';
+import * as bqstVisuals from './bqst-visuals.js';
+import * as legacyWidgets from './legacy-widgets.js';
+import * as gridFilter from './grid-filter.js';
 
 type LifecycleModule = { cleanup: () => void };
 
@@ -37,11 +40,14 @@ export function init() {
   // Theme restoration must precede every canvas draw.
   use(theme, () => theme.init());
 
-  if (document.querySelector('.homepage-name, #asciiGrid'))
+  if (document.querySelector('.homepage-name'))
     use(homepage, () => homepage.init());
 
   if (document.querySelector('.music-list'))
     use(audioPlayers, () => audioPlayers.init(document));
+
+  if (document.getElementById('projectsFilterBar'))
+    use(gridFilter, () => gridFilter.init(document));
 
   if (document.querySelector('.gloss-term'))
     use(gloss, () => gloss.init());
@@ -52,8 +58,14 @@ export function init() {
   if (document.getElementById('bqst-audio-demo'))
     use(bqstDemo, () => bqstDemo.init(document));
 
+  if (document.querySelector('[id^="bqst-"][id$="-visual"]'))
+    use(bqstVisuals, () => bqstVisuals.init(document));
+
   if (document.getElementById('lcm-demo'))
     use(chordDemo, () => chordDemo.init(document));
+
+  if (document.querySelector('#demo-player-placeholder, #theme-palette-placeholder'))
+    use(legacyWidgets, () => legacyWidgets.init(document));
 
   if (document.querySelector('[id^="qla-"][id$="-visual"]'))
     use(qlaVisuals, () => qlaVisuals.init(document));

@@ -9,8 +9,8 @@ function initBqstAudioDemo(container) {
 
     if (bqstAudioDemoCleanup) { bqstAudioDemoCleanup(); bqstAudioDemoCleanup = null; }
 
-    const cleanUrl = placeholder.dataset.clean;
-    const processedUrl = placeholder.dataset.processed;
+    const cleanUrl = placeholder.dataset.clean ? new URL(placeholder.dataset.clean, `${window.location.origin}/`).href : '';
+    const processedUrl = placeholder.dataset.processed ? new URL(placeholder.dataset.processed, `${window.location.origin}/`).href : '';
     const settings = placeholder.dataset.settings || 'matched clean/processed drum loop';
     const bpm = Number.parseFloat(placeholder.dataset.bpm || '90');
     if (!cleanUrl || !processedUrl) return;
@@ -590,7 +590,7 @@ function initBqstAudioDemo(container) {
                     title: 'BQST A/B demo',
                     artist: 'rohan.jk',
                     album: 'projects',
-                    artwork: [{ src: 'assets/images/projects/bqst/banner.webp', sizes: '512x512', type: 'image/webp' }]
+                    artwork: [{ src: '/assets/images/projects/bqst/banner.webp', sizes: '512x512', type: 'image/webp' }]
                 });
                 navigator.mediaSession.setActionHandler('play', () => { if (!isPlaying) start(); });
                 navigator.mediaSession.setActionHandler('pause', () => { if (isPlaying) pause(); });
