@@ -159,7 +159,37 @@ export class MapView {
       // announceView itself no-ops when the view hasn't actually changed.
       this.onAnnounce?.(this.view);
       this.onSettle?.();
+      this._armRevealHeal();
     }
+  }
+
+  // Empty-platform self-heal. The ride watchdog only catches a FROZEN timeline;
+  // if a ride SETTLES but the deferred reveal (music's onComplete showUI/cardsIn,
+  // or a stagger whose tweens got killed by overlapping input) never lands, the
+  // platform sits parked and empty with nothing to recover it — the rare
+  // "rapid-click music → blank rows" report. This backstop runs well after any
+  // healthy stagger would have finished (cards fade ≤ ~2s post-settle): if the
+  // view is unchanged, still settled, and EVERY visible card is still at
+  // opacity ~0, snap the reveal in via the same deterministic instant path a
+  // skip uses. It cannot false-fire mid-stagger (any card past opacity 0.05
+  // aborts) and re-arms on every settle edge.
+  private _healTimer: number | null = null;
+  private _armRevealHeal() {
+    if (this._healTimer) clearTimeout(this._healTimer);
+    const view = this.view;
+    if (view === 'map') return;
+    this._healTimer = window.setTimeout(() => {
+      this._healTimer = null;
+      if (this.busy || this.view !== view) return;
+      const cards = this.cardsFor(this.view).filter(
+        (c) => c.style.display !== 'none' && c.offsetParent !== null,
+      );
+      if (!cards.length) return;
+      const allHidden = cards.every((c) => parseFloat(getComputedStyle(c).opacity) < 0.05);
+      if (!allHidden) return;
+      this.showUI(this.view as LineId);
+      this.cardsIn(this.view as LineId, true);
+    }, 2500);
   }
 
   // Stall watchdog. Under rapid input — especially on a slower machine, where the
@@ -2178,6 +2208,10 @@ export class MapView {
     this.active?.kill();
     this.active = null;
     this._stopWatchdog();
+    if (this._healTimer) {
+      clearTimeout(this._healTimer);
+      this._healTimer = null;
+    }
     this.killTransientTweens();
   }
 }
