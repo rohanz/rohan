@@ -15,6 +15,7 @@
  * wiring. The camera/DOM engine is ./ride/map-view (MapView); the pure
  * motion math is ./ride/motion; the opt-in perf meter is ./ride/hud.
  */
+import { navigate } from 'astro:transitions/client';
 import { lineById } from '../data/system';
 import type { ViewId } from './ride/motion';
 import { rlog } from './ride/rlog';
@@ -198,10 +199,17 @@ function init() {
       if (!lineId) return;
       const ev = e as MouseEvent;
       if (ev.metaKey || ev.ctrlKey || ev.shiftKey) return;
-      // Fast Travel ON: let real rail anchors navigate for real (ClientRouter →
-      // streak wipe), skipping the camera ride. Map SVG lines have no href, so
-      // they fall through to the ride below regardless.
-      if (fastTravel() && el instanceof HTMLAnchorElement) return;
+      // Fast Travel ON: every navigation is instant. Real rail anchors just
+      // navigate (ClientRouter → streak wipe); map SVG lines have no href, so
+      // route them through the router programmatically — same streak, no ride.
+      if (fastTravel()) {
+        if (el instanceof HTMLAnchorElement) return;
+        e.preventDefault();
+        const view = asViewId(lineId);
+        rlog('go:fast-line', { view });
+        if (mv?.view !== view) navigate(urlFor(view));
+        return;
+      }
       e.preventDefault();
       go(asViewId(lineId)); // validated — a template typo degrades to map, never throws
     });
