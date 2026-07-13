@@ -1622,8 +1622,11 @@ function qlfReadout(fields: Array<{ key: string; label: string; width: number }>
     const cell = qlaEl('span', 'qlf-readout-field');
     cell.appendChild(qlaEl('span', 'qlf-readout-label', f.label));
     // Figure space keeps the empty box glyph-bearing so the row's baseline
-    // doesn't shift on first fill (see the original's comment).
-    const box = qlaEl('span', 'qlf-readout-value', ' ');
+    // doesn't shift on first fill (see the original's comment). Written as an
+    // escape: a literal U+2007 in the source degraded to a plain space in the
+    // toolchain, the box collapsed to its min-height, and the labels visibly
+    // hopped as the row re-baselined on first hover.
+    const box = qlaEl('span', 'qlf-readout-value', '\u2007');
     box.style.minWidth = `calc(${f.width}ch + 1px)`;
     boxes[f.key] = box;
     cell.appendChild(box);
@@ -1635,7 +1638,7 @@ function qlfReadout(fields: Array<{ key: string; label: string; width: number }>
       if (values) {
         Object.keys(values).forEach((k) => { if (boxes[k]) boxes[k].textContent = values[k]; });
       } else {
-        Object.keys(boxes).forEach((k) => { boxes[k].textContent = ' '; });
+        Object.keys(boxes).forEach((k) => { boxes[k].textContent = '\u2007'; });
       }
       row.classList.toggle('is-idle', !values);
     },
