@@ -91,6 +91,9 @@ const tech = [
     <div id="platform-ui" hidden>
       <button id="more-prev" class="edge-btn edge-btn-left" type="button" hidden>← Back</button>
       <button id="more-next" class="edge-btn edge-btn-right" type="button" hidden>More →</button>
+      <!-- "x–y of N" range for the paged projects platform; text + position are
+           owned by the ride engine (updateMoreButtons / placeProjectPaging). -->
+      <span id="page-indicator" hidden aria-live="polite"></span>
       <div id="filter-bar" hidden>
         <button type="button" class="filter-tag active" data-filter="all" aria-pressed="true">all</button>
         {filterTags.map((t) => (
@@ -333,6 +336,22 @@ const tech = [
   }
   .edge-btn:hover { filter: brightness(1.12); }
   .edge-btn[hidden] { display: none; }
+  /* Page range ("4–6 of 10") — quiet signage centred between the paging
+     buttons at the same row (positioned by placeProjectPaging). */
+  #page-indicator {
+    position: absolute;
+    z-index: 40;
+    pointer-events: none;
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-weight: 600;
+    font-size: calc(0.85rem * var(--card-scale, 1));
+    color: var(--muted);
+    white-space: nowrap;
+    /* Vertically align with the pill buttons beside it. */
+    line-height: calc(0.95rem + 1.3rem);
+  }
+  #page-indicator[hidden] { display: none; }
+  @media (max-width: 768px) { #page-indicator { display: none; } }
   /* Pre-placement fallbacks only (see above): right edge / just right of the
      fixed docked-rail width (--rail-w). */
   .edge-btn-right { right: 20px; }

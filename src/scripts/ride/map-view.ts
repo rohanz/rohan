@@ -990,6 +990,14 @@ export class MapView {
       btn.style.bottom = 'auto';
       btn.style.transform = 'translateX(-50%)';
     }
+    // Page-range indicator: centred between the two buttons' stops, same row.
+    const ind = document.getElementById('page-indicator');
+    if (ind) {
+      const mid = (this.worldToScreen(firstStop)[0] + this.worldToScreen(lastStop)[0]) / 2;
+      ind.style.left = `${Math.round(mid)}px`;
+      ind.style.top = `${top}px`;
+      ind.style.transform = 'translateX(-50%)';
+    }
   }
 
   /** Pack a music row's visuals onto the map grid, left→right from just past the
@@ -1115,6 +1123,21 @@ export class MapView {
     const back = this.ui.querySelector<HTMLButtonElement>('#more-prev');
     if (more) more.hidden = pages <= 1 || this.page >= pages - 1;
     if (back) back.hidden = pages <= 1 || this.page === 0;
+    // Page-range indicator ("4–6 of 10"), projects only — derived live from the
+    // clamped window + the (possibly filtered) order, so it follows filters and
+    // any future project count with no hardcoding. Hidden when there's a single
+    // page (nothing to orient against).
+    const ind = this.ui.querySelector<HTMLElement>('#page-indicator');
+    if (ind) {
+      const count = this.orderFor(this.view).length;
+      const show = this.view === 'projects' && pages > 1;
+      ind.hidden = !show;
+      if (show) {
+        const from = this.pageFrom(this.view, this.page);
+        const vis = Math.min(this.perPageFor(this.view), count);
+        ind.textContent = `${from + 1}–${from + vis} of ${count}`;
+      }
+    }
   }
 
   /** Mark the current view's row on the (now-persistent) rail: a tint of
@@ -1205,7 +1228,7 @@ export class MapView {
     // Hold the paging buttons hidden through the reveal; cardsIn fades them in
     // only AFTER the last card has staggered in, so "More projects →" never shows
     // before the page's cards are all there.
-    gsap.set(['#more-next', '#more-prev'], { autoAlpha: 0 });
+    gsap.set(['#more-next', '#more-prev', '#page-indicator'], { autoAlpha: 0 });
   }
 
   /** Reveal the platform's entries. `instant` (used by a SKIP — see finishRide)
@@ -1276,7 +1299,7 @@ export class MapView {
     // still-settling one and glitch. `disabled` (not pointer-events:none) so
     // keyboard activation is blocked too — pointer-events only stops the mouse.
     // Only the buttons updateMoreButtons left visible on this page are touched.
-    const btns = ['#more-next', '#more-prev']
+    const btns = ['#more-next', '#more-prev', '#page-indicator']
       .map((s) => document.querySelector<HTMLButtonElement>(s))
       .filter((b): b is HTMLButtonElement => !!b && !b.hidden);
     if (instant) {
@@ -1324,7 +1347,7 @@ export class MapView {
     // runs to completion and hides the outgoing platform. On an INTERRUPT the
     // engine calls killTransientTweens() before it can complete, so this onComplete
     // never fires against the settled view — applyRestState() owns ui.hidden then.
-    gsap.to(['#platform-ui [data-card]', '#platform-ui [data-divider]', '#more-next', '#more-prev', '#filter-bar'], {
+    gsap.to(['#platform-ui [data-card]', '#platform-ui [data-divider]', '#more-next', '#more-prev', '#page-indicator', '#filter-bar'], {
       autoAlpha: 0,
       duration: fast ? 0.15 : 0.3,
       ease: 'power1.in',
