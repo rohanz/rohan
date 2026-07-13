@@ -3856,8 +3856,7 @@ body.image-lightbox-open {
     height: 300px;
     min-height: 160px;
     max-height: 75vh;
-    resize: vertical; /* drag the bottom-right grip to read more at once */
-    overflow: auto;   /* resize requires overflow != visible */
+    overflow: auto;
     margin-top: 0.5rem;
     scrollbar-width: thin;
     scrollbar-color: var(--border-subtle) transparent;
@@ -3867,6 +3866,40 @@ body.image-lightbox-open {
 .qla-roster-memo::-webkit-scrollbar-thumb {
     background: var(--border-subtle);
     border-radius: 3px;
+}
+
+.qla-roster-grip {
+    height: 16px;
+    margin-top: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: ns-resize;
+    touch-action: none;
+    border-radius: 4px;
+}
+
+.qla-roster-grip::before {
+    content: '';
+    width: 40px;
+    height: 7px;
+    background: repeating-linear-gradient(
+        to bottom,
+        var(--text-muted) 0 1px,
+        transparent 1px 3px
+    );
+    opacity: 0.55;
+    transition: opacity 0.15s ease;
+}
+
+.qla-roster-grip:hover::before,
+.qla-roster-grip:focus-visible::before {
+    opacity: 1;
+}
+
+.qla-roster-grip:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
 }
 
 .qlf-legend-swatch.qla-sw-amber { background: #FFCC80; }

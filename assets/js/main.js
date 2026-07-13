@@ -4920,6 +4920,41 @@ function initQlaRoster(node, roster, cleanups) {
     memoPane.setAttribute('aria-label', 'The selected model\u2019s memo with verified and violating numbers highlighted');
     body.appendChild(memoPane);
 
+    // Full-width drag handle below the pane (grip lines); height only.
+    const grip = qlaEl('div', 'qla-roster-grip');
+    grip.setAttribute('role', 'separator');
+    grip.setAttribute('aria-orientation', 'horizontal');
+    grip.setAttribute('aria-label', 'Drag to resize the memo pane; arrow keys also work');
+    grip.setAttribute('tabindex', '0');
+    body.appendChild(grip);
+
+    const MIN_H = 160;
+    const maxH = () => Math.round(window.innerHeight * 0.75);
+    const setPaneH = h => { memoPane.style.height = `${Math.max(MIN_H, Math.min(maxH(), h))}px`; };
+    let dragFrom = null; // { y, h }
+    const onDragMove = e => {
+        if (!dragFrom) return;
+        setPaneH(dragFrom.h + (e.clientY - dragFrom.y));
+        e.preventDefault();
+    };
+    const onDragEnd = () => {
+        dragFrom = null;
+        window.removeEventListener('pointermove', onDragMove);
+        window.removeEventListener('pointerup', onDragEnd);
+    };
+    grip.addEventListener('pointerdown', e => {
+        dragFrom = { y: e.clientY, h: memoPane.getBoundingClientRect().height };
+        window.addEventListener('pointermove', onDragMove);
+        window.addEventListener('pointerup', onDragEnd);
+        e.preventDefault();
+    });
+    grip.addEventListener('keydown', e => {
+        if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+        setPaneH(memoPane.getBoundingClientRect().height + (e.key === 'ArrowDown' ? 40 : -40));
+        e.preventDefault();
+    });
+    cleanups.push(onDragEnd);
+
     function renderMemo(m) {
         memoPane.textContent = '';
         m.segments.forEach(seg => {
