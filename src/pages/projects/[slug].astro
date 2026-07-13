@@ -114,8 +114,15 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
     --toc-w: 248px;
     --cpad: clamp(1.5rem, 3.5vw, 4rem);
     --half: calc((50vw - var(--rail-w, 0px) - var(--toc-w) - 400px) / 2);
-    --toc-left: calc(var(--rail-w, 0px) + max(var(--cpad), var(--half)));
-    --article-left: max(calc(var(--toc-left) + var(--toc-w) + 4rem), calc(50vw - 400px));
+    /* One shared gutter on BOTH sides of the TOC (rail→TOC and TOC→article are
+       always equal — Rohan's laptop-round call, replacing the fixed 4rem body
+       gap). --half is exactly the gutter that puts an 800px article at the
+       viewport centre, so wide screens keep the centred column; when that
+       would squeeze below --cpad (laptops), the article slides left toward
+       the TOC instead and the two gutters stay symmetric. */
+    --gutter: max(var(--cpad), var(--half));
+    --toc-left: calc(var(--rail-w, 0px) + var(--gutter));
+    --article-left: calc(var(--toc-left) + var(--toc-w) + var(--gutter));
   }
   @media (min-width: 1000px) {
     .article-layout { justify-items: start; }
