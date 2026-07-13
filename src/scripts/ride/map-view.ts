@@ -193,8 +193,12 @@ export class MapView {
         (c) => c.style.display !== 'none' && c.offsetParent !== null,
       );
       if (!cards.length) {
-        rlog('heal:abort', { reason: 'no-cards', view });
-        rlogDump('heal found ZERO placed cards on a settled platform');
+        // Zero PLACED cards on a settled platform is never legitimate either
+        // (ui hidden, or placeCards showed nothing) — recover, same path.
+        rlog('heal:FIRE', { reason: 'no-cards', view });
+        rlogDump('heal FIRED: zero placed cards on a settled platform — recovering');
+        this.showUI(this.view as LineId);
+        this.cardsIn(this.view as LineId, true);
         return;
       }
       const ops = cards.map((c) => +parseFloat(getComputedStyle(c).opacity).toFixed(2));
@@ -2143,8 +2147,14 @@ export class MapView {
    *  is entirely ours to define. The one choke point every interrupt passes through. */
   private killTransientTweens() {
     gsap.killTweensOf(this.fadeUniverse());
+    // MUST cover every target of hideUI's fade (and the other platform-chrome
+    // tweens): gsap kills PER TARGET, so a single uncovered target keeps the
+    // multi-target tween alive and its onComplete (ui.hidden = true) fires
+    // ~0.3s AFTER an interrupt's applyRestState rebuilt the platform — the
+    // "force-finished ride lands on an invisible platform" bug. Adding
+    // #page-indicator to hideUI without adding it here caused exactly that.
     gsap.killTweensOf(
-      '#platform-ui [data-card], #platform-ui [data-divider], #more-next, #more-prev, #filter-bar',
+      '#platform-ui [data-card], #platform-ui [data-divider], #more-next, #more-prev, #page-indicator, #filter-bar',
     );
     gsap.killTweensOf(this.state); // page-turn / filter camera pans
     gsap.killTweensOf('[data-destination] circle, #home-dot'); // in-flight amber stop-pulses
