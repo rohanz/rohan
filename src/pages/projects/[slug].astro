@@ -275,19 +275,13 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
      rule (which includes the `a` element selector and would otherwise win). */
   .train-toc a.toc-nav-link:hover { color: var(--ink); }
   .toc-nav-link .nav-arrow { font-weight: 700; font-size: 1.35rem; line-height: 1; }
-  /* Alignment: every nav link's TEXT starts at the 32px column, flush with the
-     TOC section labels and with each other. prev's leading ‹ therefore can't sit
-     in the text flow (it would shove "prev" right of the others, the old
-     misaligned feel), so it hangs absolutely in the gutter between the rail and
-     the text — with clear air (its right edge ends ~9px left of the text
-     column); next's › trails the text after a matching space. */
-  .toc-nav-prev .nav-arrow {
-    position: absolute;
-    left: 14px;
-    top: 50%;
-    transform: translateY(-52%);
-  }
-  .toc-nav-next .nav-arrow { margin-left: 0.45rem; }
+  /* Alignment (Rohan's 2026-07-13 call, superseding the hanging-arrow round):
+     the arrows sit IN the text flow with a single space's worth of gap, and
+     prev's ‹ starts at the same 32px column as the other links — so the LINK
+     left edges are flush (the "prev" word itself sits right of the arrow,
+     which is fine and intended). */
+  .toc-nav-prev .nav-arrow { margin-right: 0.3rem; }
+  .toc-nav-next .nav-arrow { margin-left: 0.3rem; }
 
   .stop-nav { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid rgba(0,0,0,0.1); flex-wrap: wrap; }
   @media (min-width: 1000px) { .stop-nav { display: none; } }

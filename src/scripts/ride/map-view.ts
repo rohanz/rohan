@@ -710,7 +710,12 @@ export class MapView {
     const perCards = this.perPageFor('about'); // even: 2 / 4 / 6
     const stopsPerPage = Math.max(1, perCards / 2);
     const { rect, k, cropX, cropY } = this.metrics();
-    const fromStop = page * stopsPerPage;
+    // CLAMPED window, same as placeCards — pageFrom returns an even CARD index
+    // for About (count and perPage both even), so /2 maps it to a stop index.
+    // A naive page*stopsPerPage here made the camera frame a short final slice
+    // while placeCards rendered the full overlapped window: wrong zoom, cards
+    // clipped off the stage top.
+    const fromStop = this.pageFrom('about', page) / 2;
     const slice = stops.slice(fromStop, fromStop + stopsPerPage);
     const n = Math.max(1, slice.length);
 
