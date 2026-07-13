@@ -254,9 +254,13 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
      site's minimal sidebar nav (three lowercase links, dimmed until hover). The
      bottom .stop-nav is hidden on desktop and kept only for narrow screens where
      the rail itself is hidden. */
+  /* Spacing/positioning mirror the CLASSIC theme's sidebar nav (Rohan's call
+     2026-07-14): roomier rows via per-link vertical padding, links rest dimmed
+     and wake on hover, 2rem bottom padding — the two modes' nav read the same. */
   .toc-nav {
     margin-top: auto;
     padding-top: 1.2rem;
+    padding-bottom: 2rem;
     /* No left padding here — each link already gets 32px from `.train-toc a`, so
        adding more would push the nav 32px right of the TOC labels (misaligned). */
     flex-shrink: 0;
@@ -271,20 +275,22 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
     position: relative;
     text-decoration: none;
     text-transform: lowercase;
-    transition: color 0.2s ease;
+    padding: 0.4rem 0;
+    opacity: 0.5;
+    transition: color 0.2s ease, opacity 0.2s ease;
   }
   /* Darken to ink on hover, exactly like a TOC section link. Scoped under
      `.train-toc a` so it out-specifies the base `.train-toc a { color: muted }`
      rule (which includes the `a` element selector and would otherwise win). */
-  .train-toc a.toc-nav-link:hover { color: var(--ink); }
+  .train-toc a.toc-nav-link:hover { color: var(--ink); opacity: 1; }
   .toc-nav-link .nav-arrow { font-weight: 700; font-size: 1.35rem; line-height: 1; }
   /* Alignment (Rohan's 2026-07-13 call, superseding the hanging-arrow round):
      the arrows sit IN the text flow with a single space's worth of gap, and
      prev's ‹ starts at the same 32px column as the other links — so the LINK
      left edges are flush (the "prev" word itself sits right of the arrow,
      which is fine and intended). */
-  .toc-nav-prev .nav-arrow { margin-right: 0.3rem; }
-  .toc-nav-next .nav-arrow { margin-left: 0.3rem; }
+  .toc-nav-prev .nav-arrow { margin-right: 0.5rem; }
+  .toc-nav-next .nav-arrow { margin-left: 0.5rem; }
 
   .stop-nav { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid rgba(0,0,0,0.1); flex-wrap: wrap; }
   @media (min-width: 1000px) { .stop-nav { display: none; } }
@@ -533,7 +539,7 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
   /* Live chord monitor piano */
   .lcm-demo { margin: 1.5rem 0 0.5rem; }
   .lcm-readout { height: 6.5rem; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; margin-bottom: 1.25rem; overflow: hidden; }
-  .lcm-chord { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 2.6rem; font-weight: 800; color: #33b4e5; line-height: 1.1; white-space: nowrap; }
+  .lcm-chord { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 2.6rem; font-weight: 800; color: var(--line-projects); line-height: 1.1; white-space: nowrap; }
   .lcm-chord.lcm-empty { color: var(--w-muted); font-size: 1.4rem; font-weight: 500; }
   .lcm-notes { margin-top: 0.5rem; font-size: 1.05rem; letter-spacing: 0.04em; color: var(--w-ink); min-height: 1.4rem; white-space: nowrap; }
   .lcm-alts { margin-top: 0.35rem; font-size: 0.85rem; color: var(--w-muted); min-height: 1.1rem; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
