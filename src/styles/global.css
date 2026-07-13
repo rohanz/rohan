@@ -72,9 +72,12 @@ html.theme-transit .sign-header {
   display: flex; align-items: center; justify-content: space-between; gap: 1rem;
   view-transition-name: var(--sign-vt);
 }
-/* "Go back" pill, top-right of the persistent signage bar. Deliberately quiet —
-   an outlined chip in the bar's own white, brightening on hover. */
-html.theme-transit .sign-header .sign-back {
+/* Top-bar controls share the existing back-pill language: quiet white outlines
+   that fill on hover, with the global transit focus ring for keyboard users. */
+html.theme-transit .sign-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   font-weight: 700;
   font-size: 0.95rem;
   color: #fff;
@@ -85,7 +88,15 @@ html.theme-transit .sign-header .sign-back {
   white-space: nowrap;
   transition: background 0.15s ease, color 0.15s ease;
 }
-html.theme-transit .sign-header .sign-back:hover { background: #fff; color: var(--ink); }
+html.theme-transit .sign-pill:hover { background: #fff; color: var(--ink); }
+html.theme-transit .sign-pill:focus-visible { outline-color: #fff; }
+html.theme-transit .sign-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-left: auto;
+}
+html.theme-transit .top-bar .transit-theme-switch { margin-left: auto; }
 /* Narrow screens: the absolutely-centered title would collide with the pill —
    phones keep today's layout and use browser back. */
 @media (max-width: 760px) { html.theme-transit .sign-header .sign-back { display: none; } }

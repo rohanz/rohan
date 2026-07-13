@@ -2,6 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 import TransitMap from '../components/TransitMap.astro';
 import StationBoard from '../components/StationBoard.astro';
+import TransitThemeSwitch from '../components/TransitThemeSwitch.astro';
 import { getCollection } from 'astro:content';
 import music from '../data/music.json';
 import { SOCIALS } from '../data/socials';
@@ -77,6 +78,7 @@ const tech = [
       <span class="logo-name">rohan.jk</span>
     </a>
     <span id="bar-section" class="bar-section"></span>
+    <TransitThemeSwitch />
   </header>
 
   <main id="tt-main" class="map-stage">

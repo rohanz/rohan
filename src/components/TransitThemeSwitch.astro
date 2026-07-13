@@ -1,0 +1,11 @@
+---
+import { defaultPathFor } from '../lib/theme-paths';
+
+const classicHref = defaultPathFor(Astro.url.pathname);
+---
+<a
+  class="transit-theme-switch sign-pill"
+  href={classicHref}
+  data-theme-pref="default"
+  data-ride-ignore
+>Classic Site</a>

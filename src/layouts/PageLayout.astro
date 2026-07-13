@@ -3,6 +3,7 @@ import Layout from './Layout.astro';
 import Footer from '../components/Footer.astro';
 import MapBackdrop from '../components/MapBackdrop.astro';
 import StationBoard from '../components/StationBoard.astro';
+import TransitThemeSwitch from '../components/TransitThemeSwitch.astro';
 
 interface Props {
   title: string;
@@ -28,7 +29,10 @@ const { title, description, lineId, hex, signName, ogImage } = Astro.props;
         <span class="logo-name">rohan.jk</span>
       </a>
       <h1 class="sign-title">{signName}</h1>
-      <a class="sign-back" href={`/transit/${lineId}`}>&lsaquo; back</a>
+      <div class="sign-header-actions">
+        <TransitThemeSwitch />
+        <a class="sign-pill sign-back" href={`/transit/${lineId}`}>&lsaquo; back</a>
+      </div>
     </header>
     <main id="tt-main" class="page-body">
       <span class="spine" style={`background:${hex}`} aria-hidden="true">
