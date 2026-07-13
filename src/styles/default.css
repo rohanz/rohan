@@ -743,6 +743,27 @@ html.theme-default .music-item {
     transition: all 0.3s ease;
 }
 
+/* Row rhythm cloned from transit: constant 237px pitch (row height 100px at
+   the base tier -> 137px gap; 132px at the large tier -> 105px). Transit's
+   rows breathe — these were previously touching (1px gap). */
+@media (min-width: 1000px) {
+    html.theme-default .music-item:not(:last-child) {
+        margin-bottom: 137px;
+    }
+    /* Vertical composition cloned from transit: the platform centres its
+       content block in the viewport rather than starting under the header.
+       `safe center` falls back to start when the list is taller than the
+       viewport (short windows), so nothing gets clipped. */
+    html.theme-default #music.section.active {
+        display: flex;
+        flex-direction: column;
+        justify-content: safe center;
+        min-height: calc(100vh - 6rem);
+        /* Centring lands 22px above transit's platform pose; bias down. */
+        padding-top: 44px;
+    }
+}
+
 html.theme-default .music-content {
     display: grid;
     grid-template-columns: minmax(440px, 460px) minmax(0, 1fr);
@@ -1001,6 +1022,10 @@ html.theme-default[data-theme="light"] .frequency-canvas {
         max-width: none;
         margin-left: calc(var(--music-large-gap) - var(--content-pad));
         margin-right: 0;
+    }
+
+    html.theme-default #music .music-item:not(:last-child) {
+        margin-bottom: 105px;
     }
 
     html.theme-default #music .music-content {
