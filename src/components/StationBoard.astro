@@ -205,17 +205,15 @@ const dests = NAV_LINES.map((l) => ({
     width: 52px;
     height: 26px;
     border-radius: 999px;
-    /* Solid grey fill: a white track vanished against the rail's white body —
-       the off state needs to read as a visible, switchable pill. */
+    /* Solid grey fill, borderless (Rohan: more minimal) — the fill alone
+       separates the pill from the white board; a white track would vanish. */
     background: #d7d2c8;
-    border: 1.5px solid rgba(0, 0, 0, 0.28);
-    box-sizing: border-box;
-    transition: background 0.15s ease, border-color 0.15s ease;
+    transition: background 0.15s ease;
   }
   .ft-knob {
     position: absolute;
     top: 50%;
-    left: 3px;
+    left: 4px;
     width: 17px;
     height: 17px;
     border-radius: 50%;
@@ -227,11 +225,11 @@ const dests = NAV_LINES.map((l) => ({
      knob for contrast. Amber is reserved for the stop-lighting language. */
   .ft-switch[aria-checked='true'] .ft-track {
     background: #33b4e5;
-    border-color: #1f92bf;
   }
   .ft-switch[aria-checked='true'] .ft-knob {
     background: #fff;
-    transform: translate(26.5px, -50%);
+    /* 52 track − 17 knob − 4px rest gap each side = 27 (integer → crisp). */
+    transform: translate(27px, -50%);
   }
 
   /* External socials, pinned to the bottom of the rail (the .board-body above

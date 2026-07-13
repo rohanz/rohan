@@ -1135,7 +1135,9 @@ export class MapView {
       if (show) {
         const from = this.pageFrom(this.view, this.page);
         const vis = Math.min(this.perPageFor(this.view), count);
-        ind.textContent = `${from + 1}–${from + vis} of ${count}`;
+        // Thin spaces (U+2009) around the en dash — Helvetica sets a bare
+        // digit–dash–digit run so tight the dash visually touches the numbers.
+        ind.textContent = `${from + 1} – ${from + vis} of ${count}`;
       }
     }
   }
