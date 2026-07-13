@@ -4,10 +4,10 @@
 // light branch, with the site's pastel palette swapped in for the old accents.
 
 // ---- palette (this site) ----
-const AMBER = '#f9c25e'; // cream / accent — series colour inside diagrams
+const BLUE = '#33b4e5'; // train-line blue — series colour inside diagrams
 const RED = '#d13d59'; // grit / projects line
 const MUTED = '#8a8578'; // dry / reference
-const AMBER_RGB = '249,194,94';
+const BLUE_RGB = '51,180,229';
 const MUTED_RGB = '138,133,120';
 const PINK_RGB = '228,136,173'; // bqst processed waveform
 const INK_RGB = '26,26,26';
@@ -71,15 +71,15 @@ function initBqstDspLab() {
 
   function legendForBqstVisual(type: string) {
     if (type === 'eq') {
-      return `<span><i style="background:${AMBER}"></i>low shelf positions</span><span><i style="background:${RED}"></i>high shelf positions</span><span><i style="background:${MUTED}"></i>cut reference</span>`;
+      return `<span><i style="background:${BLUE}"></i>low shelf positions</span><span><i style="background:${RED}"></i>high shelf positions</span><span><i style="background:${MUTED}"></i>cut reference</span>`;
     }
     if (type === 'transfer') {
-      return `<span><i style="background:${MUTED}"></i>dry signal</span><span><i style="background:${AMBER}"></i>cream</span><span><i style="background:${RED}"></i>grit</span>`;
+      return `<span><i style="background:${MUTED}"></i>dry signal</span><span><i style="background:${BLUE}"></i>cream</span><span><i style="background:${RED}"></i>grit</span>`;
     }
     if (type === 'aliasing') {
-      return `<span><i style="background:${MUTED}"></i>audible harmonic</span><span><i style="background:${AMBER}"></i>harmonic inside 4x processing</span><span><i style="background:${RED}"></i>foldback alias position</span>`;
+      return `<span><i style="background:${MUTED}"></i>audible harmonic</span><span><i style="background:${BLUE}"></i>harmonic inside 4x processing</span><span><i style="background:${RED}"></i>foldback alias position</span>`;
     }
-    return `<span><i style="background:${AMBER}"></i>cream</span><span><i style="background:${RED}"></i>grit</span>`;
+    return `<span><i style="background:${BLUE}"></i>cream</span><span><i style="background:${RED}"></i>grit</span>`;
   }
 
   slots.forEach((slot) => {
@@ -244,7 +244,7 @@ function initBqstDspLab() {
     }
     [74, 84, 98, 116, 131, 166, 230, 361].forEach((f, i, all) => {
       const alpha = 0.94 - (i / Math.max(1, all.length - 1)) * 0.44;
-      plotCurve('low', f, 6, AMBER, alpha, f === 131 ? 2.8 : 1.9);
+      plotCurve('low', f, 6, BLUE, alpha, f === 131 ? 2.8 : 1.9);
     });
     [1600, 1800, 2100, 2500, 3400, 4800, 7100, 18000].forEach((f, i, all) => {
       const alpha = 0.5 + (i / Math.max(1, all.length - 1)) * 0.44;
@@ -332,7 +332,7 @@ function initBqstDspLab() {
     }
     plot((x) => x, MUTED, 1.8, true);
     const drive01 = drive01For('transfer');
-    plot((x) => densitySaturate(x, drive01), AMBER, 3, false);
+    plot((x) => densitySaturate(x, drive01), BLUE, 3, false);
     plot((x) => transformerSaturate(x, drive01), RED, 3, false);
     ctx.fillStyle = textColor(0.58);
     ctx.font = tickFont;
@@ -388,7 +388,7 @@ function initBqstDspLab() {
       const x = pad.l + i * groupW + groupW * 0.5;
       const cY = yFor(cream[i]);
       const gY = yFor(grit[i]);
-      ctx.fillStyle = AMBER;
+      ctx.fillStyle = BLUE;
       ctx.fillRect(x - barW - 2, cY, barW, pad.t + plotH - cY);
       ctx.fillStyle = RED;
       ctx.fillRect(x + 2, gY, barW, pad.t + plotH - gY);
@@ -432,7 +432,7 @@ function initBqstDspLab() {
     const fundamental = 6000;
     const harmonics = [1, 2, 3, 4, 5, 6, 7, 8];
     const audibleColor = MUTED;
-    const oversampledColor = AMBER;
+    const oversampledColor = BLUE;
     const aliasColor = RED;
     const plotX = pad.l;
     const plotY = pad.t;
@@ -471,7 +471,7 @@ function initBqstDspLab() {
     roundedPath(plotX + 0.5, plotY + 0.5, plotW - 1, plotH - 1, 12);
     ctx.stroke();
     const audibleEnd = xFor(nyquist);
-    ctx.fillStyle = `rgba(${AMBER_RGB}, 0.16)`;
+    ctx.fillStyle = `rgba(${BLUE_RGB}, 0.16)`;
     ctx.fillRect(plotX, plotY, audibleEnd - plotX, plotH);
     ctx.fillStyle = `rgba(${MUTED_RGB}, 0.1)`;
     ctx.fillRect(audibleEnd, plotY, plotX + plotW - audibleEnd, plotH);
@@ -832,7 +832,7 @@ function initBqstAudioDemo() {
     const duration = buffer?.duration || 0;
     const gridCol = `rgba(${INK_RGB},0.10)`;
     const subGridCol = `rgba(${INK_RGB},0.055)`;
-    const barCol = `rgba(${AMBER_RGB},0.24)`;
+    const barCol = `rgba(${BLUE_RGB},0.24)`;
     const center = height * 0.5;
     if (duration > 0 && Number.isFinite(bpm) && bpm > 0) {
       const beatSeconds = 60 / bpm;
@@ -1284,11 +1284,11 @@ function initThemePalette() {
     { color: '#754fad', label: 'music' },
     { color: '#815e49', label: 'about' },
     { color: '#33b4e5', label: 'blue' },
-    { color: '#33af61', label: 'green' },
+    { color: '#66bb6a', label: 'green' },
     { color: '#fa6b49', label: 'orange' },
     { color: '#e488ad', label: 'pink' },
     { color: '#fae933', label: 'yellow' },
-    { color: '#f9c25e', label: 'amber' },
+    { color: '#33b4e5', label: 'blue' },
     { color: '#8a8578', label: 'muted' },
   ];
   const swatches = (colors: { color: string; label: string }[]) =>
@@ -1334,8 +1334,8 @@ function initDemoPlayer() {
   const vuCtx = sizeCanvas(vuCanvas, vuW, vuH);
   const vecCtx = sizeCanvas(vecCanvas, vecW, vecH);
 
-  const accentColor = () => AMBER;
-  const accentRgba = (a: number) => `rgba(${AMBER_RGB},${a})`;
+  const accentColor = () => BLUE;
+  const accentRgba = (a: number) => `rgba(${BLUE_RGB},${a})`;
 
   function sizeWave() {
     const rect = waveCanvas.getBoundingClientRect();
@@ -1478,7 +1478,9 @@ function initDemoPlayer() {
     vuCtx.clearRect(0, 0, vuW, vuH);
     drawArc(vuCtx, vuW, vuH, dbToFrac(vuSmoothed));
     // vectorscope — phosphor persistence
-    vecCtx.fillStyle = 'rgba(244,241,234,0.3)';
+    // Phosphor-persistence fade toward the canvas backdrop (= --w-card / page bg),
+    // so old dots decay to the card colour instead of a lighter paper tint.
+    vecCtx.fillStyle = 'rgba(234,231,222,0.3)';
     vecCtx.fillRect(0, 0, vecW, vecH);
     vecCtx.strokeStyle = accentRgba(0.08); vecCtx.lineWidth = 1;
     vecCtx.beginPath();
@@ -1555,15 +1557,15 @@ function initDemoPlayer() {
 // initQuantlabFinVisuals). Light theme only: the original's isLightTheme
 // branches are collapsed and the palette follows the article's settled rules —
 // single-series visuals use projects red (#d13d59) for the primary series;
-// comparison visuals use red for the primary/first series and amber (#f9c25e)
-// for the second; ink for text/grids, cream card background. Semantic colors
-// (verified-green #2e7d32, danger red) keep their meaning.
+// comparison visuals use red for the primary/first series and train-line
+// blue (#33b4e5) for the second; ink for text/grids, cream card background.
+// Semantic colors (verified-green, danger red) keep their meaning.
 // ============================================================
 
 const QL_WARN = RED; // "cheat"/"survivors"/violations — the projects red
-// Opaque equivalent of ink@0.55 pre-blended onto the cream card (#e8e4db):
+// Opaque equivalent of ink@0.55 pre-blended onto the card (#eae7de, = page bg):
 // the quant explainer's dots must be solid or the connector line ghosts through.
-const QL_DOT = '#777571';
+const QL_DOT = '#787672';
 const qlText = (a: number) => `rgba(${INK_RGB},${a})`;
 
 function qlaEl(tag: string, className?: string, text?: string): HTMLElement {
@@ -2561,14 +2563,14 @@ function initQlfLookahead(node: HTMLElement, la: any) {
     plot(holdEq, qlText(0.55), 1.5, 1);
     ctx.setLineDash([]);
     plot(cheatEq, QL_WARN, 2.5, 1);
-    plot(honestEq, AMBER, 2.5, 1);
+    plot(honestEq, BLUE, 2.5, 1);
 
     if (cursor !== null) {
       const cx = x(cursor);
       ctx.strokeStyle = qlText(0.35);
       ctx.lineWidth = 1;
       ctx.beginPath(); ctx.moveTo(cx, pad.t); ctx.lineTo(cx, h - pad.b); ctx.stroke();
-      ([[cheatEq, QL_WARN], [honestEq, AMBER], [holdEq, qlText(0.55)]] as Array<[number[], string]>).forEach((pair) => {
+      ([[cheatEq, QL_WARN], [honestEq, BLUE], [holdEq, qlText(0.55)]] as Array<[number[], string]>).forEach((pair) => {
         ctx.fillStyle = pair[1];
         ctx.beginPath(); ctx.arc(cx, y(pair[0][cursor!]), 4, 0, Math.PI * 2); ctx.fill();
       });
@@ -2672,7 +2674,7 @@ function initQlfKalman(node: HTMLElement, km: any) {
     ctx.beginPath(); ctx.moveTo(sx, pad.t); ctx.lineTo(sx, h - pad.b); ctx.stroke();
 
     // rolling OLS: jagged; nulls break the line, clipped values get markers
-    ctx.strokeStyle = AMBER;
+    ctx.strokeStyle = BLUE;
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     let pen = false;
@@ -2683,7 +2685,7 @@ function initQlfKalman(node: HTMLElement, km: any) {
       else ctx.lineTo(x(i), yy);
     }
     ctx.stroke();
-    ctx.fillStyle = AMBER;
+    ctx.fillStyle = BLUE;
     for (let i = 0; i < n; i++) {
       const v = ols[i];
       if (v === null || (v >= lo && v <= hi)) continue;
@@ -2715,7 +2717,7 @@ function initQlfKalman(node: HTMLElement, km: any) {
       ctx.fillStyle = RED;
       ctx.beginPath(); ctx.arc(cx, y(km.kalman_beta[cursor]), 5, 0, Math.PI * 2); ctx.fill();
       if (ols[cursor] !== null) {
-        ctx.fillStyle = AMBER;
+        ctx.fillStyle = BLUE;
         ctx.beginPath(); ctx.arc(cx, yClamped(ols[cursor] as number), 4, 0, Math.PI * 2); ctx.fill();
       }
     }
@@ -2836,7 +2838,7 @@ function initQlfSurvivorship(node: HTMLElement, sv: any) {
       ctx.stroke();
     }
     plot(sv.survivors, QL_WARN);
-    plot(sv.rsp, AMBER);
+    plot(sv.rsp, BLUE);
 
     if (cursor !== null) {
       const cx = x(cursor);
@@ -2845,7 +2847,7 @@ function initQlfSurvivorship(node: HTMLElement, sv: any) {
       ctx.beginPath(); ctx.moveTo(cx, pad.t); ctx.lineTo(cx, h - pad.b); ctx.stroke();
       ctx.fillStyle = QL_WARN;
       ctx.beginPath(); ctx.arc(cx, y(sv.survivors[cursor]), 4, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = AMBER;
+      ctx.fillStyle = BLUE;
       ctx.beginPath(); ctx.arc(cx, y(sv.rsp[cursor]), 4, 0, Math.PI * 2); ctx.fill();
     }
 
