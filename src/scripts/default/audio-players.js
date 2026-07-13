@@ -94,6 +94,10 @@ function displayMusic(tracks) {
 
         const itemEl = document.createElement('div');
         itemEl.className = 'music-item stagger-child';
+        // Stagger delay set inline: the CSS :nth-child() delays miscount once
+        // the .music-divider siblings interleave (items land on odd indices,
+        // rows 3+ get no delay and pop in before rows 1-2).
+        itemEl.style.animationDelay = `${0.05 + index * 0.05}s`;
         itemEl.innerHTML = `
             <div class="music-content">
                 <div class="music-header">

@@ -840,7 +840,7 @@ html.theme-default .music-links {
     gap: 0.45rem;
     align-items: center;
     flex-wrap: nowrap;
-    margin-top: 0.45rem;
+    margin-top: 0.7rem;
 }
 
 html.theme-default .music-link {
@@ -850,7 +850,7 @@ html.theme-default .music-link {
     /* Pills never wrap internally ("apple music" was breaking to two lines
        once the large-screen scaling tier widened the row). */
     white-space: nowrap;
-    padding: 0.55rem 1.05rem;
+    padding: 0.48rem 0.92rem;
     background: var(--bg-card);
     color: var(--text-primary);
     text-decoration: none;
@@ -858,7 +858,7 @@ html.theme-default .music-link {
     border: 1px solid var(--border-subtle);
     transition: all 0.3s ease;
     font-weight: 500;
-    font-size: 0.92rem;
+    font-size: 0.86rem;
 }
 
 @media (hover: hover) {
@@ -1781,7 +1781,7 @@ html.theme-default .gloss-tooltip {
     background: rgba(26, 26, 46, 0.96);
     color: rgba(232, 230, 227, 0.92);
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.32);
-    font-size: 0.86rem;
+    font-size: 0.92rem;
     font-weight: 500;
     line-height: 1.45;
     text-align: left;
@@ -4815,14 +4815,14 @@ html.theme-default .qlf-audit-log::-webkit-scrollbar-thumb:hover {
 
     html.theme-default #music .music-links {
         gap: 0.3rem;
-        margin-top: 0.3rem;
+        margin-top: 0.55rem;
         flex-wrap: nowrap;
     }
 
     html.theme-default #music .music-link {
         gap: 0.3rem;
-        padding: 0.55rem 1.05rem;
-        font-size: 0.92rem;
+        padding: 0.48rem 0.92rem;
+        font-size: 0.86rem;
         line-height: 1.15;
     }
 
