@@ -750,8 +750,11 @@ html.theme-default .music-item {
     /* Rhythm lives on the DIVIDER so the hairline sits centred between rows
        (an item margin pushed it to the bottom of the gap): 68 + 1 + 68 = the
        137px gap that keeps transit's 237px pitch. */
+    /* Height-responsive rhythm, cloned from transit's fit-to-viewport camera:
+       measured transit gaps are ~137px at 1400-high, ~101 at 1200, shrinking on
+       laptops — linear fit gap = 18vh - 115px, halved per divider side. */
     html.theme-default .music-divider {
-        margin: 68px 0;
+        margin: clamp(14px, calc(9vh - 57.5px), 68px) 0;
     }
     /* Vertical composition cloned from transit: the platform centres its
        content block in the viewport rather than starting under the header.
@@ -761,10 +764,16 @@ html.theme-default .music-item {
         display: flex;
         flex-direction: column;
         justify-content: safe center;
-        min-height: calc(100vh - 6rem);
-        /* Rohan wants the block to start higher than transit's centred pose —
-           bias the centring upward (~50px above pure centre). */
-        padding-bottom: 100px;
+        min-height: calc(100vh - 14rem);
+    }
+    /* Rohan wants the block to start higher than transit's centred pose —
+       bias the centring upward (~50px above pure centre). Tall screens only:
+       on laptops the block already starts at the top and this bias would just
+       add dead scroll below the rows. */
+    @media (min-height: 1150px) {
+        html.theme-default #music.section.active {
+            padding-bottom: 20px;
+        }
     }
 }
 
@@ -1023,7 +1032,7 @@ html.theme-default[data-theme="light"] .frequency-canvas {
     }
 
     html.theme-default #music .music-divider {
-        margin: 52px 0;
+        margin: clamp(14px, calc(9vh - 57.5px), 52px) 0;
     }
 
     html.theme-default #music .music-content {
@@ -4981,5 +4990,62 @@ html.theme-default .qlf-audit-log::-webkit-scrollbar-thumb:hover {
 
     html.theme-default #music .audio-meters {
         display: none;
+    }
+}
+
+
+/* ============================================================
+   ABOUT — LARGE-SCREEN TIER (Rohan's call 2026-07-14)
+   Same cure as the music page: the 1100px bento island reads tiny on big
+   monitors. Open the wrapper + grid up and scale card chrome/type with it.
+   Placed at end-of-file so it wins the source-order tie against the base
+   rules. ≤1440 untouched.
+   ============================================================ */
+@media (min-width: 1441px) {
+    html.theme-default .about-layout {
+        max-width: min(1760px, 78vw);
+    }
+
+    html.theme-default .bento-grid {
+        max-width: min(1320px, 58vw);
+        gap: 1.35rem;
+    }
+
+    html.theme-default .bento-card {
+        padding: 2.5rem;
+        border-radius: 20px;
+    }
+
+    html.theme-default .bento-label {
+        font-size: 1.05em;
+    }
+
+    html.theme-default .bento-bio-text {
+        font-size: 1.18em;
+        line-height: 1.65;
+    }
+
+    html.theme-default .bento-stat-number,
+    html.theme-default .stat-number {
+        font-size: 1.15em;
+    }
+
+    html.theme-default .scrolling-testimonials {
+        font-size: 1.12em;
+    }
+}
+
+@media (min-width: 2100px) {
+    html.theme-default .about-layout {
+        max-width: 1840px;
+    }
+
+    html.theme-default .bento-grid {
+        max-width: 1400px;
+        gap: 1.5rem;
+    }
+
+    html.theme-default .bento-bio-text {
+        font-size: 1.28em;
     }
 }
