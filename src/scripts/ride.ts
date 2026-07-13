@@ -17,6 +17,7 @@
  */
 import { lineById } from '../data/system';
 import type { ViewId } from './ride/motion';
+import { rlog } from './ride/rlog';
 import { MapView } from './ride/map-view';
 import { mountPerfHud } from './ride/hud';
 
@@ -124,6 +125,7 @@ function reconcile() {
  *  (Back/forward are separate — popstate goes through reconcile(), not this.) */
 function go(view: ViewId) {
   if (!mv) return;
+  rlog('go', { view, busy: mv.busy, at: mv.view });
   if (mv.busy) {
     mv.finishRide();
     lastSkipAt = performance.now();
@@ -132,6 +134,7 @@ function go(view: ViewId) {
   // A click landing just after a skip is part of the same burst — ignore it, so the
   // burst can't spawn a fresh full ride off the instantly-settled engine.
   if (performance.now() - lastSkipAt < SKIP_COOLDOWN) {
+    rlog('go:cooldown-ignored', { view });
     return;
   }
   if (mv.view === view) {

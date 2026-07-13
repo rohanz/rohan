@@ -10,6 +10,7 @@
 import gsap from 'gsap';
 import { HOME, VIEWBOX, lineById, type LineId, type Line, type Point } from '../../data/system';
 import { filletPoints } from '../../lib/fillet';
+import { rlog, rlogDump } from './rlog';
 import { stopMusicPlayback, primeMusicSizing } from '../music-player';
 import {
   MAP_SCALE,
@@ -136,6 +137,8 @@ export class MapView {
     const settled = this._busy && !v;
     const starting = !this._busy && v;
     this._busy = v;
+    if (starting) rlog('busy:start', { view: this.view });
+    if (settled) rlog('busy:settle', { view: this.view });
     if (starting) this._startWatchdog();
     if (settled) {
       this._stopWatchdog();
@@ -178,15 +181,30 @@ export class MapView {
     if (this._healTimer) clearTimeout(this._healTimer);
     const view = this.view;
     if (view === 'map') return;
+    rlog('heal:arm', { view });
     this._healTimer = window.setTimeout(() => {
       this._healTimer = null;
-      if (this.busy || this.view !== view) return;
+      if (this.busy || this.view !== view) {
+        rlog('heal:abort', { reason: this.busy ? 'busy' : 'view-changed', view: this.view, busy: this.busy });
+        if (this.busy) rlogDump('heal aborted: busy STUCK true 2.5s after settle');
+        return;
+      }
       const cards = this.cardsFor(this.view).filter(
         (c) => c.style.display !== 'none' && c.offsetParent !== null,
       );
-      if (!cards.length) return;
-      const allHidden = cards.every((c) => parseFloat(getComputedStyle(c).opacity) < 0.05);
-      if (!allHidden) return;
+      if (!cards.length) {
+        rlog('heal:abort', { reason: 'no-cards', view });
+        rlogDump('heal found ZERO placed cards on a settled platform');
+        return;
+      }
+      const ops = cards.map((c) => +parseFloat(getComputedStyle(c).opacity).toFixed(2));
+      const allHidden = ops.every((o) => o < 0.05);
+      if (!allHidden) {
+        rlog('heal:ok', { view, ops });
+        return;
+      }
+      rlog('heal:FIRE', { view, ops });
+      rlogDump('heal FIRED: settled platform was fully blank — recovering');
       this.showUI(this.view as LineId);
       this.cardsIn(this.view as LineId, true);
     }, 2500);
@@ -220,6 +238,7 @@ export class MapView {
         last = t;
       }
       if (frozen >= 2) {
+        rlog('watchdog:force-finish', { view: this.view });
         // Recover through the SAME deterministic path as a click-skip: finishRide()
         // kills the frozen timeline + transient tweens and snaps to the canonical
         // rest state. NOT tl.progress(1) — seeking fires the reveal inside gsap's
@@ -1198,6 +1217,7 @@ export class MapView {
   }
 
   showUI(id: LineId) {
+    rlog('showUI', { id });
     if (!this.ui) return;
     const line = lineById(id);
     this.ui.hidden = false;
@@ -1268,6 +1288,7 @@ export class MapView {
    *  a set can't silently fail to tick, so the canvas-heavy music platform can't
    *  be left blank after a skip, and "instant" is the right feel for a skip anyway. */
   cardsIn(id: LineId, instant = false) {
+    rlog('cardsIn', { id, instant });
     const line = lineById(id);
     const axis = line.platform!.axis;
     // Fade the filter pills in together with the project entries, but ONLY on the
@@ -2190,6 +2211,7 @@ export class MapView {
    *  Instead: kill the ride, kill every orphanable side-effect tween, then snap to
    *  the canonical rest state. Deterministic regardless of when the skip landed. */
   finishRide() {
+    rlog('finishRide', { view: this.view, hadActive: !!this.active });
     const view = this.view; // ride methods set view := destination at their start
     this.active?.kill();
     this.active = null;
@@ -2205,6 +2227,7 @@ export class MapView {
    *  ~seconds later against the NEXT page and corrupt it (the "empty/stale
    *  platform" after back-forward). Kill the timeline AND every transient tween. */
   dispose() {
+    rlog('dispose', { view: this.view, busy: this._busy });
     this.active?.kill();
     this.active = null;
     this._stopWatchdog();
