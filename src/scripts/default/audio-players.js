@@ -86,11 +86,11 @@ function displayMusic(tracks) {
     tracks.forEach((track, index) => {
         const links = [];
         if (track.spotifyUrl && track.spotifyUrl !== '#')
-            links.push(`<a href="${track.spotifyUrl}" class="music-link" target="_blank" rel="noopener noreferrer"><i class="fab fa-spotify"></i> Spotify</a>`);
+            links.push(`<a href="${track.spotifyUrl}" class="music-link" target="_blank" rel="noopener noreferrer">Spotify</a>`);
         if (track.appleMusicUrl && track.appleMusicUrl !== '#')
-            links.push(`<a href="${track.appleMusicUrl}" class="music-link" target="_blank" rel="noopener noreferrer"><i class="fab fa-apple"></i> Apple Music</a>`);
+            links.push(`<a href="${track.appleMusicUrl}" class="music-link" target="_blank" rel="noopener noreferrer">Apple Music</a>`);
         if (track.youtubeUrl && track.youtubeUrl !== '#')
-            links.push(`<a href="${track.youtubeUrl}" class="music-link" target="_blank" rel="noopener noreferrer"><i class="fab fa-youtube"></i> YouTube</a>`);
+            links.push(`<a href="${track.youtubeUrl}" class="music-link" target="_blank" rel="noopener noreferrer">YouTube</a>`);
 
         const itemEl = document.createElement('div');
         itemEl.className = 'music-item stagger-child';
