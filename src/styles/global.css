@@ -1,4 +1,4 @@
-:root {
+:root.theme-transit {
   --line-music: #754fad;
   --line-projects: #d13d59;
   --line-about: #815e49;
@@ -16,9 +16,10 @@
   --radius: 10px;
 }
 
-* { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
-body {
+html.theme-transit,
+html.theme-transit * { box-sizing: border-box; }
+html.theme-transit { scroll-behavior: smooth; }
+html.theme-transit body {
   margin: 0;
   background: var(--bg);
   color: var(--ink);
@@ -27,22 +28,22 @@ body {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
 }
-a { color: inherit; }
-img { max-width: 100%; display: block; }
+html.theme-transit a { color: inherit; }
+html.theme-transit img { max-width: 100%; display: block; }
 
-:where(a, button):focus-visible {
+html.theme-transit :where(a, button):focus-visible {
   outline: 3px solid var(--ink);
   outline-offset: 3px;
 }
 
-.sr-only {
+html.theme-transit .sr-only {
   position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
   overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
 }
 /* The Layout skip link is an .sr-only anchor — it must become visible when
    keyboard-focused or it's unusable. Pinned top-left above the top bar and the
-   #wipe overlay, as an inverted ink chip on the site's cream palette. */
-.sr-only:focus-visible {
+   #tt-wipe overlay, as an inverted ink chip on the site's cream palette. */
+html.theme-transit .sr-only:focus-visible {
   position: fixed; top: 0.75rem; left: 0.75rem; z-index: 10000;
   width: auto; height: auto; margin: 0; padding: 0.55rem 0.95rem;
   overflow: visible; clip: auto; white-space: normal;
@@ -51,7 +52,7 @@ img { max-width: 100%; display: block; }
 }
 
 /* Full-width station-sign header shared by inner pages */
-.sign-header {
+html.theme-transit .sign-header {
   /* Sticky: the signage bar (and its back affordance) stays put while the
      article scrolls beneath — like station signage you can always look up at.
      z-index above the article's fixed train-toc (5); below the lightbox (3000). */
@@ -73,7 +74,7 @@ img { max-width: 100%; display: block; }
 }
 /* "Go back" pill, top-right of the persistent signage bar. Deliberately quiet —
    an outlined chip in the bar's own white, brightening on hover. */
-.sign-header .sign-back {
+html.theme-transit .sign-header .sign-back {
   font-weight: 700;
   font-size: 0.95rem;
   color: #fff;
@@ -84,16 +85,16 @@ img { max-width: 100%; display: block; }
   white-space: nowrap;
   transition: background 0.15s ease, color 0.15s ease;
 }
-.sign-header .sign-back:hover { background: #fff; color: var(--ink); }
+html.theme-transit .sign-header .sign-back:hover { background: #fff; color: var(--ink); }
 /* Narrow screens: the absolutely-centered title would collide with the pill —
    phones keep today's layout and use browser back. */
-@media (max-width: 760px) { .sign-header .sign-back { display: none; } }
+@media (max-width: 760px) { html.theme-transit .sign-header .sign-back { display: none; } }
 /* Left: the rohan.jk mark (same as the map header) — white logo, no box. */
-.sign-header .logo { display: flex; align-items: baseline; gap: 0.7rem; color: #fff; text-decoration: none; }
-.sign-header .logo img { filter: brightness(0) invert(1); align-self: center; }
-.sign-header .logo-name { font-weight: 800; font-size: 1.7rem; letter-spacing: 0.005em; }
+html.theme-transit .sign-header .logo { display: flex; align-items: baseline; gap: 0.7rem; color: #fff; text-decoration: none; }
+html.theme-transit .sign-header .logo img { filter: brightness(0) invert(1); align-self: center; }
+html.theme-transit .sign-header .logo-name { font-weight: 800; font-size: 1.7rem; letter-spacing: 0.005em; }
 /* Centre: the page/project title, centred on the bar as a whole. */
-.sign-header .sign-title {
+html.theme-transit .sign-header .sign-title {
   position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
   margin: 0; font-size: 1.5rem; font-weight: 700; letter-spacing: -0.01em; white-space: nowrap;
   /* Long titles (quantlab-systems' is ~900px) must truncate, not overflow the
@@ -104,21 +105,21 @@ img { max-width: 100%; display: block; }
 }
 @media (max-width: 760px) {
   /* The back pill is hidden here; only the logo block bounds the title. */
-  .sign-header .sign-title { max-width: calc(100vw - 18rem); }
+  html.theme-transit .sign-header .sign-title { max-width: calc(100vw - 18rem); }
 }
 
 /* Line-color spine running down the content */
-.spine {
+html.theme-transit .spine {
   position: absolute; top: 0; bottom: 0; left: clamp(1rem, 4vw, 3rem);
   width: 4px; border-radius: 2px; opacity: 0.85;
 }
-.page-body { position: relative; max-width: var(--max); margin: 0 auto; padding: 2.5rem clamp(1rem, 4vw, 3rem) 4rem; }
+html.theme-transit .page-body { position: relative; max-width: var(--max); margin: 0 auto; padding: 2.5rem clamp(1rem, 4vw, 3rem) 4rem; }
 
 /* Footer */
-.site-footer { border-top: 1px solid rgba(0,0,0,0.08); padding: 2rem clamp(1rem,4vw,3rem); }
-.site-footer nav { display: flex; gap: 1.25rem; flex-wrap: wrap; justify-content: center; }
-.site-footer a { color: var(--muted); text-decoration: none; font-weight: 600; }
-.site-footer a:hover { color: var(--ink); }
+html.theme-transit .site-footer { border-top: 1px solid rgba(0,0,0,0.08); padding: 2rem clamp(1rem,4vw,3rem); }
+html.theme-transit .site-footer nav { display: flex; gap: 1.25rem; flex-wrap: wrap; justify-content: center; }
+html.theme-transit .site-footer a { color: var(--muted); text-decoration: none; font-weight: 600; }
+html.theme-transit .site-footer a:hover { color: var(--ink); }
 
 /* Line-streak transition overlay — a thin full-height edge in the destination
    line's hex sweeps left→right and the new page wipes in behind it (the track
@@ -127,8 +128,8 @@ img { max-width: 100%; display: block; }
    VT group (see wipe.ts) painting above the page snapshots; parked off-screen
    when idle, driven by the `.streaking` root class + the `streak` VT group.
    `--streak-w` is the trail length; the crisp leading line sits at its right. */
-:root { --streak-w: 7px; }
-#wipe {
+:root.theme-transit { --streak-w: 7px; }
+html.theme-transit #tt-wipe {
   position: fixed; top: 0; left: 0; width: var(--streak-w);
   height: 100vh; /* fallback for browsers without dvh */
   height: 100dvh; /* tracks the real viewport as mobile URL bars expand/collapse */
@@ -141,22 +142,22 @@ img { max-width: 100%; display: block; }
 /* Drive the transition only while a streak nav is in flight. The `.streaking`
    class is (re-)asserted in astro:after-swap because the DOM swap replaces the
    <html> element's attributes with the incoming page's, wiping it otherwise. */
-:root.streaking::view-transition-group(streak) {
+:root.theme-transit.streaking::view-transition-group(streak) {
   animation: streak-run 520ms cubic-bezier(0.7, 0, 0.3, 1) both;
   z-index: 100; /* above the root snapshots */
 }
 /* Keep the band itself solid — no default cross-fade on its snapshots. */
-:root.streaking::view-transition-old(streak),
-:root.streaking::view-transition-new(streak) {
+:root.theme-transit.streaking::view-transition-old(streak),
+:root.theme-transit.streaking::view-transition-new(streak) {
   animation: none; opacity: 1; mix-blend-mode: normal;
 }
 /* The new page paints above the old, so it is the layer we clip: it grows from
    the left in the band's wake while the outgoing page stays full underneath,
    still visible ahead of the band. */
-:root.streaking::view-transition-old(root) {
+:root.theme-transit.streaking::view-transition-old(root) {
   animation: none; opacity: 1; mix-blend-mode: normal; /* static, underneath */
 }
-:root.streaking::view-transition-new(root) {
+:root.theme-transit.streaking::view-transition-new(root) {
   animation: streak-reveal 520ms cubic-bezier(0.7, 0, 0.3, 1) both;
   mix-blend-mode: normal;
 }
@@ -168,15 +169,15 @@ img { max-width: 100%; display: block; }
    the no-counterpart case — sweep a lone NEW bar in with the same clip as the
    root, and hold a lone OLD bar static beneath (it is covered by the wake,
    like the outgoing root). Paired article↔article snapshots are untouched. */
-:root.streaking::view-transition-new(sign-music):only-child,
-:root.streaking::view-transition-new(sign-projects):only-child,
-:root.streaking::view-transition-new(sign-about):only-child {
+:root.theme-transit.streaking::view-transition-new(sign-music):only-child,
+:root.theme-transit.streaking::view-transition-new(sign-projects):only-child,
+:root.theme-transit.streaking::view-transition-new(sign-about):only-child {
   animation: streak-reveal 520ms cubic-bezier(0.7, 0, 0.3, 1) both;
   mix-blend-mode: normal;
 }
-:root.streaking::view-transition-old(sign-music):only-child,
-:root.streaking::view-transition-old(sign-projects):only-child,
-:root.streaking::view-transition-old(sign-about):only-child {
+:root.theme-transit.streaking::view-transition-old(sign-music):only-child,
+:root.theme-transit.streaking::view-transition-old(sign-projects):only-child,
+:root.theme-transit.streaking::view-transition-old(sign-about):only-child {
   /* Exiting to a platform: the lone old bar stacks ABOVE the incoming root
      sweep, so it must be CLIPPED AWAY in the edge's wake (the mirror of
      streak-reveal) — held static it lingered over the new bar and popped. */
@@ -197,11 +198,11 @@ img { max-width: 100%; display: block; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  html { scroll-behavior: auto; }
+  html.theme-transit { scroll-behavior: auto; }
   /* Also force a single iteration + zero delay: an `infinite` animation cut to
      0.001ms would otherwise loop ~10^6 times/sec and storm animationiteration
      events; a long delay would leave elements stuck in their pre-anim state. */
-  *, *::before, *::after {
+  html.theme-transit *, html.theme-transit *::before, html.theme-transit *::after {
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
@@ -211,9 +212,9 @@ img { max-width: 100%; display: block; }
 /* The `*` selector above can't match ::view-transition-* pseudos; wipe.ts already
    gates arming on the preference, but this keeps the CSS self-contained. */
 @media (prefers-reduced-motion: reduce) {
-  ::view-transition-group(streak),
-  ::view-transition-old(root),
-  ::view-transition-new(root) { animation: none !important; }
+  :root.theme-transit::view-transition-group(streak),
+  :root.theme-transit::view-transition-old(root),
+  :root.theme-transit::view-transition-new(root) { animation: none !important; }
 }
 
 /* Homepage Destinations rail — pinned globally so client-side navigation
@@ -227,12 +228,12 @@ img { max-width: 100%; display: block; }
 /* body.page's 300px base lives HERE (not in the detail-rail block below) so
    the 1024px narrowing can override it — a later unconditional rule at equal
    specificity would win over the media query and freeze the rail at 300. */
-body.home, body.page { --rail-w: 300px; }
-@media (max-width: 1024px) { body.home, body.page { --rail-w: 250px; } }
-@media (max-width: 768px) { body.home { --rail-w: 210px; } }
+html.theme-transit body.home, html.theme-transit body.page { --rail-w: 300px; }
+@media (max-width: 1024px) { html.theme-transit body.home, html.theme-transit body.page { --rail-w: 250px; } }
+@media (max-width: 768px) { html.theme-transit body.home { --rail-w: 210px; } }
 
-body.home #station-board,
-body.page #station-board {
+html.theme-transit body.home #station-board,
+html.theme-transit body.page #station-board {
   position: absolute;
   left: 0;
   top: 0;
@@ -248,15 +249,15 @@ body.page #station-board {
   border-right: 1px solid rgba(0, 0, 0, 0.14);
   box-shadow: 6px 0 22px rgba(0, 0, 0, 0.14);
 }
-body.home #station-board .board-body,
-body.page #station-board .board-body { flex: 1 1 auto; }
+html.theme-transit body.home #station-board .board-body,
+html.theme-transit body.page #station-board .board-body { flex: 1 1 auto; }
 /* When the rail narrows on smaller viewports, trim the label type a touch so
    destination names ("About Me") stay on a single line. */
 @media (max-width: 1024px) {
-  body.home #station-board .board-name,
-  body.page #station-board .board-name { font-size: 1.05rem; }
-  body.home #station-board .board-title,
-  body.page #station-board .board-title { font-size: 1.15rem; }
+  html.theme-transit body.home #station-board .board-name,
+  html.theme-transit body.page #station-board .board-name { font-size: 1.05rem; }
+  html.theme-transit body.home #station-board .board-title,
+  html.theme-transit body.page #station-board .board-title { font-size: 1.15rem; }
 }
 
 /* Inner pages carry the SAME docked Destinations rail as the map/platform
@@ -271,47 +272,46 @@ body.page #station-board .board-body { flex: 1 1 auto; }
 /* --rail-w for body.page is set alongside body.home's near the top of the
    rail block, above the responsive narrowing media queries. */
 @media (min-width: 1000px) {
-  body.page #station-board {
+  html.theme-transit body.page #station-board {
     position: fixed;
     top: var(--topbar-h);
     /* under the sticky sign-header (z 20), over the article TOC (z 5) */
     z-index: 15;
   }
   /* The current line's row stays lit, mirroring ride.ts's .active row. */
-  body.page-music #station-board .board-link[data-line='music'],
-  body.page-projects #station-board .board-link[data-line='projects'],
-  body.page-about #station-board .board-link[data-line='about'] {
+  html.theme-transit body.page-music #station-board .board-link[data-line='music'],
+  html.theme-transit body.page-projects #station-board .board-link[data-line='projects'],
+  html.theme-transit body.page-about #station-board .board-link[data-line='about'] {
     background: color-mix(in srgb, var(--line-hex) 14%, transparent);
   }
-  body.page-music #station-board .board-link[data-line='music'] .board-name,
-  body.page-projects #station-board .board-link[data-line='projects'] .board-name,
-  body.page-about #station-board .board-link[data-line='about'] .board-name {
+  html.theme-transit body.page-music #station-board .board-link[data-line='music'] .board-name,
+  html.theme-transit body.page-projects #station-board .board-link[data-line='projects'] .board-name,
+  html.theme-transit body.page-about #station-board .board-link[data-line='about'] .board-name {
     font-weight: 800;
   }
 }
 @media (max-width: 999px) {
-  body.page #station-board { display: none; }
+  html.theme-transit body.page #station-board { display: none; }
 }
 
 /* Inner pages sit on the same map land as the homepage world. */
-body.page { background: #eae7de; }
+html.theme-transit body.page { background: #eae7de; }
 
 /* Print: drop the interactive chrome — the nav rail, the faint map backdrop
    behind article pages, the fixed train-line TOC sidebar (it would overlap
    the article text), and the transition streak overlay. */
 @media print {
-  #station-board,
-  .map-backdrop,
-  .train-toc,
-  #wipe {
+  html.theme-transit #station-board,
+  html.theme-transit .map-backdrop,
+  html.theme-transit .train-toc,
+  html.theme-transit #tt-wipe {
     display: none !important;
   }
 }
 
 /* Poster typography: every title and subheader carries the transit signage
    face (Helvetica), matching the map labels and Legend panel. */
-h1, h2, h3, h4,
-.sign-header, .sign-header .sign-title, .sign-header .logo {
+html.theme-transit h1, html.theme-transit h2, html.theme-transit h3, html.theme-transit h4,
+html.theme-transit .sign-header, html.theme-transit .sign-header .sign-title, html.theme-transit .sign-header .logo {
   font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
-

@@ -25,7 +25,7 @@ async function expectConsistent(page: Page) {
   const st = await readNavState(page);
   expect(EXPECT_SECTION, `unknown landed path ${st.path}`).toHaveProperty([st.path]);
   expect(st.section).toBe(EXPECT_SECTION[st.path]);
-  if (st.path !== '/') expect(st.cards).toBeGreaterThan(0);
+  if (st.path !== '/transit') expect(st.cards).toBeGreaterThan(0);
 }
 
 test.describe('interrupt / history / spam sequences land consistent', () => {
@@ -34,7 +34,7 @@ test.describe('interrupt / history / spam sequences land consistent', () => {
     [
       'back-midride',
       async (p) => {
-        await p.goto('/', { waitUntil: 'networkidle' });
+        await p.goto('/transit', { waitUntil: 'networkidle' });
         await p.waitForTimeout(500);
         await clickLine(p, 'projects');
         await p.waitForTimeout(400);
@@ -45,7 +45,7 @@ test.describe('interrupt / history / spam sequences land consistent', () => {
     [
       'switch+histspam',
       async (p) => {
-        await p.goto('/', { waitUntil: 'networkidle' });
+        await p.goto('/transit', { waitUntil: 'networkidle' });
         await p.waitForTimeout(500);
         await clickLine(p, 'projects');
         await p.waitForTimeout(1600);
@@ -62,7 +62,7 @@ test.describe('interrupt / history / spam sequences land consistent', () => {
     [
       'back-forward-clean',
       async (p) => {
-        await p.goto('/', { waitUntil: 'networkidle' });
+        await p.goto('/transit', { waitUntil: 'networkidle' });
         await p.waitForTimeout(500);
         await clickLine(p, 'music');
         await p.waitForTimeout(5000);
@@ -76,7 +76,7 @@ test.describe('interrupt / history / spam sequences land consistent', () => {
     [
       'rail-spam',
       async (p) => {
-        await p.goto('/', { waitUntil: 'networkidle' });
+        await p.goto('/transit', { waitUntil: 'networkidle' });
         await p.waitForTimeout(500);
         await clickLine(p, 'music');
         await p.waitForTimeout(90);
@@ -89,7 +89,7 @@ test.describe('interrupt / history / spam sequences land consistent', () => {
     [
       'single-nav',
       async (p) => {
-        await p.goto('/', { waitUntil: 'networkidle' });
+        await p.goto('/transit', { waitUntil: 'networkidle' });
         await p.waitForTimeout(500);
         await clickLine(p, 'projects');
       },
@@ -97,7 +97,7 @@ test.describe('interrupt / history / spam sequences land consistent', () => {
     [
       'direct-entry-back',
       async (p) => {
-        await p.goto('/music', { waitUntil: 'networkidle' });
+        await p.goto('/transit/music', { waitUntil: 'networkidle' });
         await p.waitForTimeout(800);
         await clickLine(p, 'about');
         await p.waitForTimeout(300);
@@ -107,7 +107,7 @@ test.describe('interrupt / history / spam sequences land consistent', () => {
     [
       'mixed-spam',
       async (p) => {
-        await p.goto('/', { waitUntil: 'networkidle' });
+        await p.goto('/transit', { waitUntil: 'networkidle' });
         await p.waitForTimeout(500);
         await clickLine(p, 'music');
         await p.waitForTimeout(120);
@@ -123,11 +123,11 @@ test.describe('interrupt / history / spam sequences land consistent', () => {
     [
       'article-roundtrip',
       async (p) => {
-        await p.goto('/projects', { waitUntil: 'networkidle' });
+        await p.goto('/transit/projects', { waitUntil: 'networkidle' });
         await p.waitForTimeout(800);
-        await p.click('a[href^="/projects/"]', { timeout: 2000 }).catch(() => {});
+        await p.click('a[href^="/transit/projects/"]', { timeout: 2000 }).catch(() => {});
         await p.waitForTimeout(1200);
-        await p.click('a[href="/projects"]', { timeout: 2000 }).catch(() => {}); // "all projects"
+        await p.click('a[href="/transit/projects"]', { timeout: 2000 }).catch(() => {}); // "all projects"
       },
     ],
   ];
@@ -143,7 +143,7 @@ test.describe('interrupt / history / spam sequences land consistent', () => {
   test('reduced-motion history hop lands consistent', async ({ browser }) => {
     const ctx = await browser.newContext({ reducedMotion: 'reduce' });
     const page = await ctx.newPage();
-    await page.goto('/', { waitUntil: 'networkidle' });
+    await page.goto('/transit', { waitUntil: 'networkidle' });
     await page.waitForTimeout(400);
     await clickLine(page, 'projects');
     await page.waitForTimeout(200);
@@ -172,7 +172,7 @@ test.describe('skip-spam never lands an empty platform', () => {
   for (const [from, to] of pairs) {
     for (const gap of [0, 300]) {
       test(`${from} -> ${to} double-click gap=${gap}ms`, async ({ page }) => {
-        await page.goto(`/${from}`, { waitUntil: 'networkidle' });
+        await page.goto(`/transit/${from}`, { waitUntil: 'networkidle' });
         await page.waitForTimeout(900);
         await page.click(`a[data-line="${to}"]`);
         await page.waitForTimeout(gap);
@@ -198,7 +198,7 @@ test.describe('multi-click bursts leave no fade-leak', () => {
   for (const seq of seqs) {
     for (const gap of [50, 140]) {
       test(`seq=[${seq.join(',')}] gap=${gap}ms`, async ({ page }) => {
-        await page.goto('/music', { waitUntil: 'networkidle' });
+        await page.goto('/transit/music', { waitUntil: 'networkidle' });
         await page.waitForTimeout(700);
         for (const dest of seq) {
           await page.click(`a[data-line="${dest}"]`);
@@ -219,7 +219,7 @@ test.describe('interrupting a projects page-turn never strands state', () => {
     for (const delay of [80, 150, 300]) {
       test(`page-turn then ${dest} after ${delay}ms`, async ({ page }) => {
         await page.setViewportSize({ width: 1400, height: 820 });
-        await page.goto('/projects', { waitUntil: 'networkidle' });
+        await page.goto('/transit/projects', { waitUntil: 'networkidle' });
         await page.waitForTimeout(800);
         await page.click('#more-next').catch(() => {});
         await page.waitForTimeout(delay);
@@ -235,10 +235,10 @@ test.describe('interrupting a projects page-turn never strands state', () => {
         // (the bug this guards: untracked page-turn tweens surviving
         // finishRide/dispose).
         const path = new URL(page.url()).pathname;
-        if (path === '/projects') {
+        if (path === '/transit/projects') {
           expect(await visCards(page, 'projects')).toBeGreaterThan(0);
-        } else if (path !== '/') {
-          expect(await visCards(page, path.replace('/', ''))).toBeGreaterThan(0);
+        } else if (path !== '/transit') {
+          expect(await visCards(page, path.replace('/transit/', ''))).toBeGreaterThan(0);
         }
         const before = await camXform(page);
         await page.waitForTimeout(400);

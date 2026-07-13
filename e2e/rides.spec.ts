@@ -10,7 +10,7 @@ import { LINES, WANT, settle, visCards, collectErrors } from './helpers';
 
 for (const line of LINES) {
   test(`ride home -> ${line} reveals all ${WANT[line]} cards`, async ({ page }) => {
-    await page.goto('/', { waitUntil: 'networkidle' });
+    await page.goto('/transit', { waitUntil: 'networkidle' });
     await page.waitForTimeout(500);
     await page.click(`a[data-line="${line}"]`);
     await settle(page, { stableMs: 500, maxMs: 14_000 });
@@ -34,7 +34,7 @@ test('projects paging round-trip is lossless and filter works', async ({ page })
         ),
     );
 
-  await page.goto('/projects', { waitUntil: 'networkidle' });
+  await page.goto('/transit/projects', { waitUntil: 'networkidle' });
   await page.waitForTimeout(900);
   const page0 = await shown();
 
@@ -69,10 +69,10 @@ test('projects paging round-trip is lossless and filter works', async ({ page })
 
 test('SPA ride syncs document.title and announces the route', async ({ page }) => {
   // capture the static title as ground truth
-  await page.goto('/music', { waitUntil: 'networkidle' });
+  await page.goto('/transit/music', { waitUntil: 'networkidle' });
   const staticTitle = await page.title();
 
-  await page.goto('/', { waitUntil: 'networkidle' });
+  await page.goto('/transit', { waitUntil: 'networkidle' });
   await page.waitForTimeout(400);
   const homeTitle = await page.title();
 

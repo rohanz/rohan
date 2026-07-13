@@ -1,10 +1,12 @@
-/** Opt-in frame-rate meter (`localStorage.perfHud='1'`, reload; '0' or unset =
+/** Opt-in frame-rate meter (set the shared namespaced key to '1', then reload; '0' or unset =
  *  off). Shows a rolling fps + a count of dropped frames (>1.5 vsyncs at the
  *  detected refresh rate) so real-machine stutter reports can be verified with
  *  numbers instead of feel. Runs its own rAF loop but does only ~1 DOM write
  *  every 250ms — cheap enough to not perturb what it measures. */
+import { PERF_HUD_KEY } from './keys';
+
 export function mountPerfHud() {
-  if (typeof localStorage === 'undefined' || localStorage.getItem('perfHud') !== '1') return;
+  if (typeof localStorage === 'undefined' || localStorage.getItem(PERF_HUD_KEY) !== '1') return;
   if (document.getElementById('perf-hud')) return;
   const hud = document.createElement('div');
   hud.id = 'perf-hud';

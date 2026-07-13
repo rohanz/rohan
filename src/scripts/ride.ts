@@ -7,7 +7,7 @@
  *                   content cards appear beside the stops.
  *
  * Riding a line ends parked at its platform; "back to map" rides in
- * reverse. URLs stay real via pushState (/, /music, /projects, /about);
+ * reverse. URLs stay real via pushState (/transit and its child routes);
  * popstate replays the moves; direct entry parks instantly.
  *
  * This module owns ONLY the navigation state machine (URL ↔ view target,
@@ -20,6 +20,7 @@ import type { ViewId } from './ride/motion';
 import { rlog } from './ride/rlog';
 import { MapView } from './ride/map-view';
 import { mountPerfHud } from './ride/hud';
+import { FAST_TRAVEL_KEY } from './ride/keys';
 
 // ---------------------------------------------------------------------------
 let mv: MapView | null = null;
@@ -55,21 +56,21 @@ const SKIP_COOLDOWN = 350; // ms
  *  clicks have no href to navigate, so they keep riding. */
 function fastTravel(): boolean {
   try {
-    return sessionStorage.getItem('fastTravel') === '1';
+    return sessionStorage.getItem(FAST_TRAVEL_KEY) === '1';
   } catch {
     return false;
   }
 }
 
 function urlFor(view: ViewId): string {
-  return view === 'map' ? '/' : `/${view}`;
+  return view === 'map' ? '/transit' : `/transit/${view}`;
 }
 
 function viewFromPath(path: string): ViewId {
   const seg = path.replace(/\/+$/, '');
-  if (seg === '/music') return 'music';
-  if (seg === '/projects') return 'projects';
-  if (seg === '/about') return 'about';
+  if (seg === '/transit/music') return 'music';
+  if (seg === '/transit/projects') return 'projects';
+  if (seg === '/transit/about') return 'about';
   return 'map';
 }
 

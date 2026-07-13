@@ -35,7 +35,7 @@ const personLd = JSON.stringify({
   sameAs: SOCIALS.map((s) => s.href),
 });
 ---
-<html lang="en">
+<html lang="en" class="theme-transit">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -68,10 +68,10 @@ const personLd = JSON.stringify({
     <ClientRouter />
   </head>
   <body class={bodyClass} data-initial-view={initialView}>
-    <a href="#main" class="sr-only">Skip to content</a>
+    <a href="#tt-main" class="sr-only">Skip to content</a>
     <div id="routeAnnouncer" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
     <slot />
-    <div id="wipe" transition:persist="wipe" aria-hidden="true"></div>
+    <div id="tt-wipe" transition:persist="tt-wipe" aria-hidden="true"></div>
     <script>
       import '../scripts/wipe.ts';
     </script>

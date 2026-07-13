@@ -1,8 +1,8 @@
 ---
-import PageLayout from '../../layouts/PageLayout.astro';
+import PageLayout from '../../../layouts/PageLayout.astro';
 import { getCollection, render } from 'astro:content';
-import { getProjectNav, type NavItem } from '../../lib/projectNav';
-import { lineById } from '../../data/system';
+import { getProjectNav, type NavItem } from '../../../lib/projectNav';
+import { lineById } from '../../../data/system';
 
 export async function getStaticPaths() {
   const projects = (await getCollection('projects')).sort((a, b) => a.data.order - b.data.order);
@@ -54,11 +54,11 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
         </div>
         <div class="toc-nav">
           {prev && (
-            <a class="toc-nav-link toc-nav-prev" href={`/projects/${prev.slug}`} data-astro-prefetch="hover"><span class="nav-arrow">‹</span>prev</a>
+            <a class="toc-nav-link toc-nav-prev" href={`/transit/projects/${prev.slug}`} data-astro-prefetch="hover"><span class="nav-arrow">‹</span>prev</a>
           )}
-          <a class="toc-nav-link" href="/projects">all projects</a>
+          <a class="toc-nav-link" href="/transit/projects">all projects</a>
           {next && (
-            <a class="toc-nav-link toc-nav-next" href={`/projects/${next.slug}`} data-astro-prefetch="hover">next<span class="nav-arrow">›</span></a>
+            <a class="toc-nav-link toc-nav-next" href={`/transit/projects/${next.slug}`} data-astro-prefetch="hover">next<span class="nav-arrow">›</span></a>
           )}
         </div>
       </nav>
@@ -73,17 +73,17 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
       <Content />
 
       <nav class="stop-nav" aria-label="project navigation">
-        {prev ? <a class="prev" href={`/projects/${prev.slug}`} data-astro-prefetch="hover">← previous stop<span>{prev.title}</span></a> : <span></span>}
-        <a class="to-line" href="/projects">back to projects</a>
-        {next ? <a class="next" href={`/projects/${next.slug}`} data-astro-prefetch="hover">next stop →<span>{next.title}</span></a> : <span></span>}
+        {prev ? <a class="prev" href={`/transit/projects/${prev.slug}`} data-astro-prefetch="hover">← previous stop<span>{prev.title}</span></a> : <span></span>}
+        <a class="to-line" href="/transit/projects">back to projects</a>
+        {next ? <a class="next" href={`/transit/projects/${next.slug}`} data-astro-prefetch="hover">next stop →<span>{next.title}</span></a> : <span></span>}
       </nav>
     </article>
   </div>
 </PageLayout>
 
 <script>
-  import '../../scripts/article.ts';
-  import '../../scripts/article-widgets.ts';
+  import '../../../scripts/article.ts';
+  import '../../../scripts/article-widgets.ts';
 </script>
 
 <style>
@@ -298,14 +298,14 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
   /* The PageLayout spine's station capsule sits right next to the banner and
      reads as a stray TOC tick on detail pages — the train-line TOC is the
      station marker here, so hide the spine's. */
-  body.page-projects .station-here { display: none; }
+  html.theme-transit body.page-projects .station-here { display: none; }
 
   /* Detail pages uncap the page-body (it starts at x=0) so the article can be
      positioned in raw viewport coordinates — [slug].astro's --article-left —
      and be genuinely viewport-centred. Scoped via :has(.article-layout) so
      platform/list pages keep --max. */
   @media (min-width: 1000px) {
-    .page-body:has(.article-layout) { max-width: none; }
+    html.theme-transit .page-body:has(.article-layout) { max-width: none; }
   }
 
   /* Legacy classes carried over from the old site's markdown bodies. */

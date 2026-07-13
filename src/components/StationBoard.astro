@@ -14,7 +14,7 @@ const dests = NAV_LINES.map((l) => ({
     <ul>
       <li>
         <a
-          href="/"
+          href="/transit"
           data-terminal
           data-line="map"
           data-astro-prefetch="hover"
@@ -157,18 +157,18 @@ const dests = NAV_LINES.map((l) => ({
   /* Bidirectional hover sync: when a MAP line is hovered, #map-3d[data-hl]
      is set, and the matching rail row should show the SAME visual it gets on
      :hover (background tint + lengthened swatch). The rail (#station-board)
-     is NOT a descendant of #map-3d — both live under #main — so we key off a
-     :has() on the common #main ancestor rather than a descendant selector.
+     is NOT a descendant of #map-3d — both live under #tt-main — so we key off a
+     :has() on the common #tt-main ancestor rather than a descendant selector.
      (This also fires when hovering the rail row itself, since ride.ts sets
      data-hl from that source too — harmless, it just matches the :hover state.) */
-  :global(#main:has(#map-3d[data-hl='music'])) .board-link[data-line='music'],
-  :global(#main:has(#map-3d[data-hl='projects'])) .board-link[data-line='projects'],
-  :global(#main:has(#map-3d[data-hl='about'])) .board-link[data-line='about'] {
+  :global(#tt-main:has(#map-3d[data-hl='music'])) .board-link[data-line='music'],
+  :global(#tt-main:has(#map-3d[data-hl='projects'])) .board-link[data-line='projects'],
+  :global(#tt-main:has(#map-3d[data-hl='about'])) .board-link[data-line='about'] {
     background: rgba(0, 0, 0, 0.07);
   }
-  :global(#main:has(#map-3d[data-hl='music'])) .board-link[data-line='music'] .swatch,
-  :global(#main:has(#map-3d[data-hl='projects'])) .board-link[data-line='projects'] .swatch,
-  :global(#main:has(#map-3d[data-hl='about'])) .board-link[data-line='about'] .swatch {
+  :global(#tt-main:has(#map-3d[data-hl='music'])) .board-link[data-line='music'] .swatch,
+  :global(#tt-main:has(#map-3d[data-hl='projects'])) .board-link[data-line='projects'] .swatch,
+  :global(#tt-main:has(#map-3d[data-hl='about'])) .board-link[data-line='about'] .swatch {
     width: 56px;
   }
 
@@ -256,7 +256,9 @@ const dests = NAV_LINES.map((l) => ({
 </style>
 
 <script>
-  // Fast Travel toggle. Persisted in sessionStorage under 'fastTravel' ('1' = on):
+  import { FAST_TRAVEL_KEY } from '../scripts/ride/keys';
+
+  // Fast Travel toggle. Persisted in sessionStorage under the shared namespaced key ('1' = on):
   // it survives page navigations within a visit but every NEW visit starts OFF
   // (owner's call — off by default, always). The rail renders on EVERY page (map +
   // detail article pages), so this binds on each astro:page-load against the
@@ -265,10 +267,9 @@ const dests = NAV_LINES.map((l) => ({
   // the existing thin streak wipe runs instead of the camera train ride — see the
   // fastTravel() gate there (it MUST read the same key from the same storage).
   // Detail-page rails are already real navs; the toggle just renders + persists.
-  const KEY = 'fastTravel';
   function stored(): boolean {
     try {
-      return sessionStorage.getItem(KEY) === '1';
+      return sessionStorage.getItem(FAST_TRAVEL_KEY) === '1';
     } catch {
       return false;
     }
@@ -284,7 +285,7 @@ const dests = NAV_LINES.map((l) => ({
     btn.addEventListener('click', () => {
       const next = !stored();
       try {
-        sessionStorage.setItem(KEY, next ? '1' : '0');
+        sessionStorage.setItem(FAST_TRAVEL_KEY, next ? '1' : '0');
       } catch {
         /* storage unavailable — the aria state below still reflects intent */
       }

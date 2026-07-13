@@ -14,13 +14,13 @@ const HEX_BY_ID: Record<string, string> = {};
 for (const line of LINES) HEX_BY_ID[line.id] = line.hex;
 
 const COLOR_BY_PATH: Record<string, string> = {
-  '/music': HEX_BY_ID['music'] ?? FALLBACK_HEX,
-  '/projects': HEX_BY_ID['projects'] ?? FALLBACK_HEX,
-  '/about': HEX_BY_ID['about'] ?? FALLBACK_HEX,
+  '/transit/music': HEX_BY_ID['music'] ?? FALLBACK_HEX,
+  '/transit/projects': HEX_BY_ID['projects'] ?? FALLBACK_HEX,
+  '/transit/about': HEX_BY_ID['about'] ?? FALLBACK_HEX,
 };
 
 function colorForPath(pathname: string): string {
-  if (pathname === '/' || pathname === '') return FALLBACK_HEX;
+  if (pathname === '/transit' || pathname === '/transit/' || pathname === '') return FALLBACK_HEX;
   const key = Object.keys(COLOR_BY_PATH).find((k) => pathname === k || pathname.startsWith(k + '/'));
   return key ? COLOR_BY_PATH[key] : FALLBACK_HEX;
 }
@@ -42,13 +42,13 @@ let gen = 0;
 // promoted to its own view-transition group (`streak`) so it paints above the page
 // snapshots; meanwhile the outgoing page (`::view-transition-old(root)`) is clipped
 // away on the band's leading edge, revealing the new page in its wake. All the
-// motion lives in CSS (see #wipe rules in global.css); this file only tints the
+// motion lives in CSS (see #tt-wipe rules in global.css); this file only tints the
 // band per-destination and toggles the `.streaking` root class that arms it.
 function endStreak(scheduledGen: number) {
   // A newer navigation re-armed the streak since this cleanup was scheduled;
   // tearing down now would blank its in-flight animation. Let it own cleanup.
   if (scheduledGen !== gen) return;
-  const wipe = document.getElementById('wipe');
+  const wipe = document.getElementById('tt-wipe');
   document.documentElement.classList.remove('streaking');
   if (wipe) {
     wipe.style.color = '';
@@ -67,7 +67,7 @@ document.addEventListener('astro:before-preparation', (e) => {
   // Only the ARMING is gated on prefers-reduced-motion; cleanup (below) always
   // runs so a mid-flight preference flip can never strand `.streaking`.
   if (reduced()) return;
-  const wipe = document.getElementById('wipe');
+  const wipe = document.getElementById('tt-wipe');
   if (!wipe) return;
   wipe.style.color = colorForPath((e as TransitionBeforePreparationEvent).to.pathname);
   wipe.style.viewTransitionName = 'streak';
@@ -78,9 +78,10 @@ document.addEventListener('astro:before-preparation', (e) => {
 // attributes onto the live element, wiping `.streaking`. after-swap runs
 // synchronously before the browser sets up the transition animations, so
 // re-adding it here is what actually makes the streak rules match. The persisted
-// #wipe keeps its inline color/name across the swap on its own.
+// #tt-wipe keeps its inline color/name across the swap on its own. The incoming
+// transit layout restores theme-transit on <html> during the same swap.
 document.addEventListener('astro:after-swap', () => {
-  const wipe = document.getElementById('wipe');
+  const wipe = document.getElementById('tt-wipe');
   if (!wipe || wipe.style.viewTransitionName !== 'streak') return;
   document.documentElement.classList.add('streaking');
 });

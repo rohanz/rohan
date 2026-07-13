@@ -19,7 +19,7 @@ const VIEWPORTS: [number, number][] = [
 for (const [w, h] of VIEWPORTS) {
   test(`about cards fit at ${w}x${h}: no clip, no overlap, bio >= 10.5px`, async ({ page }) => {
     await page.setViewportSize({ width: w, height: h });
-    await page.goto('/about', { waitUntil: 'networkidle' });
+    await page.goto('/transit/about', { waitUntil: 'networkidle' });
     await page.waitForTimeout(1500);
     const m = await page.evaluate(() => {
       const cards = Array.from(
@@ -55,7 +55,7 @@ for (const [w, h] of VIEWPORTS) {
 test('widening after paging the About platform re-clamps to visible cards', async ({ page }) => {
   // short viewport -> fewer stop-pairs -> About paginates
   await page.setViewportSize({ width: 1100, height: 560 });
-  await page.goto('/about', { waitUntil: 'networkidle' });
+  await page.goto('/transit/about', { waitUntil: 'networkidle' });
   await page.waitForTimeout(900);
   const paginates = await page.evaluate(() => {
     const next = document.getElementById('more-next');
@@ -76,7 +76,7 @@ test('widening after paging the About platform re-clamps to visible cards', asyn
 test('article column clears the train-toc at every toc-visible width', async ({ page }) => {
   for (const width of [1000, 1100, 1200, 1300, 1440, 1720]) {
     await page.setViewportSize({ width, height: 850 });
-    await page.goto('/projects/careersphere', { waitUntil: 'networkidle' });
+    await page.goto('/transit/projects/careersphere', { waitUntil: 'networkidle' });
     await page.waitForTimeout(500);
     const m = await page.evaluate(() => {
       const toc = document.querySelector('.train-toc');

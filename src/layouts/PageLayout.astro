@@ -20,17 +20,17 @@ const { title, description, lineId, hex, signName, ogImage } = Astro.props;
        full-height; placement in global.css `body.page #station-board`).
        Its links are ordinary page navigations back to the platforms. -->
   <StationBoard />
-  <div id="page-shell">
+  <div id="tt-page-shell">
     <MapBackdrop lineId={lineId} />
     <header class="sign-header" style={`background:${hex}; --sign-vt: sign-${lineId};`}>
-      <a class="logo" href="/" aria-label="rohan.jk — home">
+      <a class="logo" href="/transit" aria-label="rohan.jk — home">
         <img src="/logo.svg" width="34" height="34" alt="" />
         <span class="logo-name">rohan.jk</span>
       </a>
       <h1 class="sign-title">{signName}</h1>
-      <a class="sign-back" href={`/${lineId}`}>&lsaquo; back</a>
+      <a class="sign-back" href={`/transit/${lineId}`}>&lsaquo; back</a>
     </header>
-    <main id="main" class="page-body">
+    <main id="tt-main" class="page-body">
       <span class="spine" style={`background:${hex}`} aria-hidden="true">
         <span class="station-here" aria-hidden="true"></span>
       </span>

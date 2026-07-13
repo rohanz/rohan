@@ -7,7 +7,7 @@ import { collectErrors } from './helpers';
 
 test('play/pause a track produces no console errors', async ({ page }) => {
   const errs = collectErrors(page);
-  await page.goto('/music', { waitUntil: 'networkidle' });
+  await page.goto('/transit/music', { waitUntil: 'networkidle' });
   await page.waitForTimeout(1200);
   const btn = page.locator('[data-play]').first();
   await expect(btn).toBeVisible();

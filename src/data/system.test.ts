@@ -47,7 +47,11 @@ describe('transit system integrity (v2 mesh)', () => {
   });
 
   it('nav hrefs are the three routes', () => {
-    expect(NAV_LINES.map((l) => l.nav.href)).toEqual(['/music', '/projects', '/about']);
+    expect(NAV_LINES.map((l) => l.nav.href)).toEqual([
+      '/transit/music',
+      '/transit/projects',
+      '/transit/about',
+    ]);
   });
 
   it('every polyline and ride path is octilinear', () => {

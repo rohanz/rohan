@@ -18,7 +18,7 @@ const SEEDS = [0, 1, 2, 3, 4, 5, 6, 7].map((i) => ((i * 2654435761) % 2147483647
 for (const seed of SEEDS) {
   test(`@slow click-storm seed=${seed} leaves no stuck-bright layer`, async ({ page }) => {
     const rnd = mkRng(seed);
-    await page.goto('/', { waitUntil: 'networkidle' });
+    await page.goto('/transit', { waitUntil: 'networkidle' });
     await page.waitForTimeout(500);
     const nClicks = 6 + Math.floor(rnd() * 8);
     const seq: string[] = [];

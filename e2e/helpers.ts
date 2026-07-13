@@ -88,10 +88,10 @@ export const readNavState = (page: Page) =>
 
 /** Section header expected on #bar-section for each landed path. */
 export const EXPECT_SECTION: Record<string, string> = {
-  '/': '',
-  '/music': 'Music',
-  '/projects': 'Projects',
-  '/about': 'About Me',
+  '/transit': '',
+  '/transit/music': 'Music',
+  '/transit/projects': 'Projects',
+  '/transit/about': 'About Me',
 };
 
 /**
@@ -100,7 +100,7 @@ export const EXPECT_SECTION: Record<string, string> = {
  */
 export const fadeLeaks = (page: Page) =>
   page.evaluate(() => {
-    const view = location.pathname.replace(/\//g, '') || 'map';
+    const view = location.pathname.replace(/^\/transit\/?/, '').replace(/\//g, '') || 'map';
     const els = Array.from(
       document.querySelectorAll('[data-line],[data-land-water],[data-land-zones]'),
     ).filter((e) => !e.closest('#station-board') && e.getAttribute('data-line') !== view);

@@ -90,7 +90,7 @@ export const LINES: Line[] = [
   {
     id: 'music',
     hex: CTA.purple,
-    nav: { href: '/music', name: 'Music' },
+    nav: { href: '/transit/music', name: 'Music' },
     points: [
       [-1440, 560],
       [240, 560],
@@ -128,7 +128,7 @@ export const LINES: Line[] = [
   {
     id: 'projects',
     hex: CTA.red,
-    nav: { href: '/projects', name: 'Projects' },
+    nav: { href: '/transit/projects', name: 'Projects' },
     points: [
       [PROJECTS_LINE_END_X, 500],
       [120, 500],
@@ -162,7 +162,7 @@ export const LINES: Line[] = [
   {
     id: 'about',
     hex: CTA.brown,
-    nav: { href: '/about', name: 'About Me' },
+    nav: { href: '/transit/about', name: 'About Me' },
     points: [
       [420, 120],
       [420, 470],

@@ -1,5 +1,7 @@
 import { defineConfig } from '@playwright/test';
 
+const externalBaseURL = process.env.PW_BASE_URL;
+
 // E2E suite runs against the PRODUCTION build (astro preview), not the dev
 // server — the camera-ride engine behaves identically but prod is what ships.
 //
@@ -18,15 +20,17 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : 'list',
   use: {
-    baseURL: 'http://localhost:4340',
+    baseURL: externalBaseURL ?? 'http://localhost:4340',
     viewport: { width: 1280, height: 820 },
     trace: 'retain-on-failure',
   },
   projects: [{ name: 'chromium', use: { browserName: 'chromium' } }],
-  webServer: {
-    command: 'npm run build && npx astro preview --port 4340',
-    port: 4340,
-    reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
-  },
+  webServer: externalBaseURL
+    ? undefined
+    : {
+        command: 'npm run build && npx astro preview --port 4340',
+        port: 4340,
+        reuseExistingServer: !process.env.CI,
+        timeout: 120_000,
+      },
 });

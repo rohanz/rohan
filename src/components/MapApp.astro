@@ -72,14 +72,14 @@ const tech = [
 ---
 <Layout title={title} description={description} bodyClass="home" initialView={initialView}>
   <header class="top-bar" id="logo-bar">
-    <a id="logo" class="logo" href="/" aria-label="rohan.jk — home">
+    <a id="tt-logo" class="logo" href="/transit" aria-label="rohan.jk — home">
       <img src="/logo.svg" width="34" height="34" alt="" />
       <span class="logo-name">rohan.jk</span>
     </a>
     <span id="bar-section" class="bar-section"></span>
   </header>
 
-  <main id="main" class="map-stage">
+  <main id="tt-main" class="map-stage">
     <!-- Page h1 for the map views (visually hidden — the map poster carries no
          visible page title). The card h3s below are left as-is deliberately:
          re-leveling them risks styling churn, and the h1→h3 skip is an
@@ -153,7 +153,7 @@ const tech = [
             class="platform-card card-project"
             data-card="projects"
             data-tech={p.data.technologies.join('|')}
-            href={`/projects/${p.id}`}
+            href={`/transit/projects/${p.id}`}
             data-astro-prefetch="hover"
           >
             <div class="card-inner">
@@ -227,7 +227,7 @@ const tech = [
 <style is:global>
   /* Poster framing: black title bar on top, the map fills the rest on a thin
      warm-gray mat. Map internals key off --bg = white. */
-  body.home { overflow: hidden; --bg: #ffffff; background: #b3aca0; }
+  html.theme-transit body.home { overflow: hidden; --bg: #ffffff; background: #b3aca0; }
 </style>
 
 <style>
