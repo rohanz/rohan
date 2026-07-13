@@ -3854,7 +3854,10 @@ body.image-lightbox-open {
 
 .qla-roster-memo {
     height: 300px;
-    overflow-y: auto;
+    min-height: 160px;
+    max-height: 75vh;
+    resize: vertical; /* drag the bottom-right grip to read more at once */
+    overflow: auto;   /* resize requires overflow != visible */
     margin-top: 0.5rem;
     scrollbar-width: thin;
     scrollbar-color: var(--border-subtle) transparent;
