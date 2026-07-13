@@ -160,9 +160,20 @@ html.theme-default .homepage-menu {
         transform: none !important;
     }
 
-    html.theme-default .homepage-menu {
+    html.theme-default .homepage-name-shadow {
         opacity: 1 !important;
         transform: none !important;
+    }
+
+    html.theme-default .homepage-logo {
+        color: var(--accent-amber) !important;
+    }
+
+    html.theme-default .section.active,
+    html.theme-default .section.active .stagger-child {
+        opacity: 1 !important;
+        transform: none !important;
+        animation: none !important;
     }
 
     html.theme-default .testimonials-scroll-container {
@@ -410,6 +421,12 @@ html.theme-default .homepage-name-shadow {
 
 html.theme-default .homepage-name-shadow.animate {
     opacity: 1 !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html.theme-default .homepage-name-shadow {
+        opacity: 1 !important;
+    }
 }
 
 html.theme-default .homepage-name.fade-out {

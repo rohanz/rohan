@@ -1,13 +1,6 @@
 /* Phase 2 static-shell adjustments. The generated default.css above remains a
    complete, mechanically scoped copy of the source stylesheet. */
 
-/* The build-rendered shell is already at its settled entrance state. Phase 3
-   will restore the source animation lifecycle around astro:page-load. */
-html.theme-default .section.active,
-html.theme-default .section.active .stagger-child {
-  opacity: 1;
-}
-
 /* Unlike the source SPA, the integrated default tree keeps the theme control
    available on every route, including the homepage. */
 html.theme-default .floating-contact.homepage-active {

@@ -35,6 +35,14 @@ function triggerHomepageAnimation() {
     const logo = document.querySelector('.homepage-logo');
     if (!name || !shadow || !menu || !logo) return;
 
+    if (prefersReducedMotion.matches) {
+        name.classList.add('animate');
+        menu.classList.add('animate');
+        logo.classList.add('animate', 'fade-to-amber');
+        shadow.classList.add('animate');
+        return;
+    }
+
     resetHomepageElements(name, shadow, menu, logo);
 
     name.offsetHeight;
