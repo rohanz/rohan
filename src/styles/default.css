@@ -3445,6 +3445,17 @@ html.theme-default .projects-grid-view {
         max-width: 100%;
     }
 
+    /* PARITY-DEVIATION (deliberate): the original's recent desktop geometry
+       overhaul left the COLUMN's viewport-coordinate margin-left applying on
+       mobile too (274px at 390w — squeezed right column; verified on the live
+       original as well). Zero it so mobile stacks properly; reported upstream
+       to the main-site session. */
+    html.theme-default .project-detail-view.detail-active .detail-content-column {
+        margin-left: 0;
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+
     html.theme-default .detail-header-column {
         position: static;
         width: 100%;
