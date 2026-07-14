@@ -5006,6 +5006,13 @@ html.theme-default .qlf-audit-log::-webkit-scrollbar-thumb:hover {
     html.theme-default #mainContent:has(#about.section.active) .scrolling-testimonials {
         height: calc(100vh - 48px);
     }
+
+    /* The pad trim parks the grid 24px from the top — too high next to the
+       other pages' centred poses. Centre the bento column against the
+       full-height rail instead. */
+    html.theme-default #mainContent:has(#about.section.active) .about-layout {
+        align-items: center;
+    }
 }
 
 /* ============================================================
