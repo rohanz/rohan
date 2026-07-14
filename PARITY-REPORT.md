@@ -1,39 +1,57 @@
-# Phase 5 parity report
+# Final-build parity re-run
 
-Production preview: `http://localhost:4398` (Astro production build, port 4398)
+Production preview: `http://localhost:4510` (Astro production build, branch `port/default-theme`, tracking `origin/astro-site`)
+
+Fresh evidence: `/tmp/parity2/` (135 files, including 30 route captures, 54 visual captures, responsive captures, and JSON measurement dumps)
 
 ## Definition of locally working perfectly
 
 | # | Checklist item | Status | Evidence |
-|---|---|---|---|
-| 1 | Every route renders: 15 default + 15 transit | PASS | All 30 returned HTTP 200. Screenshots: `/tmp/parity/route-*.png` |
-| 1a | Unlisted gating | PASS | Production HTML keeps `quantlab-systems` hidden and excludes it from sitemap/navigation; direct URL returns 200. On the localhost preview, the hostname gate reveals the card with the `unlisted` badge and `data-unlisted` marker. Automated in `e2e/default-theme.spec.ts`. |
-| 2 | All 9 visuals in both site themes at 1280, 1440, 2560 | PASS | 54 locator screenshots: `/tmp/parity/{default,transit}-<visual>-<width>.png` |
-| 2a | Judge played through round 3 | PASS | Verdict and separate score visible: `/tmp/parity/default-judge-round3.png`, `/tmp/parity/transit-judge-round3.png` |
-| 2b | Roster switched through every model | PASS | Every option selected in both themes; non-default final captures: `/tmp/parity/default-roster-nondefault.png`, `/tmp/parity/transit-roster-nondefault.png` |
-| 3 | Audio media readiness | PASS | Default music player and both BQST WAV assets report `readyState >= 1` and finite positive duration; play path is exercised in `e2e/default-theme.spec.ts`. Transit music play/pause has no console/page errors in `e2e/music.spec.ts`. |
-| 3a | Audible hardware output | CONDITIONAL | Headless Chromium is launched muted and cannot prove pressure waves from a real output device. Browser decode/readiness/duration, Web Audio wiring, and play paths pass; final perceptual listening requires a real audio device. |
-| 4 | Per-route metadata | PASS | All 30 routes have non-empty title/description/OG image; canonicals map transit routes to default equivalents; every OG file exists on disk. `/tmp/parity/parity-meta.json` |
-| 4a | Sitemap exact match | PASS | Exactly 14 default/listed routes; no transit routes and no `quantlab-systems`. `/tmp/parity/sitemap-actual.json` |
-| 5 | Accessibility invariants | PASS | Icon-only links have `aria-label`; navigation controls are real anchors/buttons; `#routeAnnouncer` exists and updates after navigation in both themes; visible focus rings measured at 2px default and 3px transit. `/tmp/parity/a11y.json` |
-| 5a | Prefers reduced motion | PASS | Emulated reduced motion leaves no meaningful entrance animations in representative root/grid pages for either theme; default theme toggle skips its transition class. `/tmp/parity/reduced-motion.json` |
-| 6 | Existing transit tests + new default critical paths | PASS | Full production-preview Playwright run, including `@slow`: 70/70 passed in 5.7 minutes. New coverage includes grid aliases/reset, TOC scroll-spy/fixed rail, light/dark persistence/reduced motion, unlisted hostname gate/direct route, judge round 3, roster all models, and media readiness. |
-| 7 | Content/data final sync | PASS | `npm run sync-check`: 14 checks, 0 drift against `/Users/rohan/Documents/progwork/www/rohan-website-redesign`. |
+|---|---|:---:|---|
+| 1 | Every route renders: 15 default + 15 transit | PASS | All 30 returned HTTP 200. Screenshots: `/tmp/parity2/route-*.png`; data: `/tmp/parity2/parity-results.json`. |
+| 1a | Unlisted gating in production and dev | PASS | Production HTML keeps `quantlab-systems` hidden and omits it from navigation/sitemap while both direct theme routes return 200. The localhost gate reveals the badged card. The focused check also passed against the separately running Astro dev server at `localhost:4321` (1/1). |
+| 2 | All 9 visuals in both site themes at 1280, 1440, 2560 | PASS | 54/54 locator screenshots: `/tmp/parity2/{default,transit}-<visual>-<width>.png`. |
+| 2a | Judge played through round 3 | PASS | Verdict, separate score, and `all rounds played` are visible in both themes: `/tmp/parity2/default-judge-round3.png`, `/tmp/parity2/transit-judge-round3.png`. |
+| 2b | Roster switched through every model | PASS | All 9 options selected with populated descriptions/stats in both themes: `/tmp/parity2/{default,transit}-roster-all-models.png`; details in `parity-results.json`. |
+| 3 | Audio media readiness and play paths | PASS | Music audio reached readyState 4, finite 16.02 s duration, and positive playback time; both BQST WAVs reached readyState 1 with 5.33 s duration and the demo reached `is-ready`. `/tmp/parity2/audio.json`. |
+| 3a | Audible hardware output | PASS | **OWNER-VERIFIED** separately on real audio hardware, as directed. This is not conditional. |
+| 4 | Per-route metadata | PASS | All 30 routes have non-empty title/description/OG image; all OG files resolve; transit canonicals map exactly to their default equivalents. `/tmp/parity2/parity-meta.json`. |
+| 4a | Sitemap exact match | PASS | Exactly 14 default/listed routes; no transit URLs and no `quantlab-systems`. `/tmp/parity2/sitemap-actual.json`. |
+| 5 | Accessibility invariants | PASS | Navigation and controls use anchors/buttons or the keyboard-operable lightbox button wrapper; icon-only links are labelled; every route has the live route announcer; both themes show keyboard focus. `/tmp/parity2/a11y.json`. |
+| 5a | Prefers reduced motion | PASS | Representative home/grid pages in both themes expose no meaningful animation/transition under reduced motion; default theme switching skips its transition class. `/tmp/parity2/reduced-motion.json`. |
+| 6 | Existing transit tests + default critical paths, including all `@slow` | PASS | Final production-preview run: 75/75 passed in 6.5 minutes. Coverage includes grid aliases/reset, TOC scroll-spy/fixed rails, themes, unlisted gating, judge, roster, media readiness, rides, paging, fuzz, interruption/history spam, fade leaks, and reduced motion. |
+| 7 | Local content/data sync | PASS | `npm run sync-check`: 14 checks, 0 drift. `quantlab-analyst` is explicitly in sync with `/Users/rohan/Documents/progwork/www/rohan-website-redesign`. |
+| 7a | CI versus remote main-repo master | KNOWN PENDING | The remote-master difference is the known pending upstream push supplied in the re-run brief. It is not local content drift and was not treated as a parity failure. |
+
+## Newer behaviours added since the first report
+
+| Behaviour | Status | Evidence |
+|---|:---:|---|
+| Music geometry, classic == transit | PASS | `tools/measure-music-geometry.mjs` passes all checked geometry at 1280, 1440, 1920, and 2560. No checked delta exceeds its 8 px tolerance. |
+| Music shedding thresholds | PASS | Exact matching thresholds: VU 1366 px, stereo 1567 px, frequency 1969 px. Fresh loads at both sides of every boundary match classic to transit. `/tmp/parity2/music-shedding.json`. |
+| Music/about fit-to-viewport | PASS | Zero document and main-content scroll at 1512×982 and 2560×1400. `/tmp/parity2/viewport-fit.json`. |
+| Article x-position, transit == classic | PASS | Exact 0.00 px delta at 1600, 1760, 1920, 2080, 2240, 2400, and 2560. `/tmp/parity2/article-x.json`. |
+| iPhone 13 nav clearance | PASS | All 15 classic routes clear the fixed mobile nav with no horizontal overflow; all 15 direct transit routes also clear their top header. Screenshots: `/tmp/parity2/mobile-*.png`; data: `/tmp/parity2/mobile.json` and `mobile-transit-routes.json`. Transit platform mode remains deliberately desktop-only. |
+| iPhone 13 article stacking | PASS | Classic and transit Quantlab article columns stay within the viewport and their desktop TOCs are hidden. `/tmp/parity2/mobile-*-stack.png`. |
+| iPhone 13 music row | PASS | Play and waveform share one aligned flex row; platform links are below. `/tmp/parity2/mobile-music-row.png`. |
+| Scrollable laptop TOCs with edge fades | PASS | At 1512×760, default TOC exposes bottom fade then top+bottom fades after scroll; transit marks the overflowing TOC and applies its bottom mask. `/tmp/parity2/{default,transit}-toc-laptop-fade*.png`. |
+| Transit project page-range indicator | PASS | Visible `x – y of N` text changes after paging. `/tmp/parity2/transit-projects-page-range.png`. |
 
 ## Gates
 
 | Gate | Status | Result |
-|---|---|---|
-| `npm test` | PASS | 5 files, 38 tests passed |
-| `PW_BASE_URL=http://localhost:4398 npm run test:e2e:all` | PASS | 70 tests passed, including all `@slow` specs |
-| `npm run build` | PASS | Astro check: 0 errors; static build: 31 pages; sitemap generated |
-| `npm run sync-check` | PASS | 14 checks, 0 drift |
+|---|:---:|---|
+| `npm run build` | PASS | Astro check: 0 errors, 0 warnings, 6 pre-existing hints; 31 static pages built; sitemap generated. |
+| `npm test` | PASS | 5 files, 38/38 tests passed. |
+| `PW_BASE_URL=http://localhost:4510 npm run test:e2e:all` | PASS | 75/75 passed, including every `@slow` spec, against the final rebuilt preview. |
+| Focused Astro-dev unlisted check | PASS | 1/1 passed against `http://localhost:4321`. |
+| `node tools/measure-music-geometry.mjs http://localhost:4510` | PASS | Full 1280/1440/1920/2560 table passed. |
+| `npm run sync-check` | PASS | 14 checks, 0 drift locally. |
 
-## Changes made during parity verification
+## Changes made during this re-run
 
-- Added `e2e/default-theme.spec.ts` with the remaining default-theme and QLA/audio coverage.
-- Added a lifecycle-safe default article TOC scroll-spy with active/parent-active state, reduced-motion-aware scrolling, and teardown.
-- Made default route announcements update on Astro client navigation.
-- Made the default light/dark toggle omit transition state when reduced motion is requested.
+- Fixed the only substantive parity failure found: classic music now uses transit's grid-relative meter sizes, positions, survivor repacking, and measured shed thresholds.
+- Suppressed a 1–2 px fractional About-page overflow track after `fit-scale` has fitted the desktop composition.
+- No redesign or non-trivial behavioural change was made.
 
-Overall: PASS, with only real-device audible-output confirmation marked CONDITIONAL because it is not observable in muted headless Chromium.
+Overall: **PASS**. The only non-pass row is the explicitly known pending CI-versus-remote-master upstream push; local content and data are in sync.
