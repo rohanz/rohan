@@ -18,6 +18,7 @@ import * as fitScale from './fit-scale.js';
 type LifecycleModule = { cleanup: () => void };
 
 let active: LifecycleModule[] = [];
+const activeCleanups: Array<() => void> = [];
 
 function use(module: LifecycleModule, init: () => void) {
   init();
@@ -25,6 +26,13 @@ function use(module: LifecycleModule, init: () => void) {
 }
 
 export function cleanup() {
+  while (activeCleanups.length) {
+    try {
+      activeCleanups.pop()!();
+    } catch {
+      // drain the rest
+    }
+  }
   while (active.length) {
     try {
       active.pop()!.cleanup();
@@ -46,7 +54,23 @@ export function init() {
   // replay the entrance. Initial non-home loads begin from the CSS-hidden state,
   // then take the original left/top transition exactly once here.
   const sidebar = document.getElementById('sidebar');
-  sidebar?.classList.toggle('show', location.pathname !== '/');
+  const onInnerPage = location.pathname !== '/';
+  sidebar?.classList.toggle('show', onInnerPage);
+
+  // Mobile top-nav clearance (ported from the original's updateMobileNavHeight,
+  // dropped in the 3a extraction as SPA machinery): the fixed mobile nav's
+  // height feeds --mobile-nav-height, and .nav-visible on #mainContent applies
+  // it as margin-top so content never starts under the bar.
+  const mainContent = document.getElementById('mainContent');
+  mainContent?.classList.toggle('nav-visible', onInnerPage);
+  const updateMobileNavHeight = () => {
+    if (sidebar && window.innerWidth <= 768) {
+      document.documentElement.style.setProperty('--mobile-nav-height', `${sidebar.offsetHeight}px`);
+    }
+  };
+  updateMobileNavHeight();
+  window.addEventListener('resize', updateMobileNavHeight);
+  activeCleanups.push(() => window.removeEventListener('resize', updateMobileNavHeight));
 
   // Persisting the node also persists its old active-link state, so refresh that
   // small piece of route-owned markup after every swap.

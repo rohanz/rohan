@@ -83,6 +83,25 @@ function displayMusic(tracks) {
 
     musicList.innerHTML = '';
 
+    // Mobile layout (Rohan's call): the platform links sit BELOW the play
+    // button + waveform row; on desktop they stay in the title block. DOM is
+    // moved (CSS order can't cross the nesting boundary), tracked by a media
+    // listener so a resize across the breakpoint re-homes them.
+    const mobileMq = window.matchMedia('(max-width: 768px)');
+    const homeLinks = () => {
+        document.querySelectorAll('#music .music-item').forEach(item => {
+            const links = item.querySelector('.music-links');
+            const player = item.querySelector('.waveform-player');
+            const headerText = item.querySelector('.music-header-text');
+            if (!links) return;
+            if (mobileMq.matches && player && links.previousElementSibling !== player) {
+                player.after(links);
+            } else if (!mobileMq.matches && headerText && links.parentElement !== headerText) {
+                headerText.appendChild(links);
+            }
+        });
+    };
+
     tracks.forEach((track, index) => {
         const links = [];
         if (track.spotifyUrl && track.spotifyUrl !== '#')
@@ -146,6 +165,10 @@ function displayMusic(tracks) {
         const player = itemEl.querySelector('.waveform-player');
         if (player) initWaveformPlayer(player);
     });
+
+    homeLinks();
+    mobileMq.addEventListener('change', homeLinks);
+    cleanups.push(() => mobileMq.removeEventListener('change', homeLinks));
 
     // The static route shell is visible before this client-rendered list exists.
     // Keep both the section and its stagger children at their keyframe from-state

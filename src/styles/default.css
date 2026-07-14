@@ -5155,3 +5155,31 @@ html.theme-default #detailToc.can-down { --toc-fade-bottom: 28px; }
 @media (max-width: 768px) {
     html.theme-default .site-controls .site-switch-link { display: none !important; }
 }
+
+
+/* Mobile music rows (Rohan's call): play button and waveform share one row,
+   aligned; the platform links move below them (DOM re-homed by
+   audio-players.js). */
+@media (max-width: 768px) {
+    html.theme-default .waveform-player {
+        display: flex;
+        align-items: center;
+        gap: 0.9rem;
+    }
+
+    html.theme-default .waveform-player .waveform-meter-group {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    /* The "wave" caption pulled the group centre below the play button's;
+       at phone size the label is clutter anyway. */
+    html.theme-default .waveform-player .waveform-meter-group .meter-label {
+        display: none;
+    }
+
+    html.theme-default .waveform-player + .music-links {
+        justify-content: center;
+        margin-top: 0.75rem;
+    }
+}
