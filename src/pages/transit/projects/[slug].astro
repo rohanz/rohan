@@ -121,8 +121,15 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
        would squeeze below --cpad (laptops), the article slides left toward
        the TOC instead and the two gutters stay symmetric. */
     --gutter: max(var(--cpad), var(--half));
-    --toc-left: calc(var(--rail-w, 0px) + var(--gutter));
-    --article-left: calc(var(--toc-left) + var(--toc-w) + var(--gutter));
+    /* The article's LEFT EDGE tracks the CLASSIC theme's article exactly
+       (Rohan's call 2026-07-14): same centring floor as classic's
+       sidebar(400) + content-pad + toc(210) + 4rem, so the reading column
+       sits at the identical x in both themes at every width — switching
+       modes never shifts the text. The TOC then centres in whatever gutter
+       remains (the symmetric-air rule, preserved by construction). */
+    --classic-floor: calc(clamp(250px, 21vw, 400px) + clamp(1.5rem, 3.5vw, 4rem) + 210px + 4rem);
+    --article-left: max(calc(50vw - 400px), var(--classic-floor), calc(var(--rail-w, 0px) + 2 * var(--cpad) + var(--toc-w)));
+    --toc-left: calc(var(--rail-w, 0px) + (var(--article-left) - var(--rail-w, 0px) - var(--toc-w)) / 2);
   }
   @media (min-width: 1000px) {
     .article-layout { justify-items: start; }
