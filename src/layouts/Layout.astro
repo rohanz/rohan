@@ -1,4 +1,5 @@
 ---
+import Analytics from '../components/Analytics.astro';
 import '@fontsource-variable/inter';
 import interWoff2 from '@fontsource-variable/inter/files/inter-latin-wght-normal.woff2?url';
 import '../styles/global.css';
@@ -69,6 +70,7 @@ const personLd = JSON.stringify({
     <link rel="manifest" href="/site.webmanifest" />
     <script is:inline type="application/ld+json" set:html={personLd} />
     <ClientRouter />
+    <Analytics />
   </head>
   <body class={bodyClass} data-initial-view={initialView}>
     <a href="#tt-main" class="sr-only">Skip to content</a>

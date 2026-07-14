@@ -1,0 +1,48 @@
+---
+// GoatCounter (rohan140.goatcounter.com). no_onload: the ClientRouter swaps
+// pages without full loads, so auto-counting would log only the first page —
+// we count every astro:page-load instead (fires on the initial load too).
+// GoatCounter ignores localhost by itself, so dev browsing never counts.
+// Events: goatcounter.count({ path: 'name', event: true }) — wired for the
+// signals Rohan cares about (theme switches, resume download, music plays).
+---
+<script is:inline>
+  window.goatcounter = { no_onload: true };
+</script>
+<script is:inline data-goatcounter="https://rohan140.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+<script>
+  type GcOpts = { path: string; event?: boolean };
+  declare global {
+    interface Window {
+      goatcounter?: { no_onload?: boolean; count?: (opts: GcOpts) => void };
+    }
+  }
+
+  const count = (opts: GcOpts) => {
+    const gc = window.goatcounter;
+    if (gc && typeof gc.count === 'function') gc.count(opts);
+  };
+
+  document.addEventListener('astro:page-load', () => {
+    count({ path: location.pathname });
+  });
+
+  // Delegated events survive router swaps without rebinding per page.
+  document.addEventListener('click', (e) => {
+    const t = e.target instanceof Element ? e.target : null;
+    if (!t) return;
+    if (t.closest('[data-theme-pref="transit"]')) count({ path: 'switch-to-transit', event: true });
+    else if (t.closest('[data-theme-pref="default"], .transit-theme-switch')) count({ path: 'switch-to-classic', event: true });
+    else if (t.closest('a[href$="resume.pdf"]')) count({ path: 'resume-download', event: true });
+    else if (t.closest('a[download]')) count({ path: 'file-download', event: true });
+  });
+
+  // First play per page visit, per player.
+  document.addEventListener('play', (e) => {
+    const el = e.target;
+    if (el instanceof HTMLMediaElement && !el.dataset.gcCounted) {
+      el.dataset.gcCounted = '1';
+      count({ path: 'audio-play', event: true });
+    }
+  }, true);
+</script>
