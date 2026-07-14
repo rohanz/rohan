@@ -5107,3 +5107,40 @@ html.theme-default .qlf-audit-log::-webkit-scrollbar-thumb:hover {
         overflow-y: hidden;
     }
 }
+
+
+/* Long TOCs (quantlab-analyst on a laptop) used to push the prev/all/next nav
+   below the fold. The nav stays pinned; the TOC scrolls in place with hidden
+   scrollbars, and rows fade at whichever edge has more content — the top item
+   fades OUT as it passes the upper boundary, lower items fade IN (Rohan's
+   spec; same pattern as transit's .toc-inner is-scrollable mask). The fade
+   zones are driven by .can-up/.can-down from article-nav.js. */
+html.theme-default #detailToc {
+    flex: 0 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    scrollbar-width: none;
+    --toc-fade-top: 0px;
+    --toc-fade-bottom: 0px;
+    -webkit-mask-image: linear-gradient(to bottom,
+        transparent 0,
+        black var(--toc-fade-top),
+        black calc(100% - var(--toc-fade-bottom)),
+        transparent 100%);
+    mask-image: linear-gradient(to bottom,
+        transparent 0,
+        black var(--toc-fade-top),
+        black calc(100% - var(--toc-fade-bottom)),
+        transparent 100%);
+}
+
+html.theme-default #detailToc::-webkit-scrollbar { display: none; }
+html.theme-default #detailToc.can-up { --toc-fade-top: 28px; }
+html.theme-default #detailToc.can-down { --toc-fade-bottom: 28px; }
+
+/* No transit entry point on mobile — the transit theme is desktop-only.
+   !important because a stubborn cascade source (unidentified even via CSSOM
+   enumeration; likely the FA/utility sheet) kept computing display:flex. */
+@media (max-width: 768px) {
+    html.theme-default .site-controls .site-switch-link { display: none !important; }
+}
