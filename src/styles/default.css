@@ -4993,59 +4993,21 @@ html.theme-default .qlf-audit-log::-webkit-scrollbar-thumb:hover {
     }
 }
 
-
 /* ============================================================
-   ABOUT — LARGE-SCREEN TIER (Rohan's call 2026-07-14)
-   Same cure as the music page: the 1100px bento island reads tiny on big
-   monitors. Open the wrapper + grid up and scale card chrome/type with it.
-   Placed at end-of-file so it wins the source-order tie against the base
-   rules. ≤1440 untouched.
+   ABOUT — LARGE-SCREEN ZOOM (Rohan's call, v2)
+   Keep the ORIGINAL composition exactly — grid, rail, gaps, type in the
+   same relative positions — and uniformly zoom the whole layout on big
+   screens. (An earlier tier stretched the wrapper instead, which pushed
+   the testimonial rail far right; reverted.) ≤1440 untouched.
    ============================================================ */
 @media (min-width: 1441px) {
     html.theme-default .about-layout {
-        max-width: min(1760px, 78vw);
-    }
-
-    html.theme-default .bento-grid {
-        max-width: min(1320px, 58vw);
-        gap: 1.35rem;
-    }
-
-    html.theme-default .bento-card {
-        padding: 2.5rem;
-        border-radius: 20px;
-    }
-
-    html.theme-default .bento-label {
-        font-size: 1.05em;
-    }
-
-    html.theme-default .bento-bio-text {
-        font-size: 1.18em;
-        line-height: 1.65;
-    }
-
-    html.theme-default .bento-stat-number,
-    html.theme-default .stat-number {
-        font-size: 1.15em;
-    }
-
-    html.theme-default .scrolling-testimonials {
-        font-size: 1.12em;
+        zoom: 1.18;
     }
 }
 
 @media (min-width: 2100px) {
     html.theme-default .about-layout {
-        max-width: 1840px;
-    }
-
-    html.theme-default .bento-grid {
-        max-width: 1400px;
-        gap: 1.5rem;
-    }
-
-    html.theme-default .bento-bio-text {
-        font-size: 1.28em;
+        zoom: 1.38;
     }
 }
