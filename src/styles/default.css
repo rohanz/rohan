@@ -5003,11 +5003,19 @@ html.theme-default .qlf-audit-log::-webkit-scrollbar-thumb:hover {
 @media (min-width: 1441px) {
     html.theme-default .about-layout {
         zoom: 1.18;
+        /* Rohan's anchor: the seam between the tech-stack and resume cards
+           sits at the viewport's horizontal centre. The natural position puts
+           it right of centre, so shift left by the measured delta — floored
+           (clamp) so the layout never slides under the sidebar at the tier's
+           narrow end. */
+        position: relative;
+        left: clamp(-138.14px, calc((920px - 50vw) / 1.18), 0px);
     }
 }
 
 @media (min-width: 2100px) {
     html.theme-default .about-layout {
-        zoom: 1.38;
+        zoom: 1.3;
+        left: clamp(-190.77px, calc((1004px - 50vw) / 1.3), 0px);
     }
 }
