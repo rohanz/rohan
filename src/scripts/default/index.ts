@@ -12,6 +12,7 @@ import * as bqstVisuals from './bqst-visuals.js';
 import * as legacyWidgets from './legacy-widgets.js';
 import * as gridFilter from './grid-filter.js';
 import * as articleNav from './article-nav.js';
+import * as aboutTestimonials from './about-testimonials.js';
 
 type LifecycleModule = { cleanup: () => void };
 
@@ -73,6 +74,7 @@ export function init() {
 
   if (document.getElementById('projectsFilterBar'))
     use(gridFilter, () => gridFilter.init(document));
+    if (document.querySelector('.scrolling-testimonials')) use(aboutTestimonials, () => aboutTestimonials.init());
 
   if (document.querySelector('#detailToc .toc-item'))
     use(articleNav, () => articleNav.init(document));
