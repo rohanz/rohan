@@ -1526,6 +1526,9 @@ html.theme-default .detail-nav-link {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    /* Transit's nav rhythm (Rohan prefers it): 1.2 line-height gives ~35px
+       rows on a ~43px pitch instead of the inherited 1.6 (42px rows). */
+    line-height: 1.2;
     background: none;
     border: none;
     color: var(--text-primary);
