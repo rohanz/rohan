@@ -2140,6 +2140,54 @@ function initQlaRoster(node: HTMLElement, roster: any) {
   memoPane.setAttribute('aria-label', 'The selected model’s memo with verified and violating numbers highlighted');
   body.appendChild(memoPane);
 
+  // Match the original exhibit's full-width height control. Pointer movement
+  // is tracked on window so a drag keeps working after the pointer leaves the
+  // narrow grip; the global listeners are also removed during article swaps.
+  const grip = qlaEl('div', 'qla-roster-grip');
+  grip.setAttribute('role', 'separator');
+  grip.setAttribute('aria-orientation', 'horizontal');
+  grip.setAttribute('aria-label', 'Drag to resize the memo pane; arrow keys also work');
+  grip.setAttribute('tabindex', '0');
+  body.appendChild(grip);
+
+  const MIN_MEMO_HEIGHT = 160;
+  const maxMemoHeight = () => Math.round(window.innerHeight * 0.75);
+  const setMemoHeight = (height: number) => {
+    const next = Math.max(MIN_MEMO_HEIGHT, Math.min(maxMemoHeight(), height));
+    memoPane.style.height = `${next}px`;
+    grip.setAttribute('aria-valuemin', String(MIN_MEMO_HEIGHT));
+    grip.setAttribute('aria-valuemax', String(maxMemoHeight()));
+    grip.setAttribute('aria-valuenow', String(Math.round(next)));
+  };
+  let dragFrom: { y: number; height: number } | null = null;
+  const onDragMove = (event: PointerEvent) => {
+    if (!dragFrom) return;
+    setMemoHeight(dragFrom.height + (event.clientY - dragFrom.y));
+    event.preventDefault();
+  };
+  const onDragEnd = () => {
+    dragFrom = null;
+    grip.classList.remove('is-dragging');
+    window.removeEventListener('pointermove', onDragMove);
+    window.removeEventListener('pointerup', onDragEnd);
+    window.removeEventListener('pointercancel', onDragEnd);
+  };
+  grip.addEventListener('pointerdown', (event) => {
+    dragFrom = { y: event.clientY, height: memoPane.getBoundingClientRect().height };
+    grip.classList.add('is-dragging');
+    window.addEventListener('pointermove', onDragMove);
+    window.addEventListener('pointerup', onDragEnd);
+    window.addEventListener('pointercancel', onDragEnd);
+    event.preventDefault();
+  });
+  grip.addEventListener('keydown', (event) => {
+    if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;
+    setMemoHeight(memoPane.getBoundingClientRect().height + (event.key === 'ArrowDown' ? 40 : -40));
+    event.preventDefault();
+  });
+  setMemoHeight(memoPane.getBoundingClientRect().height || 300);
+  cleanups.push(onDragEnd);
+
   function renderMemo(m: any) {
     memoPane.textContent = '';
     m.segments.forEach((seg: any) => {
@@ -2249,7 +2297,10 @@ function initQlaRoster(node: HTMLElement, roster: any) {
   canvas.addEventListener('click', onCanvasClick);
   select.addEventListener('change', () => selectModel(parseInt(select.value, 10)));
 
-  const onResize = () => requestDraw();
+  const onResize = () => {
+    setMemoHeight(memoPane.getBoundingClientRect().height);
+    requestDraw();
+  };
   window.addEventListener('resize', onResize);
   cleanups.push(() => window.removeEventListener('resize', onResize));
   selectModel(selected);
