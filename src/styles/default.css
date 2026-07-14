@@ -4758,7 +4758,9 @@ html.theme-default .qlf-audit-log::-webkit-scrollbar-thumb:hover {
         --music-nav-gap: calc(3.75vw + 75px);
         --music-row-w: calc(92vw - 372px);
         --music-row-h: clamp(100px, 6.5vw, 132px);
-        --music-play-x: calc(374px - 4.14vw);
+        /* Classic's pill links are wider than transit's plain text links. Keep
+           their established single row clear of the packed visualizer strip. */
+        --music-play-x: max(390px, calc(374px - 4.14vw));
         --music-wave-x: calc(var(--music-play-x) + 130px);
     }
 
@@ -5080,5 +5082,18 @@ html.theme-default .qlf-audit-log::-webkit-scrollbar-thumb:hover {
        full-height rail instead. */
     html.theme-default #mainContent:has(#about.section.active) .about-layout {
         align-items: center;
+    }
+}
+
+
+/* Laptop-width detail TOC: adopt transit's row rhythm (line-height 1.2 vs the
+   inherited 1.6) so multi-line labels don't balloon the rail past the fold —
+   at 1500x950 the TOC ended 876px deep vs transit's 675 with identical fonts.
+   Wide screens keep the original's airier setting. */
+@media (max-width: 1904px) {
+    html.theme-default .toc-item {
+        line-height: 1.2;
+        padding-top: 0.45rem;
+        padding-bottom: 0.45rem;
     }
 }
