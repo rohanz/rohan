@@ -5097,3 +5097,13 @@ html.theme-default .qlf-audit-log::-webkit-scrollbar-thumb:hover {
         padding-bottom: 0.45rem;
     }
 }
+
+
+/* The music page always fits its viewport (fit-scale + height-responsive
+   rhythm), so never offer a scroll surface — macOS "always show scrollbars"
+   was painting a track for sub-pixel overflow. */
+@media (min-width: 1000px) {
+    html.theme-default #mainContent:has(#music.section.active) {
+        overflow-y: hidden;
+    }
+}
