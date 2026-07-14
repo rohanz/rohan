@@ -13,6 +13,7 @@ import * as legacyWidgets from './legacy-widgets.js';
 import * as gridFilter from './grid-filter.js';
 import * as articleNav from './article-nav.js';
 import * as aboutTestimonials from './about-testimonials.js';
+import * as fitScale from './fit-scale.js';
 
 type LifecycleModule = { cleanup: () => void };
 
@@ -75,6 +76,7 @@ export function init() {
   if (document.getElementById('projectsFilterBar'))
     use(gridFilter, () => gridFilter.init(document));
     if (document.querySelector('.scrolling-testimonials')) use(aboutTestimonials, () => aboutTestimonials.init());
+  if (document.querySelector('.about-layout') || document.querySelector('#music .music-list')) use(fitScale, () => fitScale.init());
 
   if (document.querySelector('#detailToc .toc-item'))
     use(articleNav, () => articleNav.init(document));
