@@ -1479,7 +1479,7 @@ function initDemoPlayer() {
     // vectorscope — phosphor persistence
     // Phosphor-persistence fade toward the canvas backdrop (= --w-card / page bg),
     // so old dots decay to the card colour instead of a lighter paper tint.
-    vecCtx.fillStyle = 'rgba(234,231,222,0.3)';
+    vecCtx.fillStyle = 'rgba(239,236,228,0.3)';
     vecCtx.fillRect(0, 0, vecW, vecH);
     vecCtx.strokeStyle = accentRgba(0.08); vecCtx.lineWidth = 1;
     vecCtx.beginPath();
@@ -1564,7 +1564,7 @@ function initDemoPlayer() {
 const QL_WARN = RED; // "cheat"/"survivors"/violations — the projects red
 // Opaque equivalent of ink@0.55 pre-blended onto the card (#eae7de, = page bg):
 // the quant explainer's dots must be solid or the connector line ghosts through.
-const QL_DOT = '#787672';
+const QL_DOT = '#7a7875';
 const qlText = (a: number) => `rgba(${INK_RGB},${a})`;
 
 function qlaEl(tag: string, className?: string, text?: string): HTMLElement {

@@ -306,7 +306,7 @@ html.theme-transit body.page #station-board .board-body { flex: 1 1 auto; }
 }
 
 /* Inner pages sit on the same map land as the homepage world. */
-html.theme-transit body.page { background: #eae7de; }
+html.theme-transit body.page { background: #efece4; }
 
 /* Print: drop the interactive chrome — the nav rail, the faint map backdrop
    behind article pages, the fixed train-line TOC sidebar (it would overlap
