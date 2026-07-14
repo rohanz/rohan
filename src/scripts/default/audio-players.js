@@ -166,9 +166,17 @@ function displayMusic(tracks) {
         if (player) initWaveformPlayer(player);
     });
 
-    homeLinks();
-    mobileMq.addEventListener('change', homeLinks);
-    cleanups.push(() => mobileMq.removeEventListener('change', homeLinks));
+    const homeLinksAndResize = () => {
+        homeLinks();
+        // Re-homing the links reflows the row, changing the wave canvas box —
+        // the players sized their backing stores at init against the OLD box
+        // (stale 56px-attr space; the live renderer then drew high). Kick the
+        // debounced resize path so backings re-base on the settled rects.
+        window.dispatchEvent(new Event('resize'));
+    };
+    homeLinksAndResize();
+    mobileMq.addEventListener('change', homeLinksAndResize);
+    cleanups.push(() => mobileMq.removeEventListener('change', homeLinksAndResize));
 
     // The static route shell is visible before this client-rendered list exists.
     // Keep both the section and its stagger children at their keyframe from-state
