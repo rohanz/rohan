@@ -24,6 +24,10 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: rohanz/rohan
+          # The live site lives on master of THIS repo now (the astro app is a
+          # sibling branch) — without the ref pin, checkout defaults to the
+          # triggering ref and the sync-check compares us against ourselves.
+          ref: master
           path: .sync-source
 
       - name: Check content sync
