@@ -77,14 +77,26 @@ const personLd = JSON.stringify({
     <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
-    <link rel="preconnect" href="https://api.fontshare.com" crossorigin />
-    <link rel="preconnect" href="https://cdn.fontshare.com" crossorigin />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin />
-    <link href="https://api.fontshare.com/v2/css?f[]=chillax@200,300,400,500,600,700&display=block" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=block" rel="stylesheet" />
+    <link rel="stylesheet" href="/fonts/fonts.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="sha384-3B6NwesSXE7YJlcLI9RpRqGf2p/EgVH8BgoKTaUrmKNDkHPStTQ3EyoYjCGXaOTS" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script is:inline>
+      // Apply the saved theme before first paint. Leaving this to theme.js
+      // (end of body) painted the first frames dark, then flipped data-theme
+      // mid-entrance — a full-document restyle that dropped frames while the
+      // sidebar slid in, plus a visible dark flash in light mode. ClientRouter
+      // swaps replace <html> attributes, so re-apply after each swap too.
+      (function () {
+        var apply = function () {
+          try {
+            var saved = localStorage.getItem('default:theme');
+            if (saved) document.documentElement.setAttribute('data-theme', saved);
+          } catch (e) { /* storage unavailable */ }
+        };
+        apply();
+        document.addEventListener('astro:after-swap', apply);
+      })();
+    </script>
     <script is:inline type="application/ld+json" set:html={personLd}></script>
     <ClientRouter />
     <Analytics />
