@@ -251,15 +251,21 @@ html.theme-default .sidebar {
     padding: 7rem 0 3rem 0;
     position: fixed;
     height: 100vh;
-    left: calc(-1 * var(--sidebar-w));
+    left: 0;
     top: 0;
+    /* Slide with transform, not left: `left` invalidates layout every frame
+       of the 0.7s entrance, which repaints the full sidebar at retina while
+       the section's stagger animations run. transform stays on the
+       compositor. (The sidebar has no position: fixed descendants, so the
+       retained transform is safe.) */
+    transform: translateX(calc(-1 * var(--sidebar-w)));
     z-index: var(--z-sidebar);
-    transition: left 0.7s var(--ease-spring);
+    transition: transform 0.7s var(--ease-spring);
     border-right: 1px solid var(--border-subtle);
 }
 
 html.theme-default .sidebar.show {
-    left: 0;
+    transform: translateX(0);
 }
 
 html.theme-default .logo {
@@ -2833,8 +2839,10 @@ html.theme-default .bento-card {
     border: 1px solid var(--border-subtle);
     border-radius: 16px;
     padding: 2rem;
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    /* no backdrop-filter: blur(20px) here - it forced a backdrop readback
+       per card per frame while the marquee/testimonial loops run, freezing
+       the about entrance at retina. The cards sit on a flat background, so
+       the blur had no visible effect. */
     transition: border-color 0.3s ease, transform 0.3s ease;
     overflow: hidden;
 }
@@ -3192,6 +3200,7 @@ html.theme-default .loading-state {
         position: fixed;
         top: -200px;
         left: 0;
+        transform: none;
         padding: 1.25rem 0 0.75rem 0;
         z-index: 1000;
         transition: top 0.7s var(--ease-spring), visibility 0s linear 0.7s;
