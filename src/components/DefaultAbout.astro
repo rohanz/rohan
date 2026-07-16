@@ -6,7 +6,7 @@ const tech = [
   ['fab fa-node-js', 'Node'], ['fab fa-docker', 'Docker'], ['fab fa-git-alt', 'Git'],
   ['fab fa-linux', 'Linux'], ['fas fa-database', 'DuckDB'], ['fas fa-database', 'SQL'],
 ];
-const ticker = 'music production • mixing & mastering • audio engineering • ai agents • data pipelines • cloud infrastructure • web development • ui/ux design • creative coding • soldering • embedded systems • mobile apps • ableton live • ';
+const ticker = 'music production • mixing & mastering • audio engineering • ai agents • llm fine-tuning • quant research • backtesting • trading systems • data pipelines • cloud infrastructure • web development • ui/ux design • creative coding • soldering • embedded systems • mobile apps • ableton live • ';
 const testimonials = [
   ['Rohan was here for me when I was down, and I\'m never gonna forget that. I\'m still down though so he\'s still here.', 'Sidharth M., friend'],
   ['He is the only one who likes the Instagram reels I send.', 'Lin S., friend'],
@@ -24,7 +24,7 @@ const testimonialLoop = Array.from({ length: 16 }, () => testimonials).flat();
 ---
 <div class="about-layout">
   <div class="bento-grid">
-    <div class="bento-card bento-bio">
+    <div class="bento-card bento-bio stagger-child">
       <h3 class="bento-label">bio</h3>
       <p class="bento-bio-text">hi, i'm rohan, a computer engineering student at ntu, singapore. i build end-to-end products with AI, from data pipelines and cloud infrastructure to mobile apps and everything in between. outside of code, i write, produce and record music. feel free to reach out below!</p>
       <div class="bento-bio-links">
@@ -34,15 +34,15 @@ const testimonialLoop = Array.from({ length: 16 }, () => testimonials).flat();
         <a href="https://www.linkedin.com/in/rohan-jk" target="_blank" rel="noopener noreferrer" class="bento-social-link" aria-label="LinkedIn"><i class="fab fa-linkedin-in" aria-hidden="true"></i></a>
       </div>
     </div>
-    <div class="bento-card bento-photo"><img src="/assets/images/profile.webp" alt="Rohan, smiling outdoors" class="bento-photo-img img-fade loaded" /></div>
-    <div class="bento-card bento-stats">
+    <div class="bento-card bento-photo stagger-child"><img src="/assets/images/profile.webp" alt="Rohan, smiling outdoors" class="bento-photo-img img-fade loaded" /></div>
+    <div class="bento-card bento-stats stagger-child">
       <h3 class="bento-label">stats</h3>
       <div class="bento-stats-grid">
         <div class="stat-item"><span class="stat-number">1.3m+</span><span class="stat-desc">streams</span></div>
         <div class="stat-item"><span class="stat-number">8+</span><span class="stat-desc">projects built</span></div>
       </div>
     </div>
-    <div class="bento-card bento-tech">
+    <div class="bento-card bento-tech stagger-child">
       <h3 class="bento-label">tech stack</h3>
       <div class="bento-tech-icons">
         {tech.map(([icon, label]) => <span class="tech-icon" title={label}><i class={icon} aria-hidden="true"></i><span class="tech-label">{label}</span></span>)}
@@ -50,14 +50,14 @@ const testimonialLoop = Array.from({ length: 16 }, () => testimonials).flat();
         <span class="tech-icon" title="Gemini"><svg class="tech-svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M11.04 19.32Q12 21.51 12 24q0-2.49.93-4.68.96-2.19 2.58-3.81t3.81-2.55Q21.51 12 24 12q-2.49 0-4.68-.93a12.3 12.3 0 0 1-3.81-2.58 12.3 12.3 0 0 1-2.58-3.81Q12 2.49 12 0q0 2.49-.96 4.68-.93 2.19-2.55 3.81a12.3 12.3 0 0 1-3.81 2.58Q2.49 12 0 12q2.49 0 4.68.96 2.19.93 3.81 2.55t2.55 3.81" /></svg><span class="tech-label">Gemini</span></span>
       </div>
     </div>
-    <div class="bento-card bento-cv">
+    <div class="bento-card bento-cv stagger-child">
       <h3 class="bento-label">resume</h3>
       <a href="/downloads/resume.pdf" class="cv-download" download="resume.pdf"><i class="fas fa-download" aria-hidden="true"></i> download cv</a>
       <p class="bento-cv-sub">computer engineering @ ntu</p>
     </div>
-    <div class="bento-card bento-marquee"><div class="marquee-track"><span class="marquee-content">{ticker}</span><span class="marquee-content">{ticker}</span></div></div>
+    <div class="bento-card bento-marquee stagger-child"><div class="marquee-track"><span class="marquee-content">{ticker}</span><span class="marquee-content">{ticker}</span></div></div>
   </div>
-  <div class="scrolling-testimonials">
+  <div class="scrolling-testimonials stagger-child">
     <div class="testimonials-scroll-container" style={`animation-duration:${testimonialLoop.length * 4}s`}>
       {testimonialLoop.map(([quote, author]) => <div class="scroll-testimonial"><div class="scroll-quote">“{quote}”</div><div class="scroll-author">— {author}</div></div>)}
     </div>
