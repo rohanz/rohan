@@ -39,6 +39,9 @@ html.theme-default *::after {
     --text-muted: rgba(232, 230, 227, 0.35);
     --sidebar-bg: #0f0f23;
     --shadow-color: rgba(255, 204, 128, 0.15);
+    /* Selected nav link, per theme: light lightens its sidebar brown
+       (#3E2723 -> #8D6E63); dark dims to the site's muted grey. */
+    --nav-active: var(--text-muted);
     --noise-opacity: 0.03;
     --mobile-nav-height: 125px;
     --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
@@ -70,6 +73,7 @@ html.theme-default[data-theme="light"] {
     --sidebar-bg: #3E2723;
     --shadow-color: #D0C4BE;
     --filter-active-text: #FFF8E1;
+    --nav-active: #8D6E63;
     --noise-opacity: 0;
 }
 
@@ -326,11 +330,10 @@ html.theme-default .nav-link {
 }
 
 html.theme-default .nav-link.active {
-    /* var(--accent), not the hardcoded #8D6E63 it carried since the themeless
-       original: that hex IS the light theme's accent, so in dark mode the
-       selected link read as dimmed rather than highlighted. Resolves to the
-       same brown in light and amber in dark. */
-    color: var(--accent);
+    /* Per-theme lightened-sidebar colour (see --nav-active), not the
+       hardcoded #8D6E63 it carried since the themeless original — that hex
+       IS the light value, which read as dimmed brown on the dark sidebar. */
+    color: var(--nav-active);
 }
 
 /* ============================================================
@@ -3261,7 +3264,7 @@ html.theme-default .loading-state {
 
     html.theme-default .nav-link.active {
         font-size: 1rem;
-        color: var(--accent); /* see the desktop .nav-link.active note */
+        color: var(--nav-active); /* see the desktop .nav-link.active note */
         transform: translateY(3px);
     }
 
