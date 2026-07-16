@@ -326,7 +326,11 @@ html.theme-default .nav-link {
 }
 
 html.theme-default .nav-link.active {
-    color: #8D6E63;
+    /* var(--accent), not the hardcoded #8D6E63 it carried since the themeless
+       original: that hex IS the light theme's accent, so in dark mode the
+       selected link read as dimmed rather than highlighted. Resolves to the
+       same brown in light and amber in dark. */
+    color: var(--accent);
 }
 
 /* ============================================================
@@ -3257,7 +3261,7 @@ html.theme-default .loading-state {
 
     html.theme-default .nav-link.active {
         font-size: 1rem;
-        color: #8D6E63;
+        color: var(--accent); /* see the desktop .nav-link.active note */
         transform: translateY(3px);
     }
 
