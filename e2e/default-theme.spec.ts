@@ -13,14 +13,16 @@ test('classic sidebar slides once at the home boundary and persists across inner
     });
   });
 
+  // The slide is transform-driven (left would invalidate layout every
+  // frame of the entrance; see the .sidebar comment in default.css).
   const transitionCount = () => page.evaluate(() =>
-    (window as Window & { __sidebarTransitions?: string[] }).__sidebarTransitions?.filter(name => name === 'left').length ?? 0,
+    (window as Window & { __sidebarTransitions?: string[] }).__sidebarTransitions?.filter(name => name === 'transform').length ?? 0,
   );
 
   await page.goto('/music', { waitUntil: 'networkidle' });
   const sidebar = page.locator('#sidebar');
   await expect.poll(transitionCount).toBe(1);
-  await expect(sidebar).toHaveCSS('left', '0px');
+  await expect(sidebar).toHaveCSS('transform', 'matrix(1, 0, 0, 1, 0, 0)');
   await expect(sidebar).toHaveCSS('transition-duration', '0.7s');
   await expect(sidebar).toHaveCSS('transition-timing-function', 'cubic-bezier(0.32, 0.81, 0.55, 0.97)');
   const hiddenLeft = -(await sidebar.evaluate(element => element.getBoundingClientRect().width));
