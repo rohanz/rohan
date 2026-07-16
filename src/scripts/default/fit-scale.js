@@ -59,8 +59,13 @@ export function init() {
                     const seam = (tech.getBoundingClientRect().right + resume.getBoundingClientRect().left) / 2;
                     let shift = window.innerWidth / 2 - seam;
                     const layoutLeft = aboutLayout.getBoundingClientRect().left;
+                    // offsetWidth, not getBoundingClientRect().right: the
+                    // sidebar slides in via a 0.7s transform transition, so
+                    // a rect read during entrance sees it mostly off-screen
+                    // and the floor lands under its final position. It
+                    // settles at x=0, so its width IS its right edge.
                     const sidebar = document.getElementById('sidebar');
-                    const floor = (sidebar ? sidebar.getBoundingClientRect().right : 0) + 24;
+                    const floor = (sidebar ? sidebar.offsetWidth : 0) + 24;
                     shift = Math.min(0, Math.max(shift, floor - layoutLeft));
                     aboutLayout.style.position = 'relative';
                     aboutLayout.style.left = `${shift / z}px`;

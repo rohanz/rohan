@@ -251,15 +251,18 @@ html.theme-default .sidebar {
     padding: 7rem 0 3rem 0;
     position: fixed;
     height: 100vh;
-    left: calc(-1 * var(--sidebar-w));
+    left: 0;
     top: 0;
+    /* transform, not left: left is a layout property, so its transition
+       reflowed the whole document every frame of the slide-in. */
+    transform: translateX(calc(-100% - 2px));
     z-index: var(--z-sidebar);
-    transition: left 0.7s var(--ease-spring);
+    transition: transform 0.7s var(--ease-spring);
     border-right: 1px solid var(--border-subtle);
 }
 
 html.theme-default .sidebar.show {
-    left: 0;
+    transform: translateX(0);
 }
 
 html.theme-default .logo {
@@ -654,7 +657,7 @@ html.theme-default .section.active {
     display: block;
     opacity: 0;
     transform: translateY(30px);
-    animation: sectionFadeIn 0.7s var(--ease-out-expo) forwards;
+    animation: sectionFadeIn 0.5s var(--ease-out-expo) forwards;
 }
 
 /* /music's player rows are client-rendered. Hold the shared entrance at its
@@ -713,7 +716,7 @@ html.theme-default .section.fade-out {
 html.theme-default .section.active .stagger-child {
     opacity: 0;
     transform: translateY(20px);
-    animation: staggerIn 0.5s var(--ease-out-expo) forwards;
+    animation: staggerIn 0.35s var(--ease-out-expo) forwards;
 }
 
 html.theme-default .section.active .stagger-child:nth-child(1) { animation-delay: 0.05s; }
@@ -721,6 +724,7 @@ html.theme-default .section.active .stagger-child:nth-child(2) { animation-delay
 html.theme-default .section.active .stagger-child:nth-child(3) { animation-delay: 0.15s; }
 html.theme-default .section.active .stagger-child:nth-child(4) { animation-delay: 0.2s; }
 html.theme-default .section.active .stagger-child:nth-child(5) { animation-delay: 0.25s; }
+html.theme-default .section.active .stagger-child:nth-child(6) { animation-delay: 0.3s; }
 
 @keyframes staggerIn {
     to {
@@ -1207,7 +1211,7 @@ html.theme-default #projects.section.active {
        fill-mode: forwards Chrome retains an identity matrix even when the
        keyframe ends at 'none' - which creates a containing block and turns
        the detail rail's position: fixed into absolute. */
-    animation: sectionFadeInFlat 0.7s var(--ease-out-expo) forwards;
+    animation: sectionFadeInFlat 0.5s var(--ease-out-expo) forwards;
     transform: none;
 }
 
@@ -1277,7 +1281,7 @@ html.theme-default .projects-grid.filtering {
 html.theme-default .projects-grid.projects-entering .project-card {
     opacity: 0;
     transform: translateY(20px);
-    animation: staggerIn 0.5s var(--ease-out-expo) forwards;
+    animation: staggerIn 0.35s var(--ease-out-expo) forwards;
 }
 
 /* Project card */
@@ -1520,6 +1524,8 @@ html.theme-default .detail-sidebar-nav {
     flex-direction: column;
     gap: 0.5rem;
     padding-bottom: 2rem;
+    border-top: 1px solid var(--border-subtle);
+    padding-top: 1rem;
 }
 
 html.theme-default .detail-nav-link {
@@ -1544,15 +1550,19 @@ html.theme-default .detail-nav-link {
 }
 
 @media (hover: hover) {
-    html.theme-default .detail-nav-link:hover:not(:disabled) {
+    html.theme-default .detail-nav-link:hover:not(:disabled):not(.is-disabled) {
         color: var(--accent);
         opacity: 1;
     }
 }
 
-html.theme-default .detail-nav-link:disabled {
+/* :disabled only matches form controls; the endpoint prev/next are rendered
+   as spans with .is-disabled, so style both. */
+html.theme-default .detail-nav-link:disabled,
+html.theme-default .detail-nav-link.is-disabled {
     opacity: 0.15;
     cursor: default;
+    pointer-events: none;
 }
 
 html.theme-default .detail-nav-link .nav-arrow {
@@ -3190,20 +3200,21 @@ html.theme-default .loading-state {
         width: 100%;
         height: auto;
         position: fixed;
-        top: -200px;
+        top: 0;
         left: 0;
+        transform: translateY(-100%);
         padding: 1.25rem 0 0.75rem 0;
         z-index: 1000;
-        transition: top 0.7s var(--ease-spring), visibility 0s linear 0.7s;
+        transition: transform 0.7s var(--ease-spring), visibility 0s linear 0.7s;
         visibility: hidden;
         border-right: none;
         border-bottom: 1px solid var(--border-subtle);
     }
 
     html.theme-default .sidebar.show {
-        top: 0;
+        transform: translateY(0);
         visibility: visible;
-        transition: top 0.7s var(--ease-spring), visibility 0s linear 0s;
+        transition: transform 0.7s var(--ease-spring), visibility 0s linear 0s;
     }
 
     html.theme-default .logo {

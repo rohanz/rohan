@@ -111,10 +111,12 @@ function initAsciiGlobe() {
             clearTimeout(asciiResizeTimer);
             asciiResizeTimer = later(resize, 150);
         });
+        // The canvas is fixed at inset: 0, so viewport coords are canvas
+        // coords — no rect read (a per-mousemove getBoundingClientRect
+        // forces a style recalc while entrance animations are running).
         listen(document, 'mousemove', e => {
-            const rect = canvas.getBoundingClientRect();
-            asciiMouseX = e.clientX - rect.left;
-            asciiMouseY = e.clientY - rect.top;
+            asciiMouseX = e.clientX;
+            asciiMouseY = e.clientY;
         });
     }
 
