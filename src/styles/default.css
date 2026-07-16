@@ -40,8 +40,9 @@ html.theme-default *::after {
     --sidebar-bg: #0f0f23;
     --shadow-color: rgba(255, 204, 128, 0.15);
     /* Selected nav link, per theme: light lightens its sidebar brown
-       (#3E2723 -> #8D6E63); dark dims to the site's muted grey. */
-    --nav-active: var(--text-muted);
+       (#3E2723 -> #8D6E63); dark dims to a grey pulled toward the page
+       background's navy hue (H237, desaturated). */
+    --nav-active: #696A7B;
     --noise-opacity: 0.03;
     --mobile-nav-height: 125px;
     --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
