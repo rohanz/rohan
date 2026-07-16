@@ -73,12 +73,15 @@ export function init() {
   activeCleanups.push(() => window.removeEventListener('resize', updateMobileNavHeight));
 
   // Persisting the node also persists its old active-link state, so refresh that
-  // small piece of route-owned markup after every swap.
-  const activeSection = location.pathname === '/music'
+  // small piece of route-owned markup after every swap. Compare without the
+  // trailing slash: GitHub Pages resolves /music -> /music/, so an exact
+  // match stripped .active from every link on the live site.
+  const path = location.pathname.replace(/\/+$/, '') || '/';
+  const activeSection = path === '/music'
     ? 'music'
-    : location.pathname === '/about'
+    : path === '/about'
       ? 'about'
-      : location.pathname.startsWith('/projects')
+      : path.startsWith('/projects')
         ? 'projects'
         : null;
   sidebar?.querySelectorAll<HTMLElement>('.nav-link').forEach((link) => {

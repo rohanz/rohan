@@ -19,8 +19,12 @@ test('classic sidebar slides once at the home boundary and persists across inner
     (window as Window & { __sidebarTransitions?: string[] }).__sidebarTransitions?.filter(name => name === 'transform').length ?? 0,
   );
 
-  await page.goto('/music', { waitUntil: 'networkidle' });
+  // Trailing slash on purpose: GitHub Pages resolves /music -> /music/, and
+  // the active-link matcher once compared pathnames exactly, stripping
+  // .active on the live site while passing against the slashless dev URL.
+  await page.goto('/music/', { waitUntil: 'networkidle' });
   const sidebar = page.locator('#sidebar');
+  await expect(page.locator('.nav-link.active')).toHaveAttribute('data-section', 'music');
   await expect.poll(transitionCount).toBe(1);
   await expect(sidebar).toHaveCSS('transform', 'matrix(1, 0, 0, 1, 0, 0)');
   await expect(sidebar).toHaveCSS('transition-duration', '0.7s');
