@@ -36,6 +36,10 @@ function fitLayout({ el, measureEl, pad, capFor, minZoom, afterFit }) {
 export function init() {
     const aboutLayout = document.querySelector('.about-layout');
     if (aboutLayout) {
+        // The entrance is held (see .about-pending in default.css) until the
+        // first fit lands, so the grid never paints at zoom 1 and resizes.
+        const section = aboutLayout.closest('#about.about-pending');
+        if (section) requestAnimationFrame(() => section.classList.remove('about-pending'));
         const rail = aboutLayout.querySelector('.scrolling-testimonials');
         fitLayout({
             el: aboutLayout,

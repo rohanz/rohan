@@ -147,7 +147,8 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
   }
 
   .article-banner {
-    width: 100%; height: auto; border-radius: var(--radius);
+    /* 3:2 reserves the box pre-load; every banner ships at that ratio. */
+    width: 100%; height: auto; aspect-ratio: 3 / 2; border-radius: var(--radius);
     margin: 0 0 2rem; box-shadow: 0 8px 30px rgba(0,0,0,0.12);
   }
 

@@ -687,6 +687,16 @@ html.theme-default #music.section.active.music-pending .stagger-child {
     animation: none;
 }
 
+/* /about is scaled to the viewport by fit-scale.js AFTER first paint (zoom
+   lands ~60-80ms behind it), so the grid visibly resized mid-entrance. Same
+   remedy as music-pending: hold the entrance's from-state until the first
+   fit has applied, so the bento boxes only ever appear at their final size. */
+html.theme-default #about.section.active.about-pending,
+html.theme-default #about.section.active.about-pending .stagger-child {
+    opacity: 0;
+    animation: none;
+}
+
 html.theme-default .homepage.active {
     display: flex !important;
     opacity: 1 !important;
@@ -1585,9 +1595,12 @@ html.theme-default .detail-nav-link .nav-arrow {
 /* Detail content elements */
 html.theme-default .detail-hero-image {
     /* Transit-style banner (Rohan's call 2026-07-14): full article width at
-       the image's NATURAL ratio — no aspect-ratio box, no cover/contain crop. */
+       the image's NATURAL ratio — no cover/contain crop. All banners ship at
+       exactly 3:2, so declaring it reserves the box before the image loads
+       (the article otherwise jumped down when the banner arrived). */
     width: 100%;
     height: auto;
+    aspect-ratio: 3 / 2;
     border-radius: 8px;
     border: 1px solid var(--border-subtle);
     margin-bottom: 2rem;
