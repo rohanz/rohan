@@ -54,13 +54,13 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
         </div>
         <div class="toc-nav">
           {prev ? (
-            <a class="toc-nav-link toc-nav-prev" href={`/transit/projects/${prev.slug}`} data-astro-prefetch="hover"><span class="nav-arrow">‹</span>prev</a>
+            <a class="toc-nav-link toc-nav-prev" href={`/transit/projects/${prev.slug}`}><span class="nav-arrow">‹</span>prev</a>
           ) : (
             <span class="toc-nav-link toc-nav-prev is-disabled" aria-disabled="true"><span class="nav-arrow">‹</span>prev</span>
           )}
           <a class="toc-nav-link" href="/transit/projects">all projects</a>
           {next ? (
-            <a class="toc-nav-link toc-nav-next" href={`/transit/projects/${next.slug}`} data-astro-prefetch="hover">next<span class="nav-arrow">›</span></a>
+            <a class="toc-nav-link toc-nav-next" href={`/transit/projects/${next.slug}`}>next<span class="nav-arrow">›</span></a>
           ) : (
             <span class="toc-nav-link toc-nav-next is-disabled" aria-disabled="true">next<span class="nav-arrow">›</span></span>
           )}
@@ -77,9 +77,9 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
       <Content />
 
       <nav class="stop-nav" aria-label="project navigation">
-        {prev ? <a class="prev" href={`/transit/projects/${prev.slug}`} data-astro-prefetch="hover">← previous stop<span>{prev.title}</span></a> : <span></span>}
+        {prev ? <a class="prev" href={`/transit/projects/${prev.slug}`}>← previous stop<span>{prev.title}</span></a> : <span></span>}
         <a class="to-line" href="/transit/projects">back to projects</a>
-        {next ? <a class="next" href={`/transit/projects/${next.slug}`} data-astro-prefetch="hover">next stop →<span>{next.title}</span></a> : <span></span>}
+        {next ? <a class="next" href={`/transit/projects/${next.slug}`}>next stop →<span>{next.title}</span></a> : <span></span>}
       </nav>
     </article>
   </div>

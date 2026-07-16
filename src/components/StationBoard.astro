@@ -17,7 +17,7 @@ const dests = NAV_LINES.map((l) => ({
           href="/transit"
           data-terminal
           data-line="map"
-          data-astro-prefetch="hover"
+         
           class="board-link"
           style="--line-hex:var(--ink-strong)"
         >
@@ -31,7 +31,7 @@ const dests = NAV_LINES.map((l) => ({
             href={d.href}
             data-terminal
             data-line={d.id}
-            data-astro-prefetch="hover"
+           
             class="board-link"
             style={`--line-hex:${d.hex}`}
           >

@@ -20,7 +20,10 @@ const listedProjectPaths = new Set(
 export default defineConfig({
   site: 'https://www.rohanjk.xyz',
   output: 'static',
-  prefetch: { prefetchAll: true, defaultStrategy: 'hover' },
+  // viewport, not hover: hover only gives the fetch a click's worth of head
+  // start and never fires on touch — viewport prefetches every visible link
+  // during idle, so navigations land with the HTML already cached.
+  prefetch: { prefetchAll: true, defaultStrategy: 'viewport' },
   markdown: { rehypePlugins: [rehypeRootAssets, rehypeHeadingAnchors] },
   integrations: [
     sitemap({
