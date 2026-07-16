@@ -138,3 +138,11 @@ export function init() {
 
 document.addEventListener('astro:page-load', init);
 document.addEventListener('astro:before-swap', cleanup);
+// Instant navigation feedback: before-preparation fires the moment a router
+// navigation starts, ahead of the network fetch. Fading the current section
+// out immediately means a slow fetch (idle connection re-handshake, expired
+// prefetch cache) plays out behind motion instead of a dead unresponsive
+// beat. The swapped-in body never carries the class, so no cleanup needed.
+document.addEventListener('astro:before-preparation', () => {
+  document.querySelector('.section.active')?.classList.add('fade-out');
+});
