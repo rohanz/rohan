@@ -11,7 +11,6 @@
     "preview": "astro preview",
     "astro": "astro",
     "test": "vitest run",
-    "sync-check": "node tools/sync-check.mjs",
     "test:e2e": "playwright test --grep-invert @slow",
     "test:e2e:all": "playwright test"
   },

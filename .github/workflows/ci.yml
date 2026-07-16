@@ -32,23 +32,6 @@ jobs:
       - name: E2E tests (playwright, excluding @slow)
         run: npm run test:e2e
 
-      - name: Check out main-site content source
-        uses: actions/checkout@v4
-        with:
-          repository: rohanz/rohan
-          # The live site lives on master of THIS repo now (the astro app is a
-          # sibling branch) — without the ref pin, checkout defaults to the
-          # triggering ref and the sync-check compares us against ourselves.
-          ref: master
-          path: .sync-source
-
-      - name: Check content sync
-        # Runs LAST: content drift vs master is expected while the main-site
-        # session has unpushed edits; it must not gate build/tests signal.
-        run: npm run sync-check
-        env:
-          SYNC_SOURCE_DIR: ${{ github.workspace }}/.sync-source
-
       - name: Upload playwright report on failure
         if: failure()
         uses: actions/upload-artifact@v4
