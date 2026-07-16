@@ -44,9 +44,8 @@ function initLightbox(article: HTMLElement) {
   };
 
   const onArticleClick = (e: Event) => {
-    // Static asset-strip logos aren't zoom targets.
     const img = (e.target as HTMLElement).closest('img');
-    if (!img || !article.contains(img) || img.closest('.bqst-asset-card')) return;
+    if (!img || !article.contains(img)) return;
     // A linked image navigates; hijacking it into the lightbox (and
     // preventDefault-ing the link) would break the author's intent.
     if (img.closest('a')) return;
@@ -82,7 +81,7 @@ function initLightbox(article: HTMLElement) {
   // expand" hint pill in the bottom-right — matching the original site.
   const wrapped: HTMLElement[] = [];
   article.querySelectorAll<HTMLImageElement>('img').forEach((img) => {
-    if (img.closest('.bqst-asset-card') || img.closest('.article-zoom')) return;
+    if (img.closest('.article-zoom')) return;
     const box = document.createElement('span');
     box.className = 'article-zoom';
     // Linked images keep the sizing wrap but not the "expand" affordance — the
@@ -176,13 +175,17 @@ function buildRail(toc: HTMLElement): Map<string, SVGCircleElement> {
         slug: a.dataset.target!,
         sub,
         x: sub ? RAIL.h2X + RAIL.jog : RAIL.h2X,
-        y: r.top - innerTop + Math.min(lineH, r.height) / 2,
+        // + scrollTop: rect positions are viewport-relative, so a rebuild
+        // while the list is scrolled would otherwise shift every tick up.
+        y: r.top - innerTop + inner.scrollTop + Math.min(lineH, r.height) / 2,
       };
     })
     .filter((p): p is NonNullable<typeof p> => !!p);
   if (!pts.length) return circleFor;
 
-  const height = Math.ceil(inner.getBoundingClientRect().height);
+  // scrollHeight, not the visible box: a long TOC scrolls, and sizing the
+  // SVG to the visible height clipped the rail and ticks below the fold.
+  const height = Math.ceil(inner.scrollHeight);
   svg.setAttribute('viewBox', `0 0 44 ${height}`);
   svg.setAttribute('width', '44');
   svg.setAttribute('height', String(height));
@@ -271,6 +274,20 @@ function initToc(article: HTMLElement) {
       t.classList.toggle('is-parent', !!parentSlug && t.dataset.target === parentSlug);
     });
     circleFor.forEach((c, s) => c.classList.toggle('is-current', s === slug));
+    // Long TOCs scroll in place: bring the active row into the visible band
+    // so the highlight never hides behind the bottom fade (mirrors the
+    // classic theme's article-nav follow behaviour, same 28px band and 40%
+    // resting position).
+    const inner = toc.querySelector<HTMLElement>('.toc-inner');
+    const row = idx >= 0 ? ticks[idx].closest<HTMLElement>('li') : null;
+    if (inner && row && inner.scrollHeight > inner.clientHeight + 2) {
+      const top = row.offsetTop;
+      const above = top < inner.scrollTop + 28;
+      const below = top + row.offsetHeight > inner.scrollTop + inner.clientHeight - 28;
+      if (above || below) {
+        inner.scrollTo({ top: Math.max(0, top - inner.clientHeight * 0.4), behavior: 'smooth' });
+      }
+    }
   };
 
   // While a click-scroll is in flight, `clickTarget` holds the clicked slug so
