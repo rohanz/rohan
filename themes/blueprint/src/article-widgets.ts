@@ -80,7 +80,7 @@ function initBqstDspLab() {
       return `<span><i style="background:${TEAL}"></i>dry signal</span><span><i style="background:${RED}"></i>cream</span><span><i style="background:${BLUE}"></i>grit</span>`;
     }
     if (type === 'aliasing') {
-      return `<span><i style="background:${TEAL}"></i>audible harmonic</span><span><i style="background:#A5A6A9"></i>harmonic inside 4x processing</span><span><i style="background:${RED}"></i>foldback alias position</span>`;
+      return `<span><i style="background:${BLUE}"></i>audible harmonic</span><span><i style="background:#A5A6A9"></i>harmonic inside 4x processing</span><span><i style="background:${RED}"></i>foldback alias position</span>`;
     }
     return `<span><i style="background:${RED}"></i>cream</span><span><i style="background:${BLUE}"></i>grit</span>`;
   }
@@ -434,7 +434,7 @@ function initBqstDspLab() {
     const displayedMaxFreq = 52000;
     const fundamental = 6000;
     const harmonics = [1, 2, 3, 4, 5, 6, 7, 8];
-    const audibleColor = TEAL;
+    const audibleColor = BLUE; // navy first; grey for the ghost band
     // dropdown-current grey (40% navy over cream): reads as the 'ghost'
     // above-Nyquist content, clearly apart from the teal audible series
     const oversampledColor = '#A5A6A9';

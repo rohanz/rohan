@@ -98,6 +98,7 @@ export function createArticleOverlay(projects, { onNavigate } = {}) {
   overlay.setAttribute('aria-label', 'project article');
   overlay.setAttribute('role', 'dialog');
   overlay.setAttribute('aria-modal', 'true');
+  overlay.tabIndex = -1; // focus target on open (no visible ring)
   overlay.innerHTML = `
     <button class="article-close" type="button" aria-label="close article">×</button>
     <div class="article-sheet">
@@ -249,7 +250,10 @@ export function createArticleOverlay(projects, { onNavigate } = {}) {
         ${projectLink(listedProjects[listedIndex + 1], 'next', 'next')}`
       : '<button class="article-project-link" type="button" data-close>all projects</button>';
     overlay.scrollTo({ top: 0, behavior: 'auto' });
-    closeButton.focus({ preventScroll: true });
+    // Focus the overlay itself, not the close button: programmatic focus on
+    // the button trips Chrome's :focus-visible and paints it inverted on
+    // every open. Tabbing still reaches the button with a real focus style.
+    overlay.focus({ preventScroll: true });
     requestAnimationFrame(updateScrollSpy);
     onNavigate?.(project.slug);
   }

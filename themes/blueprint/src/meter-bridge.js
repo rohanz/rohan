@@ -1041,8 +1041,8 @@ export function buildMeterBridge(songs, { width = 2.9 } = {}) {
     mesh.position.set(x, vuY, FACE_Z);
     rail.add(mesh);
 
-    // channel letter beneath the face, nudged left so the LED fits beside
-    addCaption(label, x - LED_R - 0.004, LABEL_W, lrY);
+    // channel letter centred under its meter face; LED sits just beside
+    addCaption(label, x, LABEL_W, lrY);
 
     // clip LED beside the channel letter
     const ledPlane = makeCanvasPlane(LED_R * 2, LED_R * 2, LED_PX, LED_PX);

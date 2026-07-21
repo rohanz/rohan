@@ -5,6 +5,7 @@
 }
 
 .article-overlay[hidden] { display: none; }
+.article-overlay:focus { outline: none; }
 
 /* Open/close and prev/next swaps all fade. */
 .article-overlay { opacity: 0; transition: opacity 0.22s ease; }
