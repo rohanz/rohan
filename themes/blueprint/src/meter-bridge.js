@@ -132,6 +132,9 @@ function makeCanvasPlane(w, h, cw, ch, scale = 1) {
   ctx.fillRect(0, 0, cw, ch);
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
+  // The bridge face is tilted 13° back — without anisotropy its text blurs
+  // at the grazing angle, worst on 1x-DPR (work laptop) displays.
+  texture.anisotropy = 8;
   const mesh = new THREE.Mesh(
     new THREE.PlaneGeometry(w, h),
     new THREE.MeshBasicMaterial({ map: texture })

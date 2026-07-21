@@ -109,6 +109,12 @@ arbitrary shas — instead revert the commit on astro-site, push, re-run).
   (originfonts.com) — revisit if the site's purpose changes.
 - **Derived content**: the about-page "N+ projects built" stat computes from
   the generated registry (listed projects only) — no manual bump needed.
+- **Resolution story**: horizontal field is held constant below 16:9 (vertical
+  FOV widens, capped at 62° — narrower laptops were cropping the console);
+  renderer pixel ratio is floored at 1.5 so 1x-DPR work laptops aren't soft;
+  every canvas-texture plane needs `texture.anisotropy = 8` (the tilted meter
+  bridge shipped without it and blurred — that's the first thing to check if
+  someone reports blur).
 - **3D canvas gotchas** (bit us repeatedly): coplanar canvas planes z-fight
   (shimmer) — offset stacked planes by ~0.001 in z; canvas planes referencing
   materials before they exist TDZ-crash the whole boot — after any change,

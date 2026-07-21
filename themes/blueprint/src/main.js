@@ -47,7 +47,10 @@ try {
 const app = document.getElementById('app');
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+// Floor the pixel ratio at 1.5: 1x-DPR displays (typical work laptops)
+// looked soft at native resolution — line art is cheap to supersample.
+const pixelRatio = () => Math.min(Math.max(window.devicePixelRatio, 1.5), 2);
+renderer.setPixelRatio(pixelRatio());
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.domElement.setAttribute('aria-hidden', 'true'); // nav + sr summary carry the semantics
 app.appendChild(renderer.domElement);
@@ -64,13 +67,29 @@ scene.background = new THREE.Color(COLORS.cream);
 const HOME_CAM = { pos: new THREE.Vector3(3.0, 12.2, 0.9), look: new THREE.Vector3(3.0, 0, 0.6), up: new THREE.Vector3(0, 0, -1) };
 
 const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.05, 100);
+
+// Scenes are framed for a 16:9 horizontal field. Narrower windows (1440x900,
+// 1280x800 laptops) were cropping the console's right edge, because vertical
+// FOV is fixed and horizontal field shrinks with aspect. Below 16:9, widen
+// the vertical FOV so the HORIZONTAL field stays as authored (capped so very
+// square windows don't fisheye).
+const REF_ASPECT = 16 / 9;
+const REF_TAN = Math.tan(THREE.MathUtils.degToRad(50 / 2)) * REF_ASPECT;
+function syncFov() {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.fov = camera.aspect >= REF_ASPECT
+    ? 50
+    : Math.min(62, THREE.MathUtils.radToDeg(2 * Math.atan(REF_TAN / camera.aspect)));
+  camera.updateProjectionMatrix();
+}
+syncFov();
 camera.position.copy(HOME_CAM.pos);
 camera.up.copy(HOME_CAM.up);
 camera.lookAt(HOME_CAM.look);
 
 window.addEventListener('resize', () => {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
+  syncFov();
+  renderer.setPixelRatio(pixelRatio()); // DPR changes when dragged between monitors
   renderer.setSize(window.innerWidth, window.innerHeight);
   syncLineRes();
 });

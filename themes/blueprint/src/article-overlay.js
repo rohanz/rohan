@@ -192,7 +192,12 @@ export function createArticleOverlay(projects, { onNavigate } = {}) {
       clearTimeout(swapTimer);
       swapTimer = setTimeout(() => {
         renderArticle(project, markdown);
-        overlay.classList.remove('is-swapping');
+        // two rAFs: guarantee the new sheet PAINTS at opacity 0 before the
+        // class comes off — removing it in the render frame let the heavy
+        // widget init eat the whole transition (looked like a pop-in)
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          overlay.classList.remove('is-swapping');
+        }));
       }, 170);
       return;
     }

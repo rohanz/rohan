@@ -10,8 +10,10 @@
 /* Open/close and prev/next swaps all fade. */
 .article-overlay { opacity: 0; transition: opacity 0.22s ease; }
 .article-overlay.is-visible { opacity: 1; }
-.article-sheet { transition: opacity 0.16s ease; }
-.article-overlay.is-swapping .article-sheet { opacity: 0; }
+/* prev/next swap: dip out quickly, breathe back in — the render happens
+   at the midpoint, so the in-leg needs its own longer duration to read */
+.article-sheet { transition: opacity 0.3s ease; }
+.article-overlay.is-swapping .article-sheet { opacity: 0; transition-duration: 0.16s; }
 
 .article-overlay {
   /* Slotted BETWEEN the top and bottom bars so the scrollbar spans the
