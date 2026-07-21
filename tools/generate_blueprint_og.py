@@ -147,18 +147,18 @@ def generic_card():
     dashed_grid(d)
     sheet_chrome(d)
 
-    # centre crimson panel, like the home menu
-    px0, py0, px1, py1 = 330, 190, W - 330, H - 190
+    # centre crimson panel, like the home menu — sized so the type carries
+    px0, py0, px1, py1 = 220, 140, W - 220, H - 140
     d.rectangle([px0, py0, px1, py1], fill=INK)
-    chip = load_font('BeVietnamPro-Bold.woff2', 44)
-    chip_w = d.textlength('rohan.jk', font=chip) + 36
-    cx = px0 + 42
-    cy = py0 + 44
-    d.rectangle([cx, cy, cx + chip_w, cy + 66], fill=CREAM)
-    d.text((cx + 18, cy + 8), 'rohan.jk', font=chip, fill=INK)
-    d.text((cx + chip_w + 22, cy + 10), 'blueprints', font=chip, fill=CREAM)
-    sub = load_font('BeVietnamPro-SemiBold.woff2', 26)
-    d.text((cx, cy + 106), '01 projects · 02 music · 03 about me', font=sub, fill=CREAM)
+    chip = load_font('BeVietnamPro-Bold.woff2', 62)
+    chip_w = d.textlength('rohan.jk', font=chip) + 48
+    cx = px0 + 56
+    cy = py0 + 62
+    d.rectangle([cx, cy, cx + chip_w, cy + 92], fill=CREAM)
+    d.text((cx + 24, cy + 10), 'rohan.jk', font=chip, fill=INK)
+    d.text((cx + chip_w + 30, cy + 12), 'blueprints', font=chip, fill=CREAM)
+    sub = load_font('BeVietnamPro-SemiBold.woff2', 36)
+    d.text((cx, cy + 148), '01 projects · 02 music · 03 about me', font=sub, fill=CREAM)
 
     img.save(OUT / 'blueprint.png', optimize=True)
 
