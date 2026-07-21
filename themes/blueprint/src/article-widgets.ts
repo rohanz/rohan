@@ -80,7 +80,7 @@ function initBqstDspLab() {
       return `<span><i style="background:${TEAL}"></i>dry signal</span><span><i style="background:${RED}"></i>cream</span><span><i style="background:${BLUE}"></i>grit</span>`;
     }
     if (type === 'aliasing') {
-      return `<span><i style="background:${TEAL}"></i>audible harmonic</span><span><i style="background:${BLUE}"></i>harmonic inside 4x processing</span><span><i style="background:${RED}"></i>foldback alias position</span>`;
+      return `<span><i style="background:${TEAL}"></i>audible harmonic</span><span><i style="background:#A5A6A9"></i>harmonic inside 4x processing</span><span><i style="background:${RED}"></i>foldback alias position</span>`;
     }
     return `<span><i style="background:${RED}"></i>cream</span><span><i style="background:${BLUE}"></i>grit</span>`;
   }
@@ -435,7 +435,9 @@ function initBqstDspLab() {
     const fundamental = 6000;
     const harmonics = [1, 2, 3, 4, 5, 6, 7, 8];
     const audibleColor = TEAL;
-    const oversampledColor = BLUE;
+    // dropdown-current grey (40% navy over cream): reads as the 'ghost'
+    // above-Nyquist content, clearly apart from the teal audible series
+    const oversampledColor = '#A5A6A9';
     const aliasColor = RED;
     const plotX = pad.l;
     const plotY = pad.t;
@@ -1907,7 +1909,7 @@ function initQlaGate(node: HTMLElement, fixer: any) {
   body.appendChild(report);
 
   const fixerGrid = qlaEl('div', 'qla-fixer-grid');
-  fixerGrid.appendChild(renderExcerpt(`before: rejected by the gate, ${fixer.violations.length} untraceable numbers`, beforeTokens, badSet, 'qla-mark-bad'));
+  fixerGrid.appendChild(renderExcerpt(`before: rejected, ${fixer.violations.length} untraceable numbers`, beforeTokens, badSet, 'qla-mark-bad'));
   fixerGrid.appendChild(renderExcerpt('after: one pass of the fixer', afterTokens, goodSet, 'qla-mark-good'));
   body.appendChild(fixerGrid);
 }

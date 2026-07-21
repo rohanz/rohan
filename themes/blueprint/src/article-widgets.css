@@ -251,11 +251,7 @@
 }
 
 .article-overlay .bqst-asset-card:nth-child(3) {
-    background: var(--text-secondary);
-}
-
-.article-overlay .bqst-asset-card:nth-child(3) {
-    background: var(--accent);
+    background: var(--bg-primary); /* cream, like the knob cards */
 }
 
 .article-overlay .bqst-asset-card:last-child {
@@ -298,14 +294,7 @@
     letter-spacing: 0.05em;
 }
 
-.article-overlay .bqst-asset-card:nth-child(1) span,
-.article-overlay .bqst-asset-card:nth-child(2) span {
-    color: rgba(255, 248, 225, 0.72);
-}
-
-.article-overlay .bqst-asset-card:nth-child(3) span {
-    color: var(--bg-primary);
-}
+/* all three cards sit on cream now — captions in the dark secondary ink */
 
 /* BQST audio A/B demo */
 .article-overlay .bqst-audio-demo {
@@ -984,7 +973,7 @@
     font-family: 'Be Vietnam Pro', sans-serif;
     font-weight: 700;
     font-size: 0.82rem;
-    color: var(--text-muted);
+    color: var(--accent); /* full ink, like the widget title — was too faint */
     margin-bottom: 0.4rem;
 }
 
