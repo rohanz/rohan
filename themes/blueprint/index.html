@@ -129,6 +129,12 @@
        the fill (the bottom row was merging with the page) without dividers */
     #menu .menu-row:hover { background: #FFF8E1; color: #BE4348;
           box-shadow: inset 3px 0 0 #BE4348, inset -3px 0 0 #BE4348; }
+    /* the last row sits ON the panel's bottom edge: its hover also draws a
+       closing line BELOW the button (outset, so the cream fill keeps its
+       full height) */
+    #menu .menu-row:last-of-type:hover {
+          box-shadow: inset 3px 0 0 #BE4348, inset -3px 0 0 #BE4348,
+                      0 3px 0 #BE4348; }
     #menu .menu-row.soon { opacity: 0.45; cursor: default; }
     #menu .menu-row.soon:hover { background: transparent; color: inherit; }
     #labels { position: fixed; inset: 0; pointer-events: none; z-index: 5; }
