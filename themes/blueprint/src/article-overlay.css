@@ -263,13 +263,13 @@
 
 .article-body h2 {
   margin: 2.8em 0 1em;
-}
-/* first element after the title block: no orphaned lead-in gap */
-.article-body > :first-child { margin-top: 0.3em;
   padding-bottom: 10px;
   border-bottom: 3px double var(--article-ink);
   font-size: clamp(25px, 3vw, 34px);
 }
+
+/* first element after the title block: no orphaned lead-in gap */
+.article-body > :first-child { margin-top: 0.3em; }
 
 .article-body h3 {
   margin: 2.2em 0 0.8em;
