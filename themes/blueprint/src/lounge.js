@@ -430,7 +430,7 @@ function guestBook() {
   drawPage(left, 0, true);
   drawPage(right, 1, false);
 
-  const HOLD = 6, TURN = 0.9;
+  const HOLD = 9, TURN = 0.9;
   let timer = 0;
   let turning = 0;
   function tick(dt) {
