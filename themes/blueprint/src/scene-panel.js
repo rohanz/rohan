@@ -279,6 +279,15 @@ export function buildScenePanel(songs, { onPlay } = {}) {
     );
     top.position.z = BTN_H + 0.0004;
     g.add(top);
+    // single drafted edge: the top rim, so the cap reads at grazing angles
+    {
+      const pts = [];
+      for (let a = 0; a <= 40; a++) {
+        const t = (a / 40) * Math.PI * 2;
+        pts.push(new THREE.Vector3(Math.cos(t) * r, Math.sin(t) * r, BTN_H + 0.0006));
+      }
+      g.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), lineMat));
+    }
     const restZ = SHEET_T / 2;
     g.position.set((cxPx - CANVAS_W / 2) * pxToM, SHEET_H / 2 - cyPx * pxToM, restZ);
     group.add(g);
