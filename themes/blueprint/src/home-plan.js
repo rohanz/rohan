@@ -180,8 +180,9 @@ export function buildHomePlan({ onRoomClick } = {}) {
     wallSegs(3, LIVE_Z0, 3, 2, [[-0.5 - LIVE_Z0, 0.4 - LIVE_Z0]]),
     // live-room back wall
     wallSegs(-3, LIVE_Z0, 3, LIVE_Z0),
-    // shared wall control/live: door gap x -2.25..-1.35, glazing x -0.1..1.9
-    wallSegs(-3, -2, 3, -2, [[0.75, 0.75 + DOOR], [2.9, 4.9]]),
+    // shared wall control/live: door x -2.6..-1.7, then the glazing exactly
+    // where the 3D window sits (FWIN x -1.7..1.7) — they used to disagree
+    wallSegs(-3, -2, 3, -2, [[0.4, 4.7]]),
     // front (south) wall, opening to the study at x -0.45..0.45
     wallSegs(-3, 2, 3, 2, [[2.55, 3.45]]),
   ]);
@@ -189,7 +190,7 @@ export function buildHomePlan({ onRoomClick } = {}) {
   // glazing in the shared wall: thin double line + three ticks (plan
   // convention for a window)
   {
-    const gx0 = -0.1, gx1 = 1.9, gz = -2, off = 0.022;
+    const gx0 = -1.7, gx1 = 1.7, gz = -2, off = 0.022; // matches room.js FWIN
     const v = [];
     v.push(gx0, PLAN_Y, gz - off, gx1, PLAN_Y, gz - off);
     v.push(gx0, PLAN_Y, gz + off, gx1, PLAN_Y, gz + off);
@@ -202,8 +203,9 @@ export function buildHomePlan({ onRoomClick } = {}) {
     group.add(glazing);
   }
 
-  // door swing: shared-wall door opens into the live room, hinge west jamb
-  group.add(doorSwing(-2.25, -2, 0, -Math.PI / 2));
+  // door swing: shared-wall door opens into the live room, hinge west jamb,
+  // leaf abutting the glazing like a door-with-sidelight
+  group.add(doorSwing(-2.6, -2, 0, -Math.PI / 2));
 
   // --- WORKSHOP (phantom, east) --------------------------------------------
   const workshop = makeRoom('workshop');
