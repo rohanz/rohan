@@ -327,6 +327,7 @@ function fadeConstruction(toK, ms = 700) {
 function resolvedView(sceneDef) {
   const source = VIEWS[sceneDef.view];
   return {
+    ...source, // keep per-view tuning (driftScale etc.)
     pos: new THREE.Vector3().fromArray(source.pos).add(sceneDef.origin).toArray(),
     look: new THREE.Vector3().fromArray(source.look).add(sceneDef.origin).toArray(),
   };

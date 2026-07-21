@@ -19,6 +19,7 @@ const easeInOutCubic = (t) =>
 export function createRig(camera, domElement) {
   // --- state -------------------------------------------------------------
   let currentView = null;
+  let currentViewDef = null; // the resolved view object (carries driftScale)
   let enabled = true;
 
   // Base (undrifted) camera pose. Camera actual = base + drift offset.
@@ -53,6 +54,7 @@ export function createRig(camera, domElement) {
     const view = typeof viewName === 'string' ? VIEWS[viewName] : viewName;
     if (!view) return;
     currentView = typeof viewName === 'string' ? viewName : 'SCENE';
+    currentViewDef = view;
 
     // Near-zero durations mean "adopt this pose NOW" — tweening from the
     // internal base (which may be stale, e.g. after an entrance drove the
@@ -113,10 +115,13 @@ export function createRig(camera, domElement) {
     if (_dir.lengthSq() < 1e-6) _dir.set(0, 0, -1);
     _dir.normalize();
     _right.crossVectors(_dir, _up).normalize();
+    // Per-view damping: close-up views (LOUNGE) scale the drift down so the
+    // same mouse move doesn't read as a lurch.
+    const driftScale = currentViewDef?.driftScale ?? 1;
     driftTarget
       .set(0, 0, 0)
-      .addScaledVector(_right, nx * DRIFT_X)
-      .addScaledVector(_up, ny * DRIFT_Y);
+      .addScaledVector(_right, nx * DRIFT_X * driftScale)
+      .addScaledVector(_up, ny * DRIFT_Y * driftScale);
   }
 
   // --- per-frame ---------------------------------------------------------

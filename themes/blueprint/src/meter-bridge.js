@@ -517,6 +517,13 @@ function makeVUFace() {
     ctx.fillStyle = f >= VU_RED_F ? RED : INK;
     ctx.fillText(txt, VU_CX + c * (VU_R + 16), VU_CY + s * (VU_R + 16));
   }
+  // maker's mark under the arc, like the brand name on a real VU face —
+  // part of the static face, so the needle sweeps over it
+  ctx.font = `600 22px Chillax, ${FONT}`;
+  ctx.fillStyle = INK;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('ebr', VU_CX, VU_CY - VU_R + 32);
   return canvas;
 }
 
