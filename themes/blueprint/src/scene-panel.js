@@ -226,7 +226,7 @@ export function buildScenePanel(songs, { onPlay } = {}) {
   // glyph slot the canvas leaves empty. Top face is a small canvas that
   // redraws with the row state (cream disc + maroon glyph, inverting on
   // hover; pause bars while playing). Clicking gives a brief physical press.
-  const BTN_H = 0.005; // shallow — a key cap, not a bollard
+  const BTN_H = 0.011;
   const playButtons = songs.map((_, i) => {
     const cell = rowRect(i);
     const rPx = 21;
