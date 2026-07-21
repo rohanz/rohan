@@ -637,7 +637,7 @@ export function buildConsole(songs, { onStripClick, onVolume, onMono, onDim, onC
       // is always 1px — no good for a hand-drawn stroke): thick round-capped
       // curve from the note's edge up into the CUT/LOOP gap.
       {
-        const AW = 0.24, AH = 0.13;             // world metres
+        const AW = 0.24, AH = 0.19;             // world metres
         const PXM = 2000;                        // canvas px per metre (2x sharp)
         const cw = Math.round(AW * PXM), ch = Math.round(AH * PXM);
         const canvas = document.createElement('canvas');
@@ -645,14 +645,14 @@ export function buildConsole(songs, { onStripClick, onVolume, onMono, onDim, onC
         canvas.height = ch;
         const actx = canvas.getContext('2d');
         // canvas right = local -x, canvas up = local +z (same flip as makeLabel)
-        const centre = { x: mx + 0.1, z: -0.29 };
+        const centre = { x: mx + 0.1, z: -0.262 };
         const px = (x, z) => [
           cw / 2 + (centre.x - x) * PXM,
           ch / 2 + (centre.z - z) * PXM,
         ];
         const [sx, sy] = px(mx + 0.185, -0.317);  // tail, above the note's centre
-        const [qx, qy] = px(mx + 0.16, -0.243);  // bend: rise first, then sweep right
-        const [ex, ey] = px(mx + 0.012, -0.276);  // tip, centred between the button columns
+        const [qx, qy] = px(mx + 0.175, -0.196);  // bend: rise first, then sweep right
+        const [ex, ey] = px(mx + 0.095, -0.19);  // tip, into the MONO/CUT gap
         actx.strokeStyle = COLORS.inkCss;
         actx.lineWidth = 7;
         actx.lineCap = 'round';
