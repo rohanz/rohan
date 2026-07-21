@@ -220,7 +220,7 @@ function buildSheet(project, index) {
   let hovered = false;
 
   function titleLines(text, maxWidth) {
-    for (let size = 25; size >= 14; size--) {
+    for (let size = 36; size >= 14; size--) {
       ctx.font = `600 ${size}px ${FONT}`;
       const lines = [];
       let line = '';
@@ -230,7 +230,8 @@ function buildSheet(project, index) {
         else { if (line) lines.push(line); line = word; }
       }
       if (line) lines.push(line);
-      if (lines.length <= 3) return { lines, size };
+      // big single/double-line titles; three-liners only below 26px
+      if (lines.length <= (size > 26 ? 2 : 3)) return { lines, size };
     }
     return { lines: [text], size: 14 };
   }
@@ -260,11 +261,11 @@ function buildSheet(project, index) {
     ctx.strokeRect(28, 28, W - 56, H - 56);
     ctx.beginPath();
     ctx.moveTo(28, H - 142); ctx.lineTo(W - 28, H - 142);
-    ctx.moveTo(W - 210, H - 142); ctx.lineTo(W - 210, H - 28);
     ctx.stroke();
-    // title cell pops: inverted fill (swaps with the sheet's hover state)
+    // title cell pops: inverted fill spanning the full width — the DWG
+    // number and byline live in the expanded article, not on the card
     ctx.fillStyle = ink;
-    ctx.fillRect(28, H - 142, W - 238, 114);
+    ctx.fillRect(28, H - 142, W - 56, 114);
     ctx.fillStyle = ink;
 
     ctx.font = `600 24px ${FONT}`;
@@ -342,21 +343,14 @@ function buildSheet(project, index) {
       tx += tw + 10;
     }
 
-    const title = titleLines(current.title, 380);
-    const titleSize = title.lines.length > 2 ? title.size : title.size + 6;
+    const title = titleLines(current.title, 560);
+    const titleSize = title.size; // measured at draw size — no overflow bump
     ctx.font = `600 ${titleSize}px ${FONT}`;
     ctx.fillStyle = paper; // cream on the inverted cell
     title.lines.forEach((line2, lineIndex) => {
-      ctx.fillText(line2, 50, H - 104 + lineIndex * (titleSize + 6));
+      ctx.fillText(line2, 50, H - 100 + lineIndex * (titleSize + 6));
     });
     ctx.fillStyle = ink;
-    // right cell: drawing number + byline
-    ctx.font = `500 15px ${FONT}`;
-    ctx.fillText(`DWG ${String(number + 1).padStart(3, '0')}`, W - 190, H - 96);
-    ctx.font = `500 14px ${FONT}`;
-    ctx.globalAlpha = 0.7;
-    ctx.fillText('rohan.jk', W - 190, H - 62);
-    ctx.globalAlpha = 1;
     texture.needsUpdate = true;
   }
   draw();
