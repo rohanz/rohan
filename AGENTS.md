@@ -115,6 +115,13 @@ arbitrary shas — instead revert the commit on astro-site, push, re-run).
   every canvas-texture plane needs `texture.anisotropy = 8` (the tilted meter
   bridge shipped without it and blurred — that's the first thing to check if
   someone reports blur).
+- **Canvas checklist (recurring bug)**: every NEW canvas-texture surface in
+  blueprint must ship with (1) 2x backing store + `ctx.setTransform(2,0,0,2,0,0)`
+  with logical draw coords, (2) `texture.anisotropy = 8`, (3) 800-1000 logical
+  px per world-metre. The meter bridge, VU faces, and the track sheet each
+  shipped at 1x and had to be retrofitted — audit with
+  `grep -n "createElement('canvas')" themes/blueprint/src/*.js` and check each
+  hit before shipping a new surface.
 - **View-transition ghost gotcha**: the classic sidebar slides via a 0.7s CSS
   transition while the router's view transition cross-fades full-page
   snapshots — the old snapshot contained the bar, painting a fading ghost

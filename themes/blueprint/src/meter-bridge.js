@@ -878,9 +878,9 @@ export function buildMeterBridge(songs, { width = 2.9 } = {}) {
   // 1. Cover art square, far left, on the shared visualization row.
   const coverX = -width / 2 + MARGIN + COVER_S / 2;
   const coverCanvas = document.createElement('canvas');
-  coverCanvas.width = coverCanvas.height = 128;
+  coverCanvas.width = coverCanvas.height = 256; // 2x — the placeholder has text
   const coverCtx = coverCanvas.getContext('2d');
-  drawCoverPlaceholder(coverCtx, 128);
+  drawCoverPlaceholder(coverCtx, 256);
   const placeholderTex = new THREE.CanvasTexture(coverCanvas);
   placeholderTex.colorSpace = THREE.SRGBColorSpace;
   const coverMat = new THREE.MeshBasicMaterial({ map: placeholderTex, transparent: true });
@@ -1125,7 +1125,7 @@ export function buildMeterBridge(songs, { width = 2.9 } = {}) {
         counter.texture.needsUpdate = true;
       }
       if (coverMat.map === placeholderTex) {
-        drawCoverPlaceholder(coverCtx, 128);
+        drawCoverPlaceholder(coverCtx, 256);
         placeholderTex.needsUpdate = true;
       }
       for (const vu of vus) {
