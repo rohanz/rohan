@@ -630,32 +630,65 @@ export function buildConsole(songs, { onStripClick, onVolume, onMono, onDim, onC
       return mesh;
     })() : null;
     if (note) {
-      note.position.set(mx - 0.028, 0.003, -0.374); // right edge kisses the arrow tail
+      note.position.set(mx + 0.185, 0.003, -0.34); // open desk left of the cluster
       note.rotation.y = 0.06; // tiny tilt, like a jotted margin note
       face.add(note);
-      // curved arrow: tail at the note's right edge, tip landing just
-      // below the CUT/LOOP labels, pointing up-slope at the buttons. The
-      // head barbs splay around the end tangent so they meet AT the tip.
-      const start = new THREE.Vector3(mx + 0.03, 0.003, -0.372);
-      const ctrl = new THREE.Vector3(mx + 0.1, 0.003, -0.345);
-      const end = new THREE.Vector3(mx + 0.02, 0.003, -0.316);
-      const arc = [];
-      for (let i = 0; i <= 16; i++) {
-        const t = i / 16;
-        const a = start.clone().multiplyScalar((1 - t) * (1 - t));
-        a.addScaledVector(ctrl, 2 * (1 - t) * t);
-        a.addScaledVector(end, t * t);
-        arc.push(a);
+      // curved arrow drawn marker-style on a transparent canvas (THREE.Line
+      // is always 1px — no good for a hand-drawn stroke): thick round-capped
+      // curve from the note's edge up into the CUT/LOOP gap.
+      {
+        const AW = 0.16, AH = 0.12;             // world metres
+        const PXM = 2000;                        // canvas px per metre (2x sharp)
+        const cw = Math.round(AW * PXM), ch = Math.round(AH * PXM);
+        const canvas = document.createElement('canvas');
+        canvas.width = cw;
+        canvas.height = ch;
+        const actx = canvas.getContext('2d');
+        // canvas right = local -x, canvas up = local +z (same flip as makeLabel)
+        const centre = { x: mx + 0.115, z: -0.285 };
+        const px = (x, z) => [
+          cw / 2 + (centre.x - x) * PXM,
+          ch / 2 + (centre.z - z) * PXM,
+        ];
+        const [sx, sy] = px(mx + 0.115, -0.335);  // tail, at the note's edge
+        const [qx, qy] = px(mx + 0.135, -0.26);  // bend, arcing up
+        const [ex, ey] = px(mx + 0.098, -0.262);  // tip, beside MONO/CUT column
+        actx.strokeStyle = COLORS.inkCss;
+        actx.lineWidth = 7;
+        actx.lineCap = 'round';
+        actx.lineJoin = 'round';
+        actx.beginPath();
+        actx.moveTo(sx, sy);
+        actx.quadraticCurveTo(qx, qy, ex, ey);
+        actx.stroke();
+        // arrowhead: two round-capped ticks splayed around the end tangent
+        const tx = ex - qx, ty = ey - qy;
+        const tl = Math.hypot(tx, ty) || 1;
+        const ux = tx / tl, uy = ty / tl;
+        const head = 26;
+        for (const a of [0.5, -0.5]) {
+          const c = Math.cos(a), sn = Math.sin(a);
+          const bx = -(ux * c - uy * sn) * head;
+          const by = -(ux * sn + uy * c) * head;
+          actx.beginPath();
+          actx.moveTo(ex + bx, ey + by);
+          actx.lineTo(ex, ey);
+          actx.stroke();
+        }
+        const tex = new THREE.CanvasTexture(canvas);
+        tex.colorSpace = THREE.SRGBColorSpace;
+        tex.anisotropy = 8;
+        const geo = new THREE.PlaneGeometry(AW, AH);
+        geo.rotateX(-Math.PI / 2);
+        geo.rotateY(Math.PI);
+        const arrow = new THREE.Mesh(
+          geo,
+          new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false })
+        );
+        arrow.renderOrder = 5;
+        arrow.position.set(centre.x, 0.004, centre.z);
+        face.add(arrow);
       }
-      face.add(line(arc));
-      const dir = end.clone().sub(arc[arc.length - 2]).setY(0).normalize();
-      const barb = (ang) => {
-        const v = dir.clone().multiplyScalar(-0.018);
-        const c = Math.cos(ang), sn = Math.sin(ang);
-        return end.clone().add(new THREE.Vector3(v.x * c - v.z * sn, 0, v.x * sn + v.z * c));
-      };
-      face.add(line([barb(0.45), end.clone()]));
-      face.add(line([barb(-0.45), end.clone()]));
     }
   }
 
