@@ -173,8 +173,9 @@ export function buildHomePlan({ onRoomClick } = {}) {
   // --- STUDIO (control room + live room, the real footprints) --------------
   const studio = makeRoom('studio');
   addWalls(studio, [
-    // west wall, full height of both rooms
-    wallSegs(-3, LIVE_Z0, -3, 2),
+    // west wall — gaps align with the west wing's bedroom/bath/store doors
+    // (a door must open in BOTH rooms' walls, not into a solid line)
+    wallSegs(-3, LIVE_Z0, -3, 2, [[1.6, 2.5], [4.0, 4.9], [6.35, 7.25]]),
     // east wall, opening to the entry hall / workshop at z -0.5..0.4
     wallSegs(3, LIVE_Z0, 3, 2, [[-0.5 - LIVE_Z0, 0.4 - LIVE_Z0]]),
     // live-room back wall
@@ -209,8 +210,10 @@ export function buildHomePlan({ onRoomClick } = {}) {
   addWalls(workshop, [
     wallSegs(WORKSHOP.x0, WORKSHOP.z0, WORKSHOP.x0, WORKSHOP.z1,
       [[-0.5 - WORKSHOP.z0, 0.4 - WORKSHOP.z0]]), // west, entry opening
-    wallSegs(WORKSHOP.x1, WORKSHOP.z0, WORKSHOP.x1, WORKSHOP.z1),
-    wallSegs(WORKSHOP.x0, WORKSHOP.z0, WORKSHOP.x1, WORKSHOP.z0),
+    wallSegs(WORKSHOP.x1, WORKSHOP.z0, WORKSHOP.x1, WORKSHOP.z1,
+      [[0.4, 1.3], [3.55, 4.45]]), // east: garage + laundry doors
+    wallSegs(WORKSHOP.x0, WORKSHOP.z0, WORKSHOP.x1, WORKSHOP.z0,
+      [[0.6, 1.5]]), // north: kitchen door
     wallSegs(WORKSHOP.x0, WORKSHOP.z1, WORKSHOP.x1, WORKSHOP.z1),
   ]);
   // door swings into the workshop, hinge at (3.6, -0.5)
@@ -220,12 +223,14 @@ export function buildHomePlan({ onRoomClick } = {}) {
   const study = makeRoom('study');
   addWalls(study, [
     wallSegs(STUDY.x0, STUDY.z0, STUDY.x1, STUDY.z0, [[2.55, 3.45]]), // north
-    wallSegs(STUDY.x0, STUDY.z1, STUDY.x1, STUDY.z1),
+    wallSegs(STUDY.x0, STUDY.z1, STUDY.x1, STUDY.z1, [[2.55, 3.45]]), // balcony door
     wallSegs(STUDY.x0, STUDY.z0, STUDY.x0, STUDY.z1),
     wallSegs(STUDY.x1, STUDY.z0, STUDY.x1, STUDY.z1),
   ]);
   // door swings into the study, hinge at (-0.45, 2.6)
   group.add(doorSwing(-0.45, 2.6, 0, Math.PI / 2));
+  // balcony door, swinging out of the study onto the deck
+  group.add(doorSwing(-0.45, 6.6, 0, Math.PI / 2));
 
   // --- entry-hall connectors (short passage walls between openings) --------
   group.add(segsToLines([
@@ -282,20 +287,22 @@ export function buildHomePlan({ onRoomClick } = {}) {
       ...rectWalls(LAUNDRY, { w: [[0.35, 0.35 + DOOR]] }),
     ], extraMat));
     group.add(doorSwing(4.2, -3, 0, -Math.PI / 2));             // kitchen
-    group.add(doorSwing(-3, -0.8, Math.PI, Math.PI / 2));       // bath
-    group.add(doorSwing(-3, 1.35, Math.PI, Math.PI / 2));       // store
-    group.add(doorSwing(-3, -4.4, Math.PI, Math.PI / 2));       // bedroom
-    group.add(doorSwing(9, -2.6, 0, Math.PI / 2));              // garage
-    group.add(doorSwing(9, 0.55, 0, Math.PI / 2));              // laundry
+    // (hinge at a jamb; closed leaf lies ALONG the wall over the gap; open
+    // leaf swings INTO the room — six of these had the two angles swapped)
+    group.add(doorSwing(-3, -1.4, Math.PI / 2, Math.PI));       // bath
+    group.add(doorSwing(-3, 0.95, Math.PI / 2, Math.PI));       // store
+    group.add(doorSwing(-3, -3.8, Math.PI / 2, Math.PI));       // bedroom
+    group.add(doorSwing(9, -2.6, Math.PI / 2, 0));              // garage
+    group.add(doorSwing(9, 0.55, Math.PI / 2, 0));              // laundry
 
     // east-wing clutter: car outline in the garage, machines in the laundry
     group.add(segsToLines([
-      GARAGE.x0 + 0.55, PLAN_Y, GARAGE.z0 + 0.35, GARAGE.x1 - 0.45, PLAN_Y, GARAGE.z0 + 0.35,
-      GARAGE.x1 - 0.45, PLAN_Y, GARAGE.z0 + 0.35, GARAGE.x1 - 0.45, PLAN_Y, GARAGE.z1 - 0.5,
-      GARAGE.x1 - 0.45, PLAN_Y, GARAGE.z1 - 0.5, GARAGE.x0 + 0.55, PLAN_Y, GARAGE.z1 - 0.5,
-      GARAGE.x0 + 0.55, PLAN_Y, GARAGE.z1 - 0.5, GARAGE.x0 + 0.55, PLAN_Y, GARAGE.z0 + 0.35,
-      GARAGE.x0 + 0.85, PLAN_Y, GARAGE.z0 + 0.35, GARAGE.x0 + 0.85, PLAN_Y, GARAGE.z1 - 0.5,
-      GARAGE.x1 - 0.85, PLAN_Y, GARAGE.z0 + 0.35, GARAGE.x1 - 0.85, PLAN_Y, GARAGE.z1 - 0.5,
+      GARAGE.x0 + 1.05, PLAN_Y, GARAGE.z0 + 0.35, GARAGE.x1 - 0.35, PLAN_Y, GARAGE.z0 + 0.35,
+      GARAGE.x1 - 0.35, PLAN_Y, GARAGE.z0 + 0.35, GARAGE.x1 - 0.35, PLAN_Y, GARAGE.z1 - 0.5,
+      GARAGE.x1 - 0.35, PLAN_Y, GARAGE.z1 - 0.5, GARAGE.x0 + 1.05, PLAN_Y, GARAGE.z1 - 0.5,
+      GARAGE.x0 + 1.05, PLAN_Y, GARAGE.z1 - 0.5, GARAGE.x0 + 1.05, PLAN_Y, GARAGE.z0 + 0.35,
+      GARAGE.x0 + 1.35, PLAN_Y, GARAGE.z0 + 0.35, GARAGE.x0 + 1.35, PLAN_Y, GARAGE.z1 - 0.5,
+      GARAGE.x1 - 0.75, PLAN_Y, GARAGE.z0 + 0.35, GARAGE.x1 - 0.75, PLAN_Y, GARAGE.z1 - 0.5,
     ], faintMat));
     group.add(polyline(arcPoints(LAUNDRY.x1 - 0.5, LAUNDRY.z0 + 0.5, 0.24, 0, Math.PI * 2), faintMat));
     group.add(polyline(arcPoints(LAUNDRY.x1 - 0.5, LAUNDRY.z0 + 1.1, 0.24, 0, Math.PI * 2), faintMat));
@@ -461,12 +468,12 @@ export function buildHomePlan({ onRoomClick } = {}) {
     // games room: pool table with pocket dots
     {
       group.add(segsToLines([
-        4.25, PLAN_Y, 5.15, 5.65, PLAN_Y, 5.15,
-        5.65, PLAN_Y, 5.15, 5.65, PLAN_Y, 5.95,
-        5.65, PLAN_Y, 5.95, 4.25, PLAN_Y, 5.95,
-        4.25, PLAN_Y, 5.95, 4.25, PLAN_Y, 5.15,
+        4.0, PLAN_Y, 5.15, 5.35, PLAN_Y, 5.15,
+        5.35, PLAN_Y, 5.15, 5.35, PLAN_Y, 5.95,
+        5.35, PLAN_Y, 5.95, 4.0, PLAN_Y, 5.95,
+        4.0, PLAN_Y, 5.95, 4.0, PLAN_Y, 5.15,
       ], faintMat));
-      for (const px of [4.32, 4.95, 5.58]) for (const pz of [5.22, 5.88]) {
+      for (const px of [4.07, 4.67, 5.28]) for (const pz of [5.22, 5.88]) {
         group.add(polyline(arcPoints(px, pz, 0.035, 0, Math.PI * 2, 10), faintMat));
       }
     }
