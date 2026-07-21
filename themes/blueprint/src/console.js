@@ -624,22 +624,29 @@ export function buildConsole(songs, { onStripClick, onVolume, onMono, onDim, onC
       note.position.set(mx - 0.02, 0.003, -0.375);
       note.rotation.y = 0.06; // tiny tilt, like a jotted margin note
       face.add(note);
-      // curved arrow from the note up to the CUT/LOOP row, drawn flat
+      // curved arrow: tail at the note's right edge, tip landing just
+      // below the CUT/LOOP labels, pointing up-slope at the buttons. The
+      // head barbs splay around the end tangent so they meet AT the tip.
+      const start = new THREE.Vector3(mx + 0.062, 0.003, -0.372);
+      const ctrl = new THREE.Vector3(mx + 0.118, 0.003, -0.345);
+      const end = new THREE.Vector3(mx + 0.02, 0.003, -0.316);
       const arc = [];
-      for (let i = 0; i <= 14; i++) {
-        const t = i / 14;
-        // quadratic bend: rise from beside the note into the CUT/LOOP gap
-        const x0 = mx + 0.09, z0 = -0.375;
-        const x1 = mx + 0.12, zc = -0.33;
-        const x2 = mx + 0.01, z2 = -0.295;
-        const x = (1 - t) * (1 - t) * x0 + 2 * (1 - t) * t * x1 + t * t * x2;
-        const z = (1 - t) * (1 - t) * z0 + 2 * (1 - t) * t * zc + t * t * z2;
-        arc.push(new THREE.Vector3(x, 0.003, z));
+      for (let i = 0; i <= 16; i++) {
+        const t = i / 16;
+        const a = start.clone().multiplyScalar((1 - t) * (1 - t));
+        a.addScaledVector(ctrl, 2 * (1 - t) * t);
+        a.addScaledVector(end, t * t);
+        arc.push(a);
       }
-      const tip = arc.at(-1);
       face.add(line(arc));
-      face.add(line([tip.clone().add(new THREE.Vector3(-0.004, 0, 0.012)), tip.clone()]));
-      face.add(line([tip.clone().add(new THREE.Vector3(0.012, 0, 0.006)), tip.clone()]));
+      const dir = end.clone().sub(arc[arc.length - 2]).setY(0).normalize();
+      const barb = (ang) => {
+        const v = dir.clone().multiplyScalar(-0.018);
+        const c = Math.cos(ang), sn = Math.sin(ang);
+        return end.clone().add(new THREE.Vector3(v.x * c - v.z * sn, 0, v.x * sn + v.z * c));
+      };
+      face.add(line([barb(0.45), end.clone()]));
+      face.add(line([barb(-0.45), end.clone()]));
     }
   }
 
