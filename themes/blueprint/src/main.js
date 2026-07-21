@@ -487,6 +487,11 @@ renderer.domElement.addEventListener('pointermove', (e) => {
   volDrag = e.clientY;
 });
 renderer.domElement.addEventListener('pointerup', () => { volDrag = null; });
+// MONITOR volume: double-click the knob returns it to its default level.
+renderer.domElement.addEventListener('dblclick', (e) => {
+  if (mode !== 'music' || transitioning || articleReader.isOpen) return;
+  if (consoleKit.getControlUnderRay(eventRay(e)) === 'volume') consoleKit.resetVolume();
+});
 // MONITOR volume: scroll over the knob.
 renderer.domElement.addEventListener('wheel', (e) => {
   if (mode !== 'music' || transitioning || articleReader.isOpen) return;

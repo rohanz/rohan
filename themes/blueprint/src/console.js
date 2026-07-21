@@ -725,6 +725,14 @@ export function buildConsole(songs, { onStripClick, onVolume, onMono, onDim, onC
   applyVolumePointer();
   if (typeof onVolume === 'function') onVolume(volume);
 
+  // Double-click convenience: snap the monitor back to its 80% resting level.
+  function resetVolume() {
+    volume = 0.8;
+    applyVolumePointer();
+    if (typeof onVolume === 'function') onVolume(volume);
+    return volume;
+  }
+
   // Continuous volume: clamp, rotate the pointer, notify the integrator.
   function adjustVolume(delta) {
     volume = Math.min(1, Math.max(0, volume + delta));
@@ -819,6 +827,6 @@ export function buildConsole(songs, { onStripClick, onVolume, onMono, onDim, onC
   return {
     group, setLevel, setActive, tick,
     getStripUnderRay, clickStrip,
-    getControlUnderRay, clickControl, adjustVolume,
+    getControlUnderRay, clickControl, adjustVolume, resetVolume,
   };
 }

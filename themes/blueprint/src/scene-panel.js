@@ -97,37 +97,8 @@ export function buildScenePanel(songs, { onPlay } = {}) {
         ctx.globalAlpha = 0.85;
       }
 
-      // circled glyph — filled disc so it reads as a BUTTON, not a printed
-      // mark: cream disc + maroon glyph at rest, inverting on hover/playing.
-      // A soft offset shadow underneath raises it off the sheet a touch.
-      ctx.save();
-      ctx.globalAlpha = 1;
-      ctx.beginPath();
-      ctx.arc(cx + 2.5, cy + 3.5, r, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(95, 41, 42, 0.35)'; // dark maroon shadow
-      ctx.fill();
-      ctx.beginPath();
-      ctx.arc(cx, cy, r, 0, Math.PI * 2);
-      ctx.fillStyle = isPlaying || isHovered ? maroon : cream;
-      ctx.fill();
-      ctx.lineWidth = 1.5;
-      ctx.strokeStyle = isPlaying ? maroon : cream;
-      ctx.stroke();
-      ctx.fillStyle = isPlaying || isHovered ? cream : maroon;
-      if (isPlaying) {
-        // pause bars
-        ctx.fillRect(cx - 8, cy - 9, 5, 18);
-        ctx.fillRect(cx + 3, cy - 9, 5, 18);
-      } else {
-        // play triangle
-        ctx.beginPath();
-        ctx.moveTo(cx - 5, cy - 9);
-        ctx.lineTo(cx + 9, cy);
-        ctx.lineTo(cx - 5, cy + 9);
-        ctx.closePath();
-        ctx.fill();
-      }
-      ctx.restore();
+      // (the play control is a real raised 3D button — built below — so the
+      // canvas leaves its slot empty)
 
       // title — as authored; state shown by color/glyph only, never bold
       ctx.font = `500 30px ${FONT}`;
@@ -250,6 +221,93 @@ export function buildScenePanel(songs, { onPlay } = {}) {
     hitboxes.push(box);
   });
 
+  // --- raised play buttons --------------------------------------------------
+  // Real shallow cylinders standing proud of the sheet, one per row, in the
+  // glyph slot the canvas leaves empty. Top face is a small canvas that
+  // redraws with the row state (cream disc + maroon glyph, inverting on
+  // hover; pause bars while playing). Clicking gives a brief physical press.
+  const BTN_H = 0.011;
+  const playButtons = songs.map((_, i) => {
+    const cell = rowRect(i);
+    const rPx = 21;
+    const cxPx = cell.x + rPx + 8;
+    const cyPx = cell.y + cell.h / 2;
+    const r = rPx * pxToM;
+    const g = new THREE.Group();
+
+    const topCanvas = document.createElement('canvas');
+    topCanvas.width = topCanvas.height = 128;
+    const tctx = topCanvas.getContext('2d');
+    const topTex = new THREE.CanvasTexture(topCanvas);
+    topTex.colorSpace = THREE.SRGBColorSpace;
+    topTex.anisotropy = 8;
+    const drawTop = () => {
+      const inverted = playing === i || hovered === i;
+      sideMat.color.set(inverted ? COLORS.ink : COLORS.cream); // whole button inverts
+      const bg = inverted ? COLORS.inkCss : COLORS.creamCss;
+      const ink = inverted ? COLORS.creamCss : COLORS.inkCss;
+      tctx.fillStyle = bg;
+      tctx.fillRect(0, 0, 128, 128);
+      tctx.strokeStyle = ink;
+      tctx.lineWidth = 5;
+      tctx.beginPath();
+      tctx.arc(64, 64, 58, 0, Math.PI * 2);
+      tctx.stroke();
+      tctx.fillStyle = ink;
+      if (playing === i) {
+        tctx.fillRect(64 - 22, 64 - 25, 14, 50);
+        tctx.fillRect(64 + 8, 64 - 25, 14, 50);
+      } else {
+        tctx.beginPath();
+        tctx.moveTo(64 - 14, 64 - 25);
+        tctx.lineTo(64 + 26, 64);
+        tctx.lineTo(64 - 14, 64 + 25);
+        tctx.closePath();
+        tctx.fill();
+      }
+      topTex.needsUpdate = true;
+    };
+
+    const sideGeo = new THREE.CylinderGeometry(r, r, BTN_H, 32, 1, true);
+    sideGeo.rotateX(Math.PI / 2);
+    const sideMat = new THREE.MeshBasicMaterial({ color: COLORS.cream, side: THREE.DoubleSide });
+    const side = new THREE.Mesh(sideGeo, sideMat);
+    side.position.z = BTN_H / 2;
+    g.add(side);
+    drawTop(); // after sideMat exists — drawTop tints it with the state
+    const top = new THREE.Mesh(
+      new THREE.CircleGeometry(r, 32),
+      new THREE.MeshBasicMaterial({ map: topTex })
+    );
+    top.position.z = BTN_H + 0.0004;
+    g.add(top);
+    // hidden-line rims, maroon
+    const rim = (z) => {
+      const pts = [];
+      for (let a = 0; a <= 40; a++) {
+        const t = (a / 40) * Math.PI * 2;
+        pts.push(new THREE.Vector3(Math.cos(t) * r, Math.sin(t) * r, z));
+      }
+      return new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), lineMat);
+    };
+    g.add(rim(BTN_H + 0.0006));
+    g.add(rim(0.0006));
+
+    const restZ = SHEET_T / 2;
+    g.position.set((cxPx - CANVAS_W / 2) * pxToM, SHEET_H / 2 - cyPx * pxToM, restZ);
+    group.add(g);
+    let pressTimer = 0;
+    return {
+      drawTop,
+      press() {
+        g.position.z = restZ - BTN_H * 0.55;
+        clearTimeout(pressTimer);
+        pressTimer = setTimeout(() => { g.position.z = restZ; }, 150);
+      },
+    };
+  });
+  const refreshButtons = () => playButtons.forEach((b) => b.drawTop());
+
   function getRowUnderRay(raycaster) {
     const hits = raycaster.intersectObjects(hitboxes, false);
     if (hits.length === 0) return null;
@@ -258,18 +316,21 @@ export function buildScenePanel(songs, { onPlay } = {}) {
 
   // Integrator: call this when a click resolves to a row.
   function playRow(i) {
+    playButtons[i]?.press();
     if (onPlay) onPlay(i);
   }
 
   function setPlaying(iOrNull) {
     playing = iOrNull;
     draw();
+    refreshButtons();
   }
 
   function setHover(iOrNull) {
     if (hovered === iOrNull) return; // debounce — no redraw when unchanged
     hovered = iOrNull;
     draw();
+    refreshButtons();
   }
 
   // The sheet lies on the desk — no idle motion. Kept for API compatibility.

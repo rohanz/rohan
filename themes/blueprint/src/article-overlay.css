@@ -182,7 +182,7 @@
 .article-project-link.disabled { opacity: 0.4; cursor: default; } /* theme inert wash */
 
 .article-title-block {
-  margin-bottom: 24px;
+  margin-bottom: 34px;
   padding: 20px;
   border: 2px solid var(--article-ink);
   box-shadow: inset 0 0 0 8px var(--article-paper), inset 0 0 0 9px var(--article-ink);
@@ -242,7 +242,7 @@
   width: 100%;
   height: auto;
   aspect-ratio: 3 / 2;
-  margin-bottom: 38px;
+  margin-bottom: 24px; /* title block sits right under the drawing */
   border: 2px solid var(--article-ink);
   object-fit: cover;
   box-sizing: border-box;
@@ -263,6 +263,9 @@
 
 .article-body h2 {
   margin: 2.8em 0 1em;
+}
+/* first element after the title block: no orphaned lead-in gap */
+.article-body > :first-child { margin-top: 0.3em;
   padding-bottom: 10px;
   border-bottom: 3px double var(--article-ink);
   font-size: clamp(25px, 3vw, 34px);
@@ -295,7 +298,9 @@
 
 .article-body figure {
   width: 100%;
-  margin: 2em 0;
+  /* extra space AFTER the caption so it reads with ITS image, not the
+     content below */
+  margin: 2em 0 2.7em;
 }
 
 .article-body figure img,
