@@ -78,7 +78,7 @@ function bioSheet() {
     ctx.strokeRect(27, 27, 576, 837);
     ctx.font = `600 25px ${FONT}`;
     ctx.fillStyle = COLORS.accentCss; // scene signage in ink navy
-    ctx.fillText('03 / PERSONAL SPECIFICATION', 48, 74);
+    ctx.fillText('03 / personal specification', 48, 74); // lowercase, like the 01/02 wall signs
     ctx.fillStyle = COLORS.inkCss;
     ctx.beginPath(); ctx.moveTo(48, 94); ctx.lineTo(582, 94); ctx.stroke();
     ctx.font = `700 44px ${FONT}`;
