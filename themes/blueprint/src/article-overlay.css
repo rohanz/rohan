@@ -406,8 +406,13 @@
   padding: 40px;
   background: rgba(255, 248, 225, 0.96);
   cursor: zoom-out;
+  /* fade in/out: display can't animate, so pair opacity with visibility */
+  display: flex;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.22s ease, visibility 0.22s;
 }
-.article-lightbox.is-visible { display: flex; }
+.article-lightbox.is-visible { opacity: 1; visibility: visible; }
 .article-lightbox img {
   max-width: min(1400px, 94vw);
   max-height: 84vh;

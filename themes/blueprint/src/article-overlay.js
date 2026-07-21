@@ -276,14 +276,18 @@ export function createArticleOverlay(projects, { onNavigate } = {}) {
   lightbox.innerHTML = '<img alt=""><div class="article-lightbox-hint">press any key or click to close</div>';
   document.body.appendChild(lightbox);
   const lightboxImg = lightbox.querySelector('img');
+  let lightboxClearTimer = 0;
   function closeLightbox() {
     lightbox.classList.remove('is-visible');
-    lightboxImg.removeAttribute('src');
+    // keep the image through the fade-out, then release it
+    clearTimeout(lightboxClearTimer);
+    lightboxClearTimer = setTimeout(() => lightboxImg.removeAttribute('src'), 240);
   }
   body.addEventListener('click', (event) => {
     const img = event.target.closest('img');
     if (!img || img.closest('a')) return;
     event.preventDefault();
+    clearTimeout(lightboxClearTimer); // reopen within the fade-out keeps its src
     lightboxImg.src = img.currentSrc || img.src;
     lightboxImg.alt = img.alt || '';
     lightbox.classList.add('is-visible');
@@ -293,6 +297,10 @@ export function createArticleOverlay(projects, { onNavigate } = {}) {
     if (!lightbox.classList.contains('is-visible')) return;
     if (event.metaKey || event.ctrlKey) return;
     event.preventDefault();
+    // this keypress belongs to the lightbox alone — without this, the article
+    // overlay's own Escape listener fires on the same event and closes the
+    // article underneath the just-closed image
+    event.stopImmediatePropagation();
     closeLightbox();
   });
 

@@ -97,6 +97,9 @@ html.theme-transit .sign-header-actions {
   margin-left: auto;
 }
 html.theme-transit .top-bar .transit-theme-switch { margin-left: auto; }
+/* top-bar pills are direct children (no flex gap like .sign-header-actions),
+   so the second pill spaces itself — keeps the pair's gap consistent site-wide */
+html.theme-transit .top-bar .blueprint-theme-switch { margin-left: 0.55rem; }
 /* Narrow screens: the absolutely-centered title would collide with the pill —
    phones keep today's layout and use browser back. */
 @media (max-width: 760px) { html.theme-transit .sign-header .sign-back { display: none; } }
