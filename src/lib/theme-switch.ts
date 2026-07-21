@@ -6,7 +6,7 @@ function bindThemePreferenceLinks(): void {
     link.dataset.themePrefBound = '1';
     link.addEventListener('click', () => {
       const preference = link.dataset.themePref;
-      if (preference !== 'default' && preference !== 'transit') return;
+      if (preference !== 'default' && preference !== 'transit' && preference !== 'blueprint') return;
       try {
         localStorage.setItem(THEME_PREF_KEY, preference);
       } catch {

@@ -3,7 +3,7 @@ import Analytics from '../components/Analytics.astro';
 import '../styles/default.css';
 import '../styles/default-phase2.css';
 import { ClientRouter } from 'astro:transitions';
-import { transitPathFor } from '../lib/theme-paths';
+import { blueprintPathFor, transitPathFor } from '../lib/theme-paths';
 
 interface Props {
   title: string;
@@ -28,6 +28,7 @@ const canonical = new URL(canonicalPath, Astro.site).href;
 const ogAbs = new URL(ogImage, Astro.site).href;
 const activeSection = section === 'homepage' ? undefined : section;
 const transitHref = transitPathFor(Astro.url.pathname);
+const blueprintHref = blueprintPathFor(Astro.url.pathname);
 const personLd = JSON.stringify({
   '@context': 'https://schema.org',
   '@type': 'Person',
@@ -126,6 +127,12 @@ const personLd = JSON.stringify({
             <circle cx="25" cy="8" r="2.2"></circle>
           </svg>
           <span>transit mode</span>
+        </a>
+        <a class="site-switch-link" href={blueprintHref} data-theme-pref="blueprint">
+          <svg class="site-switch-glyph" viewBox="0 0 28 16" aria-hidden="true">
+            <path d="M3 13V3h22v10H3Zm7-10v10m8-10v10M3 8h22"></path>
+          </svg>
+          <span>blueprint mode</span>
         </a>
       </nav>
 

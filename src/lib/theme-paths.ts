@@ -7,12 +7,17 @@ function cleanPath(pathname: string): string {
 }
 
 export function transitPathFor(pathname: string): string {
-  const path = cleanPath(pathname);
+  const path = cleanPath(pathname).replace(/^\/blueprint(?=\/|$)/, '') || '/';
   return path === '/' ? '/transit' : `/transit${path}`;
+}
+
+export function blueprintPathFor(pathname: string): string {
+  const path = cleanPath(pathname).replace(/^\/(?:transit|blueprint)(?=\/|$)/, '') || '/';
+  return path === '/' ? '/blueprint' : `/blueprint${path}`;
 }
 
 export function defaultPathFor(pathname: string): string {
   const path = cleanPath(pathname);
-  if (path === '/transit') return '/';
-  return path.replace(/^\/transit(?=\/|$)/, '') || '/';
+  if (path === '/transit' || path === '/blueprint') return '/';
+  return path.replace(/^\/(?:transit|blueprint)(?=\/|$)/, '') || '/';
 }

@@ -12,5 +12,12 @@ export const stripBase = (path) =>
     ? path.slice(BASE.length) || '/'
     : path;
 
-// '/covers/looseends.webp' -> '<base>/covers/looseends.webp'
-export const asset = (path) => import.meta.env.BASE_URL + path.replace(/^\//, '');
+// Shared site assets stay at the domain root; blueprint-only assets live under
+// the Vite mount point.
+export const asset = (path) => {
+  const rootedPath = `/${path.replace(/^\/+/, '')}`;
+  if (['/assets/', '/downloads/', '/docs/'].some((prefix) => rootedPath.startsWith(prefix))) {
+    return rootedPath;
+  }
+  return import.meta.env.BASE_URL + rootedPath.slice(1);
+};

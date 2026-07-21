@@ -1,6 +1,12 @@
 ---
 import DefaultLayout from '../layouts/DefaultLayout.astro';
 ---
+<script is:inline>
+  if (location.pathname.startsWith('/blueprint')) {
+    location.replace('/blueprint/?p=' + encodeURIComponent(location.pathname) + location.hash);
+  }
+</script>
+
 <DefaultLayout
   title="page not found - rohan.jk"
   description="The page you were looking for does not exist."

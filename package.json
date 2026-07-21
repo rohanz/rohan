@@ -7,7 +7,7 @@
   },
   "scripts": {
     "dev": "astro dev",
-    "build": "astro check && astro build",
+    "build": "astro check && astro build && node tools/build-blueprint.mjs",
     "preview": "astro preview",
     "astro": "astro",
     "test": "vitest run",

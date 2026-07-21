@@ -3309,7 +3309,7 @@ function initGlossary(article: HTMLElement) {
   if (touchLike) {
     const onTap = (event: Event) => {
       const term = (event.target as HTMLElement).closest<HTMLElement>('.gloss-term');
-      if (!article.contains(term)) {
+      if (!term || !article.contains(term)) {
         hide();
         return;
       }

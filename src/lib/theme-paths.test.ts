@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { defaultPathFor, transitPathFor } from './theme-paths';
+import { blueprintPathFor, defaultPathFor, transitPathFor } from './theme-paths';
 
 describe('theme route mapping', () => {
   it.each([
@@ -8,6 +8,8 @@ describe('theme route mapping', () => {
     ['/projects', '/transit/projects'],
     ['/projects/careersphere', '/transit/projects/careersphere'],
     ['/about/', '/transit/about'],
+    ['/blueprint', '/transit'],
+    ['/blueprint/projects/careersphere', '/transit/projects/careersphere'],
   ])('maps default %s to transit %s', (from, to) => {
     expect(transitPathFor(from)).toBe(to);
   });
@@ -18,7 +20,20 @@ describe('theme route mapping', () => {
     ['/transit/projects', '/projects'],
     ['/transit/projects/careersphere', '/projects/careersphere'],
     ['/transit/about/', '/about'],
+    ['/blueprint', '/'],
+    ['/blueprint/projects/careersphere', '/projects/careersphere'],
   ])('maps transit %s to default %s', (from, to) => {
     expect(defaultPathFor(from)).toBe(to);
+  });
+
+  it.each([
+    ['/', '/blueprint'],
+    ['/music', '/blueprint/music'],
+    ['/projects/careersphere', '/blueprint/projects/careersphere'],
+    ['/transit', '/blueprint'],
+    ['/transit/about/', '/blueprint/about'],
+    ['/blueprint/projects', '/blueprint/projects'],
+  ])('maps %s to blueprint %s', (from, to) => {
+    expect(blueprintPathFor(from)).toBe(to);
   });
 });
