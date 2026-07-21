@@ -593,7 +593,7 @@ export function buildConsole(songs, { onStripClick, onVolume, onMono, onDim, onC
       const pad = 8 * SS;
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
-      const font = `600 ${capPx}px Caveat, cursive`;
+      const font = `400 ${capPx}px Winkle, cursive`;
       ctx.font = font;
       const text = 'try these!';
       const w = Math.ceil(ctx.measureText(text).width * 1.4) + pad * 2;
@@ -612,7 +612,7 @@ export function buildConsole(songs, { onStripClick, onVolume, onMono, onDim, onC
       };
       const texture = new THREE.CanvasTexture(canvas);
       if (document.fonts?.load) {
-        document.fonts.load(`600 26px Caveat`).then(drawNote).catch(() => {});
+        document.fonts.load(`400 26px Winkle`).then(drawNote).catch(() => {});
       }
       texture.colorSpace = THREE.SRGBColorSpace;
       texture.anisotropy = 8;
@@ -630,7 +630,7 @@ export function buildConsole(songs, { onStripClick, onVolume, onMono, onDim, onC
       return mesh;
     })() : null;
     if (note) {
-      note.position.set(mx - 0.055, 0.003, -0.375);
+      note.position.set(mx - 0.028, 0.003, -0.374); // right edge kisses the arrow tail
       note.rotation.y = 0.06; // tiny tilt, like a jotted margin note
       face.add(note);
       // curved arrow: tail at the note's right edge, tip landing just
