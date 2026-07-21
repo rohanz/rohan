@@ -125,12 +125,10 @@
           color: inherit; text-decoration: none; }
     #menu .menu-row span { font-size: 12px; letter-spacing: 0.12em;
           text-transform: uppercase; opacity: 0.65; }
-    /* hairline between rows, matching the header rule */
-    #menu .menu-row + .menu-row { border-top: 1px solid rgba(255, 248, 225, 0.45); }
-    /* inset keyline keeps a cream-filled row reading as INSIDE the panel —
-       without it the bottom row's hover merged with the page background */
+    /* hover: cream fill flanked by crimson keylines left + right — contains
+       the fill (the bottom row was merging with the page) without dividers */
     #menu .menu-row:hover { background: #FFF8E1; color: #BE4348;
-          box-shadow: inset 0 0 0 2px #BE4348; }
+          box-shadow: inset 3px 0 0 #BE4348, inset -3px 0 0 #BE4348; }
     #menu .menu-row.soon { opacity: 0.45; cursor: default; }
     #menu .menu-row.soon:hover { background: transparent; color: inherit; }
     #labels { position: fixed; inset: 0; pointer-events: none; z-index: 5; }
