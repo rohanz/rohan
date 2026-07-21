@@ -105,7 +105,6 @@ async function syncProjectContent() {
     const { frontmatter, body } = splitMarkdown(await readFile(file, 'utf8'), file);
     await writeFile(path.join(articlesDir, name), body);
 
-    if (frontmatter.unlisted === true) continue;
     projects.push({
       title: requireField(frontmatter, 'title', file),
       slug,
@@ -113,6 +112,7 @@ async function syncProjectContent() {
       tech: requireField(frontmatter, 'technologies', file),
       image: requireField(frontmatter, 'image', file),
       order: requireField(frontmatter, 'order', file),
+      ...(frontmatter.unlisted === true ? { unlisted: true } : {}),
     });
   }
 

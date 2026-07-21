@@ -160,7 +160,8 @@ function wallSign(text, worldH = 0.22) {
   liveRoom.group.add(sign);
 }
 
-const workshop = buildWorkshop(PROJECTS);
+const LISTED_PROJECTS = PROJECTS.filter((project) => !project.unlisted);
+const workshop = buildWorkshop(LISTED_PROJECTS);
 scene.add(workshop.group);
 const articleReader = createArticleOverlay(PROJECTS, { onNavigate: (slug) => syncUrl(slug) });
 {

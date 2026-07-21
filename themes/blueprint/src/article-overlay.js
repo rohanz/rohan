@@ -6,6 +6,7 @@ import './article-widgets.css';
 
 import quantlabAnalyst from './content/articles/quantlab-analyst.md?raw';
 import quantlabResearch from './content/articles/quantlab-research.md?raw';
+import quantlabSystems from './content/articles/quantlab-systems.md?raw';
 import careersphere from './content/articles/careersphere.md?raw';
 import bqst from './content/articles/bqst.md?raw';
 import yourcast from './content/articles/yourcast.md?raw';
@@ -18,6 +19,7 @@ import thisWebsite from './content/articles/this-website.md?raw';
 const ARTICLES = {
   'quantlab-analyst': quantlabAnalyst,
   'quantlab-research': quantlabResearch,
+  'quantlab-systems': quantlabSystems,
   careersphere,
   bqst,
   yourcast,
@@ -89,6 +91,7 @@ function captionImages(body) {
 }
 
 export function createArticleOverlay(projects, { onNavigate } = {}) {
+  const listedProjects = projects.filter((project) => !project.unlisted);
   const overlay = document.createElement('section');
   overlay.className = 'article-overlay';
   overlay.hidden = true;
@@ -201,12 +204,13 @@ export function createArticleOverlay(projects, { onNavigate } = {}) {
 
   function renderArticle(project, markdown) {
     cleanupWidgets();
-    const index = projects.indexOf(project);
+    const listedIndex = listedProjects.indexOf(project);
+    const isListed = listedIndex !== -1;
     activeProject = project;
     document.body.classList.add('article-open');
 
     titleBlock.innerHTML = `
-      <div class="article-dwg">SCENE01 / DWG ${String(index + 1).padStart(3, '0')}</div>
+      <div class="article-dwg">${isListed ? `SCENE01 / DWG ${String(listedIndex + 1).padStart(3, '0')}` : 'SCENE01'}</div>
       <h1>${project.title}</h1>
       ${project.summary ? `<p>${project.summary}</p>` : ''}
       <div class="article-meta">
@@ -238,10 +242,12 @@ export function createArticleOverlay(projects, { onNavigate } = {}) {
     captionImages(body);
     initWidgets(body);
     buildToc();
-    projectNav.innerHTML = `
-      ${projectLink(projects[index - 1], 'prev', 'prev')}
-      <button class="article-project-link" type="button" data-close>all projects</button>
-      ${projectLink(projects[index + 1], 'next', 'next')}`;
+    projectNav.classList.toggle('is-unlisted', !isListed);
+    projectNav.innerHTML = isListed
+      ? `${projectLink(listedProjects[listedIndex - 1], 'prev', 'prev')}
+        <button class="article-project-link" type="button" data-close>all projects</button>
+        ${projectLink(listedProjects[listedIndex + 1], 'next', 'next')}`
+      : '<button class="article-project-link" type="button" data-close>all projects</button>';
     overlay.scrollTo({ top: 0, behavior: 'auto' });
     closeButton.focus({ preventScroll: true });
     requestAnimationFrame(updateScrollSpy);

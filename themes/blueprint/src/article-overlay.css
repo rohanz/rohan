@@ -354,6 +354,7 @@
   .article-rail { position: relative; display: block; max-height: none; min-height: 0; margin-bottom: 30px; }
   .article-toc { max-height: 220px; border-bottom: 1px solid rgba(199, 75, 80, 0.45); }
   .article-project-nav { grid-template-columns: repeat(3, 1fr); margin-top: 12px; border-top: 0; }
+  .article-project-nav.is-unlisted { grid-template-columns: 1fr; }
   .article-project-link { text-align: center; }
   .article-title-block { margin-top: 58px; }
   .article-meta { align-items: flex-start; flex-direction: column; }
