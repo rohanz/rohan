@@ -239,10 +239,28 @@ function buildSheet(project, index) {
   // Mutable content: pagination re-points each sheet at a new project.
   let current = project;
   let number = index;
+  let bannerFade = 1; // 0..1 — crossfade from the X study into the banner
+  let fadeRaf = 0;
+  function startBannerFade() {
+    cancelAnimationFrame(fadeRaf);
+    const t0 = performance.now();
+    bannerFade = 0;
+    const step = (now) => {
+      bannerFade = Math.min(1, (now - t0) / 420);
+      draw();
+      if (bannerFade < 1) fadeRaf = requestAnimationFrame(step);
+    };
+    fadeRaf = requestAnimationFrame(step);
+  }
   function requestImage() {
     if (current?.image) {
       const target = current;
-      loadImage(current.image, () => { if (current === target) draw(); });
+      const cached = imageCache.get(current.image)?.ready;
+      loadImage(current.image, () => {
+        if (current !== target) return;
+        if (cached) { bannerFade = 1; draw(); } // instant when already in cache
+        else startBannerFade(); // fresh arrival: fade in over the placeholder
+      });
     }
   }
   function draw() {
@@ -275,7 +293,17 @@ function buildSheet(project, index) {
     // construction study stands in until it arrives.
     const px = 50, py = 88, pw = 590, ph = 148;
     const entry = current.image ? imageCache.get(current.image) : null;
+    const drawPlaceholder = (alpha) => {
+      ctx.globalAlpha = 0.55 * alpha;
+      ctx.strokeRect(px, py, pw, ph);
+      ctx.beginPath();
+      ctx.moveTo(px, py + ph); ctx.lineTo(px + pw, py);
+      ctx.moveTo(px, py); ctx.lineTo(px + pw, py + ph);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    };
     if (entry?.ready) {
+      if (bannerFade < 1) drawPlaceholder(1 - bannerFade);
       const img = entry.img;
       const scale = Math.max(pw / img.width, ph / img.height);
       const sw = pw / scale, sh = ph / scale;
@@ -283,19 +311,14 @@ function buildSheet(project, index) {
       ctx.beginPath();
       ctx.rect(px, py, pw, ph);
       ctx.clip();
+      ctx.globalAlpha = bannerFade;
       ctx.drawImage(img, (img.width - sw) / 2, (img.height - sh) / 2, sw, sh, px, py, pw, ph);
       ctx.restore();
-      ctx.globalAlpha = 0.9;
+      ctx.globalAlpha = 0.9 * bannerFade;
       ctx.strokeRect(px, py, pw, ph);
       ctx.globalAlpha = 1;
     } else {
-      ctx.globalAlpha = 0.55;
-      ctx.strokeRect(px, py, pw, ph);
-      ctx.beginPath();
-      ctx.moveTo(px, py + ph); ctx.lineTo(px + pw, py);
-      ctx.moveTo(px, py); ctx.lineTo(px + pw, py + ph);
-      ctx.stroke();
-      ctx.globalAlpha = 1;
+      drawPlaceholder(1);
     }
 
     // Summary — a short teaser that trails off, like the original site.
@@ -387,6 +410,8 @@ function buildSheet(project, index) {
       current = nextProject;
       number = nextNumber;
       hovered = false;
+      cancelAnimationFrame(fadeRaf); // a mid-fade from the old project stops
+      bannerFade = 1;
       hitbox.userData.slug = nextProject?.slug ?? null;
       group.visible = !!nextProject;
       draw();

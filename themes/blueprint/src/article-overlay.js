@@ -109,7 +109,7 @@ export function createArticleOverlay(projects, { onNavigate } = {}) {
       </aside>
       <article class="article-page">
         <header class="article-title-block"></header>
-        <img class="article-banner" alt="" />
+        <div class="article-banner-wrap"><img class="article-banner" alt="" /></div>
         <div class="article-body"></div>
       </article>
     </div>`;
@@ -222,8 +222,16 @@ export function createArticleOverlay(projects, { onNavigate } = {}) {
       <div class="article-meta">
         <div class="article-tags">${project.tech.map((tag) => `<span>${tag}</span>`).join('')}</div>
       </div>`;
-    banner.src = project.image;
+    // Drop the previous article's banner IMMEDIATELY (it used to linger
+    // until the new image decoded), show the drafted-X placeholder, and
+    // fade the real banner in once it has pixels.
+    banner.classList.remove('is-loaded');
+    banner.removeAttribute('src');
     banner.alt = project.title;
+    banner.src = project.image;
+    const reveal = () => banner.classList.add('is-loaded');
+    if (banner.complete && banner.naturalWidth) requestAnimationFrame(reveal);
+    else banner.onload = reveal;
     // Parse into a template first: article markdown was written against the
     // live site's root, so links/images/widget audio need rebasing to this
     // app's mount point BEFORE the DOM starts fetching them (images inside a
