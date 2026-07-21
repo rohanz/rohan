@@ -1,8 +1,8 @@
 ---
-import { blueprintPathFor, defaultPathFor } from '../lib/theme-paths';
+import { blueprintEntryFor, defaultPathFor } from '../lib/theme-paths';
 
 const classicHref = defaultPathFor(Astro.url.pathname);
-const blueprintHref = blueprintPathFor(Astro.url.pathname);
+const blueprintHref = blueprintEntryFor(Astro.url.pathname);
 ---
 <a
   class="transit-theme-switch sign-pill"

@@ -29,7 +29,7 @@ test('transit detail header has both theme switches before the outer back contro
   await expect(page.locator('[data-theme-pref="default"]')).toHaveCount(1);
   await expect(page.locator('[data-theme-pref="blueprint"]')).toHaveCount(1);
   await expect(actions.locator('.transit-theme-switch')).toHaveAttribute('href', '/projects/careersphere');
-  await expect(actions.locator('.blueprint-theme-switch')).toHaveAttribute('href', '/blueprint/projects/careersphere');
+  await expect(actions.locator('.blueprint-theme-switch')).toHaveAttribute('href', '/blueprint/?p=' + encodeURIComponent('/blueprint/projects/careersphere'));
   await expect(actions.locator('a')).toHaveCount(3);
   await expect(actions.locator('a').nth(0)).toHaveAccessibleName('‹ back');
   await expect(actions.locator('a').nth(1)).toHaveAccessibleName('Classic Mode');

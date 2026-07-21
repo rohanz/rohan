@@ -3,7 +3,7 @@ import Analytics from '../components/Analytics.astro';
 import '../styles/default.css';
 import '../styles/default-phase2.css';
 import { ClientRouter } from 'astro:transitions';
-import { blueprintPathFor, transitPathFor } from '../lib/theme-paths';
+import { blueprintEntryFor, transitPathFor } from '../lib/theme-paths';
 
 interface Props {
   title: string;
@@ -28,7 +28,7 @@ const canonical = new URL(canonicalPath, Astro.site).href;
 const ogAbs = new URL(ogImage, Astro.site).href;
 const activeSection = section === 'homepage' ? undefined : section;
 const transitHref = transitPathFor(Astro.url.pathname);
-const blueprintHref = blueprintPathFor(Astro.url.pathname);
+const blueprintHref = blueprintEntryFor(Astro.url.pathname);
 const personLd = JSON.stringify({
   '@context': 'https://schema.org',
   '@type': 'Person',

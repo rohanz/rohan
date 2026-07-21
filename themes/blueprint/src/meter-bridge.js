@@ -119,11 +119,15 @@ function solidSlab(geometry) {
 }
 
 // World w/h must equal cw/ch — callers derive one from the other.
-function makeCanvasPlane(w, h, cw, ch) {
+// scale=2 gives the DESIGN.md sharp-text recipe (2x backing, logical draw
+// coords preserved via setTransform) — icons stay at 1: drawStreamIcon
+// resets the transform and is already tuned in device px.
+function makeCanvasPlane(w, h, cw, ch, scale = 1) {
   const canvas = document.createElement('canvas');
-  canvas.width = cw;
-  canvas.height = ch;
+  canvas.width = cw * scale;
+  canvas.height = ch * scale;
   const ctx = canvas.getContext('2d');
+  ctx.setTransform(scale, 0, 0, scale, 0, 0);
   ctx.fillStyle = CREAM;
   ctx.fillRect(0, 0, cw, ch);
   const texture = new THREE.CanvasTexture(canvas);
@@ -446,9 +450,10 @@ const VU_RED_F = 0.76;                      // scale fraction where 0 VU sits
 function makeVUFace() {
   const W = VU_PX_W, H = VU_PX_H;
   const canvas = document.createElement('canvas');
-  canvas.width = W;
-  canvas.height = H;
+  canvas.width = W * 2; // sharp-text recipe: 2x backing, logical coords below
+  canvas.height = H * 2;
   const ctx = canvas.getContext('2d');
+  ctx.setTransform(2, 0, 0, 2, 0, 0);
   ctx.fillStyle = CREAM;
   ctx.fillRect(0, 0, W, H);
 
@@ -851,7 +856,7 @@ export function buildMeterBridge(songs, { width = 2.9 } = {}) {
   const captions = []; // { ctx, cw, texture, text } — for the fonts-ready redraw
   function addCaption(text, cx, w, y = capY) {
     const cw = Math.round(CAP_CANVAS_H * (w / CAP_H));
-    const cap = makeCanvasPlane(w, CAP_H, cw, CAP_CANVAS_H);
+    const cap = makeCanvasPlane(w, CAP_H, cw, CAP_CANVAS_H, 2);
     drawCaption(cap.ctx, cw, CAP_CANVAS_H, text);
     cap.texture.needsUpdate = true;
     cap.mesh.position.set(cx, y, FACE_Z);
@@ -900,7 +905,7 @@ export function buildMeterBridge(songs, { width = 2.9 } = {}) {
   for (let i = 0; i < 3; i++) {
     const sw = scopeWidths[i];
     const cw = Math.round(SCOPE_CANVAS_H * (sw / SCREEN_H));
-    const s = makeCanvasPlane(sw, SCREEN_H, cw, SCOPE_CANVAS_H);
+    const s = makeCanvasPlane(sw, SCREEN_H, cw, SCOPE_CANVAS_H, 2);
     s.mesh.position.set(sx + sw / 2, scopeY, FACE_Z);
     rail.add(s.mesh);
     const frame = makeFrame(sw, SCREEN_H);
@@ -918,7 +923,7 @@ export function buildMeterBridge(songs, { width = 2.9 } = {}) {
   const blockTop = scopeY + SCREEN_H / 2;
   const PLAY_S = 0.055;   // square transport button, left of the title
   const PLAY_PX = 64;
-  const playBtn = makeCanvasPlane(PLAY_S, PLAY_S, PLAY_PX, PLAY_PX);
+  const playBtn = makeCanvasPlane(PLAY_S, PLAY_S, PLAY_PX, PLAY_PX, 2);
   const playState = { playing: false, hover: false };
   function redrawPlayButton() {
     drawPlayButton(playBtn.ctx, PLAY_PX, playState.playing, playState.hover);
@@ -931,7 +936,7 @@ export function buildMeterBridge(songs, { width = 2.9 } = {}) {
   const titleW = LINKS_W - PLAY_S - 0.014;
   const TITLE_CANVAS_H = 72;
   const TITLE_CANVAS_W = Math.round(TITLE_CANVAS_H * (titleW / TITLE_H));
-  const trackInfo = makeCanvasPlane(titleW, TITLE_H, TITLE_CANVAS_W, TITLE_CANVAS_H);
+  const trackInfo = makeCanvasPlane(titleW, TITLE_H, TITLE_CANVAS_W, TITLE_CANVAS_H, 2);
   trackInfo.mesh.position.set(linksCX + (PLAY_S + 0.014) / 2, blockTop - TITLE_H / 2, FACE_Z);
   rail.add(trackInfo.mesh);
 
@@ -992,7 +997,7 @@ export function buildMeterBridge(songs, { width = 2.9 } = {}) {
   }
   rail.add(reelsGroup);
 
-  const counter = makeCanvasPlane(CTR_W, CTR_H, CTR_PX_W, CTR_PX_H);
+  const counter = makeCanvasPlane(CTR_W, CTR_H, CTR_PX_W, CTR_PX_H, 2);
   counter.mesh.position.set(reelsCX, ROW_BOT + CTR_H / 2, FACE_Z);
   rail.add(counter.mesh);
   addCaption('playback', reelsCX, REELS_W);
@@ -1053,7 +1058,7 @@ export function buildMeterBridge(songs, { width = 2.9 } = {}) {
   const WM_CANVAS_H = 56;
   const WM_CANVAS_W = Math.round(WM_CANVAS_H * (WM_W / WM_H));
   const vuBlockCX = vuX0 + (VU_W + VU_GAP) / 2;
-  const wordmark = makeCanvasPlane(WM_W, WM_H, WM_CANVAS_W, WM_CANVAS_H);
+  const wordmark = makeCanvasPlane(WM_W, WM_H, WM_CANVAS_W, WM_CANVAS_H, 2);
   drawWordmark(wordmark.ctx, WM_CANVAS_W, WM_CANVAS_H);
   wordmark.texture.needsUpdate = true;
   const vuTop = ROW_BOT + VU_H;

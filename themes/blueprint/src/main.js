@@ -163,7 +163,15 @@ function wallSign(text, worldH = 0.22) {
 const LISTED_PROJECTS = PROJECTS.filter((project) => !project.unlisted);
 const workshop = buildWorkshop(LISTED_PROJECTS);
 scene.add(workshop.group);
-const articleReader = createArticleOverlay(PROJECTS, { onNavigate: (slug) => syncUrl(slug) });
+const articleReader = createArticleOverlay(PROJECTS, { onNavigate: (slug) => {
+  syncUrl(slug);
+  if (slug) {
+    const project = PROJECTS.find((entry) => entry.slug === slug);
+    if (project) setDocTitle(project.title);
+  } else {
+    setDocTitle(mode === 'home' ? null : SCENE_TITLES[mode]); // reader closed
+  }
+} });
 {
   const sign = wallSign('01 / project workshop', 0.11);
   sign.position.set(-1.58, 2.42, -2.42); // left side of the sheet wall
@@ -258,6 +266,13 @@ function setNavCurrent(which) {
     el.classList.toggle('current', key === which);
   }
 }
+// Tab titles follow the site-wide convention ("music - rohan.jk" etc.).
+const HOME_TITLE = 'rohan.jk - software & ai';
+const SCENE_TITLES = { music: 'music', projects: 'projects', about: 'about me' };
+function setDocTitle(part) {
+  document.title = part ? `${part} - rohan.jk` : HOME_TITLE;
+}
+
 function setHomeUI() {
   labelLayer.style.opacity = '0';
   renderer.domElement.style.cursor = '';
@@ -265,6 +280,7 @@ function setHomeUI() {
   navBar.classList.remove('hidden');
   navBar.classList.add('home-mode'); // bar stays; only the theme switcher shows
   setNavCurrent(''); // no lit tab at home
+  setDocTitle(null);
 }
 function setSceneUI(sceneDef) {
   labelLayer.style.opacity = sceneDef.labels ? '1' : '0';
@@ -272,6 +288,7 @@ function setSceneUI(sceneDef) {
   navBar.classList.remove('home-mode');
   bottomBar.classList.remove('hidden');
   setNavCurrent(sceneDef.nav);
+  setDocTitle(SCENE_TITLES[sceneDef.nav] ?? sceneDef.nav);
 }
 
 // Pre-warm every room shader once at boot — otherwise the first entrance
@@ -840,6 +857,15 @@ function applyPath(path) {
 
 window.addEventListener('popstate', () => applyPath(stripBase(location.pathname)));
 if (stripBase(location.pathname) !== '/') applyPath(stripBase(location.pathname));
+
+// Boot complete: the world is built and routing has placed us — lift the
+// cream veil over two rAFs so the reveal starts from a fully rendered frame.
+requestAnimationFrame(() => requestAnimationFrame(() => {
+  const veil = document.getElementById('boot-veil');
+  if (!veil) return;
+  veil.classList.add('lifted');
+  veil.addEventListener('transitionend', () => veil.remove(), { once: true });
+}));
 
 // Debug handle (proto only)
 const enterStudio = () => enterScene('music');

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { blueprintPathFor, defaultPathFor, transitPathFor } from './theme-paths';
+import { blueprintEntryFor, blueprintPathFor, defaultPathFor, transitPathFor } from './theme-paths';
 
 describe('theme route mapping', () => {
   it.each([
@@ -35,5 +35,13 @@ describe('theme route mapping', () => {
     ['/blueprint/projects', '/blueprint/projects'],
   ])('maps %s to blueprint %s', (from, to) => {
     expect(blueprintPathFor(from)).toBe(to);
+  });
+
+  it.each([
+    ['/', '/blueprint/?p=%2Fblueprint'],
+    ['/music', '/blueprint/?p=%2Fblueprint%2Fmusic'],
+    ['/transit/projects/careersphere', '/blueprint/?p=%2Fblueprint%2Fprojects%2Fcareersphere'],
+  ])('entry link for %s targets the SPA directly (%s)', (from, to) => {
+    expect(blueprintEntryFor(from)).toBe(to);
   });
 });
