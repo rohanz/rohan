@@ -1,0 +1,1900 @@
+/* Interactive article widgets, ported from the original site's default theme. */
+.article-body {
+  --accent: #C74B50;
+  --accent-glow: rgba(199, 75, 80, 0.22);
+  --bg-primary: #FFF8E1;
+  --bg-card: #FFF8E1;
+  --bg-card-hover: rgba(199, 75, 80, 0.08);
+  --sidebar-bg: #C74B50;
+  --text-primary: #5f292a;
+  --text-secondary: #7d3b3d;
+  --text-muted: rgba(199, 75, 80, 0.62);
+  --border-subtle: rgba(199, 75, 80, 0.45);
+  --border-hover: #C74B50;
+}
+
+.article-overlay .bqst-data-table {
+    box-sizing: border-box;
+    max-width: 100%;
+    width: 100%;
+    table-layout: fixed;
+    margin: 1.4rem 0 1.7rem;
+    border-collapse: collapse;
+    border: 1px solid rgba(199, 75, 80, 0.16);
+    border-radius: 8px;
+    overflow: hidden;
+    font-size: 0.94rem;
+}
+
+.article-overlay .bqst-data-table th,
+.article-overlay .bqst-data-table td {
+    padding: 0.65rem 0.72rem;
+    border-bottom: 1px solid rgba(199, 75, 80, 0.10);
+    text-align: right;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.article-overlay .bqst-data-table th:first-child,
+.article-overlay .bqst-data-table td:first-child {
+    text-align: left;
+}
+
+.article-overlay .bqst-data-table th {
+    color: var(--accent);
+    background: rgba(199, 75, 80, 0.08);
+    font-weight: 700;
+}
+
+.article-overlay .bqst-data-table tr:last-child td {
+    border-bottom: 0;
+}
+
+.article-overlay .bqst-data-table {
+    border-color: rgba(199, 75, 80, 0.16);
+}
+
+.article-overlay .bqst-data-table th,
+.article-overlay .bqst-data-table td {
+    border-bottom-color: rgba(199, 75, 80, 0.11);
+}
+
+.article-overlay .bqst-data-table th {
+    background: rgba(199, 75, 80, 0.08);
+}
+
+.article-body .gloss-term {
+    position: relative;
+    display: inline;
+    color: var(--accent);
+    background: rgba(199, 75, 80, 0.12);
+    border-bottom: 1px solid rgba(199, 75, 80, 0.55);
+    border-radius: 3px;
+    padding: 0.02em 0.12em;
+    outline: none;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.article-body .gloss-term {
+    background: rgba(199, 75, 80, 0.09);
+    border-bottom-color: rgba(199, 75, 80, 0.45);
+}
+
+.article-overlay .gloss-tooltip {
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 1000;
+    box-sizing: border-box;
+    width: min(280px, calc(100vw - 2rem));
+    overflow-y: auto;
+    padding: 0.65rem 0.75rem;
+    border: 1px solid rgba(199, 75, 80, 0.24);
+    border-radius: 6px;
+    background: rgba(26, 26, 46, 0.96);
+    color: rgba(232, 230, 227, 0.92);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.32);
+    font-size: 0.92rem;
+    font-weight: 500;
+    line-height: 1.45;
+    text-align: left;
+    white-space: normal;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateY(0.25rem);
+    transition: opacity 160ms ease, transform 160ms ease, visibility 160ms ease;
+}
+
+.article-overlay .gloss-tooltip.is-visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.article-overlay .gloss-tooltip {
+    border-color: rgba(62, 39, 35, 0.14);
+    background: rgba(255, 248, 225, 0.98);
+    color: var(--text-primary);
+    box-shadow: 0 8px 24px rgba(62, 39, 35, 0.16);
+}
+.article-overlay .demo-player {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.5rem 0;
+    margin: 1rem 0 1.5rem;
+    min-height: 120px;
+}
+
+.article-overlay .demo-waveform-canvas {
+    flex: 1 1 0;
+    min-width: 0;
+    height: 56px;
+    display: block;
+}
+
+.article-overlay .demo-meters {
+    display: flex;
+    gap: 0.8rem;
+    align-items: flex-end;
+    flex-shrink: 0;
+}
+
+.article-overlay .demo-meter-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.15rem;
+}
+
+.article-overlay .demo-meter-label {
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+}
+
+.article-overlay .demo-vu-canvas {
+    width: 190px;
+    height: 130px;
+    border-radius: 4px;
+    display: block;
+}
+
+.article-overlay .demo-vec-canvas {
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    display: block;
+}
+
+/* Theme palette */
+.article-overlay .theme-palette {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin: 1rem 0 1.5rem;
+}
+
+.article-overlay .palette-group {
+    flex: 1;
+    border: 1px solid var(--border-subtle);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.article-overlay .palette-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.5rem 0.75rem;
+    color: #C74B50;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.article-overlay .palette-swatches {
+    display: grid;
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    gap: 0;
+}
+
+.article-overlay .palette-swatch {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.article-overlay .palette-swatch-color {
+    aspect-ratio: 1;
+}
+
+.article-overlay .palette-swatch-label {
+    font-size: 0.75rem;
+    text-align: center;
+    padding: 0.3rem 0;
+    letter-spacing: 0.02em;
+}
+.article-overlay .bqst-asset-strip {
+    box-sizing: border-box;
+    max-width: 100%;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0;
+    margin: 1rem 0 1.5rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: 4px;
+    overflow: hidden;
+    background: var(--bg-card);
+}
+
+.article-overlay .bqst-asset-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+    padding: 1rem 0.8rem 0.55rem;
+    border-right: 1px solid var(--border-subtle);
+}
+
+.article-overlay .bqst-asset-card:nth-child(1),
+.article-overlay .bqst-asset-card:nth-child(2) {
+    background: var(--sidebar-bg);
+}
+
+.article-overlay .bqst-asset-card:nth-child(3) {
+    background: var(--text-secondary);
+}
+
+.article-overlay .bqst-asset-card:nth-child(3) {
+    background: var(--accent);
+}
+
+.article-overlay .bqst-asset-card:last-child {
+    border-right: 0;
+}
+
+.article-overlay .bqst-asset-card img {
+    width: min(72%, 150px);
+    aspect-ratio: 1;
+    object-fit: contain;
+    margin: 0 0 0.65rem;
+    border-radius: 0;
+    box-shadow: none;
+}
+
+.article-overlay .bqst-asset-card .article-image-button {
+    position: static;
+    width: min(72%, 150px);
+    margin: 0 auto 0.65rem;
+}
+
+.article-overlay .bqst-asset-card .article-image-button img {
+    width: 100%;
+    margin: 0;
+}
+
+.article-overlay .bqst-asset-card .article-image-button::after {
+    right: 0.45rem;
+    bottom: 2.05rem;
+    max-width: calc(100% - 0.7rem);
+    padding: 0.28rem 0.4rem;
+    font-size: 0.62rem;
+}
+
+.article-overlay .bqst-asset-card span {
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-align: center;
+    letter-spacing: 0.05em;
+}
+
+.article-overlay .bqst-asset-card:nth-child(1) span,
+.article-overlay .bqst-asset-card:nth-child(2) span {
+    color: rgba(255, 248, 225, 0.72);
+}
+
+.article-overlay .bqst-asset-card:nth-child(3) span {
+    color: var(--bg-primary);
+}
+
+/* BQST audio A/B demo */
+.article-overlay .bqst-audio-demo {
+    --accent: #C74B50;
+    --accent-glow: rgba(199, 75, 80, 0.22);
+    box-sizing: border-box;
+    max-width: 100%;
+    margin: 1.4rem 0 2rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    background:
+        linear-gradient(135deg, rgba(199, 75, 80, 0.08), transparent 42%),
+        var(--bg-card);
+    overflow: hidden;
+}
+
+.article-overlay .bqst-audio-demo-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.9rem 1rem 0.75rem;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.article-overlay .bqst-audio-demo-body {
+    padding: 1rem;
+}
+
+.article-overlay .bqst-audio-play {
+    width: 58px;
+    height: 58px;
+    border-radius: 999px;
+    border: 2px solid var(--accent);
+    background: transparent;
+    color: var(--accent);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.08rem;
+    transition: background 180ms ease, color 180ms ease, box-shadow 180ms ease;
+}
+
+.article-overlay .bqst-audio-demo:not(.is-ready) .bqst-audio-play {
+    opacity: 0.62;
+}
+
+@media (hover: hover) {
+    .article-overlay .bqst-audio-play:hover {
+        background: var(--accent);
+        color: var(--bg-primary);
+        box-shadow: 0 0 22px var(--accent-glow);
+    }
+}
+
+.article-overlay .bqst-audio-play.playing {
+    background: var(--accent);
+    color: var(--bg-primary);
+    box-shadow: 0 0 24px var(--accent-glow);
+}
+
+.article-overlay .bqst-audio-main {
+    display: grid;
+    gap: 0.8rem;
+    min-width: 0;
+}
+
+.article-overlay .bqst-audio-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+}
+
+.article-overlay .bqst-audio-toggle {
+    display: inline-grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: min(100%, 280px);
+    padding: 0.2rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--bg-primary) 44%, transparent);
+}
+
+.article-overlay .bqst-audio-toggle button {
+    min-height: 34px;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--text-secondary);
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-size: 0.92rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 160ms ease, color 160ms ease, box-shadow 160ms ease;
+}
+
+.article-overlay .bqst-audio-toggle button.is-active {
+    background: var(--accent);
+    color: var(--bg-primary);
+    box-shadow: 0 0 18px var(--accent-glow);
+}
+
+.article-overlay .bqst-audio-wave {
+    position: relative;
+    height: 68px;
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    overflow: hidden;
+    background:
+        linear-gradient(180deg,
+            color-mix(in srgb, var(--accent) 8%, transparent),
+            color-mix(in srgb, var(--accent) 3%, transparent));
+}
+
+.article-overlay .bqst-audio-wave canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.article-overlay .bqst-audio-wave span {
+    position: absolute;
+    inset: 50% 0 auto;
+    height: 1px;
+    background: color-mix(in srgb, var(--text-secondary) 34%, transparent);
+}
+
+.article-overlay .bqst-audio-wave i {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 0;
+    display: block;
+    pointer-events: none;
+    background: linear-gradient(90deg,
+        color-mix(in srgb, var(--accent) 26%, transparent),
+        color-mix(in srgb, var(--accent) 8%, transparent));
+    border-right: 2px solid var(--accent);
+    will-change: width;
+}
+
+/* BQST DSP lab in project detail */
+.article-overlay .bqst-lab {
+    box-sizing: border-box;
+    max-width: 100%;
+    margin: 1.4rem 0 2rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    background:
+        linear-gradient(135deg, rgba(199, 75, 80, 0.08), transparent 42%),
+        var(--bg-card);
+    overflow: hidden;
+}
+
+.article-overlay .bqst-lab-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.9rem 1rem 0.75rem;
+    border-bottom: 1px solid var(--border-subtle);
+    color: var(--text-secondary);
+}
+
+.article-overlay .bqst-lab-kicker {
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-weight: 700;
+    color: #C74B50;
+    font-size: 1rem;
+}
+
+.article-overlay .bqst-lab-meta {
+    color: var(--text-muted);
+    font-size: 0.82rem;
+}
+
+.article-overlay .bqst-interactive-row {
+    display: grid;
+    grid-template-columns: 162px minmax(0, 1fr);
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.45rem 0.8rem 0 0.25rem;
+}
+
+.article-overlay .bqst-drive-control {
+    display: flex;
+    justify-content: center;
+    padding: 0;
+    color: var(--text-secondary);
+}
+
+.article-overlay .bqst-drive-module {
+    display: grid;
+    justify-items: center;
+    gap: 0.55rem;
+}
+
+.article-overlay .bqst-knob-stage {
+    width: 138px;
+    height: 138px;
+    position: relative;
+    display: grid;
+    place-items: center;
+    cursor: grab;
+    touch-action: none;
+    outline: none;
+}
+
+.article-overlay .bqst-knob-stage.is-dragging {
+    cursor: grabbing;
+}
+
+.article-overlay .bqst-knob-stage:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 4px;
+    border-radius: 50%;
+}
+
+.article-overlay .bqst-knob-ticks {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+.article-overlay .bqst-knob-ticks::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 138px;
+    height: 138px;
+    border-radius: 999px;
+    border: 1.2px solid color-mix(in srgb, var(--text-secondary) 72%, transparent);
+    transform: translate(-50%, -50%);
+}
+
+.article-overlay .bqst-knob-tick {
+    --tick-angle: 0deg;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 1.35px;
+    height: 9px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--text-secondary) 70%, transparent);
+    transform-origin: 50% 69px;
+    transform: translate(-50%, -69px) rotate(var(--tick-angle));
+}
+
+.article-overlay .bqst-knob-tick.bqst-tick-major {
+    width: 2.1px;
+    height: 16px;
+    background: color-mix(in srgb, var(--text-secondary) 88%, transparent);
+}
+
+.article-overlay .bqst-mini-knob {
+    --bqst-knob-angle: 0deg;
+    width: 114px;
+    height: 114px;
+    border-radius: 999px;
+    background: url('/assets/images/projects/bqst/knob-large-cream.webp') center / 128% no-repeat;
+    position: relative;
+    transform: rotate(var(--bqst-knob-angle));
+    transform-origin: center;
+}
+
+.article-overlay .bqst-mini-knob span {
+    display: none;
+}
+
+.article-overlay .bqst-drive-control label {
+    display: grid;
+    justify-items: center;
+    gap: 0.1rem;
+    font-family: 'Be Vietnam Pro', sans-serif;
+    text-align: center;
+}
+
+.article-overlay .bqst-drive-control label span {
+    color: var(--accent);
+    font-weight: 700;
+    line-height: 1;
+}
+
+.article-overlay .bqst-drive-control label strong {
+    color: var(--text-secondary);
+    font-size: 1.12rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.article-overlay .bqst-drive-control input[type="range"] {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+    width: 1px;
+    height: 1px;
+}
+
+.article-overlay .bqst-visual-canvas {
+    box-sizing: border-box;
+    display: block;
+    max-width: 100%;
+    width: 100%;
+    height: 340px;
+}
+
+.article-overlay .bqst-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.7rem;
+    padding: 0 1rem 0.95rem;
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+}
+
+.article-overlay .bqst-legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.article-overlay .bqst-legend i {
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: 999px;
+    display: inline-block;
+}
+
+/* Try-it button in articles */
+.article-overlay .lcm-demo {
+    margin: 1.5rem 0 0.5rem;
+}
+
+.article-overlay .lcm-readout {
+    /* fixed height + centering so the piano never shifts when a chord appears */
+    height: 6.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    margin-bottom: 1.25rem;
+    overflow: hidden;
+}
+
+.article-overlay .lcm-chord {
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-size: 2.6rem;
+    font-weight: 700;
+    color: var(--accent);
+    line-height: 1.1;
+    white-space: nowrap;
+}
+
+.article-overlay .lcm-chord.lcm-empty {
+    color: var(--text-secondary);
+    font-size: 1.4rem;
+    font-weight: 500;
+}
+
+.article-overlay .lcm-notes {
+    margin-top: 0.5rem;
+    font-size: 1.05rem;
+    letter-spacing: 0.04em;
+    color: var(--text-primary);
+    min-height: 1.4rem;
+    white-space: nowrap;
+}
+
+.article-overlay .lcm-alts {
+    margin-top: 0.35rem;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    min-height: 1.1rem;
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.article-overlay .lcm-piano {
+    position: relative;
+    display: flex;
+    height: 160px;
+    max-width: 560px;
+    margin: 0 auto;
+    user-select: none;
+    touch-action: none;
+}
+
+.article-overlay .lcm-key {
+    padding: 0;
+    font: inherit;
+    cursor: pointer;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+}
+
+.article-overlay .lcm-key.white {
+    background: #ECEAE3;
+    border: 1px solid #b9b6ad;
+    border-radius: 0 0 5px 5px;
+    margin: 0 1px;
+}
+
+.article-overlay .lcm-key.black {
+    position: absolute;
+    top: 0;
+    width: 2.1rem;
+    height: 62%;
+    transform: translateX(-50%);
+    background: #20202e;
+    border: 2px solid #14141f;
+    border-top: none; /* top edge is flush with the piano top; only sides + bottom need an outline */
+    border-radius: 0 0 4px 4px;
+    z-index: 2;
+}
+
+.article-overlay .lcm-key.active {
+    background: var(--accent);
+    border-color: var(--accent);
+}
+
+/* Keep a dark outline on active black keys so they stay distinct from an
+   adjacent active (also-amber) white key instead of merging into one blob. */
+.article-overlay .lcm-key.black.active {
+    border-color: #14141f;
+}
+
+.article-overlay .lcm-key-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding-bottom: 0.5rem;
+    pointer-events: none;
+}
+
+.article-overlay .lcm-key.white .lcm-key-label { color: #6a6a72; }
+.article-overlay .lcm-key.black .lcm-key-label { color: #cfcfd8; padding-bottom: 0.35rem; }
+.article-overlay .lcm-key.active .lcm-key-label { color: #1a1a2e; }
+
+.article-overlay .lcm-hint {
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-top: 1rem;
+}
+
+
+@media (max-width: 768px) {
+    .article-overlay .article-stat-grid,
+.article-overlay .article-visual-pair {
+        grid-template-columns: 1fr;
+    }
+
+    .article-overlay .article-stat-card {
+        border-right: 0;
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .article-overlay .article-stat-card:last-child {
+        border-bottom: 0;
+    }
+
+    .article-overlay .lcm-piano { height: 132px; }
+    .article-overlay .lcm-key.black { width: 1.6rem; }
+    .article-overlay .lcm-chord { font-size: 2rem; }
+}
+
+/* ============================================================
+   QUANTLAB ANALYST VISUALS (quantlab-analyst project article)
+   ============================================================ */
+.article-overlay .qla-visual {
+    box-sizing: border-box;
+    max-width: 100%;
+    margin: 1.4rem 0 2rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    background:
+        linear-gradient(135deg, rgba(199, 75, 80, 0.08), transparent 42%),
+        var(--bg-card);
+    overflow: hidden;
+}
+
+.article-overlay .qla-visual-header {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.35rem 1rem;
+    padding: 0.9rem 1rem 0.75rem;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.article-overlay .qla-visual-kicker {
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-weight: 700;
+    color: #C74B50;
+    font-size: 1rem;
+}
+
+.article-overlay .qla-visual-meta {
+    color: var(--text-muted);
+    font-size: 0.82rem;
+}
+
+.article-overlay .qla-visual-body {
+    padding: 1rem;
+}
+
+.article-overlay .qla-btn {
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-weight: 700;
+    font-size: 0.88rem;
+    padding: 0.45rem 1.1rem;
+    border-radius: 999px;
+    border: 1px solid var(--border-subtle);
+    background: var(--bg-card);
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.article-overlay .qla-btn:hover {
+    border-color: var(--border-hover);
+    background: var(--bg-card-hover);
+}
+
+.article-overlay .qla-btn:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+.article-overlay .qla-btn-accent {
+    background: var(--accent);
+    color: var(--bg-primary);
+    border-color: transparent;
+}
+
+.article-overlay .qla-btn-accent:hover {
+    background: var(--accent);
+    border-color: transparent;
+    filter: brightness(1.08);
+}
+
+.article-overlay .qla-btn-accent {
+    color: #FFF8E1;
+}
+
+/* --- 1. compounding slider --- */
+.article-overlay .qla-compound-takeaway {
+    margin: 0.4rem 0 0.8rem;
+    min-height: 2.9em;
+    color: var(--text-secondary);
+    font-size: 0.92rem;
+    font-style: italic;
+}
+
+.article-overlay .qla-compound-canvas {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+}
+
+/* --- 2. gate playground --- */
+.article-overlay .qla-memo {
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    background: var(--bg-card);
+    padding: 0.9rem 1rem;
+    white-space: pre-wrap;
+    font-size: 0.85rem;
+    line-height: 1.55;
+    color: var(--text-secondary);
+}
+
+.article-overlay .qla-mark-bad {
+    background: rgba(199, 75, 80, 0.18);
+    color: #C74B50;
+    border-bottom-color: #C74B50;
+    font-weight: 700;
+}
+
+.article-overlay .qla-mark-bad {
+    color: #C74B50;
+    border-bottom-color: #C74B50;
+}
+
+.article-overlay .qla-mark-bad,
+.article-overlay .qla-mark-good {
+    padding: 0 0.15em;
+    border-radius: 3px;
+}
+
+.article-overlay .qla-mark-good {
+    background: rgba(102, 187, 106, 0.18);
+    color: #66BB6A;
+    font-weight: 700;
+}
+
+/* --- gate report strip: the fixer's input --- */
+.article-overlay .qla-gate-report-strip {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    margin: 0.2rem 0 0.8rem;
+    padding: 0.5rem 0.7rem;
+    border: 1px dashed var(--border-subtle);
+    border-radius: 6px;
+    background: var(--bg-card);
+}
+
+.article-overlay .qla-gate-report-label,
+.article-overlay .qla-gate-report-tail {
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.article-overlay .qla-gate-chip {
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-size: 0.78rem;
+    padding: 0.08em 0.45em;
+    border-radius: 4px;
+    background: rgba(199, 75, 80, 0.18);
+    color: #C74B50;
+    border: 1px solid rgba(199, 75, 80, 0.4);
+}
+
+.article-overlay .qla-gate-chip {
+    background: rgba(199, 75, 80, 0.12);
+    color: #C74B50;
+    border-color: rgba(199, 75, 80, 0.35);
+}
+
+/* --- judge final-score line (separate from per-round feedback) --- */
+.article-overlay .qla-judge-score {
+    /* one reserved line, same recipe as the feedback row: appearing at
+       round 3 must not change the visual's height */
+    margin: 0;
+    min-height: 1.7em;
+    line-height: 1.7;
+    text-align: center;
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.article-overlay .qla-mark-good {
+    color: #2E7D32;
+}
+
+.article-overlay .qla-gate-report-title {
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    display: flex;
+    gap: 0.7rem;
+    align-items: baseline;
+    flex-wrap: wrap;
+}
+
+.article-overlay .qla-fixer-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 0.9rem;
+}
+
+.article-overlay .qla-fixer-col-title {
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-weight: 700;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    margin-bottom: 0.4rem;
+}
+
+/* --- 3. you be the judge --- */
+.article-overlay .qla-judge-status {
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-weight: 700;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    margin: 0 0 0.7rem;
+}
+
+.article-overlay .qla-judge-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 0.9rem;
+    margin-bottom: 0.9rem;
+}
+
+.article-overlay .qla-judge-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.7rem;
+}
+
+.article-overlay .qla-judge-col .qla-judge-panel {
+    align-self: stretch;
+}
+
+.article-overlay .qla-judge-probe {
+    visibility: hidden;
+}
+
+.article-overlay .qla-judge-panel {
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    background: var(--bg-card);
+    overflow: hidden;
+}
+
+.article-overlay .qla-judge-panel.is-pick-correct {
+    border-color: #66BB6A;
+    box-shadow: 0 0 0 1px #66BB6A;
+}
+
+.article-overlay .qla-judge-panel.is-pick-correct {
+    border-color: #2E7D32;
+    box-shadow: 0 0 0 1px #2E7D32;
+}
+
+.article-overlay .qla-judge-panel.is-pick-wrong {
+    border-color: #C74B50;
+    box-shadow: 0 0 0 1px #C74B50;
+}
+
+.article-overlay .qla-judge-panel.is-pick-wrong {
+    border-color: #C74B50;
+    box-shadow: 0 0 0 1px #C74B50;
+}
+
+.article-overlay .qla-judge-panel-label {
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-weight: 700;
+    font-size: 0.82rem;
+    color: var(--accent);
+    padding: 0.55rem 0.9rem;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.article-overlay .qla-judge-panel-body {
+    padding: 0.8rem 0.9rem;
+    white-space: pre-wrap;
+    font-size: 0.83rem;
+    line-height: 1.55;
+    color: var(--text-secondary);
+}
+
+.article-overlay .qla-judge-guess:disabled {
+    opacity: 0.45;
+    cursor: default;
+}
+
+.article-overlay .qla-judge-guess:disabled:hover {
+    border-color: var(--border-subtle);
+    background: var(--bg-card);
+}
+
+.article-overlay .qla-judge-controls {
+    justify-content: center;
+    min-height: 2.6em;
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    margin-top: 0.2rem;
+}
+
+.article-overlay .qla-judge-feedback {
+    /* one line at the inherited 1.7 line-height, reserved exactly */
+    min-height: 1.7em;
+    line-height: 1.7;
+    text-align: center;
+    color: var(--text-primary);
+    font-size: 0.92rem;
+    font-weight: 700;
+    margin: 0.3rem 0 0;
+}
+
+.article-overlay .qla-judge-feedback.is-correct { color: #66BB6A; }
+.article-overlay .qla-judge-feedback.is-correct { color: #2E7D32; }
+.article-overlay .qla-judge-feedback.is-wrong { color: #C74B50; }
+.article-overlay .qla-judge-feedback.is-wrong { color: #C74B50; }
+
+/* --- 4. the roster exhibit --- */
+.article-overlay .qla-roster-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin: 0.7rem 0 0.5rem;
+}
+
+.article-overlay .qla-roster-label {
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.article-overlay .qla-roster-select {
+    background: var(--bg-card);
+    color: var(--text-primary);
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    padding: 0.35rem 0.6rem;
+    font-family: inherit;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+.article-overlay .qla-roster-select:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+}
+
+.article-overlay .qla-roster-desc {
+    margin: 0 0 0.4rem;
+    min-height: 2.6em; /* two lines: switching models never reflows */
+    color: var(--text-secondary);
+    font-size: 0.88rem;
+    line-height: 1.3;
+}
+
+.article-overlay .qla-roster-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem 1.1rem;
+    margin-bottom: 0.55rem;
+    min-height: 1.4em;
+}
+
+.article-overlay .qla-roster-stat {
+    color: var(--text-muted);
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-size: 0.76rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.article-overlay .qla-roster-verdict {
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-size: 0.76rem;
+    font-weight: 700;
+    color: #C74B50;
+}
+
+.article-overlay .qla-roster-verdict.is-pass { color: #66BB6A; }
+.article-overlay .qla-roster-verdict { color: #C74B50; }
+.article-overlay .qla-roster-verdict.is-pass { color: #2E7D32; }
+
+.article-overlay .qla-roster-memo {
+    height: 300px;
+    min-height: 160px;
+    max-height: 75vh;
+    overflow: auto;
+    margin-top: 0.5rem;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-subtle) transparent;
+}
+
+.article-overlay .qla-roster-memo::-webkit-scrollbar { width: 6px; }
+.article-overlay .qla-roster-memo::-webkit-scrollbar-thumb {
+    background: var(--border-subtle);
+    border-radius: 3px;
+}
+
+.article-overlay .qla-roster-grip {
+    height: 16px;
+    margin-top: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: ns-resize;
+    touch-action: none;
+    border-radius: 4px;
+}
+
+.article-overlay .qla-roster-grip::before {
+    content: '';
+    width: 40px;
+    height: 7px;
+    background: repeating-linear-gradient(
+        to bottom,
+        var(--text-muted) 0 1px,
+        transparent 1px 3px
+    );
+    opacity: 0.55;
+    transition: opacity 0.15s ease;
+}
+
+.article-overlay .qla-roster-grip:hover::before,
+.article-overlay .qla-roster-grip:focus-visible::before {
+    opacity: 1;
+}
+
+.article-overlay .qla-roster-grip:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+}
+
+.article-overlay .qlf-legend-swatch.qla-sw-good { background: #2E7D32; }
+.article-overlay .qlf-legend-swatch.qla-sw-bad { background: #C74B50; }
+.article-overlay .qlf-legend-swatch.qla-sw-weight { background: #4A6B6E; }
+
+@media (prefers-reduced-motion: reduce) {
+    .article-overlay .qla-btn {
+        transition: none;
+    }
+}
+
+@media (max-width: 640px) {
+    .article-overlay .qla-visual-body {
+        padding: 0.8rem;
+    }
+}
+
+/* ============================================================
+   QUANTLAB FIN VISUALS (quantlab project article)
+   Reuses the qla-visual shell, buttons and slider components.
+   ============================================================ */
+
+/* --- 1. the lookahead cheat --- */
+.article-overlay .qlf-mode-toggle {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+}
+
+.article-overlay .qlf-mode-btn.is-active {
+    background: var(--accent);
+    color: var(--bg-primary);
+    border-color: transparent;
+}
+
+.article-overlay .qlf-mode-btn.is-active {
+    color: #FFF8E1;
+}
+
+.article-overlay .qlf-mode-cheat.is-active {
+    background: #C74B50;
+    color: #1a1a1a;
+}
+
+.article-overlay .qlf-mode-cheat.is-active {
+    background: #C74B50;
+    color: #FFF8E1;
+}
+
+.article-overlay .qlf-la-readout {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 0.7rem;
+    margin-bottom: 0.9rem;
+}
+
+.article-overlay .qlf-la-stat {
+    display: grid;
+    gap: 0.15rem;
+    padding: 0.5rem 0.7rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+}
+
+.article-overlay .qlf-la-stat-hold {
+    opacity: 0.85;
+}
+
+.article-overlay .qlf-la-big {
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-weight: 700;
+    font-size: 1.7rem;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-primary);
+}
+
+.article-overlay .qlf-la-stat-cheat .qlf-la-big { color: #C74B50; }
+.article-overlay .qlf-la-stat-cheat .qlf-la-big { color: #C74B50; }
+.article-overlay .qlf-la-stat-honest .qlf-la-big { color: #1F2A56; }
+
+.article-overlay .qlf-la-stat-label {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+}
+
+.article-overlay .qlf-la-window-note {
+    margin: 0.35rem 0 0.7rem;
+    color: var(--text-muted);
+    font-size: 0.78rem;
+}
+
+/* --- shared: legends + hover crosshair --- */
+.article-overlay .qlf-legend {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.3rem 1rem;
+    flex-wrap: wrap;
+    margin: 0.4rem 0 0.3rem;
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+}
+
+.article-overlay .qlf-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.article-overlay .qlf-legend-swatch {
+    display: inline-block;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+.article-overlay .qlf-sw-series,
+.article-overlay .qlf-sw-warn { color: #C74B50; }
+.article-overlay .qlf-sw-accent,
+.article-overlay .qlf-sw-measured { color: #1F2A56; }
+.article-overlay .qlf-sw-hold { color: #E488AD; }
+.article-overlay .qlf-sw-plain { color: #7d3b3d; }
+
+.article-overlay .qlf-legend-swatch.qlf-sw-gap {
+    background: rgba(228, 136, 173, 0.18);
+    box-shadow: none;
+}
+
+.article-overlay .qlf-legend-swatch.qlf-sw-window {
+    background: rgba(95, 41, 42, 0.09);
+    box-shadow: inset 0 0 0 1px rgba(95, 41, 42, 0.55);
+}
+
+/* rung swatch: a short vertical tick, matching the canvas rungs */
+.article-overlay .qlf-legend-swatch.qlf-sw-rung {
+    width: 3px;
+    height: 12px;
+    border-radius: 1px;
+    color: rgba(95, 41, 42, 0.4);
+}
+
+.article-overlay .qlf-crosshair-canvas {
+    touch-action: pan-y;
+    cursor: crosshair;
+}
+
+/* visually-hidden range input: keyboard fallback for the crosshair */
+.article-overlay .qlf-sr-range {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.article-overlay .qla-compound-canvas-wrap {
+    position: relative;
+}
+
+.article-overlay .qla-compound-canvas-wrap.qlf-cross-focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+    border-radius: 4px;
+}
+
+.article-overlay .qlf-readout {
+    display: flex;
+    gap: 0.4rem 1.4rem;
+    flex-wrap: wrap;
+    margin: 0.5rem 0 0.6rem;
+    /* line up the first field with the chart's plot area (canvas padL = 44px) */
+    padding-left: 44px;
+    transition: opacity 0.15s ease;
+}
+
+.article-overlay .qlf-readout.is-idle {
+    opacity: 0.45;
+}
+
+.article-overlay .qlf-readout-field {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.45rem;
+}
+
+.article-overlay .qlf-readout-label {
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.article-overlay .qlf-readout-value {
+    display: inline-block;
+    color: var(--text-primary);
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-size: 0.84rem;
+    font-variant-numeric: tabular-nums;
+    border-bottom: 1px solid var(--border-subtle);
+    text-align: right;
+    min-height: 1.3em;
+}
+
+/* --- 2. kalman vs static --- */
+.article-overlay .qlf-chip-note {
+    margin: 0.4rem 0 0;
+    color: var(--text-muted);
+    font-size: 0.78rem;
+}
+
+/* --- imatrix quantization explainer captions --- */
+/* Both captions share one grid cell; the inactive one stays laid out but
+   invisible, so the cell height is the max of the two and toggling never
+   moves anything below the chart. */
+.article-overlay .qla-imx-captions {
+    display: grid;
+    margin-top: 0.4rem;
+}
+
+.article-overlay .qla-imx-captions p {
+    grid-area: 1 / 1;
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.92rem;
+    font-style: italic;
+}
+
+.article-overlay .qla-imx-captions p.is-off {
+    visibility: hidden;
+}
+
+/* --- 3. survivorship wedge + believe-o-meter --- */
+.article-overlay .qlf-meter {
+    margin-top: 1rem;
+    padding-top: 0.9rem;
+    border-top: 1px solid var(--border-subtle);
+}
+
+.article-overlay .qlf-meter-question {
+    margin: 0.5rem 0 0.6rem;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.article-overlay .qlf-meter-presets {
+    display: flex;
+    gap: 0.45rem;
+    flex-wrap: wrap;
+}
+
+.article-overlay .qlf-meter-btn {
+    font-size: 0.82rem;
+    padding: 0.38rem 0.9rem;
+}
+
+.article-overlay .qlf-meter-btn.is-active {
+    background: var(--accent);
+    color: var(--bg-primary);
+    border-color: transparent;
+}
+
+.article-overlay .qlf-meter-btn.is-active {
+    color: #FFF8E1;
+}
+
+.article-overlay .qlf-meter-big {
+    margin: 0.7rem 0 0.3rem;
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-weight: 700;
+    font-size: 1.25rem;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+}
+
+.article-overlay .qlf-meter-big.is-at-measured {
+    color: var(--accent);
+}
+
+/* --- 4. risk gate playground --- */
+/* full-width stacked rows */
+.article-overlay .qlf-risk-row {
+    margin-top: 0.8rem;
+}
+
+.article-overlay .qlf-risk-row > .qlf-btn-group-label {
+    margin-bottom: 0.3rem;
+}
+
+.article-overlay .qlf-limits-row {
+    display: flex;
+    gap: 0.3rem 1.6rem;
+    flex-wrap: wrap;
+    align-items: baseline;
+}
+
+.article-overlay .qlf-limits-value {
+    color: var(--text-secondary);
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-size: 0.82rem;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.article-overlay .qlf-state-tiles {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+}
+
+@media (max-width: 560px) {
+    .article-overlay .qlf-state-tiles {
+        grid-template-columns: 1fr;
+    }
+}
+
+.article-overlay .qlf-state-tile {
+    display: grid;
+    grid-template-rows: auto auto;
+    gap: 0.15rem;
+    padding: 0.45rem 0.6rem;
+    min-width: 0;
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    transition: border-color 0.25s ease;
+}
+
+.article-overlay .qlf-state-label {
+    color: var(--text-muted);
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* tile body: exactly three value lines tall in every tile, always */
+.article-overlay .qlf-state-body {
+    display: flex;
+    flex-direction: column;
+    height: 4.2em;
+    min-width: 0;
+    font-size: 0.82rem;
+}
+
+.article-overlay .qlf-state-body-center {
+    justify-content: center;
+    gap: 0.1rem;
+}
+
+.article-overlay .qlf-state-value {
+    color: var(--text-primary);
+    font-family: 'Be Vietnam Pro', sans-serif;
+    line-height: 1.4;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.article-overlay .qlf-state-sub {
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    line-height: 1.4;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+/* positions: one fixed line per allowlisted symbol, amount right-aligned */
+.article-overlay .qlf-pos-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    line-height: 1.4;
+    height: 1.4em;
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-variant-numeric: tabular-nums;
+}
+
+.article-overlay .qlf-pos-sym {
+    color: var(--text-secondary);
+}
+
+.article-overlay .qlf-pos-amt {
+    color: var(--text-muted);
+}
+
+.article-overlay .qlf-pos-amt.is-held {
+    color: var(--text-primary);
+}
+
+.article-overlay .qlf-state-value.is-negative { color: #C74B50; }
+.article-overlay .qlf-state-value.is-negative { color: #C74B50; }
+
+.article-overlay .qlf-state-tile.qlf-pulse {
+    border-color: var(--accent);
+    animation: qlf-tile-pulse 0.6s ease;
+}
+
+@keyframes qlf-tile-pulse {
+    0% { background: rgba(199, 75, 80, 0.18); }
+    100% { background: transparent; }
+}
+
+.article-overlay .qlf-state-tile.qlf-pulse {
+    animation-name: qlf-tile-pulse-light;
+}
+
+@keyframes qlf-tile-pulse-light {
+    0% { background: rgba(199, 75, 80, 0.15); }
+    100% { background: transparent; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .article-overlay .qlf-state-tile.qlf-pulse { animation: none; }
+}
+
+.article-overlay .qlf-risk-bottom {
+    display: flex;
+    gap: 0.8rem 2rem;
+    flex-wrap: wrap;
+    margin-top: 0.9rem;
+}
+
+.article-overlay .qlf-risk-bottom .qlf-order-row {
+    max-width: 100%;
+}
+
+.article-overlay .qlf-btn-group {
+    min-width: 0;
+}
+
+.article-overlay .qlf-btn-group-label {
+    display: block;
+    margin-bottom: 0.35rem;
+    color: var(--text-muted);
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.article-overlay .qlf-status-strip {
+    display: block;
+    box-sizing: border-box;
+    height: 2.4em;
+    line-height: 2.4em;
+    padding: 0 0.6rem;
+    border-radius: 5px;
+    border: 1px solid var(--border-subtle);
+    color: var(--text-muted);
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-weight: 700;
+    font-size: 0.82rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.article-overlay .qlf-status-strip.is-tripped {
+    background: rgba(199, 75, 80, 0.15);
+    border-color: #C74B50;
+    color: #C74B50;
+}
+
+.article-overlay .qlf-status-strip.is-tripped {
+    background: rgba(199, 75, 80, 0.1);
+    border-color: #C74B50;
+    color: #C74B50;
+}
+
+.article-overlay .qla-visual.qlf-is-killed {
+    border-color: #C74B50;
+}
+
+.article-overlay .qla-visual.qlf-is-killed {
+    border-color: #C74B50;
+}
+
+.article-overlay .qlf-is-killed [data-buy] {
+    opacity: 0.45;
+}
+
+.article-overlay .qlf-risk-buttons {
+    display: flex;
+    gap: 0.45rem;
+    flex-wrap: wrap;
+}
+
+/* order buttons stay in one straight row; scroll horizontally if tight,
+   wrap only at true mobile widths */
+.article-overlay .qlf-risk-buttons.qlf-order-row {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-hover) transparent;
+}
+
+.article-overlay .qlf-risk-buttons.qlf-order-row::-webkit-scrollbar {
+    height: 5px;
+}
+
+.article-overlay .qlf-risk-buttons.qlf-order-row::-webkit-scrollbar-thumb {
+    background: var(--border-hover);
+    border-radius: 4px;
+}
+
+.article-overlay .qlf-order-row .qlf-risk-btn {
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+    .article-overlay .qlf-risk-buttons.qlf-order-row {
+        flex-wrap: wrap;
+        overflow-x: visible;
+    }
+}
+
+.article-overlay .qlf-risk-btn {
+    font-size: 0.8rem;
+    padding: 0.38rem 0.85rem;
+}
+
+.article-overlay .qlf-risk-btn-warn {
+    color: #C74B50;
+    border-color: rgba(199, 75, 80, 0.5);
+}
+
+.article-overlay .qlf-risk-btn-warn {
+    color: #C74B50;
+    border-color: rgba(199, 75, 80, 0.5);
+}
+
+.article-overlay .qlf-audit-log {
+    height: 280px;
+    overflow-y: auto;
+    padding: 0.5rem 0.6rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    background: var(--bg-primary);
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-size: 0.76rem;
+    line-height: 1.5;
+}
+
+.article-overlay .qlf-audit-log:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+.article-overlay .qlf-audit-line {
+    display: flex;
+    gap: 0.5rem;
+    align-items: baseline;
+    padding: 0.1rem 0;
+    color: var(--text-secondary);
+}
+
+.article-overlay .qlf-audit-ts {
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+
+.article-overlay .qlf-audit-verdict {
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.article-overlay .qlf-audit-line.is-approved .qlf-audit-verdict { color: #66BB6A; }
+.article-overlay .qlf-audit-line.is-approved .qlf-audit-verdict { color: #2E7D32; }
+.article-overlay .qlf-audit-line.is-rejected .qlf-audit-verdict { color: #C74B50; }
+.article-overlay .qlf-audit-line.is-rejected .qlf-audit-verdict { color: #C74B50; }
+
+/* slim scrollbars for the scrolling panels in the quantlab visuals */
+.article-overlay .qlf-audit-log {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-hover) transparent;
+}
+
+.article-overlay .qlf-audit-log::-webkit-scrollbar {
+    width: 7px;
+    height: 7px;
+}
+
+.article-overlay .qlf-audit-log::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.article-overlay .qlf-audit-log::-webkit-scrollbar-thumb {
+    background: var(--border-hover);
+    border-radius: 4px;
+}
+
+.article-overlay .qlf-audit-log::-webkit-scrollbar-thumb:hover {
+    background: var(--accent);
+}
+
+/* ============================================================
+   MUSIC ROWS — transit geometry, classic skin
+
+
+/* Blueprint reader skin: drafted poppy outlines and controls on cream paper. */
+.article-body :is(.bqst-lab, .bqst-audio-demo, .qla-visual, .palette-group) {
+  border: 2px solid #C74B50;
+  border-radius: 0;
+  background: #FFF8E1;
+}
+.article-body :is(.bqst-lab-header, .bqst-audio-demo-header, .qla-visual-header, .palette-label) {
+  border-bottom: 1px solid rgba(199, 75, 80, 0.55);
+}
+.article-body :is(button, select, input) { font-family: 'Be Vietnam Pro', sans-serif; }
+.article-body :is(.qla-btn, .bqst-audio-toggle, .bqst-audio-wave, .qla-memo, .qla-judge-panel, .qla-roster-select, .qlf-la-stat, .qlf-state-tile, .qlf-status-strip, .qlf-audit-log) {
+  border-radius: 0;
+}
+.article-body :is(.qla-btn, .bqst-audio-toggle button, .bqst-audio-play) {
+  border-color: #C74B50;
+  background: #FFF8E1;
+  color: #C74B50;
+}
+.article-body :is(.qla-btn, .bqst-audio-toggle button, .bqst-audio-play):hover,
+.article-body :is(.qla-btn, .bqst-audio-toggle button, .bqst-audio-play):focus-visible,
+.article-body :is(.qla-btn.is-active, .qla-btn-accent, .qlf-mode-btn.is-active, .qlf-meter-btn.is-active, .bqst-audio-toggle button.is-active, .bqst-audio-play.playing) {
+  border-color: #C74B50;
+  background: #C74B50;
+  color: #FFF8E1;
+  outline: none;
+  filter: none;
+}
+.article-body .bqst-audio-wave i {
+  width: 100%;
+  transform: scaleX(0);
+  transform-origin: left center;
+}
+.article-body .bqst-mini-knob { border: 1px solid #C74B50; }
+.article-body .gloss-term {
+  position: relative;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px dotted #C74B50;
+  border-radius: 0;
+  padding: 0;
+  cursor: pointer; /* no '?' help cursor */
+}
+.article-body .gloss-term:focus-visible {
+  outline: 2px solid #C74B50;
+  outline-offset: 2px;
+}
+.gloss-tooltip {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 1000;
+  box-sizing: border-box;
+  width: min(300px, calc(100vw - 24px));
+  max-height: calc(100vh - 24px);
+  overflow-y: auto;
+  padding: 12px 14px;
+  border: 2px solid #C74B50;
+  box-shadow: inset 0 0 0 4px #FFF8E1, inset 0 0 0 5px rgba(199, 75, 80, 0.55);
+  background: #FFF8E1;
+  color: #5f292a;
+  font: 500 14px/1.5 'Be Vietnam Pro', sans-serif;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(4px);
+  transition: opacity 160ms ease, transform 160ms ease, visibility 160ms ease;
+}
+.gloss-tooltip.is-visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+@media (max-width: 768px) {
+  .article-body .demo-player { flex-direction: column; align-items: stretch; }
+  .article-body :is(.bqst-lab-header, .bqst-audio-demo-header) { flex-direction: column; gap: 3px; }
+  .article-body .bqst-interactive-row { grid-template-columns: 1fr; justify-items: center; padding: 12px 8px 0; }
+  .article-body .bqst-visual-canvas { height: 320px; }
+  .article-body .demo-waveform-canvas { width: 100%; height: 48px; }
+  .article-body .demo-meters { justify-content: center; }
+}

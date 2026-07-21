@@ -1,0 +1,422 @@
+:root {
+  --article-paper: #FFF8E1;
+  --article-ink: #C74B50;
+  --article-blue: #1F2A56;
+}
+
+.article-overlay[hidden] { display: none; }
+
+/* Open/close and prev/next swaps all fade. */
+.article-overlay { opacity: 0; transition: opacity 0.22s ease; }
+.article-overlay.is-visible { opacity: 1; }
+.article-sheet { transition: opacity 0.16s ease; }
+.article-overlay.is-swapping .article-sheet { opacity: 0; }
+
+.article-overlay {
+  /* Slotted BETWEEN the top and bottom bars so the scrollbar spans the
+     visible reading area instead of running underneath the chrome. */
+  position: fixed;
+  top: 58px;
+  bottom: 58px;
+  left: 0;
+  right: 0;
+  z-index: 11;
+  overflow: auto;
+  overscroll-behavior: contain;
+  box-sizing: border-box;
+  padding: 24px clamp(16px, 3vw, 48px) 24px;
+  background: rgba(255, 248, 225, 0.97);
+  color: var(--article-ink);
+  font-family: 'Be Vietnam Pro', ui-monospace, monospace;
+  scrollbar-color: var(--article-ink) var(--article-paper);
+}
+
+.article-close {
+  position: fixed;
+  z-index: 2;
+  top: 72px;
+  right: clamp(16px, 3vw, 48px);
+  width: 46px;
+  height: 46px;
+  border: 3px solid var(--article-blue);
+  border-radius: 0;
+  background: var(--article-blue);
+  color: var(--article-paper);
+  font: 600 30px/1 'Be Vietnam Pro', sans-serif;
+  cursor: pointer;
+}
+
+.article-close:hover,
+.article-close:focus-visible {
+  background: var(--article-paper);
+  color: var(--article-blue);
+  outline: none;
+}
+
+.article-sheet {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(190px, 240px) minmax(0, 68ch);
+  justify-content: center;
+  gap: clamp(34px, 5vw, 76px);
+  max-width: 1240px;
+  min-height: calc(100vh - 180px);
+  margin: 0 auto;
+  padding: clamp(28px, 4vw, 56px);
+  box-sizing: border-box;
+  border: 2px solid var(--article-ink);
+  background: var(--article-paper);
+}
+
+.article-sheet::before {
+  content: '';
+  position: absolute;
+  inset: 11px;
+  border: 1px solid var(--article-ink);
+  pointer-events: none;
+}
+
+.article-rail,
+.article-page { position: relative; z-index: 1; }
+
+.article-rail {
+  /* (position: sticky also anchors the legend label's absolute offset) */
+  /* Sticky offset EQUALS the rail's resting offset from the scrollport
+     top (overlay padding + sheet border/padding), so the rail never
+     travels a pixel — only the article moves. The list scrolls within
+     its own box when it runs long. */
+  position: sticky;
+  /* Sticky offsets measure from the scrollport's PADDING edge, so the
+     overlay's 24px padding must NOT be included here (it double-counted
+     and sat the rail 24px below the article top). */
+  top: calc(2px + clamp(28px, 4vw, 56px));
+  align-self: start;
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 196px - clamp(28px, 4vw, 56px));
+  min-height: calc(100vh - 196px - clamp(28px, 4vw, 56px));
+}
+
+.article-rail-label,
+.article-dwg {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.article-dwg { margin-bottom: 14px; }
+
+/* Legend-style: the label sits ON the toc box's top border, so the box
+   itself top-aligns with the article's bordered block. */
+.article-rail-label {
+  position: absolute;
+  top: -6px;
+  left: 12px;
+  z-index: 1;
+  padding: 0 7px;
+  background: var(--article-paper);
+}
+
+/* The section index lives in its own drafted box, like the article sheet,
+   and scrolls INSIDE that box when the list runs long. */
+.article-toc {
+  overflow-y: auto;
+  border: 2px solid var(--article-ink);
+  padding: 10px 8px;
+  background: var(--article-paper);
+}
+
+.toc-item {
+  position: relative;
+  display: block;
+  padding: 7px 9px 7px 16px;
+  color: var(--article-ink);
+  font-size: 15.5px;
+  font-weight: 600;
+  line-height: 1.35;
+  text-decoration: none;
+  opacity: 0.46;
+}
+
+.toc-item:hover { opacity: 0.8; }
+.toc-item.toc-h3 { padding-left: 31px; font-size: 13.5px; }
+.toc-item.parent-active { opacity: 0.72; }
+.toc-item.active { background: var(--article-ink); color: var(--article-paper); opacity: 1; }
+.toc-item.active::before { content: '>'; position: absolute; left: 5px; }
+.toc-item.toc-h3.active::before { left: 20px; }
+
+.article-project-nav {
+  display: grid;
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1px solid rgba(199, 75, 80, 0.45);
+}
+
+.article-project-link {
+  display: block;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-left: 3px solid transparent;
+  background: transparent;
+  color: var(--article-blue);
+  font: 600 15.5px/1.3 'Be Vietnam Pro', sans-serif; /* matches .toc-item */
+  text-align: left;
+  cursor: pointer;
+}
+
+.article-project-link:hover,
+.article-project-link:focus-visible {
+  border-left-color: var(--article-blue);
+  background: var(--article-blue);
+  color: var(--article-paper);
+  outline: none;
+}
+
+.article-project-link.disabled { opacity: 0.2; cursor: default; }
+
+.article-title-block {
+  margin-bottom: 24px;
+  padding: 20px;
+  border: 2px solid var(--article-ink);
+  box-shadow: inset 0 0 0 8px var(--article-paper), inset 0 0 0 9px var(--article-ink);
+}
+
+.article-title-block h1 {
+  max-width: 22ch;
+  margin: 0 0 12px;
+  color: var(--article-ink);
+  font-size: clamp(28px, 4vw, 48px);
+  line-height: 1.06;
+  letter-spacing: -0.025em;
+}
+
+.article-title-block > p {
+  margin: 0 0 18px;
+  color: var(--article-ink);
+  font-size: 15px;
+  line-height: 1.55;
+  opacity: 0.78;
+}
+
+.article-meta { display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; }
+.article-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.article-tags span {
+  padding: 4px 8px;
+  border: 1px solid var(--article-ink);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.article-meta > a,
+.article-body a {
+  color: var(--article-blue);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+}
+
+.article-meta > a {
+  flex: none;
+  padding: 6px 8px;
+  border: 2px solid var(--article-blue);
+  font-size: 11px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.article-meta > a:hover,
+.article-body a:hover {
+  background: var(--article-blue);
+  color: var(--article-paper);
+}
+
+.article-banner {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 3 / 2;
+  margin-bottom: 38px;
+  border: 2px solid var(--article-ink);
+  object-fit: cover;
+  box-sizing: border-box;
+}
+
+.article-body {
+  color: #5f292a;
+  font-size: clamp(16px, 1.35vw, 19px);
+  line-height: 1.75;
+}
+
+.article-body h2,
+.article-body h3 {
+  color: var(--article-ink);
+  line-height: 1.2;
+  scroll-margin-top: 92px;
+}
+
+.article-body h2 {
+  margin: 2.8em 0 1em;
+  padding-bottom: 10px;
+  border-bottom: 3px double var(--article-ink);
+  font-size: clamp(25px, 3vw, 34px);
+}
+
+.article-body h3 {
+  margin: 2.2em 0 0.8em;
+  padding-bottom: 7px;
+  border-bottom: 1px solid rgba(199, 75, 80, 0.6);
+  font-size: clamp(19px, 2vw, 24px);
+}
+
+.article-body p { margin: 0 0 1.25em; }
+.article-body li + li { margin-top: 0.4em; }
+.article-body ul, .article-body ol { padding-left: 1.4em; }
+
+.article-body blockquote,
+.article-body pre {
+  margin: 1.6em 0;
+  padding: 16px 18px;
+  border: 1px solid rgba(199, 75, 80, 0.55);
+  background: rgba(199, 75, 80, 0.035);
+}
+
+.article-body blockquote { border-left-width: 5px; }
+.article-body blockquote > :last-child { margin-bottom: 0; }
+.article-body pre { overflow: auto; white-space: pre-wrap; }
+.article-body code { font: 0.88em/1.6 'SFMono-Regular', Consolas, monospace; }
+.article-body :not(pre) > code { padding: 0.1em 0.3em; border: 1px solid rgba(199, 75, 80, 0.4); }
+
+.article-body figure {
+  width: 100%;
+  margin: 2em 0;
+}
+
+.article-body figure img,
+.article-body > img,
+.article-body .bqst-article-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--article-ink);
+  box-sizing: border-box;
+}
+
+.article-body figcaption,
+.article-body .article-caption {
+  margin-top: 7px;
+  color: var(--article-ink);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.article-body table {
+  width: 100%;
+  margin: 1.6em 0;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 0.78em;
+}
+
+.article-body th,
+.article-body td { padding: 9px; border: 1px solid rgba(199, 75, 80, 0.6); text-align: left; }
+.article-body th { background: var(--article-ink); color: var(--article-paper); }
+.article-body .gloss-term { border-bottom: 1px dotted var(--article-blue); cursor: help; }
+
+.article-body .download-actions,
+.article-body .bqst-download-actions { display: flex; flex-wrap: wrap; gap: 9px; }
+/* Primary CTAs fill navy; secondary actions stay outlined. Both invert
+   on hover. */
+.article-body .try-it-btn,
+.article-body .support-btn { padding: 8px 11px; border: 2px solid var(--article-blue); text-decoration: none; font-weight: 700; }
+.article-body .try-it-btn { background: var(--article-blue); color: var(--article-paper); }
+.article-body .try-it-btn:hover { background: transparent; color: var(--article-blue); }
+.article-body .support-btn:hover { background: var(--article-blue); color: var(--article-paper); }
+
+.article-body .article-stat-grid,
+.article-body .bqst-asset-strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 1.6em 0; }
+.article-body .article-stat-card,
+.article-body .bqst-asset-card { padding: 12px; border: 1px solid var(--article-ink); }
+.article-body .article-stat-value { display: block; color: var(--article-ink); font-size: 1.35em; font-weight: 700; }
+.article-body .article-stat-label,
+.article-body .bqst-asset-card span { color: var(--article-ink); font-size: 10px; text-transform: uppercase; }
+.article-body .bqst-asset-card img { display: block; width: 100%; height: auto; margin-bottom: 8px; }
+
+#bqst-audio-demo:empty { display: none; }
+
+@media (max-width: 850px) {
+  .article-overlay { padding: 72px 10px 68px; }
+  .article-close { top: 66px; right: 16px; }
+  .article-sheet { display: block; padding: 36px 24px; }
+  .article-rail { position: relative; display: block; max-height: none; min-height: 0; margin-bottom: 30px; }
+  .article-toc { max-height: 220px; border-bottom: 1px solid rgba(199, 75, 80, 0.45); }
+  .article-project-nav { grid-template-columns: repeat(3, 1fr); margin-top: 12px; border-top: 0; }
+  .article-project-link { text-align: center; }
+  .article-title-block { margin-top: 58px; }
+  .article-meta { align-items: flex-start; flex-direction: column; }
+}
+
+@media (max-width: 560px) {
+  .article-sheet { padding: 30px 18px; }
+  .article-body .article-stat-grid,
+  .article-body .bqst-asset-strip { grid-template-columns: 1fr; }
+}
+
+/* --- image lightbox (adapted from the original site) --- */
+.article-body figure { position: relative; }
+/* portrait images: narrow + centred, never stretched to the column */
+.article-body figure.is-portrait img {
+  display: block;
+  max-width: min(340px, 68%);
+  margin: 0 auto;
+}
+.article-body figure img { cursor: zoom-in; }
+.article-body figure::after {
+  content: 'click to expand';
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  padding: 3px 9px;
+  background: var(--article-paper);
+  border: 1px solid var(--article-ink);
+  color: var(--article-ink);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  pointer-events: none;
+}
+.article-body figure:has(figcaption)::after { bottom: 40px; }
+.article-body figure:hover::after { opacity: 1; }
+.article-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 14px;
+  padding: 40px;
+  background: rgba(255, 248, 225, 0.96);
+  cursor: zoom-out;
+}
+.article-lightbox.is-visible { display: flex; }
+.article-lightbox img {
+  max-width: min(1400px, 94vw);
+  max-height: 84vh;
+  border: 2px solid var(--article-ink);
+  background: var(--article-paper);
+}
+.article-lightbox-hint {
+  color: var(--article-ink);
+  font: 600 12px/1 'Be Vietnam Pro', sans-serif;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.6;
+}

@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>rohan.jk</title>
+  <script>
+    // GitHub Pages serves this for unknown paths. Re-encode the deep link
+    // as a query param and bounce to the app root, which restores it.
+    var path = location.pathname + location.search;
+    var root = path.indexOf('/blueprint') === 0 ? '/blueprint/' : '/';
+    location.replace(root + '?p=' + encodeURIComponent(location.pathname) + location.hash);
+  </script>
+</head>
+<body></body>
+</html>

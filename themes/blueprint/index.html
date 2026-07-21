@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>blueprint studio — proto</title>
+  <style>
+    @font-face { font-family: 'Be Vietnam Pro'; src: url('/fonts/BeVietnamPro-Regular.woff2') format('woff2'); font-weight: 400; font-display: block; }
+    @font-face { font-family: 'Be Vietnam Pro'; src: url('/fonts/BeVietnamPro-Medium.woff2') format('woff2'); font-weight: 500; font-display: block; }
+    @font-face { font-family: 'Be Vietnam Pro'; src: url('/fonts/BeVietnamPro-SemiBold.woff2') format('woff2'); font-weight: 600; font-display: block; }
+    @font-face { font-family: 'Be Vietnam Pro'; src: url('/fonts/BeVietnamPro-Bold.woff2') format('woff2'); font-weight: 700; font-display: block; }
+    @font-face { font-family: 'Chillax'; src: url('/fonts/Chillax-Semibold.otf') format('opentype'); font-weight: 600; font-display: block; }
+    html, body { margin: 0; height: 100%; background: #FFF8E1; overflow: hidden; }
+    #app { position: fixed; inset: 0; }
+    #nav { position: fixed; top: 0; left: 0; right: 0; z-index: 12; height: 58px;
+          display: flex; justify-content: center; align-items: stretch; gap: 0;
+          background: rgba(255, 248, 225, 0.82);
+          backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+          border-bottom: 1px solid rgba(31, 42, 86, 0.35);
+          font-family: 'Be Vietnam Pro', ui-monospace, monospace;
+          color: #1F2A56; font-size: 17px; letter-spacing: 0.05em; font-weight: 600;
+          transition: opacity 0.6s ease; }
+    #nav.hidden { opacity: 0; pointer-events: none; }
+    /* Home shows the bar with ONLY the theme switcher; tabs + back FADE
+       in on arrival at a scene and fade out heading home. */
+    #nav.home-mode > a,
+    #nav.home-mode > a#nav-back { opacity: 0; pointer-events: none; visibility: hidden; }
+    /* every tab carries an invisible border so the current-tab border never
+       changes widths (tabs used to shift when the selection moved) */
+    #nav a { color: inherit; text-decoration: none; cursor: pointer; opacity: 0.7;
+          display: flex; align-items: center; padding: 0 16px;
+          box-sizing: border-box; border: 3px solid transparent;
+          transition: background 0.35s ease, color 0.35s ease,
+                      opacity 0.35s ease, border-color 0.35s ease,
+                      visibility 0.35s; }
+    #nav a.current { opacity: 1; background: #1F2A56; color: #FFF8E1;
+          border-color: #1F2A56; }
+    #nav a.current:hover { background: #FFF8E1; color: #1F2A56; }
+    #nav a.soon { opacity: 0.3; cursor: default; }
+    /* Scene tabs: equal-width flush boxes, label centred, drafting number
+       pinned to the top-left corner — mirrors the 01/02/03 of the home menu */
+    #nav a.nav-tab { width: 152px; justify-content: center; padding: 0;
+          position: relative; }
+    #nav a.nav-tab .nav-num { position: absolute; top: 4px; left: 7px;
+          font-size: 10px; letter-spacing: 0.12em; opacity: 0.6; }
+    #nav a#nav-back { position: absolute; left: 0; top: 0; bottom: 0;
+          opacity: 1; font-weight: 700; background: #1F2A56; color: #FFF8E1;
+          padding: 0 20px; box-sizing: border-box; border: 3px solid #1F2A56; }
+    #nav a#nav-back:hover { background: #FFF8E1; color: #1F2A56; }
+    /* Theme switcher, top right — same navy box language as the tabs. */
+    #theme { position: absolute; right: 0; top: 0; bottom: 0; }
+    #theme-btn { height: 100%; display: flex; align-items: center; padding: 0 20px;
+          background: #1F2A56; color: #FFF8E1; font: 600 15px/1 'Be Vietnam Pro', sans-serif;
+          letter-spacing: 0.05em; border: 3px solid #1F2A56; box-sizing: border-box;
+          cursor: pointer; }
+    #theme-btn:hover { background: #FFF8E1; color: #1F2A56; }
+    #theme-menu { position: absolute; right: 0; top: 100%; width: 100%;
+          box-sizing: border-box;
+          display: none; flex-direction: column; background: #FFF8E1;
+          border: 3px solid #1F2A56; border-top: 0; }
+    #theme.open #theme-menu { display: flex; }
+    #theme-menu a { transition: background 0.1s ease, color 0.1s ease; padding: 11px 16px; color: #1F2A56; text-decoration: none;
+          font: 600 14px/1 'Be Vietnam Pro', sans-serif; letter-spacing: 0.05em; }
+    #theme-menu a:hover { background: #1F2A56; color: #FFF8E1; }
+    #theme-menu a.current { opacity: 0.4; cursor: default; pointer-events: none; }
+    /* Brand, bottom right of the lower bar. */
+    #bottombar .brand-cluster { position: absolute; right: 18px; top: 50%;
+          transform: translateY(-50%); display: flex; align-items: center; gap: 10px; }
+    #bottombar #logo { height: 40px; width: 40px; display: block; }
+    #bottombar .brand { font-size: 19px; font-weight: 700; letter-spacing: 0.04em;
+          color: #1F2A56; }
+    /* unselected tabs: pale blue wash on hover */
+    #nav a:not(.current):not(.soon):not(#nav-back):hover {
+          opacity: 1; background: rgba(31, 42, 86, 0.12); }
+    /* Bottom bar: brand left, socials right. Pages only, fades with #nav. */
+    #bottombar { position: fixed; bottom: 0; left: 0; right: 0; z-index: 12;
+          height: 58px;
+          display: flex; justify-content: space-between; align-items: stretch;
+          padding-left: 18px;
+          background: rgba(255, 248, 225, 0.82);
+          backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+          border-top: 1px solid rgba(31, 42, 86, 0.35);
+          font-family: 'Be Vietnam Pro', ui-monospace, monospace;
+          color: #1F2A56; font-size: 14px; letter-spacing: 0.05em; font-weight: 600;
+          transition: opacity 0.6s ease; }
+    #bottombar.hidden { opacity: 0; pointer-events: none; }
+    /* Socials: one contiguous full-height blue block, CENTRED in the bar,
+       cream dividers between, invert on hover. */
+    #bottombar .right { position: absolute; left: 50%; transform: translateX(-50%);
+          top: 0; bottom: 0; display: flex; }
+    #bottombar .right a { color: #FFF8E1; background: #1F2A56; text-decoration: none;
+          cursor: pointer; display: flex; align-items: center; padding: 0 18px;
+          box-sizing: border-box; border: 3px solid #1F2A56; border-right-width: 0; }
+    #bottombar .right a:last-child { border-right-width: 3px; }
+    #bottombar .right a + a { border-left: 1px solid rgba(255, 248, 225, 0.45); }
+    #bottombar .right a:hover { background: #FFF8E1; color: #1F2A56;
+          border-left-color: #1F2A56; }
+    /* Centre nav panel over the plan (home only; fades out once clicked) */
+    #menu { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+          z-index: 14; background: #BE4348; color: #FFF8E1; padding: 34px 30px 26px;
+          width: 320px;
+          font-family: 'Be Vietnam Pro', ui-monospace, monospace;
+          letter-spacing: 0.05em; font-weight: 600;
+          transition: opacity 0.45s ease, visibility 0.45s; }
+    #menu.hidden { opacity: 0; pointer-events: none; visibility: hidden; }
+    #menu-head { display: flex; align-items: baseline; gap: 0.6em;
+          font-size: 22px; margin: 0 -30px 14px; padding: 0 30px 20px;
+          border-bottom: 1px solid rgba(255, 248, 225, 0.45); }
+    #menu-head .rjk { background: #FFF8E1; color: #BE4348; padding: 5px 12px; }
+    #menu .menu-row { display: flex; align-items: baseline; gap: 0.9em;
+          margin: 0 -30px; padding: 13px 30px; font-size: 17px; cursor: pointer;
+          color: inherit; text-decoration: none; }
+    #menu .menu-row span { font-size: 12px; letter-spacing: 0.12em;
+          text-transform: uppercase; opacity: 0.65; }
+    #menu .menu-row:hover { background: #FFF8E1; color: #BE4348; }
+    #menu .menu-row.soon { opacity: 0.45; cursor: default; }
+    #menu .menu-row.soon:hover { background: transparent; color: inherit; }
+    #labels { position: fixed; inset: 0; pointer-events: none; z-index: 5; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+          overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+  </style>
+  <script>
+    // GitHub Pages SPA fallback: 404.html re-encodes deep links as
+    // /?p=/blueprint/projects/x; decode and restore before the app boots.
+    (function () {
+      const p = new URLSearchParams(location.search).get('p');
+      if (p) history.replaceState({}, '', p + location.hash);
+    })();
+  </script>
+</head>
+<body>
+  <p class="sr-only">
+    Portfolio of Rohan — an interactive 3D "blueprint" site. Three scenes:
+    projects (a workshop of project write-ups you can open and read),
+    music (a studio with playable original tracks), and about me (a lounge
+    with bio and resume). Use the navigation bar links to visit each scene;
+    project articles open as readable text pages.
+  </p>
+  <div id="app"></div>
+  <div id="labels"></div>
+  <div id="nav">
+    <a id="nav-back">&larr; home</a>
+    <div id="theme">
+      <button id="theme-btn" type="button">theme: blueprint ▾</button>
+      <div id="theme-menu">
+        <a data-theme="classic">classic</a>
+        <a data-theme="transit">transit</a>
+        <a class="current">blueprint</a>
+      </div>
+    </div>
+    <a id="nav-projects" class="nav-tab"><span class="nav-num">01</span>projects</a>
+    <a id="nav-music" class="nav-tab"><span class="nav-num">02</span>music</a>
+    <a id="nav-about" class="nav-tab"><span class="nav-num">03</span>about me</a>
+  </div>
+  <div id="bottombar">
+    <div class="brand-cluster"><img id="logo" src="/logo.svg" alt="rohan.jk" /><span class="brand">rohan.jk</span></div>
+    <div class="right">
+      <a href="https://github.com/rohanz" target="_blank" rel="noopener">github</a>
+      <a href="https://open.spotify.com/artist/3I1V2FxqX2qs3zrUY0fCPp" target="_blank" rel="noopener">spotify</a>
+      <a href="https://www.instagram.com/rrohan.jk/" target="_blank" rel="noopener">instagram</a>
+      <a href="https://www.linkedin.com/in/rohan-jk" target="_blank" rel="noopener">linkedin</a>
+    </div>
+  </div>
+  <div id="menu">
+    <div id="menu-head"><span class="rjk">rohan.jk</span> blueprints</div>
+    <a class="menu-row" id="menu-projects"><span>01</span> projects</a>
+    <a class="menu-row" id="menu-music"><span>02</span> music</a>
+    <a class="menu-row" id="menu-about"><span>03</span> about me</a>
+  </div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
