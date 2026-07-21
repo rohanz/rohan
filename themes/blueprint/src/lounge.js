@@ -1,6 +1,7 @@
 // SCENE03 — lounge/about room (03 / personal specification). A quiet seating vignette with the biography
 // treated as an A4 technical specification on the coffee table.
 import { asset } from './base.js';
+import { PROJECTS } from './projects.js';
 import * as THREE from 'three';
 import { COLORS, FONT, ROOM } from './constants.js';
 import { solidify, inkLine, hatchLines, constructionLine, floorGrid } from './materials.js';
@@ -131,7 +132,9 @@ function bioSheet() {
     ctx.fillText('STATS', 48, 602);
     ctx.font = `700 40px ${FONT}`;
     ctx.fillText('1.3m+', 48, 652);
-    ctx.fillText('8+', 330, 652);
+    // derived from the generated registry — stays honest as projects ship
+    const projectCount = PROJECTS.filter((p) => !p.unlisted).length;
+    ctx.fillText(`${projectCount}+`, 330, 652);
     ctx.font = `500 18px ${FONT}`;
     ctx.fillText('streams', 48, 680);
     ctx.fillText('projects built', 330, 680);
