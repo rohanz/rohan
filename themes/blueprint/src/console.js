@@ -593,7 +593,7 @@ export function buildConsole(songs, { onStripClick, onVolume, onMono, onDim, onC
       const pad = 8 * SS;
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
-      const font = `400 ${capPx}px Winkle, cursive`;
+      const font = `400 ${capPx}px 'Kids Word', cursive`;
       ctx.font = font;
       const text = 'try these!';
       const w = Math.ceil(ctx.measureText(text).width * 1.4) + pad * 2;
@@ -612,12 +612,12 @@ export function buildConsole(songs, { onStripClick, onVolume, onMono, onDim, onC
       };
       const texture = new THREE.CanvasTexture(canvas);
       if (document.fonts?.load) {
-        document.fonts.load(`400 26px Winkle`).then(drawNote).catch(() => {});
+        document.fonts.load(`400 26px 'Kids Word'`).then(drawNote).catch(() => {});
       }
       texture.colorSpace = THREE.SRGBColorSpace;
       texture.anisotropy = 8;
       drawNote();
-      const worldCap = 0.038; // Caveat runs small at cap height
+      const worldCap = 0.046; // handwriting runs small at cap height
 
       const geo = new THREE.PlaneGeometry(worldCap * (w / h), worldCap);
       geo.rotateX(-Math.PI / 2); // same orientation recipe as makeLabel
