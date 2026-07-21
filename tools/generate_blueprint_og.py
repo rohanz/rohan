@@ -58,6 +58,23 @@ def frontmatter(md: Path) -> dict:
     return data
 
 
+def dashed_grid(d: ImageDraw.ImageDraw):
+    def dashed(x0, y0, x1, y1):
+        length, gap, pos = 10, 8, 0
+        total = max(abs(x1 - x0), abs(y1 - y0))
+        while pos < total:
+            t0, t1 = pos / total, min(1, (pos + length) / total)
+            d.line([
+                (x0 + (x1 - x0) * t0, y0 + (y1 - y0) * t0),
+                (x0 + (x1 - x0) * t1, y0 + (y1 - y0) * t1),
+            ], fill=(236, 205, 197), width=2)
+            pos += length + gap
+    for x in range(80, W, 80):
+        dashed(x, 0, x, H)
+    for y in range(70, H, 80):
+        dashed(0, y, W, y)
+
+
 def sheet_chrome(d: ImageDraw.ImageDraw):
     d.rectangle([16, 16, W - 16, H - 16], outline=INK, width=4)
     d.rectangle([32, 32, W - 32, H - 32], outline=INK, width=2)
@@ -84,19 +101,23 @@ def fit_lines(d, text, font_name, max_width, start, floor=34, max_lines=2):
     return [text], load_font(font_name, floor), floor
 
 
-def project_card(slug: str, title: str, number: int):
+def project_card(slug: str, title: str, number: int, image_path: str):
     img = Image.new('RGB', (W, H), CREAM)
     d = ImageDraw.Draw(img)
+    dashed_grid(d)
     sheet_chrome(d)
 
     head = load_font('BeVietnamPro-SemiBold.woff2', 30)
-    d.text((60, 54), f'01 / SHEET {number:02d}', font=head, fill=INK)
+    d.text((60, 58), f'01 / SHEET {number:02d}', font=head, fill=INK)
     right = f'SCENE01 / DWG {number:03d}'
-    d.text((W - 60 - d.textlength(right, font=head), 54), right, font=head, fill=INK)
+    d.text((W - 60 - d.textlength(right, font=head), 58), right, font=head, fill=INK)
+    brand = load_font('BeVietnamPro-Bold.woff2', 46)
+    d.text(((W - d.textlength('rohan.jk', font=brand)) / 2, 44), 'rohan.jk', font=brand, fill=INK)
 
-    # banner, cover-fitted into a drafted panel
-    bx0, by0, bx1, by1 = 60, 112, W - 60, 428
-    banner = BANNERS / slug / 'banner.webp'
+    # banner, cover-fitted into a drafted panel (path from frontmatter — slug
+    # dirs and image dirs don't always match)
+    bx0, by0, bx1, by1 = 60, 122, W - 60, 432
+    banner = ROOT / 'public' / image_path.lstrip('/')
     if banner.exists():
         pic = Image.open(banner).convert('RGB')
         scale = max((bx1 - bx0) / pic.width, (by1 - by0) / pic.height)
@@ -104,6 +125,9 @@ def project_card(slug: str, title: str, number: int):
         left = (pic.width - (bx1 - bx0)) // 2
         top = (pic.height - (by1 - by0)) // 2
         img.paste(pic.crop((left, top, left + bx1 - bx0, top + by1 - by0)), (bx0, by0))
+    else:
+        print(f'  WARNING: no banner for {slug}: {banner}', file=sys.stderr)
+        d.rectangle([bx0, by0, bx1, by1], fill=CREAM)
     d.rectangle([bx0, by0, bx1, by1], outline=INK, width=3)
 
     # inverted title bar, full width
@@ -114,30 +138,13 @@ def project_card(slug: str, title: str, number: int):
     for line in lines:
         d.text((64, y), line, font=font, fill=CREAM)
         y += size + 10
-    byline = load_font('BeVietnamPro-Medium.woff2', 24)
-    d.text((W - 64 - d.textlength('rohan.jk', font=byline), H - 70), 'rohan.jk', font=byline, fill=CREAM)
-
     img.save(OUT / f'{slug}.png', optimize=True)
 
 
 def generic_card():
     img = Image.new('RGB', (W, H), CREAM)
     d = ImageDraw.Draw(img)
-    # faint dashed graph-paper grid, like the master plan
-    def dashed(x0, y0, x1, y1):
-        length, gap, pos = 10, 8, 0
-        total = max(abs(x1 - x0), abs(y1 - y0))
-        while pos < total:
-            t0, t1 = pos / total, min(1, (pos + length) / total)
-            d.line([
-                (x0 + (x1 - x0) * t0, y0 + (y1 - y0) * t0),
-                (x0 + (x1 - x0) * t1, y0 + (y1 - y0) * t1),
-            ], fill=(236, 205, 197), width=2)
-            pos += length + gap
-    for x in range(80, W, 80):
-        dashed(x, 0, x, H)
-    for y in range(70, H, 80):
-        dashed(0, y, W, y)
+    dashed_grid(d)
     sheet_chrome(d)
 
     # centre crimson panel, like the home menu
@@ -163,10 +170,10 @@ def main():
         fm = frontmatter(md)
         if fm.get('unlisted', '').lower() == 'true':
             continue
-        projects.append((int(fm.get('order', 999)), md.stem, fm.get('title', md.stem)))
+        projects.append((int(fm.get('order', 999)), md.stem, fm.get('title', md.stem), fm.get('image', '')))
     projects.sort()
-    for i, (_, slug, title) in enumerate(projects):
-        project_card(slug, title, i + 1)
+    for i, (_, slug, title, image) in enumerate(projects):
+        project_card(slug, title, i + 1, image)
         print(f'og: {slug}.png')
     generic_card()
     print('og: blueprint.png')
