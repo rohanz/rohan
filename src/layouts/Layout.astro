@@ -41,6 +41,21 @@ const personLd = JSON.stringify({
 ---
 <html lang="en" class="theme-transit">
   <head>
+    <script is:inline>
+      // Transit is desktop-only (like blueprint): phones get the classic
+      // equivalent page. Capability check, not UA sniffing; runs before any
+      // assets load. ?desktop forces transit for demos.
+      (function () {
+        try {
+          if (new URLSearchParams(location.search).has('desktop')) return;
+          var coarse = window.matchMedia('(pointer: coarse)').matches;
+          var small = Math.min(screen.width, window.innerWidth || 9e9) < 1024;
+          if (!(coarse && small)) return;
+          var target = location.pathname.replace(/^\/transit(?=\/|$)/, '') || '/';
+          location.replace(target);
+        } catch (e) { /* stay on transit */ }
+      })();
+    </script>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{title}</title>
