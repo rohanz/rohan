@@ -593,23 +593,32 @@ export function buildConsole(songs, { onStripClick, onVolume, onMono, onDim, onC
       const pad = 8 * SS;
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
-      const font = `italic 600 ${capPx}px ${FONT}`;
+      const font = `600 ${capPx}px Caveat, cursive`;
       ctx.font = font;
       const text = 'try these!';
-      const w = Math.ceil(ctx.measureText(text).width) + pad * 2;
+      const w = Math.ceil(ctx.measureText(text).width * 1.4) + pad * 2;
       const h = capPx + pad * 2;
       canvas.width = w;
       canvas.height = h;
-      const c2 = canvas.getContext('2d');
-      c2.font = font;
-      c2.fillStyle = COLORS.inkCss;
-      c2.textBaseline = 'middle';
-      c2.textAlign = 'center';
-      c2.fillText(text, w / 2, h / 2);
+      const drawNote = () => {
+        const c2 = canvas.getContext('2d');
+        c2.clearRect(0, 0, w, h);
+        c2.font = font;
+        c2.fillStyle = COLORS.inkCss;
+        c2.textBaseline = 'middle';
+        c2.textAlign = 'center';
+        c2.fillText(text, w / 2, h / 2);
+        texture.needsUpdate = true;
+      };
       const texture = new THREE.CanvasTexture(canvas);
+      if (document.fonts?.load) {
+        document.fonts.load(`600 26px Caveat`).then(drawNote).catch(() => {});
+      }
       texture.colorSpace = THREE.SRGBColorSpace;
       texture.anisotropy = 8;
-      const worldCap = 0.034;
+      drawNote();
+      const worldCap = 0.038; // Caveat runs small at cap height
+
       const geo = new THREE.PlaneGeometry(worldCap * (w / h), worldCap);
       geo.rotateX(-Math.PI / 2); // same orientation recipe as makeLabel
       geo.rotateY(Math.PI);
@@ -621,14 +630,14 @@ export function buildConsole(songs, { onStripClick, onVolume, onMono, onDim, onC
       return mesh;
     })() : null;
     if (note) {
-      note.position.set(mx - 0.02, 0.003, -0.375);
+      note.position.set(mx - 0.055, 0.003, -0.375);
       note.rotation.y = 0.06; // tiny tilt, like a jotted margin note
       face.add(note);
       // curved arrow: tail at the note's right edge, tip landing just
       // below the CUT/LOOP labels, pointing up-slope at the buttons. The
       // head barbs splay around the end tangent so they meet AT the tip.
-      const start = new THREE.Vector3(mx + 0.062, 0.003, -0.372);
-      const ctrl = new THREE.Vector3(mx + 0.118, 0.003, -0.345);
+      const start = new THREE.Vector3(mx + 0.03, 0.003, -0.372);
+      const ctrl = new THREE.Vector3(mx + 0.1, 0.003, -0.345);
       const end = new THREE.Vector3(mx + 0.02, 0.003, -0.316);
       const arc = [];
       for (let i = 0; i <= 16; i++) {
