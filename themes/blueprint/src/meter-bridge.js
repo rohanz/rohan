@@ -606,8 +606,9 @@ function drawTrackInfo(ctx, cw, ch, title, artist) {
       fitText(artist, 600, ch * 0.3, ch * 0.75);
     }
   } else {
-    // idle placeholder fills the title + artist space: bigger, centred
-    ctx.fillStyle = 'rgba(199, 75, 80, 0.6)';
+    // idle placeholder fills the title + artist space: bigger, centred —
+    // 40% ink, the theme's inert wash (nothing is playing)
+    ctx.fillStyle = 'rgba(199, 75, 80, 0.4)';
     fitText('NO TAPE LOADED', 700, ch * 0.52, ch * 0.52);
   }
   if ('letterSpacing' in ctx) ctx.letterSpacing = '0px';
@@ -884,6 +885,7 @@ export function buildMeterBridge(songs, { width = 2.9 } = {}) {
   coverMesh.position.set(coverX, scopeY, FACE_Z);
   rail.add(coverMesh);
   const coverFrame = makeFrame(COVER_S, COVER_S);
+  addCaption('cover', coverX, COVER_S);
   coverFrame.position.copy(coverMesh.position);
   coverFrame.position.z += 0.001;
   rail.add(coverFrame);

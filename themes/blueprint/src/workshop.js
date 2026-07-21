@@ -412,10 +412,14 @@ function buildPagerButton(dir = 1) {
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.anisotropy = 8;
   let hovered = false;
+  let disabled = false;
   function draw() {
-    const paper = hovered ? COLORS.inkCss : COLORS.creamCss;
-    const ink = hovered ? COLORS.creamCss : COLORS.inkCss;
+    // Disabled: the theme's inert wash (40% ink), no hover inversion —
+    // same vocabulary as the theme dropdown's current entry.
+    const paper = hovered && !disabled ? COLORS.inkCss : COLORS.creamCss;
+    const ink = hovered && !disabled ? COLORS.creamCss : COLORS.inkCss;
     ctx.setTransform(2, 0, 0, 2, 0, 0);
+    ctx.globalAlpha = 1;
     ctx.fillStyle = paper;
     ctx.fillRect(0, 0, PX, PX);
     ctx.strokeStyle = ink;
@@ -436,6 +440,20 @@ function buildPagerButton(dir = 1) {
     ctx.lineTo(PX * 0.72, PX * 0.5);
     ctx.stroke();
     ctx.restore();
+    if (disabled) {
+      // repaint at 40%: wash the whole face
+      ctx.globalAlpha = 1;
+      const snap = document.createElement('canvas');
+      snap.width = canvas.width; snap.height = canvas.height;
+      snap.getContext('2d').drawImage(canvas, 0, 0);
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = COLORS.creamCss;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.globalAlpha = 0.4;
+      ctx.drawImage(snap, 0, 0);
+      ctx.globalAlpha = 1;
+    }
     texture.needsUpdate = true;
   }
   draw();
@@ -453,7 +471,9 @@ function buildPagerButton(dir = 1) {
   return {
     group,
     hitbox,
-    setHover(value) { if (hovered !== value) { hovered = value; draw(); } },
+    setHover(value) { if (disabled) value = false; if (hovered !== value) { hovered = value; draw(); } },
+    setDisabled(value) { if (disabled !== value) { disabled = value; hovered = false; draw(); } },
+    get disabled() { return disabled; },
   };
 }
 
@@ -816,9 +836,9 @@ export function buildWorkshop(projects) {
       const index = page * PER_PAGE + i;
       sheet.setProject(filtered[index] ?? null, index);
     });
-    // prev only past the first page; next hides on the last page
-    prevBtn.group.visible = page > 0;
-    nextBtn.group.visible = page < pages - 1;
+    // bounds: arrows stay in place but take the inert wash
+    prevBtn.setDisabled(page <= 0);
+    nextBtn.setDisabled(page >= pages - 1);
     pageIndicator.setPage(`${page + 1} / ${pages}`);
   }
   function applyPageFaded() {
@@ -827,8 +847,8 @@ export function buildWorkshop(projects) {
       const index = page * PER_PAGE + i;
       sheet.setProject(filtered[index] ?? null, index);
     });
-    prevBtn.group.visible = page > 0;
-    nextBtn.group.visible = page < pages - 1;
+    prevBtn.setDisabled(page <= 0);
+    nextBtn.setDisabled(page >= pages - 1);
     pageIndicator.setPageFaded(`${page + 1} / ${pages}`);
   }
   applyPage();
@@ -842,7 +862,8 @@ export function buildWorkshop(projects) {
     return hit ? sheets.find((sheet) => sheet.hitbox === hit.object) : null;
   }
   function pagerUnderRay(raycaster, btn) {
-    return btn.group.visible && raycaster.intersectObject(btn.hitbox, false).length > 0;
+    return btn.group.visible && !btn.disabled
+      && raycaster.intersectObject(btn.hitbox, false).length > 0;
   }
   const pillHitboxes = pills.map((pl) => pl.hitbox);
   function pillUnderRay(raycaster) {

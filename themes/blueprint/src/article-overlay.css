@@ -174,7 +174,7 @@
   outline: none;
 }
 
-.article-project-link.disabled { opacity: 0.2; cursor: default; }
+.article-project-link.disabled { opacity: 0.4; cursor: default; } /* theme inert wash */
 
 .article-title-block {
   margin-bottom: 24px;
