@@ -97,6 +97,25 @@ Rollback: re-run the workflow from the previous good commit
 (`gh workflow run deploy.yml --ref <sha-or-branch>` is not supported for
 arbitrary shas — instead revert the commit on astro-site, push, re-run).
 
+## Blueprint specifics worth knowing
+
+- **Analytics**: GoatCounter is wired inside the SPA (`themes/blueprint/index.html`
+  loads the snippet with `no_onload`; `src/main.js` counts pageviews on every
+  route change and fires the same named events as classic: `audio-play`,
+  `resume-download`; classic/transit also log `switch-to-blueprint`).
+- **Fonts**: Be Vietnam Pro + Chillax + Kids Word live in
+  `themes/blueprint/public/fonts/`. NOTE: Kids Word (the handwritten
+  "try these!" note) is licensed personal-use-free / commercial-needs-license
+  (originfonts.com) — revisit if the site's purpose changes.
+- **Derived content**: the about-page "N+ projects built" stat computes from
+  the generated registry (listed projects only) — no manual bump needed.
+- **3D canvas gotchas** (bit us repeatedly): coplanar canvas planes z-fight
+  (shimmer) — offset stacked planes by ~0.001 in z; canvas planes referencing
+  materials before they exist TDZ-crash the whole boot — after any change,
+  load the page and check the console, a blank cream page means exactly this.
+- **Title/pref conventions**: tab titles follow "section - rohan.jk";
+  `site:themePref` gains the value `blueprint`.
+
 ## Blueprint sub-app internals
 
 See `themes/blueprint/AGENTS.md` and `DESIGN.md` for the 3D scene
