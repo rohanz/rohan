@@ -99,8 +99,13 @@ export function buildScenePanel(songs, { onPlay } = {}) {
 
       // circled glyph — filled disc so it reads as a BUTTON, not a printed
       // mark: cream disc + maroon glyph at rest, inverting on hover/playing.
+      // A soft offset shadow underneath raises it off the sheet a touch.
       ctx.save();
       ctx.globalAlpha = 1;
+      ctx.beginPath();
+      ctx.arc(cx + 2.5, cy + 3.5, r, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(95, 41, 42, 0.35)'; // dark maroon shadow
+      ctx.fill();
       ctx.beginPath();
       ctx.arc(cx, cy, r, 0, Math.PI * 2);
       ctx.fillStyle = isPlaying || isHovered ? maroon : cream;

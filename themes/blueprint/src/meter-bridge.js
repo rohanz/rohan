@@ -648,21 +648,18 @@ function drawWordmark(ctx, cw, ch) {
 // pause bars while playing. Same hover inversion as the streaming buttons.
 // Always live — with no tape loaded it starts the first song.
 function drawPlayButton(ctx, s, playing, hover) {
-  // Navy, the site's interactive-chrome colour: this is a CONTROL, unlike
-  // the crimson instrumentation around it.
-  const NAVY = COLORS.accentCss;
   ctx.fillStyle = CREAM;
   ctx.fillRect(0, 0, s, s);
   ctx.beginPath();
   ctx.roundRect(1.5, 1.5, s - 3, s - 3, 6);
   if (hover) {
-    ctx.fillStyle = NAVY;
+    ctx.fillStyle = INK;
     ctx.fill();
   }
-  ctx.strokeStyle = NAVY;
+  ctx.strokeStyle = INK;
   ctx.lineWidth = 2;
   ctx.stroke();
-  ctx.fillStyle = hover ? CREAM : NAVY;
+  ctx.fillStyle = hover ? CREAM : INK;
   const c = s / 2;
   if (playing) {
     const bw = s * 0.11;
