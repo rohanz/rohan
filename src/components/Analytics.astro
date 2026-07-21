@@ -31,7 +31,8 @@
   document.addEventListener('click', (e) => {
     const t = e.target instanceof Element ? e.target : null;
     if (!t) return;
-    if (t.closest('[data-theme-pref="transit"]')) count({ path: 'switch-to-transit', event: true });
+    if (t.closest('[data-theme-pref="blueprint"]')) count({ path: 'switch-to-blueprint', event: true });
+    else if (t.closest('[data-theme-pref="transit"]')) count({ path: 'switch-to-transit', event: true });
     else if (t.closest('[data-theme-pref="default"], .transit-theme-switch')) count({ path: 'switch-to-classic', event: true });
     else if (t.closest('a[href$="resume.pdf"]')) count({ path: 'resume-download', event: true });
     else if (t.closest('a[download]')) count({ path: 'file-download', event: true });

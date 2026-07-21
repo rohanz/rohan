@@ -21,6 +21,14 @@ import { createRig } from './camera-rig.js';
 import * as entranceDraw from './entrances/draw.js';
 import { withBase, stripBase } from './base.js';
 
+// GoatCounter (loaded in index.html with no_onload): manual pageview counts
+// on every route change, plus the same named events the classic site logs.
+function gcCount(opts) {
+  const gc = window.goatcounter;
+  if (gc && typeof gc.count === 'function') gc.count(opts);
+}
+let gcAudioCounted = false;
+
 // Vestibular-safe mode: skip the crane flights and parallax entirely —
 // navigation becomes instant cuts (placeInScene/placeAtHome).
 const REDUCED_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -110,6 +118,10 @@ panelAnchor.add(scenePanel.group);
 room.furniture.console.add(panelAnchor);
 
 player.onChange((i) => {
+  if (i !== null && i !== undefined && !gcAudioCounted) {
+    gcAudioCounted = true; // first play per visit, like the classic site
+    gcCount({ path: 'audio-play', event: true });
+  }
   consoleKit.setActive(i);
   bridge.setSong(i);
   scenePanel.setPlaying(i);
@@ -193,7 +205,10 @@ rig.onPointerRay((raycaster) => {
   }
   if (mode === 'about') {
     const link = lounge.getLinkUnderRay(raycaster);
-    if (link) window.open(link, '_blank', 'noopener');
+    if (link) {
+      if (link.endsWith('resume.pdf')) gcCount({ path: 'resume-download', event: true });
+      window.open(link, '_blank', 'noopener');
+    }
     return;
   }
   if (mode !== 'music') return;
@@ -795,7 +810,10 @@ function currentPath() {
 function syncUrl(slug) {
   if (applyingHistory) return;
   const path = withBase(slug ? `/projects/${slug}` : currentPath());
-  if (location.pathname !== path) history.pushState({}, '', path);
+  if (location.pathname !== path) {
+    history.pushState({}, '', path);
+    gcCount({ path });
+  }
 }
 
 // Instant placement for cold loads and history jumps: no crane, no curtain.
@@ -856,8 +874,13 @@ function applyPath(path) {
   }
 }
 
-window.addEventListener('popstate', () => applyPath(stripBase(location.pathname)));
+window.addEventListener('popstate', () => {
+  applyPath(stripBase(location.pathname));
+  gcCount({ path: location.pathname });
+});
 if (stripBase(location.pathname) !== '/') applyPath(stripBase(location.pathname));
+
+gcCount({ path: location.pathname }); // initial pageview (post-routing)
 
 // Boot complete: the world is built and routing has placed us — lift the
 // cream veil over two rAFs so the reveal starts from a fully rendered frame.

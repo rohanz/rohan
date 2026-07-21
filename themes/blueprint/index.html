@@ -130,6 +130,13 @@
     .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
           overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
   </style>
+  <!-- GoatCounter, same account + manual-count convention as the Astro pages
+       (no_onload: this is an SPA; main.js counts pageviews on route changes).
+       GoatCounter ignores localhost on its own, so dev browsing never counts. -->
+  <script>
+    window.goatcounter = { no_onload: true };
+  </script>
+  <script data-goatcounter="https://rohan140.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
   <script>
     // GitHub Pages SPA fallback: 404.html re-encodes deep links as
     // /?p=/blueprint/projects/x; decode and restore before the app boots.
