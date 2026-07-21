@@ -107,8 +107,8 @@ export function createArticleOverlay(projects, { onNavigate } = {}) {
         <nav class="article-project-nav" aria-label="project navigation"></nav>
       </aside>
       <article class="article-page">
-        <img class="article-banner" alt="" />
         <header class="article-title-block"></header>
+        <img class="article-banner" alt="" />
         <div class="article-body"></div>
       </article>
     </div>`;
