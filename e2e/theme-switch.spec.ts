@@ -23,14 +23,17 @@ test('transit to default preserves the current path and is never captured by the
   await expect.poll(() => pref(page)).toBe('default');
 });
 
-test('transit detail header has one switch before the outer back control', async ({ page }) => {
+test('transit detail header has both theme switches before the outer back control', async ({ page }) => {
   await page.goto('/transit/projects/careersphere');
   const actions = page.locator('.sign-header-actions');
   await expect(page.locator('[data-theme-pref="default"]')).toHaveCount(1);
+  await expect(page.locator('[data-theme-pref="blueprint"]')).toHaveCount(1);
   await expect(actions.locator('.transit-theme-switch')).toHaveAttribute('href', '/projects/careersphere');
-  await expect(actions.locator('a')).toHaveCount(2);
+  await expect(actions.locator('.blueprint-theme-switch')).toHaveAttribute('href', '/blueprint/projects/careersphere');
+  await expect(actions.locator('a')).toHaveCount(3);
   await expect(actions.locator('a').nth(0)).toHaveAccessibleName('‹ back');
   await expect(actions.locator('a').nth(1)).toHaveAccessibleName('Classic Mode');
+  await expect(actions.locator('a').nth(2)).toHaveAccessibleName('Blueprint Mode');
 });
 
 test('theme controls hold their responsive corner poses and transit focus treatment', async ({ page }) => {
@@ -43,9 +46,14 @@ test('theme controls hold their responsive corner poses and transit focus treatm
 
   await page.goto('/transit');
   const transitSwitch = page.locator('.top-bar .transit-theme-switch');
+  // the blueprint pill now holds the corner; the classic pill sits one gap left
+  const blueprintSwitch = page.locator('.top-bar .blueprint-theme-switch');
+  const blueprintDesktop = await blueprintSwitch.boundingBox();
+  expect(blueprintDesktop).not.toBeNull();
+  expect(1280 - (blueprintDesktop!.x + blueprintDesktop!.width)).toBeCloseTo(25.6, 0);
   const transitDesktop = await transitSwitch.boundingBox();
   expect(transitDesktop).not.toBeNull();
-  expect(1280 - (transitDesktop!.x + transitDesktop!.width)).toBeCloseTo(25.6, 0);
+  expect(blueprintDesktop!.x - (transitDesktop!.x + transitDesktop!.width)).toBeGreaterThanOrEqual(8);
   await transitSwitch.focus();
   await expect(transitSwitch).toBeFocused();
   expect(await transitSwitch.evaluate((el) => getComputedStyle(el).outlineColor)).toBe('rgb(255, 255, 255)');
