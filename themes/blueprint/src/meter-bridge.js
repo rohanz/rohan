@@ -522,7 +522,7 @@ function makeVUFace() {
 
 // Per-frame: blit the static face, then draw the needle. `v` is 0..1.
 function drawVUNeedle(ctx, face, v) {
-  ctx.drawImage(face, 0, 0);
+  ctx.drawImage(face, 0, 0, VU_PX_W, VU_PX_H);
   const a = VU_A0 + Math.min(1, Math.max(0, v)) * (VU_A1 - VU_A0);
   ctx.strokeStyle = INK;
   ctx.lineWidth = 2;
@@ -1017,9 +1017,10 @@ export function buildMeterBridge(songs, { width = 2.9 } = {}) {
   const vus = ['L', 'R'].map((label, i) => {
     const x = vuX0 + i * (VU_W + VU_GAP);
     const canvas = document.createElement('canvas');
-    canvas.width = VU_PX_W;
-    canvas.height = VU_PX_H;
+    canvas.width = VU_PX_W * 2; // sharp-text recipe, matches makeVUFace
+    canvas.height = VU_PX_H * 2;
     const ctx = canvas.getContext('2d');
+    ctx.setTransform(2, 0, 0, 2, 0, 0);
     const face = makeVUFace();
     drawVUNeedle(ctx, face, 0);
     const texture = new THREE.CanvasTexture(canvas);
@@ -1114,8 +1115,7 @@ export function buildMeterBridge(songs, { width = 2.9 } = {}) {
         placeholderTex.needsUpdate = true;
       }
       for (const vu of vus) {
-        const fresh = makeVUFace();
-        vu.face.getContext('2d').drawImage(fresh, 0, 0);
+        vu.face = makeVUFace();
         drawVUNeedle(vu.ctx, vu.face, vu.value);
         vu.texture.needsUpdate = true;
       }
