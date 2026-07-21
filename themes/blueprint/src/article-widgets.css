@@ -243,9 +243,11 @@
     border-right: 1px solid var(--border-subtle);
 }
 
+/* cream knobs sit on paper, not crimson — the knob art carries its own
+   shading and reads much better on the article background */
 .article-overlay .bqst-asset-card:nth-child(1),
 .article-overlay .bqst-asset-card:nth-child(2) {
-    background: var(--sidebar-bg);
+    background: var(--bg-primary);
 }
 
 .article-overlay .bqst-asset-card:nth-child(3) {

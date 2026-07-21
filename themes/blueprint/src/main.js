@@ -284,6 +284,7 @@ for (const sceneDef of Object.values(scenes)) showSceneWorld(sceneDef, false);
 homePlan.setOpacity(1);
 homePlan.group.visible = true;
 setHomeUI();
+showMenu(true); // markup hides nav tabs AND menu until the app decides (no flash)
 
 // Construction ink (dashed studs, floorboards, hatches) shimmers badly while
 // the camera flies — hold it at zero through transitions, fade in at rest.
