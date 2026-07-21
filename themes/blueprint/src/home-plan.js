@@ -442,8 +442,11 @@ export function buildHomePlan({ onRoomClick } = {}) {
     group.add(doorSwing(6.3, 5.0, Math.PI / 2, Math.PI)); // games from patio
     // patio: open outline + planting circles + paver hatch (no roof = faint)
     {
+      // north edge opens to the hall strip at x 8.0..8.9 — without this the
+      // patio (and the games room behind it) had no way in
       const v = [
-        PATIO.x0, PLAN_Y, PATIO.z0, PATIO.x1, PLAN_Y, PATIO.z0,
+        PATIO.x0, PLAN_Y, PATIO.z0, 8.0, PLAN_Y, PATIO.z0,
+        8.9, PLAN_Y, PATIO.z0, PATIO.x1, PLAN_Y, PATIO.z0,
         PATIO.x1, PLAN_Y, PATIO.z0, PATIO.x1, PLAN_Y, PATIO.z1,
         PATIO.x1, PLAN_Y, PATIO.z1, PATIO.x0, PLAN_Y, PATIO.z1,
       ];
