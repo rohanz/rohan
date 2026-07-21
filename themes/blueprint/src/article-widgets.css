@@ -67,18 +67,15 @@
     position: relative;
     display: inline;
     color: var(--accent);
-    background: rgba(199, 75, 80, 0.12);
+    /* a proper red wash — low opacity but clearly a highlight, not just an
+       underline (was 9%, nearly invisible) */
+    background: rgba(199, 75, 80, 0.16);
     border-bottom: 1px solid rgba(199, 75, 80, 0.55);
     border-radius: 3px;
     padding: 0.02em 0.12em;
     outline: none;
     overflow-wrap: anywhere;
     word-break: break-word;
-}
-
-.article-body .gloss-term {
-    background: rgba(199, 75, 80, 0.09);
-    border-bottom-color: rgba(199, 75, 80, 0.45);
 }
 
 .article-overlay .gloss-tooltip {
@@ -1843,11 +1840,12 @@
 .article-body .gloss-term {
   position: relative;
   color: inherit;
-  background: transparent;
+  /* light red wash so glossed terms read as highlights, not just underlines */
+  background: rgba(199, 75, 80, 0.13);
   border: 0;
   border-bottom: 1px dotted #C74B50;
-  border-radius: 0;
-  padding: 0;
+  border-radius: 2px;
+  padding: 0.02em 0.1em;
   cursor: pointer; /* no '?' help cursor */
 }
 .article-body .gloss-term:focus-visible {
