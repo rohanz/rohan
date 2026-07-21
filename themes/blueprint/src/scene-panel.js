@@ -26,9 +26,12 @@ export function buildScenePanel(songs, { onPlay } = {}) {
 
   // --- canvas / texture -----------------------------------------------------
   const canvas = document.createElement('canvas');
-  canvas.width = CANVAS_W;
-  canvas.height = CANVAS_H;
+  // 2x backing + logical draw coords (DESIGN.md sharp-text recipe) — at 1x
+  // the song titles read soft next to the console labels and meter bridge
+  canvas.width = CANVAS_W * 2;
+  canvas.height = CANVAS_H * 2;
   const ctx = canvas.getContext('2d');
+  ctx.setTransform(2, 0, 0, 2, 0, 0);
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.anisotropy = 8;
