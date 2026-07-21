@@ -226,7 +226,7 @@ export function buildScenePanel(songs, { onPlay } = {}) {
   // glyph slot the canvas leaves empty. Top face is a small canvas that
   // redraws with the row state (cream disc + maroon glyph, inverting on
   // hover; pause bars while playing). Clicking gives a brief physical press.
-  const BTN_H = 0.011;
+  const BTN_H = 0.005; // shallow — a key cap, not a bollard
   const playButtons = songs.map((_, i) => {
     const cell = rowRect(i);
     const rPx = 21;
@@ -251,11 +251,6 @@ export function buildScenePanel(songs, { onPlay } = {}) {
       const ink = inverted ? COLORS.creamCss : 'rgba(199, 75, 80, 0.6)';
       tctx.fillStyle = bg;
       tctx.fillRect(0, 0, 128, 128);
-      tctx.strokeStyle = ink;
-      tctx.lineWidth = 5;
-      tctx.beginPath();
-      tctx.arc(64, 64, 58, 0, Math.PI * 2);
-      tctx.stroke();
       tctx.fillStyle = ink;
       if (playing === i) {
         tctx.fillRect(64 - 22, 64 - 25, 14, 50);
@@ -284,18 +279,6 @@ export function buildScenePanel(songs, { onPlay } = {}) {
     );
     top.position.z = BTN_H + 0.0004;
     g.add(top);
-    // hidden-line rims, maroon
-    const rim = (z) => {
-      const pts = [];
-      for (let a = 0; a <= 40; a++) {
-        const t = (a / 40) * Math.PI * 2;
-        pts.push(new THREE.Vector3(Math.cos(t) * r, Math.sin(t) * r, z));
-      }
-      return new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), lineMat);
-    };
-    g.add(rim(BTN_H + 0.0006));
-    g.add(rim(0.0006));
-
     const restZ = SHEET_T / 2;
     g.position.set((cxPx - CANVAS_W / 2) * pxToM, SHEET_H / 2 - cyPx * pxToM, restZ);
     group.add(g);
