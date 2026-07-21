@@ -43,7 +43,7 @@ export const VIEWS = {
   // Room-local seats. main.js adds the plan-derived group position before
   // handing these views to the transit and rig.
   // Close on the sheet wall so each drawing reads big.
-  WORKSHOP: { pos: [0, 1.6, 0.38], look: [0, 1.5, -2.5], driftScale: 0.85 }, // a touch calmer at the sheet wall
+  WORKSHOP: { pos: [0, 1.6, 0.38], look: [0, 1.5, -2.5], driftScale: 0.72 }, // calmer at the sheet wall
   // Reading pose: near-overhead on the coffee-table spec sheet, so the
   // entrance barely pans up — the paper IS the destination.
   LOUNGE:   { pos: [0, 1.42, 0.52], look: [0, 0.468, 0.1], driftScale: 0.28 }, // close-up view: full parallax reads as lurching
