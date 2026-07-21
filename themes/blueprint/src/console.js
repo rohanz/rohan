@@ -651,8 +651,8 @@ export function buildConsole(songs, { onStripClick, onVolume, onMono, onDim, onC
           ch / 2 + (centre.z - z) * PXM,
         ];
         const [sx, sy] = px(mx + 0.185, -0.317);  // tail, above the note's centre
-        const [qx, qy] = px(mx + 0.175, -0.196);  // bend: rise first, then sweep right
-        const [ex, ey] = px(mx + 0.095, -0.19);  // tip, into the MONO/CUT gap
+        const [qx, qy] = px(mx + 0.175, -0.216);  // bend: rise first, then sweep right
+        const [ex, ey] = px(mx + 0.095, -0.212);  // tip, into the space just below MONO
         actx.strokeStyle = COLORS.inkCss;
         actx.lineWidth = 7;
         actx.lineCap = 'round';
