@@ -149,6 +149,22 @@
   </script>
   <script data-goatcounter="https://rohan140.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
   <script>
+    // Phones get the classic theme (blueprint is desktop-only by design):
+    // capability check, not UA sniffing — coarse pointer + small viewport.
+    // Runs before anything heavy loads, so it acts like a server redirect.
+    // ?desktop forces blueprint (demoing on a phone).
+    (function () {
+      try {
+        if (new URLSearchParams(location.search).has('desktop')) return;
+        var coarse = window.matchMedia('(pointer: coarse)').matches;
+        var small = Math.min(screen.width, window.innerWidth || 9e9) < 1024;
+        if (!(coarse && small)) return;
+        var p = new URLSearchParams(location.search).get('p') || location.pathname;
+        location.replace(p.replace(/^\/blueprint(?=\/|$)/, '') || '/');
+      } catch (e) { /* stay on blueprint */ }
+    })();
+  </script>
+  <script>
     // GitHub Pages SPA fallback: 404.html re-encodes deep links as
     // /?p=/blueprint/projects/x; decode and restore before the app boots.
     (function () {

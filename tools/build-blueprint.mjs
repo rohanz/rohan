@@ -158,7 +158,10 @@ function shareStub({ title, description, url, canonical, image }) {
 <meta name="twitter:title" content="${esc(title)}">
 <meta name="twitter:description" content="${esc(description)}">
 <meta name="twitter:image" content="${SITE}${image}">
-<script>location.replace('/blueprint/?p=' + encodeURIComponent(location.pathname) + location.hash);</script>
+<script>
+var phone = matchMedia('(pointer: coarse)').matches && Math.min(screen.width, innerWidth || 9e9) < 1024 && !location.search.includes('desktop');
+location.replace(phone ? '${canonical}' : '/blueprint/?p=' + encodeURIComponent(location.pathname) + location.hash);
+</script>
 </head>
 <body></body>
 </html>

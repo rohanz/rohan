@@ -115,6 +115,12 @@ arbitrary shas — instead revert the commit on astro-site, push, re-run).
   load the page and check the console, a blank cream page means exactly this.
 - **Title/pref conventions**: tab titles follow "section - rohan.jk";
   `site:themePref` gains the value `blueprint`.
+- **Phone gate**: blueprint is desktop-only, so its shell and every share
+  stub run a capability check (coarse pointer AND viewport < 1024px — no UA
+  sniffing) before anything heavy loads, and redirect phones to the CLASSIC
+  equivalent path (`/blueprint/projects/x` → `/projects/x`). `?desktop`
+  bypasses it for demos. Touchscreen laptops/desktops are unaffected (fine
+  pointer available).
 - **Share cards**: blueprint has its own OG cards in the drafting aesthetic.
   Images are COMMITTED at `themes/blueprint/public/og/<slug>.png` +
   `blueprint.png` (generic) — regenerate after adding/renaming a project with
