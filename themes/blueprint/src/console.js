@@ -583,6 +583,66 @@ export function buildConsole(songs, { onStripClick, onVolume, onMono, onDim, onC
     leds[name] = fillMat;
   }
 
+  // Hand-written invitation: a little pencil note + curved arrow pointing at
+  // the monitor button cluster — these are the easiest controls to miss.
+  {
+    const note = makeLabel ? (() => {
+      // lowercase italic variant of makeLabel's recipe (no uppercase, lighter)
+      const SS = 8;
+      const capPx = 26 * SS;
+      const pad = 8 * SS;
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const font = `italic 600 ${capPx}px ${FONT}`;
+      ctx.font = font;
+      const text = 'try these!';
+      const w = Math.ceil(ctx.measureText(text).width) + pad * 2;
+      const h = capPx + pad * 2;
+      canvas.width = w;
+      canvas.height = h;
+      const c2 = canvas.getContext('2d');
+      c2.font = font;
+      c2.fillStyle = COLORS.inkCss;
+      c2.textBaseline = 'middle';
+      c2.textAlign = 'center';
+      c2.fillText(text, w / 2, h / 2);
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.anisotropy = 8;
+      const worldCap = 0.034;
+      const geo = new THREE.PlaneGeometry(worldCap * (w / h), worldCap);
+      geo.rotateX(-Math.PI / 2); // same orientation recipe as makeLabel
+      geo.rotateY(Math.PI);
+      const mesh = new THREE.Mesh(
+        geo,
+        new THREE.MeshBasicMaterial({ map: texture, transparent: true, depthWrite: false })
+      );
+      mesh.renderOrder = 5;
+      return mesh;
+    })() : null;
+    if (note) {
+      note.position.set(mx - 0.02, 0.003, -0.375);
+      note.rotation.y = 0.06; // tiny tilt, like a jotted margin note
+      face.add(note);
+      // curved arrow from the note up to the CUT/LOOP row, drawn flat
+      const arc = [];
+      for (let i = 0; i <= 14; i++) {
+        const t = i / 14;
+        // quadratic bend: rise from beside the note into the CUT/LOOP gap
+        const x0 = mx + 0.09, z0 = -0.375;
+        const x1 = mx + 0.12, zc = -0.33;
+        const x2 = mx + 0.01, z2 = -0.295;
+        const x = (1 - t) * (1 - t) * x0 + 2 * (1 - t) * t * x1 + t * t * x2;
+        const z = (1 - t) * (1 - t) * z0 + 2 * (1 - t) * t * zc + t * t * z2;
+        arc.push(new THREE.Vector3(x, 0.003, z));
+      }
+      const tip = arc.at(-1);
+      face.add(line(arc));
+      face.add(line([tip.clone().add(new THREE.Vector3(-0.004, 0, 0.012)), tip.clone()]));
+      face.add(line([tip.clone().add(new THREE.Vector3(0.012, 0, 0.006)), tip.clone()]));
+    }
+  }
+
   // Master hitboxes
   const controlHits = [];
   function controlHit(name, x, z, s) {

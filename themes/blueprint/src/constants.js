@@ -36,14 +36,14 @@ export const LAYOUT = {
 export const VIEWS = {
   // The resting view IS the engineer's seat — the studio needs no separate
   // room overview (walls are opaque hidden-line solids anyway).
-  OVERVIEW: { pos: [0, 1.51, 0.32], look: [0, 0.94, -1.4] },
+  OVERVIEW: { pos: [0, 1.51, 0.32], look: [0, 0.94, -1.4], driftScale: 0.85 }, // a touch calmer at the console
   CONSOLE:  { pos: [0, 1.51, 0.32],  look: [0, 0.94, -1.4] },
   RACK:     { pos: [-1.2, 1.4, 0.2], look: [-2.3, 1.0, -1.3] },
   COUCH:    { pos: [0.4, 1.5, -0.6], look: [0, 0.7, 1.45] },
   // Room-local seats. main.js adds the plan-derived group position before
   // handing these views to the transit and rig.
   // Close on the sheet wall so each drawing reads big.
-  WORKSHOP: { pos: [0, 1.6, 0.38], look: [0, 1.5, -2.5] },
+  WORKSHOP: { pos: [0, 1.6, 0.38], look: [0, 1.5, -2.5], driftScale: 0.85 }, // a touch calmer at the sheet wall
   // Reading pose: near-overhead on the coffee-table spec sheet, so the
   // entrance barely pans up — the paper IS the destination.
   LOUNGE:   { pos: [0, 1.42, 0.52], look: [0, 0.468, 0.1], driftScale: 0.35 }, // close-up view: full parallax reads as lurching
