@@ -788,10 +788,11 @@ for (const sceneId of Object.keys(scenes)) {
   row.addEventListener('click', (e) => { e.preventDefault(); enterScene(sceneId); });
 }
 
-// Frame loop
-const clock = new THREE.Clock();
+// Frame loop (Timer, not the deprecated THREE.Clock)
+const timer = new THREE.Timer();
 function frame() {
-  const dt = clock.getDelta();
+  timer.update();
+  const dt = timer.getDelta();
   if (pendingHover) {
     processHover(pendingHover);
     pendingHover = null;

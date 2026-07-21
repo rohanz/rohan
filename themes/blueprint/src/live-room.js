@@ -298,7 +298,7 @@ function buildGuitar() {
 // ---------------------------------------------------------------- mic
 function buildMicStand() {
   const g = new THREE.Group();
-  g.position.set(-0.2, 0, -3.3); // vocal position, clear floor around it
+  g.position.set(-0.35, 0, -3.3); // vocal position, clear floor around it
 
   g.add(cyl(0.18, 0.2, 0.04, 16, 0, 0.02, 0));          // round base
   g.add(cyl(0.018, 0.018, 1.35, 8, 0, 0.715, 0));       // vertical pole
@@ -353,8 +353,8 @@ function sagCable(from, to, sag = 0.02, wobble = 0.12) {
 
 function buildCables() {
   const g = new THREE.Group();
-  // mic (-0.2, -3.3) -> window wall
-  g.add(sagCable(new THREE.Vector3(-0.12, 0, -3.22), new THREE.Vector3(0.2, 0, -2.15), 0.015, 0.1));
+  // mic (-0.35, -3.3) -> window wall
+  g.add(sagCable(new THREE.Vector3(-0.27, 0, -3.22), new THREE.Vector3(0.05, 0, -2.15), 0.015, 0.1));
   // amp (2.5, -3.9) -> window wall
   g.add(sagCable(new THREE.Vector3(2.35, 0, -3.75), new THREE.Vector3(1.7, 0, -2.15), 0.015, -0.15));
   return g;
