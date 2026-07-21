@@ -115,6 +115,14 @@ arbitrary shas — instead revert the commit on astro-site, push, re-run).
   load the page and check the console, a blank cream page means exactly this.
 - **Title/pref conventions**: tab titles follow "section - rohan.jk";
   `site:themePref` gains the value `blueprint`.
+- **Share cards**: blueprint has its own OG cards in the drafting aesthetic.
+  Images are COMMITTED at `themes/blueprint/public/og/<slug>.png` +
+  `blueprint.png` (generic) — regenerate after adding/renaming a project with
+  `uv run --with pillow --with fonttools --with brotli tools/generate_blueprint_og.py`.
+  `tools/build-blueprint.mjs` emits crawler stubs (real index.html files with
+  OG meta + SPA redirect) into `dist/blueprint/{music,about,projects[,<slug>]}`,
+  canonical → the classic page. Stub'd URLs also skip the 404 detour for
+  browsers; only unlisted-article deep links still go through 404.astro.
 
 ## Blueprint sub-app internals
 

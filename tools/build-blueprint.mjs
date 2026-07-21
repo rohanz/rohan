@@ -127,6 +127,73 @@ async function syncProjectContent() {
     `  image: asset(project.image),\n` +
     `}));\n`;
   await writeFile(registryFile, generated);
+  return projectData;
+}
+
+// Crawler-visible share stubs: social scrapers don't run JS, so every
+// shareable /blueprint URL gets a real HTML file carrying the blueprint-
+// styled OG card (themes/blueprint/public/og/, committed output of
+// tools/generate_blueprint_og.py) plus a redirect into the SPA. Canonicals
+// point at the classic equivalents, mirroring transit's SEO stance.
+const SITE = 'https://www.rohanjk.xyz';
+const esc = (t) => String(t).replaceAll('&', '&amp;').replaceAll('"', '&quot;').replaceAll('<', '&lt;');
+
+function shareStub({ title, description, url, canonical, image }) {
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>${esc(title)}</title>
+<meta name="description" content="${esc(description)}">
+<link rel="canonical" href="${SITE}${canonical}">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="rohan.jk">
+<meta property="og:title" content="${esc(title)}">
+<meta property="og:description" content="${esc(description)}">
+<meta property="og:url" content="${SITE}${url}">
+<meta property="og:image" content="${SITE}${image}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="${esc(title)}">
+<meta name="twitter:description" content="${esc(description)}">
+<meta name="twitter:image" content="${SITE}${image}">
+<script>location.replace('/blueprint/?p=' + encodeURIComponent(location.pathname) + location.hash);</script>
+</head>
+<body></body>
+</html>
+`;
+}
+
+async function writeShareStubs(projects) {
+  const stubs = [
+    { dir: 'projects', title: 'projects - rohan.jk', description: 'Project write-ups pinned to the workshop wall of the blueprint theme.', canonical: '/projects/' },
+    { dir: 'music', title: 'music - rohan.jk', description: 'Original tracks, playable at the mixing console of the blueprint theme.', canonical: '/music/' },
+    { dir: 'about', title: 'about me - rohan.jk', description: "Rohan's personal specification sheet, on the lounge coffee table of the blueprint theme.", canonical: '/about/' },
+  ];
+  for (const stub of stubs) {
+    const dir = path.join(siteBlueprintDir, stub.dir);
+    await mkdir(dir, { recursive: true });
+    await writeFile(path.join(dir, 'index.html'), shareStub({
+      title: stub.title,
+      description: stub.description,
+      url: `/blueprint/${stub.dir}`,
+      canonical: stub.canonical,
+      image: '/blueprint/og/blueprint.png',
+    }));
+  }
+  for (const project of projects) {
+    if (project.unlisted) continue;
+    const dir = path.join(siteBlueprintDir, 'projects', project.slug);
+    await mkdir(dir, { recursive: true });
+    await writeFile(path.join(dir, 'index.html'), shareStub({
+      title: `${project.title} - rohan.jk`,
+      description: project.summary,
+      url: `/blueprint/projects/${project.slug}`,
+      canonical: `/projects/${project.slug}/`,
+      image: `/blueprint/og/${project.slug}.png`,
+    }));
+  }
 }
 
 async function main() {
@@ -134,12 +201,13 @@ async function main() {
     await run('npm', ['ci'], blueprintRoot);
   }
 
-  await syncProjectContent();
+  const projects = await syncProjectContent();
   await run('npx', ['vite', 'build'], blueprintRoot);
 
   await rm(siteBlueprintDir, { recursive: true, force: true });
   await mkdir(siteBlueprintDir, { recursive: true });
   await cp(blueprintDistDir, siteBlueprintDir, { recursive: true });
+  await writeShareStubs(projects);
 }
 
 await main();
