@@ -1048,7 +1048,9 @@ export function buildMeterBridge(songs, { width = 2.9 } = {}) {
     const ledPlane = makeCanvasPlane(LED_R * 2, LED_R * 2, LED_PX, LED_PX);
     drawClipLED(ledPlane.ctx, 0);
     ledPlane.texture.needsUpdate = true;
-    ledPlane.mesh.position.set(x + LABEL_W / 2 - 0.004, lrY, FACE_Z);
+    // a hair in FRONT of the caption plane — centring the caption made the
+    // two coplanar planes overlap, which z-fought as shimmer
+    ledPlane.mesh.position.set(x + LABEL_W / 2 - 0.004, lrY, FACE_Z + 0.0012);
     rail.add(ledPlane.mesh);
 
     return {
