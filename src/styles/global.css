@@ -326,3 +326,9 @@ html.theme-transit h1, html.theme-transit h2, html.theme-transit h3, html.theme-
 html.theme-transit .sign-header, html.theme-transit .sign-header .sign-title, html.theme-transit .sign-header .logo {
   font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
+
+/* Cross-document view transition: theme hops (classic/transit <-> blueprint)
+   are full navigations; this gives them a native cross-fade where supported. */
+@view-transition {
+  navigation: auto;
+}

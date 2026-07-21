@@ -5218,3 +5218,9 @@ html.theme-default #detailToc.can-down { --toc-fade-bottom: 28px; }
         margin-top: 0.75rem;
     }
 }
+
+/* Cross-document view transition: theme hops (classic/transit <-> blueprint)
+   are full navigations; this gives them a native cross-fade where supported. */
+@view-transition {
+  navigation: auto;
+}

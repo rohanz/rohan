@@ -116,6 +116,9 @@
     #menu .menu-row.soon { opacity: 0.45; cursor: default; }
     #menu .menu-row.soon:hover { background: transparent; color: inherit; }
     #labels { position: fixed; inset: 0; pointer-events: none; z-index: 5; }
+    /* Cross-document view transition: theme hops to classic/transit cross-fade
+       where supported (pairs with the same rule on the Astro pages). */
+    @view-transition { navigation: auto; }
     .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
           overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
   </style>
