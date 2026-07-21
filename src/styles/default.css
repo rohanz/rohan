@@ -274,6 +274,17 @@ html.theme-default .sidebar.show {
     transform: translateX(0);
 }
 
+/* The sidebar gets its own view-transition group so the router's root
+   snapshot no longer contains it: the old-page screenshot fading out was
+   painting a ghost of the bar over the live slide. The group's OLD image is
+   hidden and its NEW image is live, so the real slide is the only thing
+   ever visible. */
+html.theme-default .sidebar { view-transition-name: classic-sidebar; }
+::view-transition-group(classic-sidebar),
+::view-transition-image-pair(classic-sidebar),
+::view-transition-new(classic-sidebar) { animation: none; }
+::view-transition-old(classic-sidebar) { display: none; }
+
 html.theme-default .logo {
     text-align: center;
     margin-bottom: 4rem;

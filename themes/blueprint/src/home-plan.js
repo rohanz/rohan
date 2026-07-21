@@ -251,8 +251,8 @@ export function buildHomePlan({ onRoomClick } = {}) {
       r.x0, PLAN_Y, r.z1, r.x1, PLAN_Y, r.z0,
     ], faintMat));
   }
-  unbuiltCross(WORKSHOP);
-  unbuiltCross(STUDY);
+  // (workshop and study are REAL destinations now — the cross marks only
+  // rooms you cannot enter: gym and games, below)
 
   // --- the rest of the house: non-interactive rooms + drafting clutter -----
   // Purely decorative — walls at a middle weight, fixtures/furniture faint,

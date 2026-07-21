@@ -115,6 +115,14 @@ arbitrary shas — instead revert the commit on astro-site, push, re-run).
   every canvas-texture plane needs `texture.anisotropy = 8` (the tilted meter
   bridge shipped without it and blurred — that's the first thing to check if
   someone reports blur).
+- **View-transition ghost gotcha**: the classic sidebar slides via a 0.7s CSS
+  transition while the router's view transition cross-fades full-page
+  snapshots — the old snapshot contained the bar, painting a fading ghost
+  over the live slide. Fix (default.css): the sidebar has its own
+  `view-transition-name: classic-sidebar`; its group's OLD image is
+  `display: none` and its NEW image (which is live) has `animation: none`,
+  so only the real sliding bar ever paints. Any element that animates its
+  own entrance/exit across swaps needs this same treatment.
 - **3D canvas gotchas** (bit us repeatedly): coplanar canvas planes z-fight
   (shimmer) — offset stacked planes by ~0.001 in z; canvas planes referencing
   materials before they exist TDZ-crash the whole boot — after any change,
