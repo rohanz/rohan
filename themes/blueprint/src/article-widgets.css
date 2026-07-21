@@ -1205,7 +1205,7 @@
 
 .article-overlay .qlf-legend-swatch.qla-sw-good { background: #2E7D32; }
 .article-overlay .qlf-legend-swatch.qla-sw-bad { background: #C74B50; }
-.article-overlay .qlf-legend-swatch.qla-sw-weight { background: #4A6B6E; }
+.article-overlay .qlf-legend-swatch.qla-sw-weight { background: #A5A6A9; }
 
 @media (prefers-reduced-motion: reduce) {
     .article-overlay .qla-btn {
@@ -1324,7 +1324,7 @@
 .article-overlay .qlf-sw-warn { color: #C74B50; }
 .article-overlay .qlf-sw-accent,
 .article-overlay .qlf-sw-measured { color: #1F2A56; }
-.article-overlay .qlf-sw-hold { color: #E488AD; }
+.article-overlay .qlf-sw-hold { color: #A5A6A9; }
 .article-overlay .qlf-sw-plain { color: #7d3b3d; }
 
 .article-overlay .qlf-legend-swatch.qlf-sw-gap {

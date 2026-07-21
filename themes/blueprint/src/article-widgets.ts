@@ -7,8 +7,8 @@ import { asset } from './base.js';
 // ---- palette (this site) ----
 const BLUE = '#1F2A56'; // ink navy — second series only
 const RED = '#C74B50'; // poppy — grit / primary series
-const PINK = '#E488AD'; // tertiary series
-const TEAL = '#4A6B6E'; // dry / reference series when muted persimmon would collide
+const PINK = '#A5A6A9'; // reference series — the theme grey (palette is cream/red/navy/grey)
+const TEAL = '#A5A6A9'; // dry / reference series — the theme grey
 const MUTED = 'rgba(199,75,80,0.45)'; // dry / reference
 const RED_RGB = '199,75,80';
 const MUTED_RGB = '199,75,80';
