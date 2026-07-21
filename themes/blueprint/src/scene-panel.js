@@ -97,11 +97,18 @@ export function buildScenePanel(songs, { onPlay } = {}) {
         ctx.globalAlpha = 0.85;
       }
 
-      // circled glyph
-      ctx.lineWidth = 1.5;
+      // circled glyph — filled disc so it reads as a BUTTON, not a printed
+      // mark: cream disc + maroon glyph at rest, inverting on hover/playing.
+      ctx.save();
+      ctx.globalAlpha = 1;
       ctx.beginPath();
       ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.fillStyle = isPlaying || isHovered ? maroon : cream;
+      ctx.fill();
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = isPlaying ? maroon : cream;
       ctx.stroke();
+      ctx.fillStyle = isPlaying || isHovered ? cream : maroon;
       if (isPlaying) {
         // pause bars
         ctx.fillRect(cx - 8, cy - 9, 5, 18);
@@ -115,6 +122,7 @@ export function buildScenePanel(songs, { onPlay } = {}) {
         ctx.closePath();
         ctx.fill();
       }
+      ctx.restore();
 
       // title — as authored; state shown by color/glyph only, never bold
       ctx.font = `500 30px ${FONT}`;

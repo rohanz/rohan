@@ -128,12 +128,13 @@ function makeKnob(radius, height, em = edgeMat) {
   const g = new THREE.Group();
   g.add(solid(new THREE.CylinderGeometry(radius, radius, height, 16), em, true));
   const pointer = new THREE.Group();
-  // Thick indicator: a slim bar, not a hairline.
+  // Slim indicator bar, pointing 12 o'clock (+z, away from the engineer)
+  // like the monitor knob — pointers reading "down" looked upside-down.
   const bar = new THREE.Mesh(
-    new THREE.BoxGeometry(0.006, 0.004, radius * 0.85),
+    new THREE.BoxGeometry(0.0042, 0.004, radius * 0.85),
     new THREE.MeshBasicMaterial({ color: COLORS.ink })
   );
-  bar.position.set(0, height / 2 + 0.003, -radius * 0.45);
+  bar.position.set(0, height / 2 + 0.003, radius * 0.45);
   pointer.add(bar);
   g.add(pointer);
   return { group: g, pointer };

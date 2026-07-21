@@ -79,6 +79,8 @@
 .article-rail,
 .article-page { position: relative; z-index: 1; }
 
+
+
 .article-rail {
   /* (position: sticky also anchors the legend label's absolute offset) */
   /* Sticky offset EQUALS the rail's resting offset from the scrollport
@@ -93,8 +95,11 @@
   align-self: start;
   display: flex;
   flex-direction: column;
-  max-height: calc(100vh - 196px - clamp(28px, 4vw, 56px));
-  min-height: calc(100vh - 196px - clamp(28px, 4vw, 56px));
+  /* 224px (not 196px): the rail must also clear the sheet's own bottom
+     padding at FULL scroll, or sticky pushes it up ~28px on the last
+     screen of every article. */
+  max-height: calc(100vh - 224px - clamp(28px, 4vw, 56px));
+  min-height: calc(100vh - 224px - clamp(28px, 4vw, 56px));
 }
 
 .article-rail-label,
