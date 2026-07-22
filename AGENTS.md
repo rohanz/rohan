@@ -57,6 +57,13 @@ covers/tracks, profile, logo) live in `themes/blueprint/public/`; site-shared
 assets (`/assets/`, `/downloads/`, `/docs/`) are resolved to the site root by
 `themes/blueprint/src/base.js` `asset()` — don't duplicate them.
 
+## Machine readability
+
+`/llms.txt` (src/pages/llms.txt.ts) is a plain-markdown index for AI
+consumers, generated at build from the content collection — site summary,
+theme explanation, and canonical classic URLs per listed project. It updates
+itself when projects are added; nothing to maintain.
+
 ## Deep links & 404
 
 Classic/transit routes are pre-rendered files — no 404 involved. Blueprint is

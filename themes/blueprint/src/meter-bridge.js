@@ -1094,6 +1094,7 @@ export function buildMeterBridge(songs, { width = 2.9 } = {}) {
   let currentSong = null;
   let currentIndex = null;
   const coverFade = { active: false, t: 0, lastTex: null }; // cover art fade-in
+  const coverTexCache = new Map(); // cover URL -> THREE.Texture
 
   function redrawTrackInfo() {
     drawTrackInfo(
@@ -1150,18 +1151,30 @@ export function buildMeterBridge(songs, { width = 2.9 } = {}) {
     }
     currentIndex = i;
     const song = songs[i];
-    texLoader.load(song.cover, (tex) => {
-      tex.colorSpace = THREE.SRGBColorSpace;
+    // Cache textures per cover URL: TextureLoader.load mints a NEW object
+    // every call, so replaying the same song always failed the lastTex
+    // guard and refaded art that was already showing.
+    const applyCover = (tex) => {
       coverMat.map = tex;
       coverMat.needsUpdate = true;
-      // fade the new art in from the cream rather than popping
+      // fade the new art in from the cream rather than popping — but only
+      // when it actually changes
       if (tex !== coverFade.lastTex) {
         coverFade.t = 0;
         coverFade.active = true;
         coverFade.lastTex = tex;
         coverMat.opacity = 0;
       }
-    });
+    };
+    const cached = coverTexCache.get(song.cover);
+    if (cached) applyCover(cached);
+    else {
+      texLoader.load(song.cover, (tex) => {
+        tex.colorSpace = THREE.SRGBColorSpace;
+        coverTexCache.set(song.cover, tex);
+        applyCover(tex);
+      });
+    }
     currentSong = song;
     redrawTrackInfo();
     for (const btn of linkButtons) {
