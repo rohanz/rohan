@@ -366,7 +366,7 @@
 .article-body .article-stat-card,
 .article-body .bqst-asset-card { padding: 12px; border: 1px solid var(--article-ink); }
 .article-body .article-stat-value { display: block; color: var(--article-ink); font-size: 1.35em; font-weight: 700; }
-.article-body .article-stat-label,
+.article-body .article-stat-label { color: var(--article-ink); font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.02em; }
 .article-body .bqst-asset-card span { color: var(--article-ink); font-size: 10px; text-transform: uppercase; }
 .article-body .bqst-asset-card img { display: block; width: 100%; height: auto; margin-bottom: 8px; }
 
