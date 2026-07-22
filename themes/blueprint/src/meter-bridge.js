@@ -91,10 +91,10 @@ const LED_PX = 32;
 const CLIP_LEVEL = 0.88;
 const CLIP_HOLD = 0.35; // seconds of decay after a clip
 
-const INK = COLORS.inkCss;      // '#C74B50'
+const INK = COLORS.inkCss;      // navy ink (palette experiment)
 const CREAM = COLORS.creamCss;  // '#FFF8E1'
 const INK_DIM = COLORS.inkDim;
-const RED = '#E82C1E';          // pure signal red — clip/over states
+const RED = '#C74B50';          // poppy crimson — clip/over states (matches the accent)
 
 const FONT_FAMILY = FONT.split(',')[0].trim(); // "'Be Vietnam Pro'"
 
@@ -210,7 +210,7 @@ function drawVectorscope(ctx, w, h, lr, t) {
   const r = h * 0.45;
 
   // guides: crosshair + circle, whisper-faint
-  ctx.strokeStyle = 'rgba(199, 75, 80, 0.08)';
+  ctx.strokeStyle = 'rgba(31, 42, 86, 0.08)';
   ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.moveTo(cx - r, cy);
@@ -226,7 +226,7 @@ function drawVectorscope(ctx, w, h, lr, t) {
     const len = lr.l.length;
     const N = Math.min(256, len);
     const step = Math.max(1, Math.floor(len / N));
-    ctx.fillStyle = 'rgba(199, 75, 80, 0.58)';
+    ctx.fillStyle = 'rgba(31, 42, 86, 0.58)';
     for (let i = 0; i < N; i++) {
       const L = lr.l[i * step];
       const R = lr.r[i * step];
@@ -280,7 +280,7 @@ function drawFrequency(ctx, w, h, data, t, fs) {
   const amp = h - 7; // yFor = base - v * amp (topPad 6)
 
   // faint horizontal grid, BEHIND the curve: 3 inner lines at quarter heights
-  ctx.strokeStyle = 'rgba(199, 75, 80, 0.05)';
+  ctx.strokeStyle = 'rgba(31, 42, 86, 0.05)';
   ctx.lineWidth = 1;
   ctx.beginPath();
   for (let q = 1; q <= 3; q++) {
@@ -389,7 +389,7 @@ function drawFrequency(ctx, w, h, data, t, fs) {
   };
 
   // soft filled body beneath the curve
-  ctx.fillStyle = `rgba(199, 75, 80, ${(0.10 + intensity * 0.13).toFixed(3)})`;
+  ctx.fillStyle = `rgba(31, 42, 86, ${(0.10 + intensity * 0.13).toFixed(3)})`;
   ctx.beginPath();
   ctx.moveTo(0, base);
   ctx.lineTo(pts[0][0], pts[0][1]);
@@ -417,16 +417,16 @@ function drawFrequency(ctx, w, h, data, t, fs) {
     const halfWidth = (7 + visible * 20) * pxScale;
     const glow = ctx.createLinearGradient(x - halfWidth, 0, x + halfWidth, 0);
     const peakAlpha = 0.04 + visible * 0.34;
-    glow.addColorStop(0, 'rgba(199, 75, 80, 0)');
-    glow.addColorStop(0.5, `rgba(199, 75, 80, ${peakAlpha.toFixed(3)})`);
-    glow.addColorStop(1, 'rgba(199, 75, 80, 0)');
+    glow.addColorStop(0, 'rgba(31, 42, 86, 0)');
+    glow.addColorStop(0.5, `rgba(31, 42, 86, ${peakAlpha.toFixed(3)})`);
+    glow.addColorStop(1, 'rgba(31, 42, 86, 0)');
     ctx.fillStyle = glow;
     ctx.fillRect(x - halfWidth, 0, halfWidth * 2, base);
   }
   ctx.restore();
 
   // the curve itself
-  ctx.strokeStyle = `rgba(199, 75, 80, ${(0.66 + intensity * 0.25).toFixed(3)})`;
+  ctx.strokeStyle = `rgba(31, 42, 86, ${(0.66 + intensity * 0.25).toFixed(3)})`;
   ctx.lineWidth = 1.65 + intensity * 0.45;
   ctx.lineJoin = 'round';
   ctx.lineCap = 'round';
@@ -508,15 +508,6 @@ function makeVUFace() {
     ctx.moveTo(VU_CX + c * VU_R, VU_CY + s * VU_R);
     ctx.lineTo(VU_CX + c * (VU_R + 8), VU_CY + s * (VU_R + 8));
     ctx.stroke();
-    if (f === 1) {
-      // doubled tick for the +3 end zone
-      const a2 = a - 0.035;
-      const c2 = Math.cos(a2), s2 = Math.sin(a2);
-      ctx.beginPath();
-      ctx.moveTo(VU_CX + c2 * VU_R, VU_CY + s2 * VU_R);
-      ctx.lineTo(VU_CX + c2 * (VU_R + 8), VU_CY + s2 * (VU_R + 8));
-      ctx.stroke();
-    }
     ctx.fillStyle = f >= VU_RED_F ? RED : INK;
     ctx.fillText(txt, VU_CX + c * (VU_R + 16), VU_CY + s * (VU_R + 16));
   }
@@ -547,8 +538,11 @@ function drawVUNeedle(ctx, face, v) {
   ctx.fill();
 }
 
-// Clip LED: dim maroon outline normally; bright red fill (fading with the
-// hold timer) when its channel has clipped recently. `glow` is 0..1.
+// Clip LED: dim ink outline normally; solid red fill when its channel has
+// clipped recently — the hold timer decays the fill from signal red toward a
+// dim ember red (#8E3539) at full alpha (a long cream-blended wash reads
+// orange); only the final tail of the hold fades alpha so the LED still
+// visibly dies out instead of cutting off. `glow` 0..1.
 function drawClipLED(ctx, glow) {
   ctx.clearRect(0, 0, LED_PX, LED_PX);
   ctx.fillStyle = CREAM;
@@ -556,7 +550,8 @@ function drawClipLED(ctx, glow) {
   const c = LED_PX / 2;
   const r = LED_PX / 2 - 3;
   if (glow > 0) {
-    ctx.fillStyle = `rgba(232, 44, 30, ${(0.25 + glow * 0.75).toFixed(3)})`;
+    const tail = Math.min(1, glow / 0.3); // fade-out only below 30% of the hold
+    ctx.fillStyle = `rgba(${Math.round(142 + glow * 57)}, ${Math.round(53 + glow * 22)}, ${Math.round(57 + glow * 23)}, ${tail.toFixed(3)})`;
     ctx.beginPath();
     ctx.arc(c, c, r, 0, Math.PI * 2);
     ctx.fill();
@@ -574,7 +569,7 @@ function drawClipLED(ctx, glow) {
 function drawCaption(ctx, cw, ch, text) {
   ctx.fillStyle = CREAM;
   ctx.fillRect(0, 0, cw, ch);
-  ctx.fillStyle = 'rgba(199, 75, 80, 0.6)';
+  ctx.fillStyle = 'rgba(31, 42, 86, 0.6)';
   ctx.font = `600 ${Math.round(ch * 0.62)}px ${FONT}`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
@@ -605,13 +600,13 @@ function drawTrackInfo(ctx, cw, ch, title, artist) {
     ctx.fillStyle = INK;
     fitText(title, 700, ch * 0.42, ch * 0.3);
     if (artist) {
-      ctx.fillStyle = 'rgba(199, 75, 80, 0.6)';
+      ctx.fillStyle = 'rgba(31, 42, 86, 0.6)';
       fitText(artist, 600, ch * 0.3, ch * 0.75);
     }
   } else {
     // idle placeholder fills the title + artist space: bigger, centred —
     // 40% ink, the theme's inert wash (nothing is playing)
-    ctx.fillStyle = 'rgba(199, 75, 80, 0.4)';
+    ctx.fillStyle = 'rgba(31, 42, 86, 0.4)';
     fitText('NO TAPE LOADED', 700, ch * 0.52, ch * 0.52);
   }
   if ('letterSpacing' in ctx) ctx.letterSpacing = '0px';
@@ -689,7 +684,7 @@ function drawStreamIcon(ctx, w, s, key, state = 'idle') {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.fillStyle = CREAM;
   ctx.fillRect(0, 0, w, s);
-  const dim = 'rgba(199, 75, 80, 0.3)';
+  const dim = 'rgba(31, 42, 86, 0.3)';
   ctx.beginPath();
   ctx.roundRect(1.5, 1.5, w - 3, s - 3, s * 0.14);
   if (state === 'hover') {

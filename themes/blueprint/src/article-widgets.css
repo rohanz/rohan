@@ -1,16 +1,16 @@
 /* Interactive article widgets, ported from the original site's default theme. */
 .article-body {
-  --accent: #C74B50;
-  --accent-glow: rgba(199, 75, 80, 0.22);
+  --accent: #1F2A56;
+  --accent-glow: rgba(31, 42, 86, 0.22);
   --bg-primary: #FFF8E1;
   --bg-card: #FFF8E1;
-  --bg-card-hover: rgba(199, 75, 80, 0.08);
-  --sidebar-bg: #C74B50;
-  --text-primary: #5f292a;
-  --text-secondary: #7d3b3d;
-  --text-muted: rgba(199, 75, 80, 0.62);
-  --border-subtle: rgba(199, 75, 80, 0.45);
-  --border-hover: #C74B50;
+  --bg-card-hover: rgba(31, 42, 86, 0.08);
+  --sidebar-bg: #1F2A56;
+  --text-primary: #1F2A56;
+  --text-secondary: rgba(31, 42, 86, 0.82);
+  --text-muted: rgba(31, 42, 86, 0.62);
+  --border-subtle: rgba(31, 42, 86, 0.45);
+  --border-hover: #1F2A56;
 }
 
 .article-overlay .bqst-data-table {
@@ -20,7 +20,7 @@
     table-layout: fixed;
     margin: 1.4rem 0 1.7rem;
     border-collapse: collapse;
-    border: 1px solid rgba(199, 75, 80, 0.16);
+    border: 1px solid rgba(31, 42, 86, 0.16);
     border-radius: 8px;
     overflow: hidden;
     font-size: 0.94rem;
@@ -29,7 +29,7 @@
 .article-overlay .bqst-data-table th,
 .article-overlay .bqst-data-table td {
     padding: 0.65rem 0.72rem;
-    border-bottom: 1px solid rgba(199, 75, 80, 0.10);
+    border-bottom: 1px solid rgba(31, 42, 86, 0.10);
     text-align: right;
     white-space: normal;
     overflow-wrap: anywhere;
@@ -42,7 +42,7 @@
 
 .article-overlay .bqst-data-table th {
     color: var(--accent);
-    background: rgba(199, 75, 80, 0.08);
+    background: rgba(31, 42, 86, 0.08);
     font-weight: 700;
 }
 
@@ -51,16 +51,16 @@
 }
 
 .article-overlay .bqst-data-table {
-    border-color: rgba(199, 75, 80, 0.16);
+    border-color: rgba(31, 42, 86, 0.16);
 }
 
 .article-overlay .bqst-data-table th,
 .article-overlay .bqst-data-table td {
-    border-bottom-color: rgba(199, 75, 80, 0.11);
+    border-bottom-color: rgba(31, 42, 86, 0.11);
 }
 
 .article-overlay .bqst-data-table th {
-    background: rgba(199, 75, 80, 0.08);
+    background: rgba(31, 42, 86, 0.08);
 }
 
 .article-body .gloss-term {
@@ -69,8 +69,8 @@
     color: var(--accent);
     /* a proper red wash — low opacity but clearly a highlight, not just an
        underline (was 9%, nearly invisible) */
-    background: rgba(199, 75, 80, 0.16);
-    border-bottom: 1px solid rgba(199, 75, 80, 0.55);
+    background: rgba(31, 42, 86, 0.16);
+    border-bottom: 1px solid rgba(31, 42, 86, 0.55);
     border-radius: 3px;
     padding: 0.02em 0.12em;
     outline: none;
@@ -87,7 +87,7 @@
     width: min(280px, calc(100vw - 2rem));
     overflow-y: auto;
     padding: 0.65rem 0.75rem;
-    border: 1px solid rgba(199, 75, 80, 0.24);
+    border: 1px solid rgba(31, 42, 86, 0.24);
     border-radius: 6px;
     background: rgba(26, 26, 46, 0.96);
     color: rgba(232, 230, 227, 0.92);
@@ -189,7 +189,7 @@
     text-transform: uppercase;
     letter-spacing: 0.05em;
     padding: 0.5rem 0.75rem;
-    color: #C74B50;
+    color: #1F2A56;
     border-bottom: 1px solid var(--border-subtle);
 }
 
@@ -295,15 +295,15 @@
 
 /* BQST audio A/B demo */
 .article-overlay .bqst-audio-demo {
-    --accent: #C74B50;
-    --accent-glow: rgba(199, 75, 80, 0.22);
+    --accent: #1F2A56;
+    --accent-glow: rgba(31, 42, 86, 0.22);
     box-sizing: border-box;
     max-width: 100%;
     margin: 1.4rem 0 2rem;
     border: 1px solid var(--border-subtle);
     border-radius: 8px;
     background:
-        linear-gradient(135deg, rgba(199, 75, 80, 0.08), transparent 42%),
+        linear-gradient(135deg, rgba(31, 42, 86, 0.08), transparent 42%),
         var(--bg-card);
     overflow: hidden;
 }
@@ -444,7 +444,7 @@
     border: 1px solid var(--border-subtle);
     border-radius: 8px;
     background:
-        linear-gradient(135deg, rgba(199, 75, 80, 0.08), transparent 42%),
+        linear-gradient(135deg, rgba(31, 42, 86, 0.08), transparent 42%),
         var(--bg-card);
     overflow: hidden;
 }
@@ -461,7 +461,7 @@
 .article-overlay .bqst-lab-kicker {
     font-family: 'Be Vietnam Pro', sans-serif;
     font-weight: 700;
-    color: #C74B50;
+    color: #1F2A56;
     font-size: 1rem;
 }
 
@@ -774,7 +774,7 @@
     border: 1px solid var(--border-subtle);
     border-radius: 8px;
     background:
-        linear-gradient(135deg, rgba(199, 75, 80, 0.08), transparent 42%),
+        linear-gradient(135deg, rgba(31, 42, 86, 0.08), transparent 42%),
         var(--bg-card);
     overflow: hidden;
 }
@@ -791,7 +791,7 @@
 .article-overlay .qla-visual-kicker {
     font-family: 'Be Vietnam Pro', sans-serif;
     font-weight: 700;
-    color: #C74B50;
+    color: #1F2A56;
     font-size: 1rem;
 }
 
@@ -1023,13 +1023,13 @@
 }
 
 .article-overlay .qla-judge-panel.is-pick-wrong {
-    border-color: #C74B50;
-    box-shadow: 0 0 0 1px #C74B50;
+    border-color: #1F2A56;
+    box-shadow: 0 0 0 1px #1F2A56;
 }
 
 .article-overlay .qla-judge-panel.is-pick-wrong {
-    border-color: #C74B50;
-    box-shadow: 0 0 0 1px #C74B50;
+    border-color: #1F2A56;
+    box-shadow: 0 0 0 1px #1F2A56;
 }
 
 .article-overlay .qla-judge-panel-label {
@@ -1202,7 +1202,7 @@
 
 .article-overlay .qlf-legend-swatch.qla-sw-good { background: #2E7D32; }
 .article-overlay .qlf-legend-swatch.qla-sw-bad { background: #C74B50; }
-.article-overlay .qlf-legend-swatch.qla-sw-weight { background: #A5A6A9; }
+.article-overlay .qlf-legend-swatch.qla-sw-weight { background: #74757C; }
 
 @media (prefers-reduced-motion: reduce) {
     .article-overlay .qla-btn {
@@ -1279,7 +1279,7 @@
 
 .article-overlay .qlf-la-stat-cheat .qlf-la-big { color: #C74B50; }
 .article-overlay .qlf-la-stat-cheat .qlf-la-big { color: #C74B50; }
-.article-overlay .qlf-la-stat-honest .qlf-la-big { color: #1F2A56; }
+.article-overlay .qlf-la-stat-honest .qlf-la-big { color: #5C77C4; }
 
 .article-overlay .qlf-la-stat-label {
     color: var(--text-secondary);
@@ -1317,12 +1317,12 @@
     background: currentColor;
 }
 
-.article-overlay .qlf-sw-series,
+.article-overlay .qlf-sw-series { color: #C74B50; }
 .article-overlay .qlf-sw-warn { color: #C74B50; }
-.article-overlay .qlf-sw-accent,
-.article-overlay .qlf-sw-measured { color: #1F2A56; }
-.article-overlay .qlf-sw-hold { color: #A5A6A9; }
-.article-overlay .qlf-sw-plain { color: #7d3b3d; }
+.article-overlay .qlf-sw-accent { color: #5C77C4; }
+.article-overlay .qlf-sw-measured { color: #74757C; }
+.article-overlay .qlf-sw-hold { color: #74757C; }
+.article-overlay .qlf-sw-plain { color: var(--text-secondary); }
 
 .article-overlay .qlf-legend-swatch.qlf-sw-gap {
     background: rgba(228, 136, 173, 0.18);
@@ -1602,7 +1602,7 @@
 }
 
 @keyframes qlf-tile-pulse {
-    0% { background: rgba(199, 75, 80, 0.18); }
+    0% { background: rgba(31, 42, 86, 0.18); }
     100% { background: transparent; }
 }
 
@@ -1611,7 +1611,7 @@
 }
 
 @keyframes qlf-tile-pulse-light {
-    0% { background: rgba(199, 75, 80, 0.15); }
+    0% { background: rgba(31, 42, 86, 0.15); }
     100% { background: transparent; }
 }
 
@@ -1806,27 +1806,27 @@
 
 /* Blueprint reader skin: drafted poppy outlines and controls on cream paper. */
 .article-body :is(.bqst-lab, .bqst-audio-demo, .qla-visual, .palette-group) {
-  border: 2px solid #C74B50;
+  border: 2px solid #1F2A56;
   border-radius: 0;
   background: #FFF8E1;
 }
 .article-body :is(.bqst-lab-header, .bqst-audio-demo-header, .qla-visual-header, .palette-label) {
-  border-bottom: 1px solid rgba(199, 75, 80, 0.55);
+  border-bottom: 1px solid rgba(31, 42, 86, 0.55);
 }
 .article-body :is(button, select, input) { font-family: 'Be Vietnam Pro', sans-serif; }
 .article-body :is(.qla-btn, .bqst-audio-toggle, .bqst-audio-wave, .qla-memo, .qla-judge-panel, .qla-roster-select, .qlf-la-stat, .qlf-state-tile, .qlf-status-strip, .qlf-audit-log) {
   border-radius: 0;
 }
 .article-body :is(.qla-btn, .bqst-audio-toggle button, .bqst-audio-play) {
-  border-color: #C74B50;
+  border-color: #1F2A56;
   background: #FFF8E1;
-  color: #C74B50;
+  color: #1F2A56;
 }
 .article-body :is(.qla-btn, .bqst-audio-toggle button, .bqst-audio-play):hover,
 .article-body :is(.qla-btn, .bqst-audio-toggle button, .bqst-audio-play):focus-visible,
 .article-body :is(.qla-btn.is-active, .qla-btn-accent, .qlf-mode-btn.is-active, .qlf-meter-btn.is-active, .bqst-audio-toggle button.is-active, .bqst-audio-play.playing) {
-  border-color: #C74B50;
-  background: #C74B50;
+  border-color: #1F2A56;
+  background: #1F2A56;
   color: #FFF8E1;
   outline: none;
   filter: none;
@@ -1836,20 +1836,20 @@
   transform: scaleX(0);
   transform-origin: left center;
 }
-.article-body .bqst-mini-knob { border: 1px solid #C74B50; }
+.article-body .bqst-mini-knob { border: 1px solid #1F2A56; }
 .article-body .gloss-term {
   position: relative;
   color: inherit;
   /* light red wash so glossed terms read as highlights, not just underlines */
-  background: rgba(199, 75, 80, 0.13);
+  background: rgba(31, 42, 86, 0.13);
   border: 0;
-  border-bottom: 1px dotted #C74B50;
+  border-bottom: 1px dotted #1F2A56;
   border-radius: 2px;
   padding: 0.02em 0.1em;
   cursor: pointer; /* no '?' help cursor */
 }
 .article-body .gloss-term:focus-visible {
-  outline: 2px solid #C74B50;
+  outline: 2px solid #1F2A56;
   outline-offset: 2px;
 }
 .gloss-tooltip {
@@ -1862,10 +1862,10 @@
   max-height: calc(100vh - 24px);
   overflow-y: auto;
   padding: 12px 14px;
-  border: 2px solid #C74B50;
-  box-shadow: inset 0 0 0 4px #FFF8E1, inset 0 0 0 5px rgba(199, 75, 80, 0.55);
+  border: 2px solid #1F2A56;
+  box-shadow: inset 0 0 0 4px #FFF8E1, inset 0 0 0 5px rgba(31, 42, 86, 0.55);
   background: #FFF8E1;
-  color: #5f292a;
+  color: #1F2A56;
   font: 500 14px/1.5 'Be Vietnam Pro', sans-serif;
   opacity: 0;
   visibility: hidden;

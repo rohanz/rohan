@@ -246,12 +246,12 @@ export function buildScenePanel(songs, { onPlay } = {}) {
     topTex.anisotropy = 8;
     const drawTop = () => {
       const inverted = playing === i || hovered === i;
-      // The bridge captions' faded ink (60% crimson over cream ≈ #DD908A),
-      // not full red — the buttons read as quiet hardware, not signage.
-      const FADED = '#DD908A';
+      // The bridge captions' faded ink (60% navy over cream ≈ #787C8E),
+      // not full ink — the buttons read as quiet hardware, not signage.
+      const FADED = '#787C8E';
       sideMat.color.set(inverted ? FADED : COLORS.cream); // whole button inverts
       const bg = inverted ? FADED : COLORS.creamCss;
-      const ink = inverted ? COLORS.creamCss : 'rgba(199, 75, 80, 0.6)';
+      const ink = inverted ? COLORS.creamCss : 'rgba(31, 42, 86, 0.6)';
       tctx.fillStyle = bg;
       tctx.fillRect(0, 0, 128, 128);
       tctx.fillStyle = ink;

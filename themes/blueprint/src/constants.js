@@ -12,6 +12,8 @@ export const COLORS = {
   accent: 0xC74B50,
   accentCss: '#C74B50',
   accentDim: 'rgba(199, 75, 80, 0.35)',
+  sky: 0x4A63B0,        // blueprint blue — room signage (one step deeper than the
+  skyCss: '#4A63B0',    // charts' light navy #5C77C4, so signs hold up at distance)
 };
 
 export const ROOM = {

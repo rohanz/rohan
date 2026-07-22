@@ -170,7 +170,7 @@ function wallSign(text, worldH = 0.22) {
   const ctx2 = c.getContext('2d');
   ctx2.font = font;
   if ('letterSpacing' in ctx2) ctx2.letterSpacing = '6px';
-  ctx2.fillStyle = COLORS.accentCss; // scene signage in ink navy
+  ctx2.fillStyle = COLORS.skyCss; // scene signage in light blueprint blue
   ctx2.textBaseline = 'middle';
   ctx2.fillText(text, 12, c.height / 2);
   const texture = new THREE.CanvasTexture(c);

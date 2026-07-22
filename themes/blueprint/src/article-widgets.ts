@@ -5,15 +5,20 @@ import { asset } from './base.js';
 // light branch, with the blueprint article-reader palette swapped in.
 
 // ---- palette (this site) ----
-const BLUE = '#1F2A56'; // ink navy — second series only
-const RED = '#C74B50'; // poppy — grit / primary series
-const PINK = '#A5A6A9'; // reference series — the theme grey (palette is cream/red/navy/grey)
-const TEAL = '#A5A6A9'; // dry / reference series — the theme grey
-const MUTED = 'rgba(199,75,80,0.45)'; // dry / reference
+// PALETTE EXPERIMENT: chart series avoid ink navy (too close to the chrome
+// grey in value) — primary poppy red, comparison chrome grey, and a lighter
+// blueprint blue where a third distinguishable series is needed. Ink navy
+// stays on text/grids/markings only.
+const BLUE = '#74757C'; // chrome grey — comparison / second series (name kept from the navy era)
+const RED = '#C74B50'; // poppy crimson — grit / primary series
+const LIGHT_NAVY = '#5C77C4'; // lighter blueprint blue — third series / good-vs-warn contrast
+const PINK = '#74757C'; // reference series — the chrome grey
+const TEAL = '#74757C'; // dry / reference series — the chrome grey
+const MUTED = 'rgba(116,117,124,0.55)'; // dry / reference — chrome grey
 const RED_RGB = '199,75,80';
-const MUTED_RGB = '199,75,80';
+const MUTED_RGB = '116,117,124';
 const PINK_RGB = '228,136,173'; // bqst processed waveform — original pink
-const INK_RGB = '95,41,42';
+const INK_RGB = '31,42,86';
 
 const TITLE_FONT = "'Be Vietnam Pro', sans-serif";
 
@@ -74,15 +79,15 @@ function initBqstDspLab() {
 
   function legendForBqstVisual(type: string) {
     if (type === 'eq') {
-      return `<span><i style="background:${RED}"></i>low shelf positions</span><span><i style="background:${BLUE}"></i>high shelf positions</span><span><i style="background:${PINK}"></i>cut reference</span>`;
+      return `<span><i style="background:${RED}"></i>low shelf positions</span><span><i style="background:${LIGHT_NAVY}"></i>high shelf positions</span><span><i style="background:${PINK}"></i>cut reference</span>`;
     }
     if (type === 'transfer') {
-      return `<span><i style="background:${TEAL}"></i>dry signal</span><span><i style="background:${RED}"></i>cream</span><span><i style="background:${BLUE}"></i>grit</span>`;
+      return `<span><i style="background:${TEAL}"></i>dry signal</span><span><i style="background:${RED}"></i>cream</span><span><i style="background:${LIGHT_NAVY}"></i>grit</span>`;
     }
     if (type === 'aliasing') {
-      return `<span><i style="background:${BLUE}"></i>audible harmonic</span><span><i style="background:#A5A6A9"></i>harmonic inside 4x processing</span><span><i style="background:${RED}"></i>foldback alias position</span>`;
+      return `<span><i style="background:${LIGHT_NAVY}"></i>audible harmonic</span><span><i style="background:#74757C"></i>harmonic inside 4x processing</span><span><i style="background:${RED}"></i>foldback alias position</span>`;
     }
-    return `<span><i style="background:${RED}"></i>cream</span><span><i style="background:${BLUE}"></i>grit</span>`;
+    return `<span><i style="background:${RED}"></i>cream</span><span><i style="background:${LIGHT_NAVY}"></i>grit</span>`;
   }
 
   slots.forEach((slot) => {
@@ -251,7 +256,7 @@ function initBqstDspLab() {
     });
     [1600, 1800, 2100, 2500, 3400, 4800, 7100, 18000].forEach((f, i, all) => {
       const alpha = 0.5 + (i / Math.max(1, all.length - 1)) * 0.44;
-      plotCurve('high', f, 6, BLUE, alpha, f === 4800 ? 2.8 : 1.9);
+      plotCurve('high', f, 6, LIGHT_NAVY, alpha, f === 4800 ? 2.8 : 1.9);
     });
     plotCurve('low', 131, -6, PINK, 0.72, 2.0, true);
     plotCurve('high', 4800, -6, PINK, 0.72, 2.0, true);
@@ -336,7 +341,7 @@ function initBqstDspLab() {
     plot((x) => x, TEAL, 1.8, true);
     const drive01 = drive01For('transfer');
     plot((x) => densitySaturate(x, drive01), RED, 3, false);
-    plot((x) => transformerSaturate(x, drive01), BLUE, 3, false);
+    plot((x) => transformerSaturate(x, drive01), LIGHT_NAVY, 3, false);
     ctx.fillStyle = textColor(0.58);
     ctx.font = tickFont;
     ctx.textAlign = 'center';
@@ -393,7 +398,7 @@ function initBqstDspLab() {
       const gY = yFor(grit[i]);
       ctx.fillStyle = RED;
       ctx.fillRect(x - barW - 2, cY, barW, pad.t + plotH - cY);
-      ctx.fillStyle = BLUE;
+      ctx.fillStyle = LIGHT_NAVY;
       ctx.fillRect(x + 2, gY, barW, pad.t + plotH - gY);
       ctx.fillStyle = textColor(0.62);
       ctx.font = "12px 'Be Vietnam Pro', sans-serif";
@@ -434,11 +439,11 @@ function initBqstDspLab() {
     const displayedMaxFreq = 52000;
     const fundamental = 6000;
     const harmonics = [1, 2, 3, 4, 5, 6, 7, 8];
-    const audibleColor = BLUE; // navy first; grey for the ghost band
+    const audibleColor = LIGHT_NAVY; // grey for the ghost band
     // dropdown-current grey (40% navy over cream): reads as the 'ghost'
     // above-Nyquist content, clearly apart from the teal audible series
-    const oversampledColor = '#A5A6A9';
-    const aliasColor = RED;
+    const oversampledColor = '#74757C';
+    const aliasColor = RED; // foldback alias = danger red
     const plotX = pad.l;
     const plotY = pad.t;
     const plotW = w - pad.l - pad.r;
@@ -1343,8 +1348,8 @@ function initDemoPlayer() {
   const vuCtx = sizeCanvas(vuCanvas, vuW, vuH);
   const vecCtx = sizeCanvas(vecCanvas, vecW, vecH);
 
-  const accentColor = () => RED;
-  const accentRgba = (a: number) => `rgba(${RED_RGB},${a})`;
+  const accentColor = () => `rgba(${INK_RGB},1)`; // meter markings stay ink navy, like the VU faces
+  const accentRgba = (a: number) => `rgba(${INK_RGB},${a})`;
 
   function sizeWave() {
     const rect = waveCanvas.getBoundingClientRect();
@@ -1565,13 +1570,13 @@ function initDemoPlayer() {
 // Ported from the original site's main.js (initQuantlabVisuals /
 // initQuantlabFinVisuals). Light theme only: the original's isLightTheme
 // branches are collapsed and the palette follows the article's settled rules —
-// single-series visuals use poppy (#C74B50) for the primary series;
-// comparison visuals use persimmon for the primary/first series and
-// ink navy (#1F2A56) for the second; ink for text/grids, cream card background.
+// single-series visuals use poppy red for the primary series; comparison
+// visuals pair it with chrome grey, adding light blueprint blue when a third
+// series (or a good-vs-warn contrast) is needed; ink navy for text/grids only.
 // Semantic colors (verified-green, danger red) keep their meaning.
 // ============================================================
 
-const QL_WARN = RED; // "cheat"/"survivors"/violations — primary persimmon
+const QL_WARN = '#C74B50'; // "cheat"/"survivors"/violations — semantic red
 // The quant explainer's reference dots must be opaque or their connector lines
 // ghost through, so they use the desaturated teal-grey reference role.
 const QL_DOT = TEAL;
@@ -2626,14 +2631,14 @@ function initQlfLookahead(node: HTMLElement, la: any) {
     plot(holdEq, PINK, 1.5, 1);
     ctx.setLineDash([]);
     plot(cheatEq, QL_WARN, 2.5, 1);
-    plot(honestEq, BLUE, 2.5, 1);
+    plot(honestEq, LIGHT_NAVY, 2.5, 1);
 
     if (cursor !== null) {
       const cx = x(cursor);
       ctx.strokeStyle = qlText(0.35);
       ctx.lineWidth = 1;
       ctx.beginPath(); ctx.moveTo(cx, pad.t); ctx.lineTo(cx, h - pad.b); ctx.stroke();
-      ([[cheatEq, QL_WARN], [honestEq, BLUE], [holdEq, PINK]] as Array<[number[], string]>).forEach((pair) => {
+      ([[cheatEq, QL_WARN], [honestEq, LIGHT_NAVY], [holdEq, PINK]] as Array<[number[], string]>).forEach((pair) => {
         ctx.fillStyle = pair[1];
         ctx.beginPath(); ctx.arc(cx, y(pair[0][cursor!]), 4, 0, Math.PI * 2); ctx.fill();
       });
@@ -2680,7 +2685,7 @@ function initQlfKalman(node: HTMLElement, km: any) {
   canvas.setAttribute('aria-label', `Hedge ratio over time: a 250-day rolling OLS estimate that whipsaws between ${Math.min(...olsVals).toFixed(1)} and ${Math.max(...olsVals).toFixed(1)}, versus a Kalman-filtered estimate that stays between ${Math.min(...km.kalman_beta).toFixed(2)} and ${Math.max(...km.kalman_beta).toFixed(2)} while tracking the same underlying level, with the 2016-2020 selection window shaded`);
   body.appendChild(qlfLegend([
     { cls: 'qlf-sw-series', label: 'kalman filter' },
-    { cls: 'qlf-sw-accent', label: '250-day rolling OLS (textbook method)' },
+    { cls: 'qlf-sw-measured', label: '250-day rolling OLS (textbook method)' },
     { cls: 'qlf-sw-window', label: 'selection window (pair chosen here)' },
   ]));
   canvasWrap.appendChild(canvas);
@@ -2901,7 +2906,7 @@ function initQlfSurvivorship(node: HTMLElement, sv: any) {
       ctx.stroke();
     }
     plot(sv.survivors, QL_WARN);
-    plot(sv.rsp, BLUE);
+    plot(sv.rsp, LIGHT_NAVY);
 
     if (cursor !== null) {
       const cx = x(cursor);
@@ -2910,13 +2915,12 @@ function initQlfSurvivorship(node: HTMLElement, sv: any) {
       ctx.beginPath(); ctx.moveTo(cx, pad.t); ctx.lineTo(cx, h - pad.b); ctx.stroke();
       ctx.fillStyle = QL_WARN;
       ctx.beginPath(); ctx.arc(cx, y(sv.survivors[cursor]), 4, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = BLUE;
+      ctx.fillStyle = LIGHT_NAVY;
       ctx.beginPath(); ctx.arc(cx, y(sv.rsp[cursor]), 4, 0, Math.PI * 2); ctx.fill();
     }
 
-    ctx.font = "700 11px 'Be Vietnam Pro', sans-serif";
-
     // endpoint gap bracket
+    ctx.font = "700 15px 'Be Vietnam Pro', sans-serif";
     const gx = x(n - 1) + 2;
     ctx.strokeStyle = qlText(0.5);
     ctx.beginPath();
@@ -2925,7 +2929,7 @@ function initQlfSurvivorship(node: HTMLElement, sv: any) {
     ctx.stroke();
     ctx.fillStyle = qlText(0.7);
     ctx.save();
-    ctx.translate(gx + 12, (y(sv.survivors[n - 1]) + y(sv.rsp[n - 1])) / 2 + 14);
+    ctx.translate(gx + 14, (y(sv.survivors[n - 1]) + y(sv.rsp[n - 1])) / 2 + 14);
     ctx.rotate(-Math.PI / 2);
     ctx.textAlign = 'center';
     ctx.fillText(`+${endGapPct.toFixed(0)}% gap`, 0, 0);

@@ -23,15 +23,22 @@
     @font-face { font-family: 'Be Vietnam Pro'; src: url('/fonts/BeVietnamPro-Bold.woff2') format('woff2'); font-weight: 700; font-display: block; }
     @font-face { font-family: 'Kids Word'; src: url('/fonts/KidsWord.otf') format('opentype'); font-weight: 400; font-display: block; }
     @font-face { font-family: 'Chillax'; src: url('/fonts/Chillax-Semibold.otf') format('opentype'); font-weight: 600; font-display: block; }
-    html, body { margin: 0; height: 100%; background: #FFF8E1; overflow: hidden; }
+    :root {
+      --cream: #FFF8E1;
+      --ink: #1F2A56;
+      --chrome: #74757C;          /* bar/button grey */
+      --chrome-dim: rgba(116, 117, 124, 0.4);
+      --accent: #C74B50;          /* poppy crimson */
+    }
+    html, body { margin: 0; height: 100%; background: var(--cream); overflow: hidden; }
     #app { position: fixed; inset: 0; }
     #nav { position: fixed; top: 0; left: 0; right: 0; z-index: 12; height: 58px;
           display: flex; justify-content: center; align-items: stretch; gap: 0;
           background: rgba(255, 248, 225, 0.82);
           backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
-          border-bottom: 1px solid rgba(139, 140, 146, 0.4);
+          border-bottom: 1px solid var(--chrome-dim);
           font-family: 'Be Vietnam Pro', ui-monospace, monospace;
-          color: #8b8c92; font-size: 17px; letter-spacing: 0.05em; font-weight: 600;
+          color: var(--chrome); font-size: 17px; letter-spacing: 0.05em; font-weight: 600;
           transition: opacity 0.6s ease; }
     #nav.hidden { opacity: 0; pointer-events: none; }
     /* Home shows the bar with ONLY the theme switcher; tabs + back FADE
@@ -40,15 +47,15 @@
     #nav.home-mode > a#nav-back { opacity: 0; pointer-events: none; visibility: hidden; }
     /* every tab carries an invisible border so the current-tab border never
        changes widths (tabs used to shift when the selection moved) */
-    #nav a { color: inherit; text-decoration: none; cursor: pointer; opacity: 0.7;
+    #nav a { color: inherit; text-decoration: none; cursor: pointer;
           display: flex; align-items: center; padding: 0 16px;
           box-sizing: border-box; border: 3px solid transparent;
           transition: background 0.35s ease, color 0.35s ease,
                       opacity 0.35s ease, border-color 0.35s ease,
                       visibility 0.35s; }
-    #nav a.current { opacity: 1; background: #8b8c92; color: #FFF8E1;
-          border-color: #8b8c92; }
-    #nav a.current:hover { background: #FFF8E1; color: #8b8c92; }
+    #nav a.current { opacity: 1; background: var(--chrome); color: var(--cream);
+          border-color: var(--chrome); }
+    #nav a.current:hover { background: var(--cream); color: var(--chrome); }
     #nav a.soon { opacity: 0.3; cursor: default; }
     /* Scene tabs: equal-width flush boxes, label centred, drafting number
        pinned to the top-left corner — mirrors the 01/02/03 of the home menu */
@@ -57,34 +64,34 @@
     #nav a.nav-tab .nav-num { position: absolute; top: 4px; left: 7px;
           font-size: 10px; letter-spacing: 0.12em; opacity: 0.6; }
     #nav a#nav-back { position: absolute; left: 0; top: 0; bottom: 0;
-          opacity: 1; font-weight: 700; background: #8b8c92; color: #FFF8E1;
-          padding: 0 20px; box-sizing: border-box; border: 3px solid #8b8c92; }
-    #nav a#nav-back:hover { background: #FFF8E1; color: #8b8c92; }
+          opacity: 1; font-weight: 700; background: var(--chrome); color: var(--cream);
+          padding: 0 20px; box-sizing: border-box; border: 3px solid var(--chrome); }
+    #nav a#nav-back:hover { background: var(--cream); color: var(--chrome); }
     /* Theme switcher, top right — same navy box language as the tabs. */
     #theme { position: absolute; right: 0; top: 0; bottom: 0; }
     #theme-btn { height: 100%; display: flex; align-items: center; padding: 0 20px;
-          background: #8b8c92; color: #FFF8E1; font: 600 15px/1 'Be Vietnam Pro', sans-serif;
-          letter-spacing: 0.05em; border: 3px solid #8b8c92; box-sizing: border-box;
+          background: var(--chrome); color: var(--cream); font: 600 15px/1 'Be Vietnam Pro', sans-serif;
+          letter-spacing: 0.05em; border: 3px solid var(--chrome); box-sizing: border-box;
           cursor: pointer; }
-    #theme-btn:hover { background: #FFF8E1; color: #8b8c92; }
+    #theme-btn:hover { background: var(--cream); color: var(--chrome); }
     #theme-menu { position: absolute; right: 0; top: 100%; width: 100%;
           box-sizing: border-box;
-          display: none; flex-direction: column; background: #FFF8E1;
-          border: 3px solid #8b8c92; border-top: 0; }
+          display: none; flex-direction: column; background: var(--cream);
+          border: 3px solid var(--chrome); border-top: 0; }
     #theme.open #theme-menu { display: flex; }
-    #theme-menu a { transition: background 0.1s ease, color 0.1s ease; padding: 11px 16px; color: #8b8c92; text-decoration: none;
+    #theme-menu a { transition: background 0.1s ease, color 0.1s ease; padding: 11px 16px; color: var(--chrome); text-decoration: none;
           font: 600 14px/1 'Be Vietnam Pro', sans-serif; letter-spacing: 0.05em; }
-    #theme-menu a:hover { background: #8b8c92; color: #FFF8E1; }
+    #theme-menu a:hover { background: var(--chrome); color: var(--cream); }
     #theme-menu a.current { opacity: 0.4; cursor: default; pointer-events: none; }
     /* Brand, bottom right of the lower bar. */
     #bottombar .brand-cluster { position: absolute; right: 18px; top: 50%;
           transform: translateY(-50%); display: flex; align-items: center; gap: 10px; }
     #bottombar #logo { height: 40px; width: 40px; display: block; }
     #bottombar .brand { font-size: 19px; font-weight: 700; letter-spacing: 0.04em;
-          color: #8b8c92; }
+          color: var(--chrome); }
     /* unselected tabs: pale blue wash on hover */
     #nav a:not(.current):not(.soon):not(#nav-back):hover {
-          opacity: 1; background: rgba(139, 140, 146, 0.15); }
+          opacity: 1; background: rgba(116, 117, 124, 0.15); }
     /* Bottom bar: brand left, socials right. Pages only, fades with #nav. */
     #bottombar { position: fixed; bottom: 0; left: 0; right: 0; z-index: 12;
           height: 58px;
@@ -92,25 +99,25 @@
           padding-left: 18px;
           background: rgba(255, 248, 225, 0.82);
           backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
-          border-top: 1px solid rgba(139, 140, 146, 0.4);
+          border-top: 1px solid var(--chrome-dim);
           font-family: 'Be Vietnam Pro', ui-monospace, monospace;
-          color: #8b8c92; font-size: 14px; letter-spacing: 0.05em; font-weight: 600;
+          color: var(--chrome); font-size: 14px; letter-spacing: 0.05em; font-weight: 600;
           transition: opacity 0.6s ease; }
     #bottombar.hidden { opacity: 0; pointer-events: none; }
     /* Socials: one contiguous full-height blue block, CENTRED in the bar,
        cream dividers between, invert on hover. */
     #bottombar .right { position: absolute; left: 50%; transform: translateX(-50%);
           top: 0; bottom: 0; display: flex; }
-    #bottombar .right a { color: #FFF8E1; background: #8b8c92; text-decoration: none;
+    #bottombar .right a { color: var(--cream); background: var(--chrome); text-decoration: none;
           cursor: pointer; display: flex; align-items: center; padding: 0 18px;
-          box-sizing: border-box; border: 3px solid #8b8c92; border-right-width: 0; }
+          box-sizing: border-box; border: 3px solid var(--chrome); border-right-width: 0; }
     #bottombar .right a:last-child { border-right-width: 3px; }
     #bottombar .right a + a { border-left: 1px solid rgba(255, 248, 225, 0.45); }
-    #bottombar .right a:hover { background: #FFF8E1; color: #8b8c92;
-          border-left-color: #8b8c92; }
+    #bottombar .right a:hover { background: var(--cream); color: var(--chrome);
+          border-left-color: var(--chrome); }
     /* Centre nav panel over the plan (home only; fades out once clicked) */
     #menu { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-          z-index: 14; background: #1F2A56; color: #FFF8E1; padding: 34px 30px 0;
+          z-index: 14; background: var(--ink); color: var(--cream); padding: 34px 30px 0;
           width: 320px;
           font-family: 'Be Vietnam Pro', ui-monospace, monospace;
           letter-spacing: 0.05em; font-weight: 600;
@@ -119,7 +126,7 @@
     #menu-head { display: flex; align-items: baseline; gap: 0.6em;
           font-size: 22px; margin: 0 -30px; padding: 0 30px 20px;
           border-bottom: 1px solid rgba(255, 248, 225, 0.45); }
-    #menu-head .rjk { background: #FFF8E1; color: #1F2A56; padding: 5px 12px; }
+    #menu-head .rjk { background: var(--cream); color: var(--ink); padding: 5px 12px; }
     #menu .menu-row { display: flex; align-items: baseline; gap: 0.9em;
           margin: 0 -30px; padding: 21px 30px; font-size: 19.5px; cursor: pointer;
           color: inherit; text-decoration: none; }
@@ -127,14 +134,14 @@
           text-transform: uppercase; opacity: 0.65; }
     /* hover: cream fill flanked by crimson keylines left + right — contains
        the fill (the bottom row was merging with the page) without dividers */
-    #menu .menu-row:hover { background: #FFF8E1; color: #1F2A56;
-          box-shadow: inset 3px 0 0 #1F2A56, inset -3px 0 0 #1F2A56; }
+    #menu .menu-row:hover { background: var(--cream); color: var(--ink);
+          box-shadow: inset 3px 0 0 var(--ink), inset -3px 0 0 var(--ink); }
     /* the last row sits ON the panel's bottom edge: its hover also draws a
        closing line BELOW the button (outset, so the cream fill keeps its
        full height) */
     #menu .menu-row:last-of-type:hover {
-          box-shadow: inset 3px 0 0 #1F2A56, inset -3px 0 0 #1F2A56,
-                      0 3px 0 #1F2A56; }
+          box-shadow: inset 3px 0 0 var(--ink), inset -3px 0 0 var(--ink),
+                      0 3px 0 var(--ink); }
     #menu .menu-row.soon { opacity: 0.45; cursor: default; }
     #menu .menu-row.soon:hover { background: transparent; color: inherit; }
     #labels { position: fixed; inset: 0; pointer-events: none; z-index: 5; }
@@ -144,7 +151,7 @@
     /* Boot veil: covers the popping-in of UI/scene while the app builds its
        world, then fades out — arriving from another theme cross-fades onto
        cream, and blueprint reveals itself smoothly once ready. */
-    #boot-veil { position: fixed; inset: 0; z-index: 40; background: #FFF8E1;
+    #boot-veil { position: fixed; inset: 0; z-index: 40; background: var(--cream);
           pointer-events: none; transition: opacity 0.5s ease; }
     #boot-veil.lifted { opacity: 0; }
     .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;

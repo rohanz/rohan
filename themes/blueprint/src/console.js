@@ -551,7 +551,7 @@ export function buildConsole(songs, { onStripClick, onVolume, onMono, onDim, onC
   const masterBtns = {};
   const leds = {}; // per-button LED fill materials (blink when latched)
   const LED_CREAM = new THREE.Color(COLORS.cream);
-  const LED_ON = new THREE.Color('#E82C1E');
+  const LED_ON = new THREE.Color('#C74B50'); // poppy crimson, shared with the VU clip/over states
   for (const { name, dx, z } of BTN_GRID) {
     const btn = solid(masterBtnGeo);
     btn.position.set(mx + dx, btnY.up, z);
@@ -779,7 +779,7 @@ export function buildConsole(songs, { onStripClick, onVolume, onMono, onDim, onC
       volPress -= dt;
       if (volPress <= 0) { volPress = 0; volKnob.group.scale.y = 1; }
     }
-    // LED blink: ~1Hz square wave between cream and maroon while latched.
+    // LED blink: ~1Hz square wave between cream and signal red while latched.
     ledClock += dt;
     const blinkOn = (ledClock % 1.0) < 0.5;
     for (const name of Object.keys(leds)) {
