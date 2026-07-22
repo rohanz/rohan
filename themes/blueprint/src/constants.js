@@ -1,15 +1,17 @@
 // Shared palette + dimensions. Every module reads sizes from here.
 export const FONT = "'Be Vietnam Pro', ui-monospace, monospace";
 
+// PALETTE EXPERIMENT (local branch): main ink navy, chrome grey, crimson
+// demoted to accent-only. Original: ink #C74B50, accent #1F2A56.
 export const COLORS = {
   cream: 0xFFF8E1,
-  ink: 0xC74B50,
-  inkDim: 'rgba(199, 75, 80, 0.35)',
-  inkCss: '#C74B50',
+  ink: 0x1F2A56,
+  inkDim: 'rgba(31, 42, 86, 0.35)',
+  inkCss: '#1F2A56',
   creamCss: '#FFF8E1',
-  accent: 0x1F2A56,
-  accentCss: '#1F2A56',
-  accentDim: 'rgba(31, 42, 86, 0.35)',
+  accent: 0xC74B50,
+  accentCss: '#C74B50',
+  accentDim: 'rgba(199, 75, 80, 0.35)',
 };
 
 export const ROOM = {

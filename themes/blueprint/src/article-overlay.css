@@ -1,7 +1,7 @@
 :root {
   --article-paper: #FFF8E1;
-  --article-ink: #C74B50;
-  --article-blue: #1F2A56;
+  --article-ink: #1F2A56;   /* experiment: main ink navy */
+  --article-blue: #C74B50;  /* experiment: crimson as the accent role */
 }
 
 .article-overlay[hidden] { display: none; }
