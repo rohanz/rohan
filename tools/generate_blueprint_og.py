@@ -26,7 +26,7 @@ CONTENT = ROOT / 'src/content/projects'
 BANNERS = ROOT / 'public/assets/images/projects'
 
 CREAM = (255, 248, 225)
-INK = (199, 75, 80)
+INK = (31, 42, 86)  # ink navy (palette update 2026-07-22; was crimson 199,75,80)
 NAVY = (31, 42, 86)
 
 W, H = 1200, 630
@@ -67,7 +67,7 @@ def dashed_grid(d: ImageDraw.ImageDraw):
             d.line([
                 (x0 + (x1 - x0) * t0, y0 + (y1 - y0) * t0),
                 (x0 + (x1 - x0) * t1, y0 + (y1 - y0) * t1),
-            ], fill=(236, 205, 197), width=2)
+            ], fill=(210, 207, 197), width=2)  # faint grid: ~20% ink over cream
             pos += length + gap
     for x in range(80, W, 80):
         dashed(x, 0, x, H)
