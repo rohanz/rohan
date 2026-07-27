@@ -67,9 +67,28 @@ declare global {
  * element has a laid-out box — that frame is our "first paint" baseline, and
  * everything after it is movement the user can see.
  */
-async function instrument(page: Page, tracked: string[] = TRACKED, forMs = SETTLE_MS) {
+async function instrument(
+  page: Page,
+  tracked: string[] = TRACKED,
+  forMs = SETTLE_MS,
+  /**
+   * Start sampling only once webfonts have settled.
+   *
+   * OFF by default, and it must stay off for the chrome rect-stability
+   * checks — catching the Chillax swap moving the site controls is the whole
+   * point of those. It is ON for the article-growth checks, which are about
+   * whether widget placeholders and images reserve their boxes. Those two
+   * things happen ~700ms in; webfont reflow of body copy happens far earlier
+   * and, because the text has not painted yet (Inter is `font-display:
+   * block`), is not something a reader can see — the CLS budgets above are
+   * what police visibility, and they measure 0 on these routes. Without this
+   * gate a 17,000px transit article reads ~1,000px of "growth" on Linux
+   * purely from text reflowing, which is not what the assertion is about.
+   */
+  afterFonts = false,
+) {
   await page.addInitScript(
-    ({ sels, forMs }: { sels: string[]; forMs: number }) => {
+    ({ sels, forMs, afterFonts }: { sels: string[]; forMs: number; afterFonts: boolean }) => {
       window.__cls = 0;
       window.__shifts = [];
       window.__rects = {};
@@ -98,6 +117,14 @@ async function instrument(page: Page, tracked: string[] = TRACKED, forMs = SETTL
         }
       }).observe({ type: 'layout-shift', buffered: true });
 
+      let fontsSettled = !afterFonts;
+      if (afterFonts) {
+        const done = () => {
+          fontsSettled = true;
+        };
+        document.fonts.ready.then(done, done);
+      }
+
       const frame = () => {
         const now = performance.now();
         // Don't baseline against a half-parsed document. While readyState is
@@ -107,7 +134,7 @@ async function instrument(page: Page, tracked: string[] = TRACKED, forMs = SETTL
         // read as ~1,000px of "growth". Post-paint movement is what these
         // samples are for, and the CLS budgets above cover the parse window
         // independently.
-        if (document.readyState === 'loading') {
+        if (document.readyState === 'loading' || (afterFonts && !fontsSettled)) {
           requestAnimationFrame(frame);
           return;
         }
@@ -175,7 +202,7 @@ async function instrument(page: Page, tracked: string[] = TRACKED, forMs = SETTL
       };
       requestAnimationFrame(frame);
     },
-    { sels: tracked, forMs },
+    { sels: tracked, forMs, afterFonts },
   );
 }
 
@@ -271,17 +298,73 @@ test.describe('CLS budget — prefers-reduced-motion', () => {
 
 const MOVE_BUDGET = 2; // px
 
+/**
+ * Font-fallback forensics, attached to every rect-stability failure message.
+ *
+ * The chrome only moves horizontally for one reason: the Chillax swap changed
+ * the width of the two site-switch pills. When that regresses it is nearly
+ * always the fallback family failing to bind on the platform under test — and
+ * a PARTIALLY bound family is the nastiest case, because CSS weight matching
+ * never leaves a family that has any usable face, so a weight-700 request
+ * silently renders in the 200-500 face's much narrower size-adjust instead of
+ * falling through to Inter. None of that is visible in the shift number, so
+ * report face states and real advance widths beside it. scrollbarPx is here to
+ * rule out the other candidate: a platform with classic (non-overlay)
+ * scrollbars nudging the right-anchored .site-controls.
+ */
+const fontDiag = (page: Page) =>
+  page
+    .evaluate(async () => {
+      await document.fonts.ready;
+      const width = (family: string, weight: number, px = 15.2) => {
+        const s = document.createElement('span');
+        s.textContent = 'transit mode';
+        s.style.cssText = `position:absolute;left:-9999px;white-space:pre;font-size:${px}px;font-family:${family};font-weight:${weight}`;
+        document.body.appendChild(s);
+        const w = +s.getBoundingClientRect().width.toFixed(2);
+        s.remove();
+        return w;
+      };
+      // Measured at the real 15.2px AND at 10x that. If the two sizes
+      // disagree about the Chillax/fallback ratio, the culprit is per-glyph
+      // advance rounding (platform rasterisation), which no size-adjust can
+      // correct. If they agree, it is a genuine metric difference and
+      // size-adjust is the right lever.
+      const at = (px: number) =>
+        `chillax=${width("'Chillax'", 700, px)} fallback=${width("'Chillax Fallback'", 700, px)}` +
+        ` inter=${width("'Inter'", 700, px)} arial=${width('Arial', 700, px)}` +
+        ` sans=${width('sans-serif', 700, px)}`;
+      return {
+        faces: [...document.fonts]
+          .filter((f) => f.family.includes('Chillax'))
+          .map((f) => `${f.family}/${f.weight}/${f.status}`)
+          .join(' '),
+        pill700: at(15.2),
+        pill700x10: at(152),
+        scrollbarPx: window.innerWidth - document.documentElement.clientWidth,
+      };
+    })
+    .then(
+      (d) =>
+        `\n  faces: ${d.faces}\n  pill @15.2px: ${d.pill700}\n  pill @152px: ${d.pill700x10}` +
+        `\n  scrollbar: ${d.scrollbarPx}px`,
+    )
+    .catch(() => ' (font diagnostics unavailable)');
+
 test.describe('rect stability', () => {
   for (const path of CLASSIC_ROUTES) {
     test(`classic chrome holds still on ${path}`, async ({ page }) => {
       await instrument(page);
       await loadAndSettle(page, path);
       const rects = await readRects(page);
+      const diag = await fontDiag(page);
       for (const sel of ['#themeToggle', '.site-controls', '.logo-link']) {
         const r = rects[sel];
         expect(r, `${sel} was never sampled on ${path}`).toBeTruthy();
-        expect(r.dy, `${sel} moved vertically on ${path} at t=${r.atY}ms`).toBeLessThan(MOVE_BUDGET);
-        expect(r.dx, `${sel} moved horizontally on ${path}`).toBeLessThan(MOVE_BUDGET);
+        expect(r.dy, `${sel} moved vertically on ${path} at t=${r.atY}ms${diag}`).toBeLessThan(
+          MOVE_BUDGET,
+        );
+        expect(r.dx, `${sel} moved horizontally on ${path}${diag}`).toBeLessThan(MOVE_BUDGET);
       }
     });
   }
@@ -291,10 +374,13 @@ test.describe('rect stability', () => {
     await throttleFonts(page, 700);
     await loadAndSettle(page, '/');
     const rects = await readRects(page);
+    const diag = await fontDiag(page);
     for (const sel of ['#themeToggle', '.site-controls', '.logo-link']) {
       const r = rects[sel];
-      expect(r.dy, `${sel} moved when Chillax swapped in (t=${r.atY}ms)`).toBeLessThan(MOVE_BUDGET);
-      expect(r.dx, `${sel} moved when Chillax swapped in`).toBeLessThan(MOVE_BUDGET);
+      expect(r.dy, `${sel} moved when Chillax swapped in (t=${r.atY}ms)${diag}`).toBeLessThan(
+        MOVE_BUDGET,
+      );
+      expect(r.dx, `${sel} moved when Chillax swapped in${diag}`).toBeLessThan(MOVE_BUDGET);
     }
   });
 
@@ -349,7 +435,7 @@ test.describe('widget placeholders reserve their space', () => {
   const GROWTH_BUDGET = 400; // px
 
   test('classic /projects/bqst article barely grows', async ({ page }) => {
-    await instrument(page);
+    await instrument(page, TRACKED, SETTLE_MS, true);
     await loadAndSettle(page, '/projects/bqst');
     const r = (await readRects(page))['#detailContent'];
     expect(r.dh, `#detailContent grew ${Math.round(r.dh)}px at t=${r.atH}ms`).toBeLessThan(
@@ -358,7 +444,7 @@ test.describe('widget placeholders reserve their space', () => {
   });
 
   test('transit /transit/projects/bqst article barely grows', async ({ page }) => {
-    await instrument(page);
+    await instrument(page, TRACKED, SETTLE_MS, true);
     await loadAndSettle(page, '/transit/projects/bqst');
     const r = (await readRects(page))['.article'];
     expect(r.dh, `.article grew ${Math.round(r.dh)}px at t=${r.atH}ms`).toBeLessThan(GROWTH_BUDGET);

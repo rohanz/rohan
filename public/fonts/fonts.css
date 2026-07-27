@@ -1,34 +1,99 @@
 /* ============================================================
    Chillax — metric-compatible local fallback
    ============================================================
-   Chillax ships `font-display: swap`, so the first frames render in the next
-   family in the stack and re-lay out when the woff2 lands. With a raw Arial
-   fallback that swap RESIZED every Chillax run: the site-controls row moved
-   the theme toggle 15.3px sideways on every classic reload, and the logo and
-   homepage name went with it.
+   Chillax used to ship `font-display: swap`, so the first frames rendered in
+   the next family in the stack and re-laid out when the woff2 landed. With a
+   raw Arial fallback that swap RESIZED every Chillax run: the site-controls
+   row moved the theme toggle 15.3px sideways on every classic reload, and the
+   logo and homepage name went with it. The faces are `optional` now (see
+   below) and this family is what they fall back TO.
 
-   'Chillax Fallback' is Arial re-metricked to Chillax so the swap is a
-   repaint, not a relayout.
+   'Chillax Fallback' is a local grotesque re-metricked to Chillax so the swap
+   is a repaint, not a relayout.
 
-   TUNING METHOD (by measurement, not by eye). The site's real Chillax strings
-   were rendered at their real sizes and letter-spacing in Chillax and in the
-   candidate fallback, and `size-adjust` set to the advance-width ratio. Two
-   things fell out of that and are worth keeping in mind before editing:
+   ------------------------------------------------------------
+   TWO MEASURED FACTS, both paid for in failed runs. Read before editing.
+   ------------------------------------------------------------
+   1. A face that declares `font-weight: 700` but whose src binds a REGULAR
+      local is treated as already-bold, so synthetic bolding is suppressed.
+      The first version of this file calibrated size-adjust against Arial
+      BOLD while `local('Arial')` actually bound Arial Regular; the fallback
+      came out NARROWER than plain Arial and the shift got WORSE, not better
+      (15.34px -> 19.78px). Calibrate against whatever the src really binds.
 
-   1. The 600/700 faces must resolve to Arial BOLD, not Arial. A @font-face
-      declaring `font-weight: 700` whose src is `local('Arial')` binds Arial
-      REGULAR and then suppresses synthetic bolding, so the fallback came out
-      narrower than plain Arial and the shift got worse, not better. Hence the
-      explicit Arial Bold / Arial-BoldMT / Liberation Sans Bold locals.
+   2. When a face's src binds nothing, Chromium falls through to the next
+      FAMILY in the stack — it does not quietly substitute another weight
+      from the same family. Verified by blocking the Chillax woff2 and
+      reading the settled pill: with the fallback broken it renders in Inter
+      at 93.47px against Chillax's 99.55px. That 6.08px per pill, across two
+      pills, IS the shift. So the failure mode of a fallback that does not
+      bind is bounded but real, and the whole job of this file is to make
+      sure it binds everywhere.
 
-   2. Per-string ratios vary by a few percent, so the values below are fitted
-      to what actually moves. Weight 700 is fitted to the two site-switch
-      pills TOGETHER (they are what pushes #themeToggle): Chillax
-      99.55 + 116.80 = 216.35 vs Arial Bold 91.22 + 109.78 = 201.00 -> 107.64%,
-      which lands the pair within ~1.4px each and the row within ~0.1px.
-      Weight 600 is fitted to the sidebar logo ("rohan.jk", -0.5px tracking):
-      141.00 / 132.92 = 106.08%. Weights 200-500 are fitted to body copy
-      against Arial Regular: ~0.919/0.907 -> 91.00%.
+   That is precisely what went wrong on ubuntu-latest: `local('Arial Bold')`
+   and `local('Liberation Sans Bold')` both miss there (no Arial at all, and
+   Chrome's local() matching of STYLED full names via fontconfig is
+   unreliable), the 600/700 faces bound nothing, the pills fell through to
+   Inter, and every classic route moved ~20px — while macOS, which has Arial,
+   measured 0.
+
+   The design below removes the dependency on styled local() matching
+   entirely: all three faces carry an IDENTICAL src list of plain REGULAR
+   family names, the spelling fontconfig and CoreText both resolve reliably,
+   so every weight binds or misses together and one calibration serves all of
+   them. Targets are Arial-metric fonts (Arial on macOS/Windows, Liberation
+   Sans or Arimo on Linux — metric clones of Arial, so a single set of
+   numbers is correct on every platform). DejaVu Sans is deliberately absent:
+   it is not Arial-metric, so it would trade a known error for an unknown one.
+
+   The cost, accepted knowingly: because each face binds a regular font,
+   synthetic bold stays suppressed and the fallback paints at regular weight
+   on the loads where it is used. Geometry is exact, the weight reads a touch
+   light, and the settled rendering is completely unchanged.
+
+   ------------------------------------------------------------
+   WHY THE CHILLAX FACES BELOW ARE `font-display: optional`
+   ------------------------------------------------------------
+   Because on Linux a metric-compatible fallback is not sufficient, and no
+   amount of tuning would have made it so. Measured on ubuntu-latest, the
+   pill string 'transit mode' at weight 700:
+
+                    @15.2px (real size)    @152px (10x)
+       Chillax              106                 1000
+       fallback              99                  989
+       Arial/Liberation   91.14               912.16
+
+   At 10x the fallback tracks Chillax to within 1.1% — the calibration is
+   right. At the real 15.2px the gap blows out to 7%, and only for Chillax:
+   the local fonts scale linearly (91.14 x 10 = 912.16) while Chillax does
+   not (106 x 10 = 1060, but it measures 1000). Linux quantises the webfont's
+   per-glyph advances to whole pixels and leaves the hinted system fonts
+   alone. That is a rasterisation difference, not a metric one, so it cannot
+   be expressed as a size-adjust — any value that fixed Linux would break
+   macOS, which does not round.
+
+   With `swap` there is therefore NO fallback that lands shift-free on every
+   platform. `optional` removes the swap instead of trying to survive it: the
+   browser uses Chillax only if it is ready within the short block period
+   (essentially always once cached), and otherwise renders the whole page
+   load in the fallback and never re-lays out. Either way the text is laid
+   out once and never moves — which is the actual requirement.
+
+   The trade: a first, cold visit on a slow connection may render in the
+   fallback and pick up Chillax from the next navigation onward. The
+   metric-compatible fallback above is what makes that acceptable — it is the
+   same size and shape, just a different face.
+
+   ------------------------------------------------------------
+   TUNING (by measurement, on the site's real strings at their real sizes
+   and tracking; size-adjust = Chillax advance / fallback advance):
+
+     weight 700   the two site-switch pills TOGETHER, since they are what
+                  pushes #themeToggle: Chillax 99.55 + 116.80 = 216.35 vs
+                  Arial Regular 83.64 + 100.56 = 184.20  ->  117.45%
+     weight 600   sidebar logo "rohan.jk" at -0.5px tracking:
+                  141.00 / 121.23  ->  116.30%
+     weight 200-500  body copy: 0.919 / 0.907  ->  91.00%
 
    Chillax's vertical metrics are identical across all six weights
    (unitsPerEm 1000, hhea/typo ascent 980, descent -330, line gap 90), so the
@@ -36,12 +101,13 @@
    overridden metrics too, so each override is divided by its own size-adjust
    (the standard derivation — the same arithmetic next/font uses).
 
-   src is local() only, deliberately: if Arial is absent the face simply fails
-   to match and the stack falls through to 'Inter' exactly as it did before.
-   Liberation Sans (the usual Linux Arial alias) is metric-identical. */
+   src is local() only, deliberately: if none of these exist the family binds
+   nothing at all and the stack falls through to 'Inter', which is a bounded
+   error. It never half-binds. */
 @font-face {
   font-family: 'Chillax Fallback';
-  src: local('Arial'), local('ArialMT'), local('Liberation Sans'), local('Helvetica');
+  src: local('Arial'), local('ArialMT'), local('Liberation Sans'), local('LiberationSans'),
+       local('Arimo'), local('Helvetica'), local('Nimbus Sans');
   font-weight: 200 500;
   font-style: normal;
   size-adjust: 91.00%;
@@ -51,23 +117,25 @@
 }
 @font-face {
   font-family: 'Chillax Fallback';
-  src: local('Arial Bold'), local('Arial-BoldMT'), local('Liberation Sans Bold'), local('Helvetica Bold');
+  src: local('Arial'), local('ArialMT'), local('Liberation Sans'), local('LiberationSans'),
+       local('Arimo'), local('Helvetica'), local('Nimbus Sans');
   font-weight: 600;
   font-style: normal;
-  size-adjust: 106.08%;
-  ascent-override: 92.38%;
-  descent-override: 31.11%;
-  line-gap-override: 8.48%;
+  size-adjust: 116.30%;
+  ascent-override: 84.26%;
+  descent-override: 28.37%;
+  line-gap-override: 7.74%;
 }
 @font-face {
   font-family: 'Chillax Fallback';
-  src: local('Arial Bold'), local('Arial-BoldMT'), local('Liberation Sans Bold'), local('Helvetica Bold');
+  src: local('Arial'), local('ArialMT'), local('Liberation Sans'), local('LiberationSans'),
+       local('Arimo'), local('Helvetica'), local('Nimbus Sans');
   font-weight: 700 900;
   font-style: normal;
-  size-adjust: 107.64%;
-  ascent-override: 91.05%;
-  descent-override: 30.66%;
-  line-gap-override: 8.36%;
+  size-adjust: 117.45%;
+  ascent-override: 83.44%;
+  descent-override: 28.10%;
+  line-gap-override: 7.66%;
 }
 
 /* Chillax */
@@ -75,42 +143,42 @@
   font-family: 'Chillax';
   src: url('/fonts/chillax-DT44ALCE3XZMBI43JDI76R6H.woff2') format('woff2');
   font-weight: 200;
-  font-display: swap;
+  font-display: optional;
   font-style: normal;
 }
 @font-face {
   font-family: 'Chillax';
   src: url('/fonts/chillax-JEWCW7XRBNTGIANRIQOD4DIZ.woff2') format('woff2');
   font-weight: 300;
-  font-display: swap;
+  font-display: optional;
   font-style: normal;
 }
 @font-face {
   font-family: 'Chillax';
   src: url('/fonts/chillax-XESIRBQU62YFBC7YQZI6D2NT.woff2') format('woff2');
   font-weight: 400;
-  font-display: swap;
+  font-display: optional;
   font-style: normal;
 }
 @font-face {
   font-family: 'Chillax';
   src: url('/fonts/chillax-WZY5PMNTII6NKOB2TTIAX7QV.woff2') format('woff2');
   font-weight: 500;
-  font-display: swap;
+  font-display: optional;
   font-style: normal;
 }
 @font-face {
   font-family: 'Chillax';
   src: url('/fonts/chillax-THF5L6EHVL4N4NNE3GYDZNZS.woff2') format('woff2');
   font-weight: 600;
-  font-display: swap;
+  font-display: optional;
   font-style: normal;
 }
 @font-face {
   font-family: 'Chillax';
   src: url('/fonts/chillax-T2KA2X72VGASVXFVB7QCOIFY.woff2') format('woff2');
   font-weight: 700;
-  font-display: swap;
+  font-display: optional;
   font-style: normal;
 }
 
