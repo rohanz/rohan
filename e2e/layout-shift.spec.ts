@@ -440,7 +440,7 @@ test('sidebar holds its colour through a view transition', async ({ browser }) =
 
   await page.goto('/projects', { waitUntil: 'load' });
   await page.waitForTimeout(1800);
-  const base = [];
+  const base: number[][] = [];
   for (const clip of CLIPS) base.push(await mean(clip));
 
   await page.click('a[href="/music"]');
