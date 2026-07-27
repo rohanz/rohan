@@ -1,6 +1,18 @@
-import { isLightTheme, sizeCanvas, qlaEl, qlaShell, qlfTextColor, qlfAccent, qlfWarn,
-    qlfNearestIndex, qlfMoney, qlfLegend, qlfCrosshairInput, qlfReadout,
-    qlfAttachCrosshair } from './shared.js';
+// quantlab-research / quantlab-systems exhibits — classic theme.
+//
+// The chart maths, the risk-gate rule engine and the canvas renderers live in
+// `src/lib/visuals/`, shared with the transit and blueprint forks. What stays
+// here is classic's DOM, its interactions, and its dark-mode wiring.
+import { sizeCanvas, visualPalette, qlaEl, qlaShell, qlfLegend,
+    qlfCrosshairInput, qlfReadout, qlfAttachCrosshair, makeRafDraw } from './shared.js';
+import {
+    lookaheadSeries, qlfNearestIndex, qlfMoney, createRiskEngine, DEFAULT_RISK_LIMITS,
+} from '../../lib/visuals/quant';
+import {
+    drawLookahead, drawKalman, drawSurvivorship,
+    LOOKAHEAD_HEIGHT, LOOKAHEAD_PAD, KALMAN_HEIGHT, KALMAN_PAD,
+    SURVIVORSHIP_HEIGHT, SURVIVORSHIP_PAD,
+} from '../../lib/visuals/qlf-render';
 
 let qlfCleanup = null;
 let qlfGeneration = 0;
@@ -43,23 +55,8 @@ function initQuantlabFinVisuals(container) {
 function initQlfLookahead(node, la, cleanups) {
     const body = qlaShell(node, 'the lookahead cheat', 'SPY weekly · toy momentum: buy if close > close 4 weeks ago');
 
-    // The same signal both ways: signal[i] uses close[i]. The cheat trades AT
-    // close[i] (impossible: the signal needs that close to exist). The honest
-    // version waits for the next bar's open.
-    const n = la.close.length;
-    const signal = new Array(n).fill(false);
-    for (let i = 4; i < n; i++) signal[i] = la.close[i] > la.close[i - 4];
-
-    const cheatEq = [1];
-    const honestEq = [1];
-    const holdEq = [1];
-    for (let i = 1; i < n; i++) {
-        holdEq.push(holdEq[i - 1] * (la.close[i] / la.close[i - 1]));
-        // cheat: acted on signal[i-1] at close[i-1] itself, holds to close[i]
-        cheatEq.push(cheatEq[i - 1] * (signal[i - 1] ? la.close[i] / la.close[i - 1] : 1));
-        // honest: acted on signal[i-1] at open[i], holds to close[i]
-        honestEq.push(honestEq[i - 1] * (signal[i - 1] ? la.close[i] / la.open[i] : 1));
-    }
+    const { n, cheatEq, honestEq, holdEq } = lookaheadSeries(la.close, la.open);
+    const series = { dates: la.dates, cheatEq, honestEq, holdEq };
     const finalPct = eq => (eq[eq.length - 1] - 1) * 100;
     const fmtPct = v => `${v >= 0 ? '+' : ''}${v.toFixed(0)}%`;
 
@@ -111,6 +108,15 @@ function initQlfLookahead(node, la, cleanups) {
     let cursor = null;
     const eqPct = (eq, i) => fmtPct((eq[i] - 1) * 100);
 
+    function draw() {
+        const rect = canvas.parentElement.getBoundingClientRect();
+        const w = Math.max(280, rect.width);
+        const ctx = sizeCanvas(canvas, w, LOOKAHEAD_HEIGHT);
+        canvas.style.height = `${LOOKAHEAD_HEIGHT}px`;
+        drawLookahead(ctx, { w, palette: visualPalette() }, series, cursor);
+    }
+    const requestDraw = makeRafDraw(draw, cleanups);
+
     function setCursor(i) {
         cursor = (i === null || isNaN(i)) ? null : i;
         crossReadout.set(cursor === null ? null : {
@@ -119,90 +125,19 @@ function initQlfLookahead(node, la, cleanups) {
             honest: eqPct(honestEq, cursor),
             hold: eqPct(holdEq, cursor)
         });
-        draw();
+        requestDraw();
     }
 
-    function draw() {
-        const rect = canvas.parentElement.getBoundingClientRect();
-        const w = Math.max(280, rect.width);
-        const h = 260;
-        const ctx = sizeCanvas(canvas, w, h);
-        canvas.style.height = `${h}px`;
-        ctx.clearRect(0, 0, w, h);
-
-        const pad = { l: 44, r: 14, t: 14, b: 26 };
-        const pw = w - pad.l - pad.r;
-        const ph = h - pad.t - pad.b;
-        const maxV = Math.max(cheatEq[n - 1], honestEq[n - 1], holdEq[n - 1]) * 1.05;
-        const minV = 0.9;
-        const x = i => pad.l + (i / (n - 1)) * pw;
-        const y = v => pad.t + (1 - (v - minV) / (maxV - minV)) * ph;
-
-        ctx.strokeStyle = qlfTextColor(0.12);
-        ctx.fillStyle = qlfTextColor(0.5);
-        ctx.font = '600 11px Inter, sans-serif';
-        ctx.lineWidth = 1;
-        const gridStep = maxV > 2.5 ? 0.5 : 0.25;
-        for (let g = 1; g <= maxV; g += gridStep) {
-            ctx.beginPath();
-            ctx.moveTo(pad.l, y(g));
-            ctx.lineTo(w - pad.r, y(g));
-            ctx.stroke();
-            ctx.textAlign = 'right';
-            ctx.fillText(`$${g.toFixed(2)}`, pad.l - 6, y(g) + 4);
-        }
-        [0, Math.floor(n / 2), n - 1].forEach(i => {
-            ctx.textAlign = i === 0 ? 'left' : (i === n - 1 ? 'right' : 'center');
-            ctx.fillText(la.dates[i], x(i), h - 8);
-        });
-
-        function plot(eq, color, width, alpha) {
-            ctx.save();
-            ctx.globalAlpha = alpha;
-            ctx.strokeStyle = color;
-            ctx.lineWidth = width;
-            ctx.beginPath();
-            for (let i = 0; i < n; i++) {
-                if (i === 0) ctx.moveTo(x(i), y(eq[i]));
-                else ctx.lineTo(x(i), y(eq[i]));
-            }
-            ctx.stroke();
-            ctx.restore();
-        }
-        // buy & hold reference, always quiet
-        ctx.setLineDash([4, 4]);
-        plot(holdEq, qlfTextColor(0.55), 1.5, 1);
-        ctx.setLineDash([]);
-        plot(cheatEq, qlfWarn(), 2.5, 1);
-        plot(honestEq, qlfAccent(), 2.5, 1);
-
-        if (cursor !== null) {
-            const cx = x(cursor);
-            ctx.strokeStyle = qlfTextColor(0.35);
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            ctx.moveTo(cx, pad.t);
-            ctx.lineTo(cx, h - pad.b);
-            ctx.stroke();
-            [[cheatEq, qlfWarn()], [honestEq, qlfAccent()], [holdEq, qlfTextColor(0.55)]].forEach(pair => {
-                ctx.fillStyle = pair[1];
-                ctx.beginPath();
-                ctx.arc(cx, y(pair[0][cursor]), 4, 0, Math.PI * 2);
-                ctx.fill();
-            });
-        }
-    }
-
-    qlfAttachCrosshair(canvas, crossInput, n, 44, 14, setCursor);
+    qlfAttachCrosshair(canvas, crossInput, n, LOOKAHEAD_PAD.l, LOOKAHEAD_PAD.r, setCursor);
     setCursor(null);
-    const onRedraw = () => draw();
+    const onRedraw = () => requestDraw();
     window.addEventListener('resize', onRedraw);
     window.addEventListener('theme-changed', onRedraw);
     cleanups.push(() => {
         window.removeEventListener('resize', onRedraw);
         window.removeEventListener('theme-changed', onRedraw);
     });
-    draw();
+    requestDraw();
 }
 
 // ------------------------------------------------------------
@@ -214,12 +149,7 @@ function initQlfKalman(node, km, cleanups) {
     const n = km.dates.length;
     const splitIdx = qlfNearestIndex(km.dates, km.split_date);
     const ols = km.rolling_ols_beta;
-
-    // Clamp the y-range so rolling OLS's wildest swings (roughly -1.6 to
-    // +1.8) don't crush the kalman detail into a flat band; clipped points
-    // get small edge markers instead.
-    const Y_LO = -0.5;
-    const Y_HI = 1.5;
+    const series = { dates: km.dates, kalman_beta: km.kalman_beta, ols };
 
     const canvasWrap = qlaEl('div', 'qla-compound-canvas-wrap');
     const canvas = document.createElement('canvas');
@@ -249,108 +179,11 @@ function initQlfKalman(node, km, cleanups) {
     function draw() {
         const rect = canvas.parentElement.getBoundingClientRect();
         const w = Math.max(280, rect.width);
-        const h = 240;
-        const ctx = sizeCanvas(canvas, w, h);
-        canvas.style.height = `${h}px`;
-        ctx.clearRect(0, 0, w, h);
-
-        const pad = { l: 44, r: 14, t: 22, b: 26 };
-        const pw = w - pad.l - pad.r;
-        const ph = h - pad.t - pad.b;
-        const lo = Y_LO;
-        const hi = Y_HI;
-        const x = i => pad.l + (i / (n - 1)) * pw;
-        const y = v => pad.t + (1 - (v - lo) / (hi - lo)) * ph;
-        const yClamped = v => y(Math.max(lo, Math.min(hi, v)));
-
-        ctx.strokeStyle = qlfTextColor(0.12);
-        ctx.fillStyle = qlfTextColor(0.5);
-        ctx.font = '600 11px Inter, sans-serif';
-        ctx.lineWidth = 1;
-        for (let g = lo; g <= hi + 1e-9; g += 0.5) {
-            ctx.beginPath();
-            ctx.moveTo(pad.l, y(g));
-            ctx.lineTo(w - pad.r, y(g));
-            ctx.stroke();
-            ctx.textAlign = 'right';
-            ctx.fillText(g.toFixed(1), pad.l - 6, y(g) + 4);
-        }
-        [0, Math.floor(n / 2), n - 1].forEach(i => {
-            ctx.textAlign = i === 0 ? 'left' : (i === n - 1 ? 'right' : 'center');
-            ctx.fillText(km.dates[i].slice(0, 7), x(i), h - 8);
-        });
-
-        // selection window: shade the whole 2016-2020 region behind the
-        // series, with a crisp boundary line where trading begins
-        const sx = x(splitIdx);
-        ctx.fillStyle = qlfTextColor(0.09);
-        ctx.fillRect(pad.l, pad.t, sx - pad.l, ph);
-        ctx.strokeStyle = qlfTextColor(0.55);
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.moveTo(sx, pad.t);
-        ctx.lineTo(sx, h - pad.b);
-        ctx.stroke();
-
-        // 250-day rolling OLS: thin solid, deliberately jagged; null-valued
-        // early points (window not yet full) break the line into segments,
-        // and values outside the clamped range are clipped with edge markers
-        ctx.strokeStyle = qlfWarn();
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        let pen = false;
-        for (let i = 0; i < n; i++) {
-            if (ols[i] === null) { pen = false; continue; }
-            const yy = yClamped(ols[i]);
-            if (!pen) { ctx.moveTo(x(i), yy); pen = true; }
-            else ctx.lineTo(x(i), yy);
-        }
-        ctx.stroke();
-        ctx.fillStyle = qlfWarn();
-        for (let i = 0; i < n; i++) {
-            if (ols[i] === null || (ols[i] >= lo && ols[i] <= hi)) continue;
-            const above = ols[i] > hi;
-            const ex = x(i);
-            const ey = above ? pad.t : h - pad.b;
-            ctx.beginPath();
-            ctx.moveTo(ex, ey);
-            ctx.lineTo(ex - 3.5, ey + (above ? 6 : -6));
-            ctx.lineTo(ex + 3.5, ey + (above ? 6 : -6));
-            ctx.closePath();
-            ctx.fill();
-        }
-
-        // kalman track
-        ctx.strokeStyle = qlfAccent();
-        ctx.lineWidth = 2.5;
-        ctx.beginPath();
-        for (let i = 0; i < n; i++) {
-            if (i === 0) ctx.moveTo(x(i), y(km.kalman_beta[i]));
-            else ctx.lineTo(x(i), y(km.kalman_beta[i]));
-        }
-        ctx.stroke();
-
-        // crosshair cursor
-        if (cursor !== null) {
-            const cx = x(cursor);
-            ctx.strokeStyle = qlfTextColor(0.35);
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            ctx.moveTo(cx, pad.t);
-            ctx.lineTo(cx, h - pad.b);
-            ctx.stroke();
-            ctx.fillStyle = qlfAccent();
-            ctx.beginPath();
-            ctx.arc(cx, y(km.kalman_beta[cursor]), 5, 0, Math.PI * 2);
-            ctx.fill();
-            if (ols[cursor] !== null) {
-                ctx.fillStyle = qlfWarn();
-                ctx.beginPath();
-                ctx.arc(cx, yClamped(ols[cursor]), 4, 0, Math.PI * 2);
-                ctx.fill();
-            }
-        }
+        const ctx = sizeCanvas(canvas, w, KALMAN_HEIGHT);
+        canvas.style.height = `${KALMAN_HEIGHT}px`;
+        drawKalman(ctx, { w, palette: visualPalette() }, series, splitIdx, cursor);
     }
+    const requestDraw = makeRafDraw(draw, cleanups);
 
     function setCursor(i) {
         cursor = (i === null || isNaN(i)) ? null : i;
@@ -366,11 +199,11 @@ function initQlfKalman(node, km, cleanups) {
                 gap: ob === null ? '—' : `${kb - ob >= 0 ? '+' : ''}${(kb - ob).toFixed(3)}`
             });
         }
-        draw();
+        requestDraw();
     }
 
-    qlfAttachCrosshair(canvas, crossInput, n, 44, 14, setCursor);
-    const onRedraw = () => draw();
+    qlfAttachCrosshair(canvas, crossInput, n, KALMAN_PAD.l, KALMAN_PAD.r, setCursor);
+    const onRedraw = () => requestDraw();
     window.addEventListener('resize', onRedraw);
     window.addEventListener('theme-changed', onRedraw);
     cleanups.push(() => {
@@ -387,7 +220,6 @@ function initQlfSurvivorship(node, sv, cleanups) {
     const body = qlaShell(node, 'the survivorship wedge', 'survivors-only universe vs the ETF that held the losers');
 
     const n = sv.dates.length;
-    const endGapPct = (sv.survivors[n - 1] / sv.rsp[n - 1] - 1) * 100;
 
     const canvasWrap = qlaEl('div', 'qla-compound-canvas-wrap');
     const canvas = document.createElement('canvas');
@@ -414,17 +246,6 @@ function initQlfSurvivorship(node, sv, cleanups) {
 
     let cursor = null;
 
-    function setCursor(i) {
-        cursor = (i === null || isNaN(i)) ? null : i;
-        crossReadout.set(cursor === null ? null : {
-            date: sv.dates[cursor],
-            survivors: `$${sv.survivors[cursor].toFixed(2)}`,
-            rsp: `$${sv.rsp[cursor].toFixed(2)}`,
-            gap: `+${((sv.survivors[cursor] / sv.rsp[cursor] - 1) * 100).toFixed(0)}%`
-        });
-        draw();
-    }
-
     const meter = qlaEl('div', 'qlf-meter');
     meter.appendChild(qlaEl('div', 'qla-gate-report-title', 'what the headline is really worth'));
 
@@ -441,94 +262,25 @@ function initQlfSurvivorship(node, sv, cleanups) {
     function draw() {
         const rect = canvas.parentElement.getBoundingClientRect();
         const w = Math.max(280, rect.width);
-        const h = 250;
-        const ctx = sizeCanvas(canvas, w, h);
-        canvas.style.height = `${h}px`;
-        ctx.clearRect(0, 0, w, h);
+        const ctx = sizeCanvas(canvas, w, SURVIVORSHIP_HEIGHT);
+        canvas.style.height = `${SURVIVORSHIP_HEIGHT}px`;
+        drawSurvivorship(ctx, { w, palette: visualPalette() }, sv, cursor);
+    }
+    const requestDraw = makeRafDraw(draw, cleanups);
 
-        const pad = { l: 44, r: 60, t: 14, b: 26 };
-        const pw = w - pad.l - pad.r;
-        const ph = h - pad.t - pad.b;
-        const maxV = Math.max(sv.survivors[n - 1], sv.rsp[n - 1]) * 1.05;
-        const x = i => pad.l + (i / (n - 1)) * pw;
-        const y = v => pad.t + (1 - (v - 0.9) / (maxV - 0.9)) * ph;
-
-        ctx.strokeStyle = qlfTextColor(0.12);
-        ctx.fillStyle = qlfTextColor(0.5);
-        ctx.font = '600 11px Inter, sans-serif';
-        ctx.lineWidth = 1;
-        for (let g = 1; g <= maxV; g += 1) {
-            ctx.beginPath();
-            ctx.moveTo(pad.l, y(g));
-            ctx.lineTo(w - pad.r, y(g));
-            ctx.stroke();
-            ctx.textAlign = 'right';
-            ctx.fillText(`$${g}`, pad.l - 6, y(g) + 4);
-        }
-        [0, Math.floor(n / 2), n - 1].forEach(i => {
-            ctx.textAlign = i === 0 ? 'left' : (i === n - 1 ? 'right' : 'center');
-            ctx.fillText(sv.dates[i].slice(0, 7), x(i), h - 8);
+    function setCursor(i) {
+        cursor = (i === null || isNaN(i)) ? null : i;
+        crossReadout.set(cursor === null ? null : {
+            date: sv.dates[cursor],
+            survivors: `$${sv.survivors[cursor].toFixed(2)}`,
+            rsp: `$${sv.rsp[cursor].toFixed(2)}`,
+            gap: `+${((sv.survivors[cursor] / sv.rsp[cursor] - 1) * 100).toFixed(0)}%`
         });
-
-        // shaded wedge between the curves
-        ctx.beginPath();
-        for (let i = 0; i < n; i++) ctx.lineTo(x(i), y(sv.survivors[i]));
-        for (let i = n - 1; i >= 0; i--) ctx.lineTo(x(i), y(sv.rsp[i]));
-        ctx.closePath();
-        ctx.fillStyle = isLightTheme() ? 'rgba(178,59,59,0.14)' : 'rgba(224,85,85,0.16)';
-        ctx.fill();
-
-        function plot(series, color) {
-            ctx.strokeStyle = color;
-            ctx.lineWidth = 2.5;
-            ctx.beginPath();
-            for (let i = 0; i < n; i++) {
-                if (i === 0) ctx.moveTo(x(i), y(series[i]));
-                else ctx.lineTo(x(i), y(series[i]));
-            }
-            ctx.stroke();
-        }
-        plot(sv.survivors, qlfWarn());
-        plot(sv.rsp, qlfAccent());
-
-        if (cursor !== null) {
-            const cx = x(cursor);
-            ctx.strokeStyle = qlfTextColor(0.35);
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            ctx.moveTo(cx, pad.t);
-            ctx.lineTo(cx, h - pad.b);
-            ctx.stroke();
-            ctx.fillStyle = qlfWarn();
-            ctx.beginPath();
-            ctx.arc(cx, y(sv.survivors[cursor]), 4, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.fillStyle = qlfAccent();
-            ctx.beginPath();
-            ctx.arc(cx, y(sv.rsp[cursor]), 4, 0, Math.PI * 2);
-            ctx.fill();
-        }
-
-        ctx.font = '700 11px Inter, sans-serif';
-
-        // endpoint gap bracket
-        const gx = x(n - 1) + 2;
-        ctx.strokeStyle = qlfTextColor(0.5);
-        ctx.beginPath();
-        ctx.moveTo(gx, y(sv.survivors[n - 1]) + 8);
-        ctx.lineTo(gx, y(sv.rsp[n - 1]) - 8);
-        ctx.stroke();
-        ctx.fillStyle = qlfTextColor(0.7);
-        ctx.save();
-        ctx.translate(gx + 12, (y(sv.survivors[n - 1]) + y(sv.rsp[n - 1])) / 2 + 14);
-        ctx.rotate(-Math.PI / 2);
-        ctx.textAlign = 'center';
-        ctx.fillText(`+${endGapPct.toFixed(0)}% gap`, 0, 0);
-        ctx.restore();
+        requestDraw();
     }
 
-    qlfAttachCrosshair(canvas, crossInput, n, 44, 60, setCursor);
-    const onRedraw = () => draw();
+    qlfAttachCrosshair(canvas, crossInput, n, SURVIVORSHIP_PAD.l, SURVIVORSHIP_PAD.r, setCursor);
+    const onRedraw = () => requestDraw();
     window.addEventListener('resize', onRedraw);
     window.addEventListener('theme-changed', onRedraw);
     cleanups.push(() => {
@@ -542,8 +294,11 @@ function initQlfSurvivorship(node, sv, cleanups) {
 // 4. Risk gate playground: the same rules as quantlab/risk.py
 // ------------------------------------------------------------
 function initQlfRiskGate(node) {
-    const LIMITS = { gross: 100000, perSymbol: 40000, dailyLoss: 5000, allowed: ['AAPL', 'MSFT', 'SPY'] };
-    const state = { positions: {}, dayPnl: 0, killed: false };
+    // The allowlist / per-symbol cap / gross cap / kill-switch rules live in
+    // `src/lib/visuals/quant.ts`. This function is the console around them.
+    const LIMITS = DEFAULT_RISK_LIMITS;
+    const engine = createRiskEngine(LIMITS);
+    const state = engine.state;
 
     const body = qlaShell(node, 'risk gate playground', 'every order proposes itself · same rules as risk.py');
 
@@ -665,12 +420,9 @@ function initQlfRiskGate(node) {
     const controlRow = makeGroup('controls');
     body.appendChild(bottomBar);
 
-    function gross() {
-        return Object.keys(state.positions).reduce((s, k) => s + Math.abs(state.positions[k]), 0);
-    }
-
     function renderState() {
-        setTile(grossTile, `${qlfMoney(gross())} / ${qlfMoney(LIMITS.gross)}`, `${Math.round((gross() / LIMITS.gross) * 100)}% of cap`);
+        const gross = engine.gross();
+        setTile(grossTile, `${qlfMoney(gross)} / ${qlfMoney(LIMITS.gross)}`, `${Math.round((gross / LIMITS.gross) * 100)}% of cap`);
         setTile(pnlTile, qlfMoney(state.dayPnl), state.killed ? 'kill switch tripped' : `kill switch at ${qlfMoney(-LIMITS.dailyLoss)}`);
         pnlTile.val.classList.toggle('is-negative', state.dayPnl < 0);
         setPositions();
@@ -696,34 +448,10 @@ function initQlfRiskGate(node) {
         log.appendChild(line);
         if (atBottom) log.scrollTop = log.scrollHeight;
     }
-
-    // The same rule logic as quantlab/risk.py: allowlist, per-symbol cap,
-    // gross cap, kill switch. Sells that reduce exposure are always allowed.
-    function checkOrder(symbol, notional) {
-        const current = state.positions[symbol] || 0;
-        const reducing = notional < 0 && current > 0;
-        if (reducing) return { ok: true, reasons: ['reduces exposure'] };
-        const reasons = [];
-        if (state.killed) reasons.push(`kill switch active (day P&L ${qlfMoney(state.dayPnl)} breached ${qlfMoney(-LIMITS.dailyLoss)})`);
-        if (LIMITS.allowed.indexOf(symbol) === -1) reasons.push(`${symbol} not in allowed-symbol list`);
-        if (Math.abs(current + notional) > LIMITS.perSymbol) reasons.push(`per-symbol cap: ${symbol} would be ${qlfMoney(Math.abs(current + notional))} > ${qlfMoney(LIMITS.perSymbol)}`);
-        if (gross() - Math.abs(current) + Math.abs(current + notional) > LIMITS.gross) reasons.push(`gross exposure would exceed cap: ${qlfMoney(gross() - Math.abs(current) + Math.abs(current + notional))} > ${qlfMoney(LIMITS.gross)}`);
-        return { ok: reasons.length === 0, reasons };
-    }
+    const logEntry = entry => appendLog(entry.approved, entry.text, entry.reasons);
 
     function placeOrder(symbol, notional, viaFlatten) {
-        const label = `${notional >= 0 ? 'BUY' : 'SELL'} ${qlfMoney(Math.abs(notional))} ${symbol}${viaFlatten ? ' [flatten]' : ''}`;
-        const res = checkOrder(symbol, notional);
-        if (res.ok) {
-            state.positions[symbol] = (state.positions[symbol] || 0) + notional;
-            let reasons = notional < 0 ? res.reasons : [];
-            if (viaFlatten && state.killed) {
-                reasons = ['flatten allowed under kill switch; reducing orders are always permitted'];
-            }
-            appendLog(true, label, reasons);
-        } else {
-            appendLog(false, label, res.reasons);
-        }
+        logEntry(engine.placeOrder(symbol, notional, viaFlatten));
         renderState();
     }
 
@@ -745,25 +473,11 @@ function initQlfRiskGate(node) {
     makeBtn(orderRow, '+$15k AAPL', () => placeOrder('AAPL', 15000), null, true);
     makeBtn(orderRow, '+$40k SPY', () => placeOrder('SPY', 40000), null, true);
     makeBtn(orderRow, '+$10k TSLA', () => placeOrder('TSLA', 10000), null, true);
-    // Like risk.py, the kill switch is evaluated live against cumulative day
-    // P&L: recovering above the threshold releases it.
-    function markPnl(delta) {
-        state.dayPnl += delta;
-        appendLog(null, `mark-to-market: day P&L now ${qlfMoney(state.dayPnl)}`);
-        const breached = state.dayPnl <= -LIMITS.dailyLoss;
-        if (breached && !state.killed) {
-            state.killed = true;
-            appendLog(false, 'KILL SWITCH TRIPPED', [`day P&L ${qlfMoney(state.dayPnl)} breached daily loss limit ${qlfMoney(-LIMITS.dailyLoss)}; halting all new buys`]);
-        } else if (!breached && state.killed) {
-            state.killed = false;
-            appendLog(null, `day P&L recovered above ${qlfMoney(-LIMITS.dailyLoss)}; kill switch released`);
-        }
-        renderState();
-    }
-    makeBtn(controlRow, 'simulate a -$6k day', () => markPnl(-6000), 'qlf-risk-btn-warn');
-    makeBtn(controlRow, 'simulate +$3k day', () => markPnl(3000));
+
+    makeBtn(controlRow, 'simulate a -$6k day', () => { engine.markPnl(-6000).forEach(logEntry); renderState(); }, 'qlf-risk-btn-warn');
+    makeBtn(controlRow, 'simulate +$3k day', () => { engine.markPnl(3000).forEach(logEntry); renderState(); });
     makeBtn(controlRow, 'flatten', () => {
-        const syms = Object.keys(state.positions).filter(k => state.positions[k] > 0);
+        const syms = engine.flattenSymbols();
         if (!syms.length) {
             appendLog(null, 'flatten: already flat');
             renderState();
@@ -772,10 +486,7 @@ function initQlfRiskGate(node) {
         syms.forEach(sym => placeOrder(sym, -state.positions[sym], true));
     });
     makeBtn(controlRow, 'reset', () => {
-        state.positions = {};
-        state.dayPnl = 0;
-        state.killed = false;
-        appendLog(null, 'RESET: state cleared. the audit log itself is append-only');
+        logEntry(engine.reset());
         renderState();
     });
 

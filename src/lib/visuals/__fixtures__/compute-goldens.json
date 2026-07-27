@@ -1,0 +1,1143 @@
+{
+ "dbToGain": [
+  0.0000158489319246,
+  0.125892541179,
+  0.501187233627,
+  0.988553094657,
+  1,
+  1.01157945426,
+  1.99526231497,
+  3.98107170553,
+  7.94328234724,
+  15.8489319246
+ ],
+ "gainToDb": [
+  -240,
+  -240,
+  -120,
+  -6.02059991328,
+  0,
+  6.02059991328,
+  20,
+  60
+ ],
+ "biquadResponse": [
+  0.550837021107,
+  0.678772658907,
+  0.864391731119,
+  0.990785186575,
+  0.999589849091,
+  0.999935719589,
+  0.999977925063,
+  0.999999999975,
+  1.81541901088,
+  1.47324731909,
+  1.15688288538,
+  1.00930051594,
+  1.0004103192,
+  1.00006428454,
+  1.00002207542,
+  1.00000000003,
+  0.519772207392,
+  0.604061569906,
+  0.771173148251,
+  0.972852537311,
+  0.998718300571,
+  0.999798644049,
+  0.999930830789,
+  0.999999999921,
+  1.92391972057,
+  1.65546038652,
+  1.2967256475,
+  1.02790501299,
+  1.00128334429,
+  1.0002013965,
+  1.000069174,
+  1.00000000008,
+  0.503824626665,
+  0.522882148794,
+  0.627886795013,
+  0.868269397903,
+  0.990527208471,
+  0.998477459116,
+  0.999475497083,
+  0.999999999402,
+  1.98481762716,
+  1.91247684073,
+  1.59264378219,
+  1.15171627886,
+  1.00956338347,
+  1.00152486255,
+  1.00052477816,
+  1.0000000006,
+  0.501322967319,
+  0.502402885139,
+  0.513989201193,
+  0.643650143604,
+  0.880754120353,
+  0.972603698051,
+  0.990010488133,
+  0.999999988257,
+  1.99472209572,
+  1.99043442938,
+  1.94556616691,
+  1.55363905366,
+  1.13539065772,
+  1.02816800101,
+  1.01009030913,
+  1.00000001174,
+  0.50120226822,
+  0.50132247165,
+  0.502680680609,
+  0.53340372499,
+  0.707945784384,
+  0.853684665616,
+  0.928262883009,
+  0.999999893927,
+  1.99520246297,
+  1.99472406794,
+  1.98933445938,
+  1.87475256199,
+  1.41253754462,
+  1.1713927171,
+  1.07728103569,
+  1.00000010607,
+  0.501188245694,
+  0.501196341896,
+  0.501288395236,
+  0.503689325463,
+  0.547720333946,
+  0.650050498183,
+  0.724066078777,
+  0.999998424164,
+  1.99525828587,
+  1.99522605496,
+  1.99485966462,
+  1.98535078956,
+  1.82574927024,
+  1.53834202542,
+  1.38108941892,
+  1.00000157584,
+  0.909864831902,
+  0.738372748301,
+  0.579814932956,
+  0.505848533485,
+  0.501392880373,
+  0.50121945222,
+  0.501198297548,
+  0.50118723364,
+  1.09906434992,
+  1.35432950674,
+  1.72468824648,
+  1.976876345,
+  1.99444395632,
+  1.99513405869,
+  1.99521826968,
+  1.99526231492,
+  0.964244002476,
+  0.829695611501,
+  0.649902340042,
+  0.515172869891,
+  0.501830429402,
+  0.501288170984,
+  0.501221902751,
+  0.501187233667,
+  1.03708189777,
+  1.20526128636,
+  1.53869272102,
+  1.94109600572,
+  1.9927049884,
+  1.99486055703,
+  1.99512430425,
+  1.99526231481,
+  0.994765255808,
+  0.95850897718,
+  0.798212731351,
+  0.577225495725,
+  0.505980279331,
+  0.50195147527,
+  0.501450245744,
+  0.501187233927,
+  1.00526229094,
+  1.04328704666,
+  1.25279886016,
+  1.73242520888,
+  1.97636161101,
+  1.99222444652,
+  1.99421579407,
+  1.99526231378,
+  0.999729249007,
+  0.997580325377,
+  0.975092925035,
+  0.778664059361,
+  0.56904330283,
+  0.51530467613,
+  0.506244367747,
+  0.501187239513,
+  1.00027082432,
+  1.00242554365,
+  1.02554328344,
+  1.28425087556,
+  1.75733550509,
+  1.94059950612,
+  1.9753306184,
+  1.99526229154,
+  0.999970002944,
+  0.999730237461,
+  0.997029034455,
+  0.939602050279,
+  0.707945784384,
+  0.587087075373,
+  0.539919502116,
+  0.501187286789,
+  1.00002999796,
+  1.00026983533,
+  1.00297981848,
+  1.06428035114,
+  1.41253754462,
+  1.70332484217,
+  1.85212794885,
+  1.99526210333,
+  0.999997980666,
+  0.999981826945,
+  0.999798196787,
+  0.995032469999,
+  0.915042226051,
+  0.770997384093,
+  0.692184385262,
+  0.501188023417,
+  1.00000201934,
+  1.00001817339,
+  1.00020184395,
+  1.00499232955,
+  1.09284574146,
+  1.29702126185,
+  1.44470176053,
+  1.99525917076
+ ],
+ "densitySaturate": [
+  -1.5,
+  -1,
+  -0.6,
+  -0.25,
+  0,
+  0.25,
+  0.6,
+  1,
+  1.5,
+  -1.49974013358,
+  -0.999869040102,
+  -0.599940104791,
+  -0.249979513176,
+  0,
+  0.249979512688,
+  0.599940102295,
+  0.999869034576,
+  1.49974012488,
+  -1.43643607905,
+  -0.973618074861,
+  -0.591664908998,
+  -0.248369428038,
+  0,
+  0.248281105678,
+  0.591227992401,
+  0.972702940966,
+  1.43509370493,
+  -1.38199974223,
+  -0.976170034246,
+  -0.614460799711,
+  -0.263471711844,
+  0,
+  0.262410691965,
+  0.609554497991,
+  0.966940895817,
+  1.3700266551,
+  -1.34852646565,
+  -1.04175816072,
+  -0.718656038584,
+  -0.3274173893,
+  0,
+  0.319884025558,
+  0.688426947811,
+  0.994535584017,
+  1.29569496077,
+  -1.37431960012,
+  -1.21228193962,
+  -0.98587355925,
+  -0.513872327573,
+  0,
+  0.47171804331,
+  0.854306841209,
+  1.04723488302,
+  1.20529168505
+ ],
+ "transformerSaturate": [
+  -1.5,
+  -1,
+  -0.6,
+  -0.25,
+  0,
+  0.25,
+  0.6,
+  1,
+  1.5,
+  -1.49986767651,
+  -0.99997749885,
+  -0.600015377715,
+  -0.25001329209,
+  0,
+  0.250013291358,
+  0.600015373965,
+  0.999977490519,
+  1.49986766333,
+  -1.48164215764,
+  -1.02134160828,
+  -0.632208544445,
+  -0.26911852342,
+  0,
+  0.268989528034,
+  0.631634468109,
+  1.02030078377,
+  1.48030397362,
+  -1.46933725238,
+  -1.08424841877,
+  -0.733527317205,
+  -0.339853368752,
+  0,
+  0.338361362065,
+  0.728437991707,
+  1.07713738445,
+  1.46158208728,
+  -1.43582996901,
+  -1.15509350891,
+  -0.895518869842,
+  -0.502599873381,
+  0,
+  0.493580706028,
+  0.875185821407,
+  1.13225555701,
+  1.41265345989,
+  -1.35969057764,
+  -1.20407775618,
+  -1.06737932794,
+  -0.78013106175,
+  0,
+  0.745682203335,
+  1.01853180061,
+  1.15437897077,
+  1.30995193612
+ ],
+ "harmonicDb": [
+  -240,
+  -240,
+  -240,
+  -240,
+  -240,
+  -240,
+  -240,
+  -240,
+  -240,
+  -240,
+  -74.0637576469,
+  -72.5715620147,
+  -50.9870767502,
+  -42.1752164342,
+  -80.3737040488,
+  -66.654890847,
+  -139.127947002,
+  -114.986317295,
+  -179.393926396,
+  -157.816178983,
+  -51.8875929079,
+  -55.5169356489,
+  -35.2903051541,
+  -25.9453651347,
+  -58.2596636197,
+  -41.1722880251,
+  -104.848789177,
+  -70.7076383578,
+  -130.791283715,
+  -102.669455535,
+  -32.8899657843,
+  -49.2516709532,
+  -15.6715140998,
+  -13.2228468706,
+  -25.962985187,
+  -19.496880713,
+  -47.0522270206,
+  -29.8503059776,
+  -59.8043388148,
+  -57.4279548497
+ ],
+ "foldFrequency": [
+  0,
+  6000,
+  22050,
+  22049,
+  14100,
+  0,
+  3900,
+  22050,
+  0,
+  11800
+ ],
+ "survival": [
+  0.0147808829414,
+  0.152031992797,
+  0.923042401427,
+  0.960770210736,
+  1,
+  1,
+  0.000030517578125
+ ],
+ "tokenize": [
+  [
+   {
+    "type": "text",
+    "text": "Revenue rose to "
+   },
+   {
+    "type": "num",
+    "text": "$12.4B"
+   },
+   {
+    "type": "text",
+    "text": " in FY"
+   },
+   {
+    "type": "num",
+    "text": "2024"
+   },
+   {
+    "type": "text",
+    "text": " "
+   },
+   {
+    "type": "cite",
+    "text": "[F17]"
+   },
+   {
+    "type": "text",
+    "text": ", up "
+   },
+   {
+    "type": "num",
+    "text": "8.2%"
+   },
+   {
+    "type": "text",
+    "text": " from "
+   },
+   {
+    "type": "num",
+    "text": "$11.5B"
+   },
+   {
+    "type": "text",
+    "text": " "
+   },
+   {
+    "type": "cite",
+    "text": "[F18]"
+   },
+   {
+    "type": "text",
+    "text": "."
+   }
+  ],
+  [
+   {
+    "type": "text",
+    "text": "No numbers here at all."
+   }
+  ],
+  [
+   {
+    "type": "cite",
+    "text": "[M3]"
+   },
+   {
+    "type": "text",
+    "text": " leads, then "
+   },
+   {
+    "type": "num",
+    "text": "1,250"
+   },
+   {
+    "type": "text",
+    "text": " units and "
+   },
+   {
+    "type": "num",
+    "text": "-$4.75"
+   },
+   {
+    "type": "text",
+    "text": " and "
+   },
+   {
+    "type": "num",
+    "text": "42%K"
+   },
+   {
+    "type": "text",
+    "text": " and "
+   },
+   {
+    "type": "num",
+    "text": "7M"
+   },
+   {
+    "type": "text",
+    "text": "."
+   }
+  ],
+  [
+   {
+    "type": "num",
+    "text": "99"
+   }
+  ]
+ ],
+ "gate": {
+  "beforeTokens": [
+   {
+    "type": "text",
+    "text": "Revenue of "
+   },
+   {
+    "type": "num",
+    "text": "$18.2B"
+   },
+   {
+    "type": "text",
+    "text": " "
+   },
+   {
+    "type": "cite",
+    "text": "[F4]"
+   },
+   {
+    "type": "text",
+    "text": " grew while margin hit "
+   },
+   {
+    "type": "num",
+    "text": "31.7%"
+   },
+   {
+    "type": "text",
+    "text": " "
+   },
+   {
+    "type": "cite",
+    "text": "[F9]"
+   },
+   {
+    "type": "text",
+    "text": "; backlog was "
+   },
+   {
+    "type": "num",
+    "text": "$2.1B"
+   },
+   {
+    "type": "text",
+    "text": " "
+   },
+   {
+    "type": "cite",
+    "text": "[F11]"
+   },
+   {
+    "type": "text",
+    "text": "."
+   }
+  ],
+  "afterTokens": [
+   {
+    "type": "text",
+    "text": "Revenue of "
+   },
+   {
+    "type": "num",
+    "text": "$17.9B"
+   },
+   {
+    "type": "text",
+    "text": " "
+   },
+   {
+    "type": "cite",
+    "text": "[F4]"
+   },
+   {
+    "type": "text",
+    "text": " grew while margin hit "
+   },
+   {
+    "type": "num",
+    "text": "29.4%"
+   },
+   {
+    "type": "text",
+    "text": " "
+   },
+   {
+    "type": "cite",
+    "text": "[F9]"
+   },
+   {
+    "type": "text",
+    "text": "; backlog was "
+   },
+   {
+    "type": "num",
+    "text": "$2.1B"
+   },
+   {
+    "type": "text",
+    "text": " "
+   },
+   {
+    "type": "cite",
+    "text": "[F11]"
+   },
+   {
+    "type": "text",
+    "text": "."
+   }
+  ],
+  "badSet": [
+   1,
+   5
+  ],
+  "goodSet": [
+   1,
+   5
+  ]
+ },
+ "judge": [
+  {
+   "ticker": "AAA",
+   "teacher": "Sentence about the business. Sentence about the business. Sentence about the business. Sentence about the business. Sentence about the business. Sentence about the business. Sentence about the business. Sentence about the business. Sentence about the business. Sentence about the business. Sentence about the business. Sentence about the business. Sentence about the business. Sentence about the business. Sentence about the business. Sentence about the business. Sentence about the business. Sentence about the business. Sentence about the business. Sentence about the business. …",
+   "ours": "Sentence about the business. Sentence about the business. Sentence about the business. Sentence about the business. Sentence about the business. Sentence about the business. Sentence about the business. Sentence about the business. Sentence about the business. Sentence about the business. Sentence about the business. Sentence about the business. Sentence about the business. Sentence about the business. \n\nSentence about the business. Sentence about the business. Sentence about the business. Sentence about the business. Sentence about the business. Sentence about the business. Sentence about the business. Sentence about the business. Sentence about the business. Sentence about the business. …"
+  },
+  {
+   "ticker": "BBB",
+   "teacher": "One long clause without any breaks at all One long clause without any breaks at all One long clause without any breaks at all One long clause without any breaks at all One long clause without any breaks at all One long clause without any breaks at all One long clause without any breaks at all One long clause without any breaks at all One long clause without any breaks at all One long clause without any breaks at all One long clause without any breaks at all One long clause without any breaks at all One long clause without any breaks at all One long clause without any breaks at all One long clause without any breaks at all One long clause without any breaks at all One long clause without any …",
+   "ours": "Sentence about the business. Sentence about the business. Sentence about the business. Sentence about the business. Sentence about the business. Sentence about the business. Sentence about the business. Sentence about the business. Sentence about the business. Sentence about the business. Sentence about the business. Sentence about the business. Sentence about the business. Sentence about the business. Sentence about the business. Sentence about the business. Sentence about the business. Sentence about the business. Sentence about the business. Sentence about the business. Sentence about the business. Sentence about the business. Sentence about the business. Sentence about the business. Sentence about the business. …"
+  },
+  {
+   "ticker": "CCC",
+   "teacher": "Short memo.",
+   "ours": "Also short."
+  }
+ ],
+ "ladders": {
+  "naive": [
+   [
+    -0.906641551247,
+    -0.657904709141,
+    -0.409167867036
+   ],
+   [
+    -0.226415512465,
+    -0.00631024930748,
+    0.21379501385
+   ],
+   [
+    0.385252963989,
+    0.642579279778,
+    0.899905595568
+   ]
+  ],
+  "calibrated": [
+   [
+    -0.834030360111,
+    -0.596746149584,
+    -0.359461939058
+   ],
+   [
+    -0.211270914127,
+    0.00883434903047,
+    0.228939612188
+   ],
+   [
+    0.358263933518,
+    0.589821828255,
+    0.821379722992
+   ]
+  ]
+ },
+ "beeswarm": [
+  [
+   0,
+   1,
+   0,
+   1,
+   0,
+   0,
+   1,
+   0
+  ],
+  [
+   0,
+   1,
+   0,
+   1,
+   0,
+   0,
+   1,
+   0
+  ],
+  [
+   0,
+   1,
+   0,
+   1,
+   2,
+   0,
+   0,
+   0
+  ]
+ ],
+ "nearestRung": [
+  0.358263933518,
+  0.358263933518,
+  0.358263933518,
+  0.589821828255,
+  0.589821828255,
+  0.821379722992,
+  0.821379722992
+ ],
+ "lookahead": {
+  "signal": [
+   false,
+   false,
+   false,
+   false,
+   true,
+   false,
+   false,
+   false,
+   true,
+   true,
+   true,
+   true,
+   true,
+   false,
+   false,
+   true,
+   true,
+   true,
+   true,
+   true,
+   true,
+   false,
+   false,
+   false,
+   true,
+   true,
+   true,
+   true,
+   false,
+   false,
+   false,
+   false,
+   true,
+   true,
+   true,
+   true
+  ],
+  "cheatEq": [
+   1,
+   1,
+   1,
+   1,
+   1,
+   0.961162707712,
+   0.961162707712,
+   0.961162707712,
+   0.961162707712,
+   1.05837110057,
+   1.0441154863,
+   1.03112434327,
+   1.02838754248,
+   0.954970262871,
+   0.954970262871,
+   0.954970262871,
+   0.977690804068,
+   1.0327829491,
+   1.08454412605,
+   1.0276394256,
+   0.994266146404,
+   1.00071343784,
+   1.00071343784,
+   1.00071343784,
+   1.00071343784,
+   1.00904050583,
+   1.0254516201,
+   1.0334641894,
+   0.96445316663,
+   0.96445316663,
+   0.96445316663,
+   0.96445316663,
+   0.96445316663,
+   1.02571956549,
+   0.999154101171,
+   0.983292860664
+  ],
+  "honestEq": [
+   1,
+   1,
+   1,
+   1,
+   1,
+   1.01142729561,
+   1.01142729561,
+   1.01142729561,
+   1.01142729561,
+   1.01947780238,
+   1.02611674547,
+   1.01880879456,
+   1.01112789779,
+   1.0178387807,
+   1.0178387807,
+   1.0178387807,
+   1.00892944061,
+   1.01228781157,
+   1.02087089754,
+   1.01875089699,
+   1.00918099374,
+   1.00999136822,
+   1.00999136822,
+   1.00999136822,
+   1.00999136822,
+   1.00829860934,
+   1.01648913139,
+   1.01931611973,
+   1.01107359054,
+   1.01107359054,
+   1.01107359054,
+   1.01107359054,
+   1.01107359054,
+   1.00577453623,
+   1.01107203487,
+   1.01743089384
+  ],
+  "holdEq": [
+   1,
+   1.02575728155,
+   1.06197087379,
+   1.09406796117,
+   1.00668932039,
+   0.96759223301,
+   1.00582524272,
+   1.00338834951,
+   1.07746601942,
+   1.1864368932,
+   1.17045631068,
+   1.15589320388,
+   1.15282524272,
+   1.07052427184,
+   1.07645631068,
+   1.16626213592,
+   1.19400970874,
+   1.26129126214,
+   1.32450485437,
+   1.25500970874,
+   1.21425242718,
+   1.22212621359,
+   1.18475728155,
+   1.2449223301,
+   1.35927184466,
+   1.37058252427,
+   1.39287378641,
+   1.40375728155,
+   1.31001941748,
+   1.29016504854,
+   1.34533980583,
+   1.35675728155,
+   1.43985436893,
+   1.53132038835,
+   1.49166019417,
+   1.46798058252
+  ]
+ },
+ "money": [
+  "$0",
+  "$1",
+  "-$1",
+  "$999",
+  "$1,000",
+  "-$1,234",
+  "$25,000",
+  "-$5,000",
+  "$1,234,568"
+ ],
+ "nearestIndex": [
+  0,
+  0,
+  1,
+  4,
+  4
+ ],
+ "risk": [
+  {
+   "label": "order AAPL 25000",
+   "entries": [
+    {
+     "approved": true,
+     "text": "BUY $25,000 AAPL",
+     "reasons": []
+    }
+   ],
+   "state": {
+    "positions": {
+     "AAPL": 25000
+    },
+    "dayPnl": 0,
+    "killed": false
+   },
+   "gross": 25000
+  },
+  {
+   "label": "order MSFT 35000",
+   "entries": [
+    {
+     "approved": true,
+     "text": "BUY $35,000 MSFT",
+     "reasons": []
+    }
+   ],
+   "state": {
+    "positions": {
+     "AAPL": 25000,
+     "MSFT": 35000
+    },
+    "dayPnl": 0,
+    "killed": false
+   },
+   "gross": 60000
+  },
+  {
+   "label": "order AAPL 15000",
+   "entries": [
+    {
+     "approved": true,
+     "text": "BUY $15,000 AAPL",
+     "reasons": []
+    }
+   ],
+   "state": {
+    "positions": {
+     "AAPL": 40000,
+     "MSFT": 35000
+    },
+    "dayPnl": 0,
+    "killed": false
+   },
+   "gross": 75000
+  },
+  {
+   "label": "order SPY 40000",
+   "entries": [
+    {
+     "approved": false,
+     "text": "BUY $40,000 SPY",
+     "reasons": [
+      "gross exposure would exceed cap: $115,000 > $100,000"
+     ]
+    }
+   ],
+   "state": {
+    "positions": {
+     "AAPL": 40000,
+     "MSFT": 35000
+    },
+    "dayPnl": 0,
+    "killed": false
+   },
+   "gross": 75000
+  },
+  {
+   "label": "order TSLA 10000",
+   "entries": [
+    {
+     "approved": false,
+     "text": "BUY $10,000 TSLA",
+     "reasons": [
+      "TSLA not in allowed-symbol list"
+     ]
+    }
+   ],
+   "state": {
+    "positions": {
+     "AAPL": 40000,
+     "MSFT": 35000
+    },
+    "dayPnl": 0,
+    "killed": false
+   },
+   "gross": 75000
+  },
+  {
+   "label": "order AAPL 5000",
+   "entries": [
+    {
+     "approved": false,
+     "text": "BUY $5,000 AAPL",
+     "reasons": [
+      "per-symbol cap: AAPL would be $45,000 > $40,000"
+     ]
+    }
+   ],
+   "state": {
+    "positions": {
+     "AAPL": 40000,
+     "MSFT": 35000
+    },
+    "dayPnl": 0,
+    "killed": false
+   },
+   "gross": 75000
+  },
+  {
+   "label": "mark -6000",
+   "entries": [
+    {
+     "approved": null,
+     "text": "mark-to-market: day P&L now -$6,000",
+     "reasons": []
+    },
+    {
+     "approved": false,
+     "text": "KILL SWITCH TRIPPED",
+     "reasons": [
+      "day P&L -$6,000 breached daily loss limit -$5,000; halting all new buys"
+     ]
+    }
+   ],
+   "state": {
+    "positions": {
+     "AAPL": 40000,
+     "MSFT": 35000
+    },
+    "dayPnl": -6000,
+    "killed": true
+   },
+   "gross": 75000
+  },
+  {
+   "label": "order AAPL 5000 (killed)",
+   "entries": [
+    {
+     "approved": false,
+     "text": "BUY $5,000 AAPL",
+     "reasons": [
+      "kill switch active (day P&L -$6,000 breached -$5,000)",
+      "per-symbol cap: AAPL would be $45,000 > $40,000"
+     ]
+    }
+   ],
+   "state": {
+    "positions": {
+     "AAPL": 40000,
+     "MSFT": 35000
+    },
+    "dayPnl": -6000,
+    "killed": true
+   },
+   "gross": 75000
+  },
+  {
+   "label": "flatten",
+   "entries": [
+    {
+     "approved": true,
+     "text": "SELL $40,000 AAPL [flatten]",
+     "reasons": [
+      "flatten allowed under kill switch; reducing orders are always permitted"
+     ]
+    },
+    {
+     "approved": true,
+     "text": "SELL $35,000 MSFT [flatten]",
+     "reasons": [
+      "flatten allowed under kill switch; reducing orders are always permitted"
+     ]
+    }
+   ],
+   "state": {
+    "positions": {
+     "AAPL": 0,
+     "MSFT": 0
+    },
+    "dayPnl": -6000,
+    "killed": true
+   },
+   "gross": 0
+  },
+  {
+   "label": "mark +3000",
+   "entries": [
+    {
+     "approved": null,
+     "text": "mark-to-market: day P&L now -$3,000",
+     "reasons": []
+    },
+    {
+     "approved": null,
+     "text": "day P&L recovered above -$5,000; kill switch released",
+     "reasons": []
+    }
+   ],
+   "state": {
+    "positions": {
+     "AAPL": 0,
+     "MSFT": 0
+    },
+    "dayPnl": -3000,
+    "killed": false
+   },
+   "gross": 0
+  },
+  {
+   "label": "mark +3000",
+   "entries": [
+    {
+     "approved": null,
+     "text": "mark-to-market: day P&L now $0",
+     "reasons": []
+    }
+   ],
+   "state": {
+    "positions": {
+     "AAPL": 0,
+     "MSFT": 0
+    },
+    "dayPnl": 0,
+    "killed": false
+   },
+   "gross": 0
+  },
+  {
+   "label": "reset",
+   "entries": [
+    {
+     "approved": null,
+     "text": "RESET: state cleared. the audit log itself is append-only",
+     "reasons": []
+    }
+   ],
+   "state": {
+    "positions": {},
+    "dayPnl": 0,
+    "killed": false
+   },
+   "gross": 0
+  }
+ ]
+}

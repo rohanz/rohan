@@ -1,15 +1,25 @@
 // Shared default-theme utilities, extracted from the source site's main.js.
+//
+// The chart MATHS and the canvas RENDERERS these widgets used to carry are now
+// in `src/lib/visuals/`, shared with the transit and blueprint forks. What
+// stays here is classic's own DOM scaffolding and its theme wiring — classic
+// is the only theme that serves dark mode, so it rebuilds a palette on every
+// draw instead of holding a fixed one.
+import { sizeCanvasWithDpr, deviceDpr } from '../../lib/visuals/canvas';
+import { classicPalette } from '../../lib/visuals/themes';
+
 function isLightTheme() {
     return document.documentElement.getAttribute('data-theme') === 'light';
 }
 
+/** Classic's live palette. Rebuild per draw; `theme-changed` triggers redraws. */
+function visualPalette() {
+    return classicPalette(isLightTheme());
+}
+
 function sizeCanvas(canvas, w, h) {
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = w * dpr;
-    canvas.height = h * dpr;
-    const ctx = canvas.getContext('2d');
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    return ctx;
+    // classic tracks the real device ratio (blueprint floors its own at 2)
+    return sizeCanvasWithDpr(canvas, w, h, deviceDpr());
 }
 
 
@@ -33,26 +43,6 @@ function qlaShell(node, kicker, meta) {
     shell.appendChild(body);
     node.appendChild(shell);
     return body;
-}
-
-function qlfTextColor(a) { return isLightTheme() ? `rgba(62,39,35,${a})` : `rgba(232,230,227,${a})`; }
-// Chart-series amber: bright in dark mode, dark amber in light (the muted
-// brown site accent is invisible against chart greys and isn't amber).
-function qlfAccent() { return isLightTheme() ? '#C77800' : '#FFCC80'; }
-function qlfWarn() { return isLightTheme() ? '#B23B3B' : '#E05555'; }
-
-function qlfNearestIndex(dates, target) {
-    let best = 0;
-    for (let i = 0; i < dates.length; i++) {
-        if (dates[i] <= target) best = i;
-        else break;
-    }
-    return best;
-}
-
-function qlfMoney(v) {
-    const sign = v < 0 ? '-' : '';
-    return `${sign}$${Math.abs(Math.round(v)).toLocaleString('en-US')}`;
 }
 
 // Legend row: colored dots + labels (theme-aware via CSS classes), rendered
@@ -109,8 +99,11 @@ function qlfReadout(fields) {
             if (values) {
                 Object.keys(values).forEach(k => { if (boxes[k]) boxes[k].textContent = values[k]; });
             } else {
-                // clear on leave; figure space keeps the baseline (see above)
-                Object.keys(boxes).forEach(k => { boxes[k].textContent = ' '; });
+                // Clear on leave with the SAME figure space the box was born
+                // with. This used to write a plain ASCII space, which is not
+                // glyph-bearing: the row lost its baseline again on every
+                // pointerleave and everything below it hopped.
+                Object.keys(boxes).forEach(k => { boxes[k].textContent = '\u2007'; });
             }
             row.classList.toggle('is-idle', !values);
         }
@@ -146,5 +139,20 @@ function qlfAttachCrosshair(canvas, input, n, padL, padR, setCursor) {
     });
 }
 
-export { isLightTheme, sizeCanvas, qlaEl, qlaShell, qlfTextColor, qlfAccent, qlfWarn,
-    qlfNearestIndex, qlfMoney, qlfLegend, qlfCrosshairInput, qlfReadout, qlfAttachCrosshair };
+// Coalesce redraws to one per frame. A pointermove crosshair can fire several
+// times per frame and every setCursor() used to draw synchronously, so a drag
+// re-rendered the same canvas repeatedly between paints. Returns a scheduler
+// and pushes its canceller onto `cleanups`, so a teardown mid-drag doesn't
+// leave a frame queued against a detached canvas.
+function makeRafDraw(draw, cleanups) {
+    let id = null;
+    const request = () => {
+        if (id !== null) return;
+        id = requestAnimationFrame(() => { id = null; draw(); });
+    };
+    cleanups.push(() => { if (id !== null) cancelAnimationFrame(id); id = null; });
+    return request;
+}
+
+export { isLightTheme, visualPalette, sizeCanvas, qlaEl, qlaShell, qlfLegend,
+    qlfCrosshairInput, qlfReadout, qlfAttachCrosshair, makeRafDraw };

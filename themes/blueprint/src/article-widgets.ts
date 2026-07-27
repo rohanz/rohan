@@ -3,33 +3,47 @@ import { asset } from './base.js';
 // (main.js). One module; each init runs only if its mount point exists.
 // Light theme only — the original's isLightTheme branching is collapsed to the
 // light branch, with the blueprint article-reader palette swapped in.
+//
+// The BQST lab's DSP maths, the quantlab maths, and every chart renderer now
+// live in `src/lib/visuals/` at the repo root, shared with the classic and
+// transit forks and driven by a palette object. `blueprintPalette` is this
+// theme's mapping; the role tokens are documented in that folder's
+// `palette.ts`. That file is also where this theme's old `BLUE`/`PINK`/`TEAL`
+// constants — all three of which held the same chrome grey, and none of which
+// was blue — got replaced by names describing what they draw.
+import { sizeCanvasWithDpr, blueprintDpr } from '../../../src/lib/visuals/canvas';
+import { blueprintPalette as PALETTE } from '../../../src/lib/visuals/themes';
+import {
+  drawEq, drawTransfer, drawHarmonics, drawAliasing, bqstKnobTicks, legendForBqstVisual,
+  BQST_EQ_HEIGHT, BQST_TRANSFER_HEIGHT, BQST_HARMONICS_HEIGHT, BQST_ALIASING_HEIGHT,
+} from '../../../src/lib/visuals/bqst-render';
+import {
+  survival, deriveGateMarks, trimJudgePairs, QUANT_BLOCKS, fitLadders,
+  beeswarmLevels, lookaheadSeries, qlfNearestIndex, qlfMoney, createRiskEngine,
+  DEFAULT_RISK_LIMITS,
+} from '../../../src/lib/visuals/quant';
+import {
+  drawCompound, drawRoster, drawQuant, compoundCursorP,
+  COMPOUND_CROSS_N, COMPOUND_HEIGHT, COMPOUND_N_CLAIMS, ROSTER_HEIGHT, ROSTER_PAD, QUANT_HEIGHT,
+} from '../../../src/lib/visuals/qla-render';
+import {
+  drawLookahead, drawKalman, drawSurvivorship,
+  LOOKAHEAD_HEIGHT, LOOKAHEAD_PAD, KALMAN_HEIGHT, KALMAN_PAD,
+  SURVIVORSHIP_HEIGHT, SURVIVORSHIP_PAD,
+} from '../../../src/lib/visuals/qlf-render';
 
 // ---- palette (this site) ----
-// PALETTE EXPERIMENT: chart series avoid ink navy (too close to the chrome
-// grey in value) — primary poppy red, comparison chrome grey, and a lighter
-// blueprint blue where a third distinguishable series is needed. Ink navy
-// stays on text/grids/markings only.
-const BLUE = '#74757C'; // chrome grey — comparison / second series (name kept from the navy era)
-const RED = '#C74B50'; // poppy crimson — grit / primary series
-const LIGHT_NAVY = '#5C77C4'; // lighter blueprint blue — third series / good-vs-warn contrast
-const PINK = '#74757C'; // reference series — the chrome grey
-const TEAL = '#74757C'; // dry / reference series — the chrome grey
-const MUTED = 'rgba(116,117,124,0.55)'; // dry / reference — chrome grey
+// Only the audio widgets still read raw values; the charts go through PALETTE.
 const RED_RGB = '199,75,80';
 const MUTED_RGB = '116,117,124';
 const PINK_RGB = '228,136,173'; // bqst processed waveform — original pink
 const INK_RGB = '31,42,86';
 
-const TITLE_FONT = "'Be Vietnam Pro', sans-serif";
-
 // ---- shared helpers ----
 function sizeCanvas(canvas: HTMLCanvasElement, w: number, h: number): CanvasRenderingContext2D {
-  const dpr = Math.max(2, window.devicePixelRatio || 1);
-  canvas.width = w * dpr;
-  canvas.height = h * dpr;
-  const ctx = canvas.getContext('2d')!;
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  return ctx;
+  // blueprint floors the backing store at 2x: these canvases sit beside 2x
+  // canvas TEXTURES in the 3D scene and read soft at 1x (see its AGENTS.md).
+  return sizeCanvasWithDpr(canvas, w, h, blueprintDpr());
 }
 
 function dbToFrac(db: number): number {
@@ -64,32 +78,6 @@ function initBqstDspLab() {
   >;
   if (slots.length === 0) return;
 
-  const gridColor = (a: number) => `rgba(${INK_RGB},${a})`;
-  const textColor = (a: number) => `rgba(${INK_RGB},${a})`;
-  const axisFont = `700 14px 'Be Vietnam Pro', sans-serif`;
-  const tickFont = `600 12px 'Be Vietnam Pro', sans-serif`;
-
-  function bqstKnobTicks() {
-    return Array.from({ length: 21 }, (_, i) => {
-      const angle = -135 + (i / 20) * 270;
-      const major = i % 5 === 0 ? ' bqst-tick-major' : '';
-      return `<i class="bqst-knob-tick${major}" style="--tick-angle:${angle}deg"></i>`;
-    }).join('');
-  }
-
-  function legendForBqstVisual(type: string) {
-    if (type === 'eq') {
-      return `<span><i style="background:${RED}"></i>low shelf positions</span><span><i style="background:${LIGHT_NAVY}"></i>high shelf positions</span><span><i style="background:${PINK}"></i>cut reference</span>`;
-    }
-    if (type === 'transfer') {
-      return `<span><i style="background:${TEAL}"></i>dry signal</span><span><i style="background:${RED}"></i>cream</span><span><i style="background:${LIGHT_NAVY}"></i>grit</span>`;
-    }
-    if (type === 'aliasing') {
-      return `<span><i style="background:${LIGHT_NAVY}"></i>audible harmonic</span><span><i style="background:#74757C"></i>harmonic inside 4x processing</span><span><i style="background:${RED}"></i>foldback alias position</span>`;
-    }
-    return `<span><i style="background:${RED}"></i>cream</span><span><i style="background:${LIGHT_NAVY}"></i>grit</span>`;
-  }
-
   slots.forEach((slot) => {
     slot.node.innerHTML = `
       <div class="bqst-lab" data-bqst-visual="${slot.type}">
@@ -114,7 +102,7 @@ function initBqstDspLab() {
               </div>`
             : `<canvas class="bqst-visual-canvas" aria-label="${slot.label}"></canvas>`
         }
-        <div class="bqst-legend">${legendForBqstVisual(slot.type)}</div>
+        <div class="bqst-legend">${legendForBqstVisual(slot.type, PALETTE)}</div>
       </div>`;
     slot.canvas = slot.node.querySelector('.bqst-visual-canvas') as HTMLCanvasElement;
   });
@@ -133,8 +121,6 @@ function initBqstDspLab() {
     canvas.style.height = `${height}px`;
     return sizeCanvas(canvas, Math.max(rect.width, 280), height);
   }
-  const dbToGain = (db: number) => Math.pow(10, db / 20);
-  const gainToDb = (gain: number) => 20 * Math.log10(Math.max(1e-12, gain));
   const driveDbFor = (type: string) => driveState[type] ?? 0;
   const drive01For = (type: string) => Math.max(0, Math.min(1, driveDbFor(type) / 18));
 
@@ -158,406 +144,23 @@ function initBqstDspLab() {
     requestBqstDraw();
   }
 
-  function biquadResponse(type: string, freq: number, sampleRate: number, shelfGainDb: number, q: number, hz: number) {
-    const A = Math.sqrt(dbToGain(shelfGainDb));
-    const w0 = (2 * Math.PI * freq) / sampleRate;
-    const cosw0 = Math.cos(w0);
-    const sinw0 = Math.sin(w0);
-    const alpha = sinw0 / (2 * q);
-    const twoSqrtAAlpha = 2 * Math.sqrt(A) * alpha;
-    let b0, b1, b2, a0, a1, a2;
-    if (type === 'low') {
-      b0 = A * (A + 1 - (A - 1) * cosw0 + twoSqrtAAlpha);
-      b1 = 2 * A * (A - 1 - (A + 1) * cosw0);
-      b2 = A * (A + 1 - (A - 1) * cosw0 - twoSqrtAAlpha);
-      a0 = A + 1 + (A - 1) * cosw0 + twoSqrtAAlpha;
-      a1 = -2 * (A - 1 + (A + 1) * cosw0);
-      a2 = A + 1 + (A - 1) * cosw0 - twoSqrtAAlpha;
-    } else {
-      b0 = A * (A + 1 + (A - 1) * cosw0 + twoSqrtAAlpha);
-      b1 = -2 * A * (A - 1 + (A + 1) * cosw0);
-      b2 = A * (A + 1 + (A - 1) * cosw0 - twoSqrtAAlpha);
-      a0 = A + 1 - (A - 1) * cosw0 + twoSqrtAAlpha;
-      a1 = 2 * (A - 1 - (A + 1) * cosw0);
-      a2 = A + 1 - (A - 1) * cosw0 - twoSqrtAAlpha;
-    }
-    const w = (2 * Math.PI * hz) / sampleRate;
-    const z1r = Math.cos(-w), z1i = Math.sin(-w);
-    const z2r = Math.cos(-2 * w), z2i = Math.sin(-2 * w);
-    const nr = b0 + b1 * z1r + b2 * z2r;
-    const ni = b1 * z1i + b2 * z2i;
-    const dr = a0 + a1 * z1r + a2 * z2r;
-    const di = a1 * z1i + a2 * z2i;
-    return Math.sqrt((nr * nr + ni * ni) / (dr * dr + di * di));
-  }
-
-  function drawEq(canvas: HTMLCanvasElement) {
-    const ctx = resizeCanvas(canvas, 360);
-    const w = canvas.getBoundingClientRect().width;
-    const h = 360;
-    const pad = { l: 62, r: 24, t: 34, b: 68 };
-    const plotW = w - pad.l - pad.r;
-    const plotH = h - pad.t - pad.b;
-    const minF = 20, maxF = 20000;
-    const internalRate = 192000;
-    const minDb = -7, maxDb = 7;
-    ctx.clearRect(0, 0, w, h);
-    const xFor = (f: number) => pad.l + ((Math.log10(f) - Math.log10(minF)) / (Math.log10(maxF) - Math.log10(minF))) * plotW;
-    const yFor = (db: number) => pad.t + ((maxDb - db) / (maxDb - minDb)) * plotH;
-    ctx.strokeStyle = gridColor(0.12);
-    ctx.lineWidth = 1;
-    [20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000].forEach((f) => {
-      const x = xFor(f);
-      ctx.beginPath(); ctx.moveTo(x, pad.t); ctx.lineTo(x, pad.t + plotH); ctx.stroke();
-    });
-    [-6, -3, 0, 3, 6].forEach((db) => {
-      const y = yFor(db);
-      ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(pad.l + plotW, y); ctx.stroke();
-    });
-    ctx.fillStyle = textColor(0.55);
-    ctx.font = tickFont;
-    ctx.textAlign = 'center';
-    [20, 100, 1000, 10000, 20000].forEach((f) => ctx.fillText(f >= 1000 ? `${f / 1000}k` : String(f), xFor(f), h - 30));
-    ctx.fillStyle = textColor(0.72);
-    ctx.font = axisFont;
-    ctx.fillText('frequency (Hz)', pad.l + plotW / 2, h - 8);
-    ctx.fillStyle = textColor(0.55);
-    ctx.font = tickFont;
-    ctx.textAlign = 'right';
-    [-6, 0, 6].forEach((db) => ctx.fillText(`${db > 0 ? '+' : ''}${db}`, pad.l - 8, yFor(db) + 4));
-    ctx.save();
-    ctx.translate(16, pad.t + plotH / 2);
-    ctx.rotate(-Math.PI / 2);
-    ctx.textAlign = 'center';
-    ctx.fillStyle = textColor(0.72);
-    ctx.font = axisFont;
-    ctx.fillText('gain (dB)', 0, 0);
-    ctx.restore();
-    function plotCurve(kind: string, f0: number, gainDb: number, color: string, alpha: number, width = 2.0, dash = false) {
-      ctx.strokeStyle = color;
-      ctx.globalAlpha = alpha;
-      ctx.lineWidth = width;
-      ctx.setLineDash(dash ? [5, 5] : []);
-      ctx.beginPath();
-      for (let i = 0; i <= 360; i++) {
-        const f = Math.pow(10, Math.log10(minF) + (i / 360) * (Math.log10(maxF) - Math.log10(minF)));
-        const response = biquadResponse(kind, f0, internalRate, gainDb, 0.38, Math.min(f, internalRate * 0.499));
-        const x = xFor(f);
-        const y = yFor(gainToDb(response));
-        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-      }
-      ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.globalAlpha = 1;
-    }
-    [74, 84, 98, 116, 131, 166, 230, 361].forEach((f, i, all) => {
-      const alpha = 0.94 - (i / Math.max(1, all.length - 1)) * 0.44;
-      plotCurve('low', f, 6, RED, alpha, f === 131 ? 2.8 : 1.9);
-    });
-    [1600, 1800, 2100, 2500, 3400, 4800, 7100, 18000].forEach((f, i, all) => {
-      const alpha = 0.5 + (i / Math.max(1, all.length - 1)) * 0.44;
-      plotCurve('high', f, 6, LIGHT_NAVY, alpha, f === 4800 ? 2.8 : 1.9);
-    });
-    plotCurve('low', 131, -6, PINK, 0.72, 2.0, true);
-    plotCurve('high', 4800, -6, PINK, 0.72, 2.0, true);
-    ctx.fillStyle = textColor(0.82);
-    ctx.font = `700 ${w < 520 ? 12 : 14}px ${TITLE_FONT}`;
-    ctx.textAlign = 'left';
-    ctx.fillText(w < 520 ? 'broad shelf curves' : 'broad shelf curves, not surgical bands', pad.l, 22);
-  }
-
-  function densitySaturate(sample: number, drive01: number) {
-    if (drive01 <= 0) return sample;
-    const push = drive01 * drive01;
-    const maxPush = push * drive01;
-    const asymmetry = drive01 * (0.016 + drive01 * 0.045 + push * 0.04);
-    const oddWeight = drive01 * (0.032 + drive01 * 0.095 + push * 0.115 + maxPush * 0.135);
-    const softKnee = 0.8 + drive01 * 0.42 + push * 0.36 + maxPush * 0.6;
-    const driven = sample * softKnee + oddWeight * sample * sample * sample + asymmetry;
-    const shaped = (Math.tanh(driven) - Math.tanh(asymmetry)) * (1 + 0.07 * drive01 + 0.13 * maxPush);
-    const blend = drive01 * 0.39 + push * 0.16 + maxPush * 0.15;
-    return sample * (1 - blend) + shaped * blend;
-  }
-  function transformerSaturate(sample: number, drive01: number) {
-    if (drive01 <= 0) return sample;
-    const push = drive01 * drive01;
-    const maxPush = push * drive01;
-    const drive = 0.92 + drive01 * 1.55 + push * 0.82 + maxPush * 1.15;
-    const bias = 0.018 * drive01 + push * 0.01 + maxPush * 0.018;
-    const biased = sample * drive + bias;
-    const norm = Math.tanh(0.86);
-    const shaped = Math.tanh(biased * 0.86) / norm - Math.tanh(bias * 0.86) / norm;
-    const rounded = shaped - (0.025 * drive01 + 0.014 * push + 0.02 * maxPush) * shaped * shaped * shaped;
-    const blend = drive01 * 0.43 + push * 0.12 + maxPush * 0.14;
-    return sample * (1 - blend) + rounded * blend;
-  }
-  function harmonicDb(shaper: (s: number, d: number) => number, harmonic: number) {
-    const n = 4096;
-    const drive01 = drive01For('harmonics');
-    const driveGain = dbToGain(driveDbFor('harmonics') * 0.4);
-    let re = 0, im = 0, fundamentalRe = 0, fundamentalIm = 0;
-    for (let i = 0; i < n; i++) {
-      const phase = (2 * Math.PI * i) / n;
-      const y = shaper(Math.sin(phase) * 0.55 * driveGain, drive01);
-      re += y * Math.cos(harmonic * phase);
-      im -= y * Math.sin(harmonic * phase);
-      fundamentalRe += y * Math.cos(phase);
-      fundamentalIm -= y * Math.sin(phase);
-    }
-    const mag = Math.sqrt(re * re + im * im);
-    const fundamental = Math.sqrt(fundamentalRe * fundamentalRe + fundamentalIm * fundamentalIm);
-    return gainToDb(mag / Math.max(1e-12, fundamental));
-  }
-
-  function drawTransfer(canvas: HTMLCanvasElement) {
-    const ctx = resizeCanvas(canvas, 340);
-    const w = canvas.getBoundingClientRect().width;
-    const h = 340;
-    const pad = { l: 62, r: 24, t: 30, b: 52 };
-    const plotW = w - pad.l - pad.r;
-    const plotH = h - pad.t - pad.b;
-    const xFor = (x: number) => pad.l + ((x + 1.5) / 3) * plotW;
-    const yFor = (y: number) => pad.t + ((1.35 - y) / 2.7) * plotH;
-    ctx.clearRect(0, 0, w, h);
-    ctx.strokeStyle = gridColor(0.12);
-    ctx.lineWidth = 1;
-    [-1, -0.5, 0, 0.5, 1].forEach((v) => {
-      ctx.beginPath(); ctx.moveTo(xFor(v), pad.t); ctx.lineTo(xFor(v), pad.t + plotH); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(pad.l, yFor(v)); ctx.lineTo(pad.l + plotW, yFor(v)); ctx.stroke();
-    });
-    function plot(fn: (x: number) => number, color: string, width: number, dash: boolean) {
-      ctx.strokeStyle = color;
-      ctx.lineWidth = width;
-      ctx.setLineDash(dash ? [6, 6] : []);
-      ctx.beginPath();
-      for (let i = 0; i <= 300; i++) {
-        const x = -1.5 + (i / 300) * 3;
-        const y = fn(x);
-        i === 0 ? ctx.moveTo(xFor(x), yFor(y)) : ctx.lineTo(xFor(x), yFor(y));
-      }
-      ctx.stroke();
-      ctx.setLineDash([]);
-    }
-    plot((x) => x, TEAL, 1.8, true);
-    const drive01 = drive01For('transfer');
-    plot((x) => densitySaturate(x, drive01), RED, 3, false);
-    plot((x) => transformerSaturate(x, drive01), LIGHT_NAVY, 3, false);
-    ctx.fillStyle = textColor(0.58);
-    ctx.font = tickFont;
-    ctx.textAlign = 'center';
-    [-1, 0, 1].forEach((v) => ctx.fillText(`${v > 0 ? '+' : ''}${v}`, xFor(v), h - 27));
-    ctx.fillStyle = textColor(0.72);
-    ctx.font = axisFont;
-    ctx.fillText('input level', pad.l + plotW / 2, h - 4);
-    ctx.fillStyle = textColor(0.58);
-    ctx.font = tickFont;
-    ctx.textAlign = 'right';
-    [-1, 0, 1].forEach((v) => ctx.fillText(`${v > 0 ? '+' : ''}${v}`, pad.l - 8, yFor(v) + 4));
-    ctx.save();
-    ctx.translate(16, pad.t + plotH / 2);
-    ctx.rotate(-Math.PI / 2);
-    ctx.fillStyle = textColor(0.72);
-    ctx.textAlign = 'center';
-    ctx.font = axisFont;
-    ctx.fillText('output level', 0, 0);
-    ctx.restore();
-    ctx.fillStyle = textColor(0.82);
-    ctx.font = `700 ${w < 520 ? 12 : 14}px ${TITLE_FONT}`;
-    ctx.textAlign = 'left';
-    ctx.fillText(w < 520 ? 'rounded peaks, not hard clipping' : 'rounded peaks create density without hard clipping', pad.l, 18);
-  }
-
-  function drawHarmonics(canvas: HTMLCanvasElement) {
-    const ctx = resizeCanvas(canvas, 340);
-    const w = canvas.getBoundingClientRect().width;
-    const h = 340;
-    const pad = { l: 78, r: 24, t: 34, b: 62 };
-    const plotW = w - pad.l - pad.r;
-    const plotH = h - pad.t - pad.b;
-    const minHarmonicDb = -84;
-    ctx.clearRect(0, 0, w, h);
-    ctx.strokeStyle = gridColor(0.12);
-    ctx.lineWidth = 1;
-    [-20, -40, -60, -80].forEach((db) => {
-      const y = pad.t + ((0 - db) / Math.abs(minHarmonicDb)) * plotH;
-      ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(pad.l + plotW, y); ctx.stroke();
-      ctx.fillStyle = textColor(0.5);
-      ctx.font = tickFont;
-      ctx.textAlign = 'right';
-      ctx.fillText(`${db} dB`, pad.l - 8, y + 4);
-    });
-    const harmonics = [2, 3, 4, 5, 6, 7, 8, 9, 10];
-    const cream = harmonics.map((hn) => harmonicDb(densitySaturate, hn));
-    const grit = harmonics.map((hn) => harmonicDb(transformerSaturate, hn));
-    const groupW = plotW / harmonics.length;
-    const barW = Math.min(16, groupW * 0.26);
-    const yFor = (db: number) => pad.t + ((0 - Math.max(minHarmonicDb, db)) / Math.abs(minHarmonicDb)) * plotH;
-    harmonics.forEach((hn, i) => {
-      const x = pad.l + i * groupW + groupW * 0.5;
-      const cY = yFor(cream[i]);
-      const gY = yFor(grit[i]);
-      ctx.fillStyle = RED;
-      ctx.fillRect(x - barW - 2, cY, barW, pad.t + plotH - cY);
-      ctx.fillStyle = LIGHT_NAVY;
-      ctx.fillRect(x + 2, gY, barW, pad.t + plotH - gY);
-      ctx.fillStyle = textColor(0.62);
-      ctx.font = "12px 'Be Vietnam Pro', sans-serif";
-      ctx.textAlign = 'center';
-      ctx.fillText(`${hn}`, x, h - 24);
-    });
-    ctx.fillStyle = textColor(0.72);
-    ctx.font = axisFont;
-    ctx.textAlign = 'center';
-    ctx.fillText('harmonic number', pad.l + plotW / 2, h - 2);
-    ctx.save();
-    ctx.translate(16, pad.t + plotH / 2);
-    ctx.rotate(-Math.PI / 2);
-    ctx.textAlign = 'center';
-    ctx.fillText('level vs fundamental (dB)', 0, 0);
-    ctx.restore();
-    ctx.fillStyle = textColor(0.82);
-    ctx.font = `700 ${w < 520 ? 12 : 14}px ${TITLE_FONT}`;
-    ctx.textAlign = 'left';
-    ctx.fillText(w < 520 ? 'relative harmonic energy' : 'relative harmonic energy below the fundamental', pad.l, 22);
-  }
-
-  function foldFrequency(freq: number, sampleRate: number) {
-    const nyquist = sampleRate * 0.5;
-    const period = nyquist * 2;
-    let folded = freq % period;
-    if (folded > nyquist) folded = period - folded;
-    return folded;
-  }
-
-  function drawAliasing(canvas: HTMLCanvasElement) {
-    const ctx = resizeCanvas(canvas, 350);
-    const w = canvas.getBoundingClientRect().width;
-    const h = 350;
-    const pad = { l: 10, r: 10, t: 58, b: 34 };
-    const sampleRate = 44100;
-    const nyquist = sampleRate / 2;
-    const displayedMaxFreq = 52000;
-    const fundamental = 6000;
-    const harmonics = [1, 2, 3, 4, 5, 6, 7, 8];
-    const audibleColor = LIGHT_NAVY; // grey for the ghost band
-    // dropdown-current grey (40% navy over cream): reads as the 'ghost'
-    // above-Nyquist content, clearly apart from the teal audible series
-    const oversampledColor = '#74757C';
-    const aliasColor = RED; // foldback alias = danger red
-    const plotX = pad.l;
-    const plotY = pad.t;
-    const plotW = w - pad.l - pad.r;
-    const plotH = 238;
-    const axisY = plotY + 154;
-    const axisInset = 20;
-    const axisX0 = plotX + axisInset;
-    const axisX1 = plotX + plotW - axisInset;
-    const axisW = axisX1 - axisX0;
-    const xFor = (freq: number) => axisX0 + (Math.max(0, Math.min(displayedMaxFreq, freq)) / displayedMaxFreq) * axisW;
-    const roundedPath = (x: number, y: number, width: number, height: number, radius: number) => {
-      const r = Math.min(radius, width * 0.5, height * 0.5);
-      ctx.beginPath();
-      ctx.moveTo(x + r, y);
-      ctx.lineTo(x + width - r, y);
-      ctx.quadraticCurveTo(x + width, y, x + width, y + r);
-      ctx.lineTo(x + width, y + height - r);
-      ctx.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
-      ctx.lineTo(x + r, y + height);
-      ctx.quadraticCurveTo(x, y + height, x, y + height - r);
-      ctx.lineTo(x, y + r);
-      ctx.quadraticCurveTo(x, y, x + r, y);
-      ctx.closePath();
-    };
-    ctx.clearRect(0, 0, w, h);
-    ctx.fillStyle = textColor(0.82);
-    ctx.font = `700 ${w < 520 ? 13 : 16}px ${TITLE_FONT}`;
-    ctx.textAlign = 'left';
-    ctx.fillText(w < 520 ? '6 kHz harmonics can fold past Nyquist' : 'a 6 kHz tone creates harmonics above the host nyquist point', pad.l, 28);
-    ctx.fillStyle = gridColor(0.07);
-    roundedPath(plotX, plotY, plotW, plotH, 12);
-    ctx.fill();
-    ctx.strokeStyle = gridColor(0.18);
-    ctx.lineWidth = 1;
-    roundedPath(plotX + 0.5, plotY + 0.5, plotW - 1, plotH - 1, 12);
-    ctx.stroke();
-    const audibleEnd = xFor(nyquist);
-    ctx.fillStyle = `rgba(${RED_RGB}, 0.10)`;
-    ctx.fillRect(plotX, plotY, audibleEnd - plotX, plotH);
-    ctx.fillStyle = `rgba(${MUTED_RGB}, 0.1)`;
-    ctx.fillRect(audibleEnd, plotY, plotX + plotW - audibleEnd, plotH);
-    ctx.strokeStyle = textColor(0.42);
-    ctx.lineWidth = 1.6;
-    ctx.beginPath(); ctx.moveTo(axisX0, axisY); ctx.lineTo(axisX1, axisY); ctx.stroke();
-    ctx.strokeStyle = oversampledColor;
-    ctx.lineWidth = 1.2;
-    ctx.setLineDash([5, 6]);
-    ctx.beginPath(); ctx.moveTo(audibleEnd, plotY + 20); ctx.lineTo(audibleEnd, plotY + plotH - 24); ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.fillStyle = textColor(0.76);
-    ctx.font = "700 14px 'Be Vietnam Pro', sans-serif";
-    ctx.textAlign = 'center';
-    ctx.fillText('audible output band', plotX + (audibleEnd - plotX) * 0.5, plotY + 30);
-    ctx.fillText('4x processing headroom', audibleEnd + (plotX + plotW - audibleEnd) * 0.5, plotY + 30);
-    ctx.fillStyle = textColor(0.64);
-    ctx.font = "700 13px 'Be Vietnam Pro', sans-serif";
-    ctx.fillText('22 kHz output nyquist', audibleEnd, plotY + plotH - 14);
-    [0, 44100, displayedMaxFreq].forEach((freq) => {
-      const x = xFor(freq);
-      ctx.strokeStyle = gridColor(0.22);
-      ctx.lineWidth = 1.2;
-      ctx.beginPath(); ctx.moveTo(x, axisY - 9); ctx.lineTo(x, axisY + 9); ctx.stroke();
-      ctx.fillStyle = textColor(0.55);
-      ctx.font = "700 13px 'Be Vietnam Pro', sans-serif";
-      ctx.textAlign = 'center';
-      ctx.fillText(freq === 0 ? '0' : `${Math.round(freq / 1000)}k`, x, axisY + 30);
-    });
-    const truePoints = harmonics.map((harmonic) => ({
-      harmonic,
-      frequency: fundamental * harmonic,
-      folded: foldFrequency(fundamental * harmonic, sampleRate),
-    }));
-    truePoints.forEach(({ harmonic, frequency, folded }, index) => {
-      const x = xFor(frequency);
-      const height = 48 - index * 3;
-      const y = axisY - height;
-      const isAliasingRisk = frequency > nyquist;
-      ctx.strokeStyle = isAliasingRisk ? oversampledColor : audibleColor;
-      ctx.lineWidth = 2.7;
-      ctx.beginPath(); ctx.moveTo(x, axisY); ctx.lineTo(x, y + 8); ctx.stroke();
-      ctx.fillStyle = isAliasingRisk ? oversampledColor : audibleColor;
-      ctx.beginPath(); ctx.arc(x, y, harmonic === 1 ? 6 : 5.4, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = textColor(0.62);
-      ctx.font = "700 12px 'Be Vietnam Pro', sans-serif";
-      ctx.textAlign = 'center';
-      ctx.fillText(`${harmonic}x`, x, y - 12);
-      if (isAliasingRisk && harmonic <= 6) {
-        const foldedX = xFor(folded);
-        const arrowY = axisY + 54 + (index % 2) * 18;
-        ctx.strokeStyle = aliasColor;
-        ctx.lineWidth = 1.35;
-        ctx.setLineDash([3, 5]);
-        ctx.beginPath();
-        ctx.moveTo(x, axisY + 12);
-        ctx.quadraticCurveTo((x + foldedX) * 0.5, arrowY, foldedX, axisY + 12);
-        ctx.stroke();
-        ctx.setLineDash([]);
-        ctx.fillStyle = aliasColor;
-        ctx.beginPath(); ctx.arc(foldedX, axisY + 14, 3.8, 0, Math.PI * 2); ctx.fill();
-      }
-    });
-    ctx.fillStyle = textColor(0.72);
-    ctx.font = `700 ${w < 520 ? 12 : 14}px 'Be Vietnam Pro', sans-serif`;
-    ctx.textAlign = 'left';
-    ctx.fillText(w < 520 ? 'red dots show foldback positions without oversampling' : 'red dots show where high harmonics would fold back without oversampling', plotX, plotY + plotH + 34);
-  }
+  const HEIGHTS: Record<string, number> = {
+    eq: BQST_EQ_HEIGHT,
+    transfer: BQST_TRANSFER_HEIGHT,
+    harmonics: BQST_HARMONICS_HEIGHT,
+    aliasing: BQST_ALIASING_HEIGHT,
+  };
 
   function drawAll() {
     slots.forEach((slot) => {
       if (!slot.canvas) return;
-      if (slot.type === 'eq') drawEq(slot.canvas);
-      else if (slot.type === 'transfer') drawTransfer(slot.canvas);
-      else if (slot.type === 'harmonics') drawHarmonics(slot.canvas);
-      else if (slot.type === 'aliasing') drawAliasing(slot.canvas);
+      const ctx = resizeCanvas(slot.canvas, HEIGHTS[slot.type]);
+      // the raw layout width, not the 280 sizing floor: the captions switch on it
+      const opts = { w: slot.canvas.getBoundingClientRect().width, palette: PALETTE };
+      if (slot.type === 'eq') drawEq(ctx, opts);
+      else if (slot.type === 'transfer') drawTransfer(ctx, opts, driveDbFor('transfer'));
+      else if (slot.type === 'harmonics') drawHarmonics(ctx, opts, driveDbFor('harmonics'));
+      else if (slot.type === 'aliasing') drawAliasing(ctx, opts);
     });
   }
 
@@ -1885,11 +1488,6 @@ function initDemoPlayer() {
 // Semantic colors (verified-green, danger red) keep their meaning.
 // ============================================================
 
-const QL_WARN = '#C74B50'; // "cheat"/"survivors"/violations — semantic red
-// The quant explainer's reference dots must be opaque or their connector lines
-// ghost through, so they use the desaturated teal-grey reference role.
-const QL_DOT = TEAL;
-const qlText = (a: number) => `rgba(${INK_RGB},${a})`;
 
 function qlaEl(tag: string, className?: string, text?: string): HTMLElement {
   const el = document.createElement(tag);
@@ -2018,28 +1616,8 @@ function makeRafDraw(draw: () => void): () => void {
   return request;
 }
 
-function qlfNearestIndex(dates: string[], target: string): number {
-  let best = 0;
-  for (let i = 0; i < dates.length; i++) {
-    if (dates[i] <= target) best = i;
-    else break;
-  }
-  return best;
-}
-
-function qlfMoney(v: number): string {
-  const sign = v < 0 ? '-' : '';
-  return `${sign}$${Math.abs(Math.round(v)).toLocaleString('en-US')}`;
-}
-
 // ---- quantlab-analyst: 1. the compounding curve (memo survival = p^n) ----
 function initQlaCompound(node: HTMLElement) {
-  const models = [
-    { name: 'v2.1', p: 0.954 },
-    { name: 'teacher', p: 0.998 },
-  ];
-  const WALL_P = 0.954;
-  const N_CLAIMS = 40;
   const body = qlaShell(node, 'why 95% per number is not 95% per memo', 'memo survival = p^n · at 40 claims per memo');
 
   const canvasWrap = qlaEl('div', 'qla-compound-canvas-wrap');
@@ -2052,7 +1630,7 @@ function initQlaCompound(node: HTMLElement) {
     { cls: 'qlf-sw-measured', label: 'measured models' },
   ]));
   canvasWrap.appendChild(canvas);
-  const CROSS_N = 161;
+  const CROSS_N = COMPOUND_CROSS_N;
   const crossInput = qlfCrosshairInput(CROSS_N, 'Step along the accuracy axis to read the survival curve');
   canvasWrap.appendChild(crossInput);
   body.appendChild(canvasWrap);
@@ -2063,78 +1641,14 @@ function initQlaCompound(node: HTMLElement) {
   ]);
   body.appendChild(crossReadout.row);
 
-  const P_MIN = 0.90, P_MAX = 0.999;
-  const cursorP = (i: number) => P_MIN + (i / (CROSS_N - 1)) * (P_MAX - P_MIN);
   let cursor: number | null = null;
-  const survival = (p: number, n: number) => Math.pow(p, n);
 
   function draw() {
     const rect = canvas.parentElement!.getBoundingClientRect();
     const w = Math.max(280, rect.width);
-    const h = 240;
-    const ctx = sizeCanvas(canvas, w, h);
-    canvas.style.height = `${h}px`;
-    ctx.clearRect(0, 0, w, h);
-
-    const pad = { l: 44, r: 14, t: 14, b: 30 };
-    const pw = w - pad.l - pad.r;
-    const ph = h - pad.t - pad.b;
-    const x = (v: number) => pad.l + ((v - P_MIN) / (P_MAX - P_MIN)) * pw;
-    const y = (v: number) => pad.t + (1 - v) * ph;
-
-    ctx.strokeStyle = qlText(0.12);
-    ctx.fillStyle = qlText(0.5);
-    ctx.font = "600 11px 'Be Vietnam Pro', sans-serif";
-    ctx.lineWidth = 1;
-    [0, 0.25, 0.5, 0.75, 1].forEach((g) => {
-      ctx.beginPath(); ctx.moveTo(pad.l, y(g)); ctx.lineTo(w - pad.r, y(g)); ctx.stroke();
-      ctx.textAlign = 'right';
-      ctx.fillText(`${Math.round(g * 100)}%`, pad.l - 6, y(g) + 4);
-    });
-    [0.90, 0.925, 0.95, 0.975, 0.999].forEach((g) => {
-      ctx.textAlign = g === 0.999 ? 'right' : 'center';
-      ctx.fillText(`${(g * 100).toFixed(1)}%`, x(g), h - 10);
-    });
-
-    // the wall: dashed vertical at 95.4%
-    ctx.setLineDash([4, 4]);
-    ctx.strokeStyle = qlText(0.4);
-    ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(x(WALL_P), pad.t); ctx.lineTo(x(WALL_P), h - pad.b); ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.fillStyle = qlText(0.55);
-    ctx.textAlign = 'left';
-    ctx.fillText('the wall', x(WALL_P) + 6, pad.t + 12);
-
-    ctx.strokeStyle = RED;
-    ctx.lineWidth = 2.5;
-    ctx.beginPath();
-    for (let i = 0; i <= 160; i++) {
-      const pv = P_MIN + (i / 160) * (P_MAX - P_MIN);
-      const yv = y(survival(pv, N_CLAIMS));
-      i === 0 ? ctx.moveTo(x(pv), yv) : ctx.lineTo(x(pv), yv);
-    }
-    ctx.stroke();
-
-    ctx.font = "700 11px 'Be Vietnam Pro', sans-serif";
-    models.forEach((m) => {
-      const mx = x(m.p);
-      const my = y(survival(m.p, N_CLAIMS));
-      ctx.fillStyle = BLUE;
-      ctx.beginPath(); ctx.arc(mx, my, 4, 0, Math.PI * 2); ctx.fill();
-      ctx.textAlign = m.p > 0.985 ? 'right' : 'center';
-      ctx.fillText(m.name, m.p > 0.985 ? mx - 7 : mx, my - 9);
-    });
-
-    if (cursor !== null) {
-      const pv = cursorP(cursor);
-      const hx = x(pv);
-      ctx.strokeStyle = qlText(0.35);
-      ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(hx, pad.t); ctx.lineTo(hx, h - pad.b); ctx.stroke();
-      ctx.fillStyle = RED;
-      ctx.beginPath(); ctx.arc(hx, y(survival(pv, N_CLAIMS)), 4, 0, Math.PI * 2); ctx.fill();
-    }
+    const ctx = sizeCanvas(canvas, w, COMPOUND_HEIGHT);
+    canvas.style.height = `${COMPOUND_HEIGHT}px`;
+    drawCompound(ctx, { w, palette: PALETTE }, cursor);
   }
   const requestDraw = makeRafDraw(draw);
 
@@ -2142,10 +1656,10 @@ function initQlaCompound(node: HTMLElement) {
     cursor = i === null || isNaN(i) ? null : i;
     if (cursor === null) crossReadout.set(null);
     else {
-      const pv = cursorP(cursor);
+      const pv = compoundCursorP(cursor);
       crossReadout.set({
         acc: `${(pv * 100).toFixed(1)}%`,
-        surv: `${(survival(pv, N_CLAIMS) * 100).toFixed(1)}%`,
+        surv: `${(survival(pv, COMPOUND_N_CLAIMS) * 100).toFixed(1)}%`,
       });
     }
     requestDraw();
@@ -2163,47 +1677,11 @@ function initQlaCompound(node: HTMLElement) {
 }
 
 // ---- quantlab-analyst: 2. one real repair (static before/after) ----
-const QLA_NUM_TOKEN = /(\[[FM]\d+\]?)|(-?\$?\d[\d,]*(?:\.\d+)?%?(?:[BMK]\b)?)/g;
-
-function qlaTokenize(text: string): Array<{ type: string; text: string }> {
-  const tokens: Array<{ type: string; text: string }> = [];
-  let last = 0;
-  let m: RegExpExecArray | null;
-  QLA_NUM_TOKEN.lastIndex = 0;
-  while ((m = QLA_NUM_TOKEN.exec(text)) !== null) {
-    if (m.index > last) tokens.push({ type: 'text', text: text.slice(last, m.index) });
-    if (m[1]) tokens.push({ type: 'cite', text: m[1] });
-    else tokens.push({ type: 'num', text: m[2] });
-    last = m.index + m[0].length;
-  }
-  if (last < text.length) tokens.push({ type: 'text', text: text.slice(last) });
-  return tokens;
-}
-
 function initQlaGate(node: HTMLElement, fixer: any) {
   const body = qlaShell(node, 'one real repair', `from the fixer logs · ${fixer.ticker} · excerpt`);
 
-  const beforeTokens = qlaTokenize(fixer.before);
-  const afterTokens = qlaTokenize(fixer.after);
-  const badSet = new Set<number>();
-  const fixedCites = new Set<string>();
-  beforeTokens.forEach((tok, i) => {
-    if (tok.type !== 'num') return;
-    if (fixer.violations.some((v: string) => tok.text.indexOf(v) !== -1)) {
-      badSet.add(i);
-      for (let j = i + 1; j < beforeTokens.length && j < i + 4; j++) {
-        if (beforeTokens[j].type === 'cite') { fixedCites.add(beforeTokens[j].text.replace(']', '')); break; }
-      }
-    }
-  });
-  const goodSet = new Set<number>();
-  afterTokens.forEach((tok, i) => {
-    if (tok.type !== 'cite') return;
-    if (!fixedCites.has(tok.text.replace(']', ''))) return;
-    for (let j = i - 1; j >= 0 && j > i - 4; j--) {
-      if (afterTokens[j].type === 'num') { goodSet.add(j); break; }
-    }
-  });
+  const { beforeTokens, afterTokens, badSet, goodSet } =
+    deriveGateMarks(fixer.before, fixer.after, fixer.violations);
 
   function renderExcerpt(title: string, tokenList: Array<{ type: string; text: string }>, markSet: Set<number>, markClass: string) {
     const col = qlaEl('div', 'qla-fixer-col');
@@ -2259,42 +1737,7 @@ function initQlaJudge(node: HTMLElement, judgePairs: any[]) {
     return a;
   }
 
-  // Pair-consistent trimming: both memos cut near one shared target length so
-  // the side-by-side panels end at visibly matched lengths.
-  function cutPoints(text: string) {
-    const paras: number[] = [];
-    const sents: number[] = [];
-    let m: RegExpExecArray | null;
-    const pRe = /\n\n/g;
-    while ((m = pRe.exec(text)) !== null) paras.push(m.index);
-    const sRe = /\. /g;
-    while ((m = sRe.exec(text)) !== null) sents.push(m.index + 1);
-    return { paras, sents };
-  }
-  function nearestIn(list: number[], target: number, lo: number, hi: number): number | null {
-    let best: number | null = null;
-    list.forEach((i) => {
-      if (i >= lo && i <= hi && (best === null || Math.abs(i - target) < Math.abs(best - target))) best = i;
-    });
-    return best;
-  }
-  function bestBoundary(text: string, target: number, lo: number, hi: number): number {
-    const { paras, sents } = cutPoints(text);
-    const p = nearestIn(paras, target, lo, hi);
-    if (p !== null) return p;
-    const s = nearestIn(sents, target, lo, hi);
-    if (s !== null) return s;
-    return Math.min(target, text.length);
-  }
-  const cutAt = (text: string, idx: number) => (idx >= text.length ? text : `${text.slice(0, idx).trimEnd()} …`);
-  const trimmedPairs = judgePairs.map((pair) => {
-    const shared = Math.min(bestBoundary(pair.teacher, 700, 600, 800), bestBoundary(pair.ours, 700, 600, 800));
-    return {
-      ticker: pair.ticker,
-      teacher: cutAt(pair.teacher, bestBoundary(pair.teacher, shared, shared - 140, shared + 140)),
-      ours: cutAt(pair.ours, bestBoundary(pair.ours, shared, shared - 140, shared + 140)),
-    };
-  });
+  const trimmedPairs = trimJudgePairs(judgePairs);
 
   // One fixed panel height for every round: measure the tallest post-trim
   // excerpt at the real two-column track width (two probe columns needed —
@@ -2411,7 +1854,6 @@ function initQlaRoster(node: HTMLElement, roster: any) {
   const models = roster.models as any[];
   const body = qlaShell(node, 'the roster', `every model, same company (${roster.ticker}) · real memos, every number checked by the gate`);
 
-  const passVal = (m: any) => parseInt(m.passRate, 10); // "n/a" -> NaN, skipped
   const TEACHER = parseInt(roster.teacherPass, 10);
   let selected = models.length - 1;
 
@@ -2525,71 +1967,9 @@ function initQlaRoster(node: HTMLElement, roster: any) {
   function drawChart() {
     const rect = canvas.parentElement!.getBoundingClientRect();
     const w = Math.max(300, rect.width);
-    const h = 190;
-    const ctx = sizeCanvas(canvas, w, h);
-    canvas.style.height = `${h}px`;
-    ctx.clearRect(0, 0, w, h);
-
-    const pad = { l: 40, r: 14, t: 16, b: 34 };
-    const pw = w - pad.l - pad.r;
-    const ph = h - pad.t - pad.b;
-    const x = (i: number) => pad.l + (models.length === 1 ? pw / 2 : (i / (models.length - 1)) * pw);
-    const y = (v: number) => pad.t + (1 - v / 100) * ph;
-
-    ctx.font = "600 10px 'Be Vietnam Pro', sans-serif";
-    ctx.lineWidth = 1;
-    [0, 25, 50, 75, 100].forEach((g) => {
-      ctx.strokeStyle = qlText(0.1);
-      ctx.beginPath(); ctx.moveTo(pad.l, y(g)); ctx.lineTo(w - pad.r, y(g)); ctx.stroke();
-      ctx.fillStyle = qlText(0.45);
-      ctx.textAlign = 'right';
-      ctx.fillText(`${g}%`, pad.l - 5, y(g) + 3);
-    });
-
-    ctx.setLineDash([4, 4]);
-    ctx.strokeStyle = qlText(0.5);
-    ctx.beginPath(); ctx.moveTo(pad.l, y(TEACHER)); ctx.lineTo(w - pad.r, y(TEACHER)); ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.fillStyle = qlText(0.55);
-    ctx.textAlign = 'left';
-    ctx.fillText(`teacher ${TEACHER}%`, pad.l + 4, y(TEACHER) - 5);
-
-    ctx.strokeStyle = RED;
-    ctx.globalAlpha = 0.55;
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    let started = false;
-    models.forEach((m, i) => {
-      const v = passVal(m);
-      if (isNaN(v)) return;
-      if (!started) { ctx.moveTo(x(i), y(v)); started = true; }
-      else ctx.lineTo(x(i), y(v));
-    });
-    ctx.stroke();
-    ctx.globalAlpha = 1;
-
-    models.forEach((m, i) => {
-      const v = passVal(m);
-      const isSel = i === selected;
-      // Selection reads in the projects red; unselected dots in muted ink.
-      if (!isNaN(v)) {
-        ctx.fillStyle = isSel ? RED : qlText(0.5);
-        ctx.beginPath(); ctx.arc(x(i), y(v), isSel ? 6 : 3.5, 0, Math.PI * 2); ctx.fill();
-        if (isSel) {
-          ctx.strokeStyle = RED;
-          ctx.lineWidth = 1.5;
-          ctx.beginPath(); ctx.arc(x(i), y(v), 9, 0, Math.PI * 2); ctx.stroke();
-        }
-      }
-      ctx.fillStyle = isSel ? RED : qlText(0.5);
-      ctx.font = isSel ? "700 10px 'Be Vietnam Pro', sans-serif" : "600 10px 'Be Vietnam Pro', sans-serif";
-      ctx.textAlign = 'center';
-      ctx.fillText(m.id, x(i), h - 18);
-      if (isSel && !isNaN(v)) {
-        ctx.font = "700 11px 'Be Vietnam Pro', sans-serif";
-        ctx.fillText(`${v}%`, x(i), y(v) - 12);
-      }
-    });
+    const ctx = sizeCanvas(canvas, w, ROSTER_HEIGHT);
+    canvas.style.height = `${ROSTER_HEIGHT}px`;
+    drawRoster(ctx, { w, palette: PALETTE }, models, TEACHER, selected);
 
     canvas.setAttribute('aria-label',
       `Cited-pass rate by model in training order, teacher at ${TEACHER}% for reference. Selected: ${models[selected].name} at ${models[selected].passRate}.`);
@@ -2612,9 +1992,8 @@ function initQlaRoster(node: HTMLElement, roster: any) {
 
   const onCanvasClick = (e: MouseEvent) => {
     const rect = canvas.getBoundingClientRect();
-    const pad = { l: 40, r: 14 };
-    const pw = Math.max(1, rect.width - pad.l - pad.r);
-    const rel = (e.clientX - rect.left - pad.l) / pw;
+    const pw = Math.max(1, rect.width - ROSTER_PAD.l - ROSTER_PAD.r);
+    const rel = (e.clientX - rect.left - ROSTER_PAD.l) / pw;
     const i = Math.max(0, Math.min(models.length - 1, Math.round(rel * (models.length - 1))));
     selectModel(i);
   };
@@ -2632,55 +2011,9 @@ function initQlaRoster(node: HTMLElement, roster: any) {
 
 // ---- quantlab-analyst: 5. calibrated compression (imatrix explainer) ----
 function initQlaQuant(node: HTMLElement) {
-  // Conceptual explainer, not measured data — authored constants (see the
-  // original's rationale). Three blocks, each with its own fitted mini-ladder.
-  type Wt = { v: number; imp?: boolean; level?: number };
-  const blocks: Array<{ label: string; lo: number; hi: number; weights: Wt[] }> = [
-    {
-      label: 'block 1', lo: -1.02, hi: -0.34,
-      weights: [{ v: -0.98 }, { v: -0.90 }, { v: -0.83 }, { v: -0.76 }, { v: -0.575, imp: true }, { v: -0.46 }, { v: -0.40 }, { v: -0.36 }],
-    },
-    {
-      label: 'block 2', lo: -0.34, hi: 0.34,
-      weights: [{ v: -0.29 }, { v: -0.22 }, { v: -0.15 }, { v: -0.08 }, { v: 0.02, imp: true }, { v: 0.14 }, { v: 0.22 }, { v: 0.30 }],
-    },
-    {
-      label: 'block 3', lo: 0.34, hi: 1.02,
-      weights: [{ v: 0.37 }, { v: 0.45 }, { v: 0.56, imp: true }, { v: 0.585, imp: true }, { v: 0.61, imp: true }, { v: 0.72 }, { v: 0.86 }, { v: 0.99 }],
-    },
-  ];
-  const R = 3;
-  const IMP_WEIGHT = 12;
-
-  // Honest miniature of the real fit: grid-search scale/offset per block,
-  // minimizing (optionally importance-weighted) squared rounding error.
-  function fitLadder(block: (typeof blocks)[number], weighted: boolean): number[] {
-    const span = block.hi - block.lo;
-    const STEPS = 96;
-    let best: { err: number; off: number; step: number } | null = null;
-    for (let a = 0; a < STEPS; a++) {
-      const step = span * (0.05 + (a / (STEPS - 1)) * 0.40);
-      const maxOff = block.hi - (R - 1) * step;
-      if (maxOff < block.lo) continue;
-      for (let b = 0; b < STEPS; b++) {
-        const off = block.lo + (b / (STEPS - 1)) * (maxOff - block.lo);
-        let err = 0;
-        block.weights.forEach((wt) => {
-          let d = Infinity;
-          for (let k = 0; k < R; k++) d = Math.min(d, Math.abs(wt.v - (off + k * step)));
-          err += (weighted && wt.imp ? IMP_WEIGHT : 1) * d * d;
-        });
-        if (best === null || err < best.err) best = { err, off, step };
-      }
-    }
-    const rungs: number[] = [];
-    for (let k = 0; k < R; k++) rungs.push(best!.off + k * best!.step);
-    return rungs;
-  }
-  const LADDERS: Record<string, number[][]> = {
-    naive: blocks.map((b) => fitLadder(b, false)),
-    calibrated: blocks.map((b) => fitLadder(b, true)),
-  };
+  const blocks = QUANT_BLOCKS;
+  const LADDERS = fitLadders(blocks);
+  const LEVELS = beeswarmLevels(blocks);
   const body = qlaShell(node, 'compression, calibrated', 'how imatrix quantization works · every weight snaps to its nearest rung');
 
   let mode = 'naive';
@@ -2719,87 +2052,12 @@ function initQlaQuant(node: HTMLElement) {
   body.appendChild(captions);
   body.appendChild(qlaEl('p', 'qlf-chip-note', 'dashed lines divide the blocks · simplified; real blocks hold 32 weights'));
 
-  function nearestRung(rungs: number[], v: number): number {
-    let best = rungs[0];
-    rungs.forEach((r) => { if (Math.abs(r - v) < Math.abs(best - v)) best = r; });
-    return best;
-  }
-
-  // Beeswarm stacking within each block (see the original's rationale).
-  const MIN_GAP = 0.09;
-  blocks.forEach((block) => {
-    const lastAt: number[] = [];
-    block.weights.forEach((wt) => {
-      let level = 0;
-      while (lastAt[level] !== undefined && wt.v - lastAt[level] < MIN_GAP) level += 1;
-      lastAt[level] = wt.v;
-      wt.level = level;
-    });
-  });
-
   function draw() {
     const rect = canvas.parentElement!.getBoundingClientRect();
     const w = Math.max(280, rect.width);
-    const h = 210;
-    const ctx = sizeCanvas(canvas, w, h);
-    canvas.style.height = `${h}px`;
-    ctx.clearRect(0, 0, w, h);
-
-    const pad = { l: 24, r: 24 };
-    const pw = w - pad.l - pad.r;
-    const x = (v: number) => pad.l + ((v + 1.02) / 2.04) * pw;
-    const axisY = h - 34;
-    const rowH = 15;
-    const dotY = (wt: Wt) => axisY - 18 - (wt.level || 0) * rowH;
-    const rungTop = 26;
-    const ladders = LADDERS[mode];
-
-    ctx.strokeStyle = qlText(0.3);
-    ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(pad.l, axisY); ctx.lineTo(w - pad.r, axisY); ctx.stroke();
-    ctx.fillStyle = qlText(0.5);
-    ctx.font = "600 11px 'Be Vietnam Pro', sans-serif";
-    ctx.textAlign = 'center';
-    ctx.fillText('weight value', w / 2, h - 12);
-
-    ctx.strokeStyle = qlText(0.18);
-    ctx.lineWidth = 1;
-    ctx.setLineDash([3, 5]);
-    [blocks[1].lo, blocks[2].lo].forEach((bv) => {
-      ctx.beginPath(); ctx.moveTo(x(bv), axisY + 8); ctx.lineTo(x(bv), 8); ctx.stroke();
-    });
-    ctx.setLineDash([]);
-    ctx.fillStyle = qlText(0.45);
-    blocks.forEach((block) => ctx.fillText(block.label, x((block.lo + block.hi) / 2), 16));
-
-    ctx.strokeStyle = qlText(0.4);
-    ctx.lineWidth = 1.5;
-    ladders.forEach((rungs) => {
-      rungs.forEach((r) => {
-        ctx.beginPath(); ctx.moveTo(x(r), axisY + 8); ctx.lineTo(x(r), rungTop); ctx.stroke();
-      });
-    });
-
-    // error lines first (under the dots), then the dots
-    blocks.forEach((block, bi) => {
-      block.weights.forEach((wt) => {
-        const rx = x(nearestRung(ladders[bi], wt.v));
-        const wx = x(wt.v);
-        const wy = dotY(wt);
-        ctx.save();
-        ctx.globalAlpha = 0.6;
-        ctx.strokeStyle = wt.imp ? RED : qlText(0.6);
-        ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.moveTo(wx, wy); ctx.lineTo(rx, wy); ctx.stroke();
-        ctx.restore();
-      });
-    });
-    blocks.forEach((block) => {
-      block.weights.forEach((wt) => {
-        ctx.fillStyle = wt.imp ? RED : QL_DOT;
-        ctx.beginPath(); ctx.arc(x(wt.v), dotY(wt), 4, 0, Math.PI * 2); ctx.fill();
-      });
-    });
+    const ctx = sizeCanvas(canvas, w, QUANT_HEIGHT);
+    canvas.style.height = `${QUANT_HEIGHT}px`;
+    drawQuant(ctx, { w, palette: PALETTE }, blocks, LEVELS, LADDERS[mode]);
   }
   const requestDraw = makeRafDraw(draw);
 
@@ -2830,18 +2088,8 @@ function initQlaQuant(node: HTMLElement) {
 function initQlfLookahead(node: HTMLElement, la: any) {
   const body = qlaShell(node, 'the lookahead cheat', 'SPY weekly · toy momentum: buy if close > close 4 weeks ago');
 
-  const n = la.close.length;
-  const signal = new Array(n).fill(false);
-  for (let i = 4; i < n; i++) signal[i] = la.close[i] > la.close[i - 4];
-
-  const cheatEq = [1];
-  const honestEq = [1];
-  const holdEq = [1];
-  for (let i = 1; i < n; i++) {
-    holdEq.push(holdEq[i - 1] * (la.close[i] / la.close[i - 1]));
-    cheatEq.push(cheatEq[i - 1] * (signal[i - 1] ? la.close[i] / la.close[i - 1] : 1));
-    honestEq.push(honestEq[i - 1] * (signal[i - 1] ? la.close[i] / la.open[i] : 1));
-  }
+  const { n, cheatEq, honestEq, holdEq } = lookaheadSeries(la.close, la.open);
+  const series = { dates: la.dates, cheatEq, honestEq, holdEq };
   const finalPct = (eq: number[]) => (eq[eq.length - 1] - 1) * 100;
   const fmtPct = (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(0)}%`;
 
@@ -2896,62 +2144,9 @@ function initQlfLookahead(node: HTMLElement, la: any) {
   function draw() {
     const rect = canvas.parentElement!.getBoundingClientRect();
     const w = Math.max(280, rect.width);
-    const h = 260;
-    const ctx = sizeCanvas(canvas, w, h);
-    canvas.style.height = `${h}px`;
-    ctx.clearRect(0, 0, w, h);
-
-    const pad = { l: 44, r: 14, t: 14, b: 26 };
-    const pw = w - pad.l - pad.r;
-    const ph = h - pad.t - pad.b;
-    const maxV = Math.max(cheatEq[n - 1], honestEq[n - 1], holdEq[n - 1]) * 1.05;
-    const minV = 0.9;
-    const x = (i: number) => pad.l + (i / (n - 1)) * pw;
-    const y = (v: number) => pad.t + (1 - (v - minV) / (maxV - minV)) * ph;
-
-    ctx.strokeStyle = qlText(0.12);
-    ctx.fillStyle = qlText(0.5);
-    ctx.font = "600 11px 'Be Vietnam Pro', sans-serif";
-    ctx.lineWidth = 1;
-    const gridStep = maxV > 2.5 ? 0.5 : 0.25;
-    for (let g = 1; g <= maxV; g += gridStep) {
-      ctx.beginPath(); ctx.moveTo(pad.l, y(g)); ctx.lineTo(w - pad.r, y(g)); ctx.stroke();
-      ctx.textAlign = 'right';
-      ctx.fillText(`$${g.toFixed(2)}`, pad.l - 6, y(g) + 4);
-    }
-    [0, Math.floor(n / 2), n - 1].forEach((i) => {
-      ctx.textAlign = i === 0 ? 'left' : i === n - 1 ? 'right' : 'center';
-      ctx.fillText(la.dates[i], x(i), h - 8);
-    });
-
-    function plot(eq: number[], color: string, width: number, alpha: number) {
-      ctx.save();
-      ctx.globalAlpha = alpha;
-      ctx.strokeStyle = color;
-      ctx.lineWidth = width;
-      ctx.beginPath();
-      for (let i = 0; i < n; i++) {
-        i === 0 ? ctx.moveTo(x(i), y(eq[i])) : ctx.lineTo(x(i), y(eq[i]));
-      }
-      ctx.stroke();
-      ctx.restore();
-    }
-    ctx.setLineDash([4, 4]);
-    plot(holdEq, PINK, 1.5, 1);
-    ctx.setLineDash([]);
-    plot(cheatEq, QL_WARN, 2.5, 1);
-    plot(honestEq, LIGHT_NAVY, 2.5, 1);
-
-    if (cursor !== null) {
-      const cx = x(cursor);
-      ctx.strokeStyle = qlText(0.35);
-      ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(cx, pad.t); ctx.lineTo(cx, h - pad.b); ctx.stroke();
-      ([[cheatEq, QL_WARN], [honestEq, LIGHT_NAVY], [holdEq, PINK]] as Array<[number[], string]>).forEach((pair) => {
-        ctx.fillStyle = pair[1];
-        ctx.beginPath(); ctx.arc(cx, y(pair[0][cursor!]), 4, 0, Math.PI * 2); ctx.fill();
-      });
-    }
+    const ctx = sizeCanvas(canvas, w, LOOKAHEAD_HEIGHT);
+    canvas.style.height = `${LOOKAHEAD_HEIGHT}px`;
+    drawLookahead(ctx, { w, palette: PALETTE }, series, cursor);
   }
   const requestDraw = makeRafDraw(draw);
 
@@ -2966,7 +2161,7 @@ function initQlfLookahead(node: HTMLElement, la: any) {
     requestDraw();
   }
 
-  qlfAttachCrosshair(canvas, crossInput, n, 44, 14, setCursor);
+  qlfAttachCrosshair(canvas, crossInput, n, LOOKAHEAD_PAD.l, LOOKAHEAD_PAD.r, setCursor);
   setCursor(null);
   const onResize = () => requestDraw();
   window.addEventListener('resize', onResize);
@@ -2980,11 +2175,7 @@ function initQlfKalman(node: HTMLElement, km: any) {
   const n = km.dates.length;
   const splitIdx = qlfNearestIndex(km.dates, km.split_date);
   const ols = km.rolling_ols_beta as Array<number | null>;
-
-  // Clamp the y-range so rolling OLS's wildest swings don't crush the kalman
-  // detail; clipped points get small edge markers instead.
-  const Y_LO = -0.5;
-  const Y_HI = 1.5;
+  const series = { dates: km.dates as string[], kalman_beta: km.kalman_beta as number[], ols };
 
   const canvasWrap = qlaEl('div', 'qla-compound-canvas-wrap');
   const canvas = document.createElement('canvas');
@@ -3015,89 +2206,9 @@ function initQlfKalman(node: HTMLElement, km: any) {
   function draw() {
     const rect = canvas.parentElement!.getBoundingClientRect();
     const w = Math.max(280, rect.width);
-    const h = 240;
-    const ctx = sizeCanvas(canvas, w, h);
-    canvas.style.height = `${h}px`;
-    ctx.clearRect(0, 0, w, h);
-
-    const pad = { l: 44, r: 14, t: 22, b: 26 };
-    const pw = w - pad.l - pad.r;
-    const ph = h - pad.t - pad.b;
-    const lo = Y_LO, hi = Y_HI;
-    const x = (i: number) => pad.l + (i / (n - 1)) * pw;
-    const y = (v: number) => pad.t + (1 - (v - lo) / (hi - lo)) * ph;
-    const yClamped = (v: number) => y(Math.max(lo, Math.min(hi, v)));
-
-    ctx.strokeStyle = qlText(0.12);
-    ctx.fillStyle = qlText(0.5);
-    ctx.font = "600 11px 'Be Vietnam Pro', sans-serif";
-    ctx.lineWidth = 1;
-    for (let g = lo; g <= hi + 1e-9; g += 0.5) {
-      ctx.beginPath(); ctx.moveTo(pad.l, y(g)); ctx.lineTo(w - pad.r, y(g)); ctx.stroke();
-      ctx.textAlign = 'right';
-      ctx.fillText(g.toFixed(1), pad.l - 6, y(g) + 4);
-    }
-    [0, Math.floor(n / 2), n - 1].forEach((i) => {
-      ctx.textAlign = i === 0 ? 'left' : i === n - 1 ? 'right' : 'center';
-      ctx.fillText(km.dates[i].slice(0, 7), x(i), h - 8);
-    });
-
-    // selection window shading + boundary where trading begins
-    const sx = x(splitIdx);
-    ctx.fillStyle = qlText(0.09);
-    ctx.fillRect(pad.l, pad.t, sx - pad.l, ph);
-    ctx.strokeStyle = qlText(0.55);
-    ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.moveTo(sx, pad.t); ctx.lineTo(sx, h - pad.b); ctx.stroke();
-
-    // rolling OLS: jagged; nulls break the line, clipped values get markers
-    ctx.strokeStyle = BLUE;
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    let pen = false;
-    for (let i = 0; i < n; i++) {
-      if (ols[i] === null) { pen = false; continue; }
-      const yy = yClamped(ols[i] as number);
-      if (!pen) { ctx.moveTo(x(i), yy); pen = true; }
-      else ctx.lineTo(x(i), yy);
-    }
-    ctx.stroke();
-    ctx.fillStyle = BLUE;
-    for (let i = 0; i < n; i++) {
-      const v = ols[i];
-      if (v === null || (v >= lo && v <= hi)) continue;
-      const above = v > hi;
-      const ex = x(i);
-      const ey = above ? pad.t : h - pad.b;
-      ctx.beginPath();
-      ctx.moveTo(ex, ey);
-      ctx.lineTo(ex - 3.5, ey + (above ? 6 : -6));
-      ctx.lineTo(ex + 3.5, ey + (above ? 6 : -6));
-      ctx.closePath();
-      ctx.fill();
-    }
-
-    // kalman track
-    ctx.strokeStyle = RED;
-    ctx.lineWidth = 2.5;
-    ctx.beginPath();
-    for (let i = 0; i < n; i++) {
-      i === 0 ? ctx.moveTo(x(i), y(km.kalman_beta[i])) : ctx.lineTo(x(i), y(km.kalman_beta[i]));
-    }
-    ctx.stroke();
-
-    if (cursor !== null) {
-      const cx = x(cursor);
-      ctx.strokeStyle = qlText(0.35);
-      ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(cx, pad.t); ctx.lineTo(cx, h - pad.b); ctx.stroke();
-      ctx.fillStyle = RED;
-      ctx.beginPath(); ctx.arc(cx, y(km.kalman_beta[cursor]), 5, 0, Math.PI * 2); ctx.fill();
-      if (ols[cursor] !== null) {
-        ctx.fillStyle = BLUE;
-        ctx.beginPath(); ctx.arc(cx, yClamped(ols[cursor] as number), 4, 0, Math.PI * 2); ctx.fill();
-      }
-    }
+    const ctx = sizeCanvas(canvas, w, KALMAN_HEIGHT);
+    canvas.style.height = `${KALMAN_HEIGHT}px`;
+    drawKalman(ctx, { w, palette: PALETTE }, series, splitIdx, cursor);
   }
   const requestDraw = makeRafDraw(draw);
 
@@ -3117,7 +2228,7 @@ function initQlfKalman(node: HTMLElement, km: any) {
     requestDraw();
   }
 
-  qlfAttachCrosshair(canvas, crossInput, n, 44, 14, setCursor);
+  qlfAttachCrosshair(canvas, crossInput, n, KALMAN_PAD.l, KALMAN_PAD.r, setCursor);
   const onResize = () => requestDraw();
   window.addEventListener('resize', onResize);
   cleanups.push(() => window.removeEventListener('resize', onResize));
@@ -3129,7 +2240,6 @@ function initQlfSurvivorship(node: HTMLElement, sv: any) {
   const body = qlaShell(node, 'the survivorship wedge', 'survivors-only universe vs the ETF that held the losers');
 
   const n = sv.dates.length;
-  const endGapPct = (sv.survivors[n - 1] / sv.rsp[n - 1] - 1) * 100;
 
   const canvasWrap = qlaEl('div', 'qla-compound-canvas-wrap');
   const canvas = document.createElement('canvas');
@@ -3171,78 +2281,9 @@ function initQlfSurvivorship(node: HTMLElement, sv: any) {
   function draw() {
     const rect = canvas.parentElement!.getBoundingClientRect();
     const w = Math.max(280, rect.width);
-    const h = 250;
-    const ctx = sizeCanvas(canvas, w, h);
-    canvas.style.height = `${h}px`;
-    ctx.clearRect(0, 0, w, h);
-
-    const pad = { l: 44, r: 60, t: 14, b: 26 };
-    const pw = w - pad.l - pad.r;
-    const ph = h - pad.t - pad.b;
-    const maxV = Math.max(sv.survivors[n - 1], sv.rsp[n - 1]) * 1.05;
-    const x = (i: number) => pad.l + (i / (n - 1)) * pw;
-    const y = (v: number) => pad.t + (1 - (v - 0.9) / (maxV - 0.9)) * ph;
-
-    ctx.strokeStyle = qlText(0.12);
-    ctx.fillStyle = qlText(0.5);
-    ctx.font = "600 11px 'Be Vietnam Pro', sans-serif";
-    ctx.lineWidth = 1;
-    for (let g = 1; g <= maxV; g += 1) {
-      ctx.beginPath(); ctx.moveTo(pad.l, y(g)); ctx.lineTo(w - pad.r, y(g)); ctx.stroke();
-      ctx.textAlign = 'right';
-      ctx.fillText(`$${g}`, pad.l - 6, y(g) + 4);
-    }
-    [0, Math.floor(n / 2), n - 1].forEach((i) => {
-      ctx.textAlign = i === 0 ? 'left' : i === n - 1 ? 'right' : 'center';
-      ctx.fillText(sv.dates[i].slice(0, 7), x(i), h - 8);
-    });
-
-    // shaded wedge between the curves (tertiary pink on cream)
-    ctx.beginPath();
-    for (let i = 0; i < n; i++) ctx.lineTo(x(i), y(sv.survivors[i]));
-    for (let i = n - 1; i >= 0; i--) ctx.lineTo(x(i), y(sv.rsp[i]));
-    ctx.closePath();
-    ctx.fillStyle = 'rgba(228,136,173,0.18)';
-    ctx.fill();
-
-    function plot(series: number[], color: string) {
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 2.5;
-      ctx.beginPath();
-      for (let i = 0; i < n; i++) {
-        i === 0 ? ctx.moveTo(x(i), y(series[i])) : ctx.lineTo(x(i), y(series[i]));
-      }
-      ctx.stroke();
-    }
-    plot(sv.survivors, QL_WARN);
-    plot(sv.rsp, LIGHT_NAVY);
-
-    if (cursor !== null) {
-      const cx = x(cursor);
-      ctx.strokeStyle = qlText(0.35);
-      ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(cx, pad.t); ctx.lineTo(cx, h - pad.b); ctx.stroke();
-      ctx.fillStyle = QL_WARN;
-      ctx.beginPath(); ctx.arc(cx, y(sv.survivors[cursor]), 4, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = LIGHT_NAVY;
-      ctx.beginPath(); ctx.arc(cx, y(sv.rsp[cursor]), 4, 0, Math.PI * 2); ctx.fill();
-    }
-
-    // endpoint gap bracket
-    ctx.font = "700 15px 'Be Vietnam Pro', sans-serif";
-    const gx = x(n - 1) + 2;
-    ctx.strokeStyle = qlText(0.5);
-    ctx.beginPath();
-    ctx.moveTo(gx, y(sv.survivors[n - 1]) + 8);
-    ctx.lineTo(gx, y(sv.rsp[n - 1]) - 8);
-    ctx.stroke();
-    ctx.fillStyle = qlText(0.7);
-    ctx.save();
-    ctx.translate(gx + 14, (y(sv.survivors[n - 1]) + y(sv.rsp[n - 1])) / 2 + 14);
-    ctx.rotate(-Math.PI / 2);
-    ctx.textAlign = 'center';
-    ctx.fillText(`+${endGapPct.toFixed(0)}% gap`, 0, 0);
-    ctx.restore();
+    const ctx = sizeCanvas(canvas, w, SURVIVORSHIP_HEIGHT);
+    canvas.style.height = `${SURVIVORSHIP_HEIGHT}px`;
+    drawSurvivorship(ctx, { w, palette: PALETTE }, sv, cursor);
   }
   const requestDraw = makeRafDraw(draw);
 
@@ -3257,7 +2298,7 @@ function initQlfSurvivorship(node: HTMLElement, sv: any) {
     requestDraw();
   }
 
-  qlfAttachCrosshair(canvas, crossInput, n, 44, 60, setCursor);
+  qlfAttachCrosshair(canvas, crossInput, n, SURVIVORSHIP_PAD.l, SURVIVORSHIP_PAD.r, setCursor);
   const onResize = () => requestDraw();
   window.addEventListener('resize', onResize);
   cleanups.push(() => window.removeEventListener('resize', onResize));
@@ -3266,8 +2307,12 @@ function initQlfSurvivorship(node: HTMLElement, sv: any) {
 
 // ---- quantlab-systems: risk gate playground (same rules as risk.py) ----
 function initQlfRiskGate(node: HTMLElement) {
-  const LIMITS = { gross: 100000, perSymbol: 40000, dailyLoss: 5000, allowed: ['AAPL', 'MSFT', 'SPY'] };
-  const state: { positions: Record<string, number>; dayPnl: number; killed: boolean } = { positions: {}, dayPnl: 0, killed: false };
+  // The allowlist / per-symbol cap / gross cap / kill-switch rules live in
+  // the shared `visuals/quant.ts` (the same rules as quantlab/risk.py). This
+  // function is only the console around them.
+  const LIMITS = DEFAULT_RISK_LIMITS;
+  const engine = createRiskEngine(LIMITS);
+  const state = engine.state;
 
   const body = qlaShell(node, 'risk gate playground', 'every order proposes itself · same rules as risk.py');
 
@@ -3385,10 +2430,9 @@ function initQlfRiskGate(node: HTMLElement) {
   const controlRow = makeGroup('controls');
   body.appendChild(bottomBar);
 
-  const gross = () => Object.keys(state.positions).reduce((s, k) => s + Math.abs(state.positions[k]), 0);
-
   function renderState() {
-    setTile(grossTile, `${qlfMoney(gross())} / ${qlfMoney(LIMITS.gross)}`, `${Math.round((gross() / LIMITS.gross) * 100)}% of cap`);
+    const gross = engine.gross();
+    setTile(grossTile, `${qlfMoney(gross)} / ${qlfMoney(LIMITS.gross)}`, `${Math.round((gross / LIMITS.gross) * 100)}% of cap`);
     setTile(pnlTile, qlfMoney(state.dayPnl), state.killed ? 'kill switch tripped' : `kill switch at ${qlfMoney(-LIMITS.dailyLoss)}`);
     pnlTile.val.classList.toggle('is-negative', state.dayPnl < 0);
     setPositions();
@@ -3411,29 +2455,11 @@ function initQlfRiskGate(node: HTMLElement) {
     if (atBottom) log.scrollTop = log.scrollHeight;
   }
 
-  function checkOrder(symbol: string, notional: number) {
-    const current = state.positions[symbol] || 0;
-    const reducing = notional < 0 && current > 0;
-    if (reducing) return { ok: true, reasons: ['reduces exposure'] };
-    const reasons: string[] = [];
-    if (state.killed) reasons.push(`kill switch active (day P&L ${qlfMoney(state.dayPnl)} breached ${qlfMoney(-LIMITS.dailyLoss)})`);
-    if (LIMITS.allowed.indexOf(symbol) === -1) reasons.push(`${symbol} not in allowed-symbol list`);
-    if (Math.abs(current + notional) > LIMITS.perSymbol) reasons.push(`per-symbol cap: ${symbol} would be ${qlfMoney(Math.abs(current + notional))} > ${qlfMoney(LIMITS.perSymbol)}`);
-    if (gross() - Math.abs(current) + Math.abs(current + notional) > LIMITS.gross) reasons.push(`gross exposure would exceed cap: ${qlfMoney(gross() - Math.abs(current) + Math.abs(current + notional))} > ${qlfMoney(LIMITS.gross)}`);
-    return { ok: reasons.length === 0, reasons };
-  }
+  const logEntry = (entry: { approved: boolean | null; text: string; reasons: string[] }) =>
+    appendLog(entry.approved, entry.text, entry.reasons);
 
   function placeOrder(symbol: string, notional: number, viaFlatten?: boolean) {
-    const label = `${notional >= 0 ? 'BUY' : 'SELL'} ${qlfMoney(Math.abs(notional))} ${symbol}${viaFlatten ? ' [flatten]' : ''}`;
-    const res = checkOrder(symbol, notional);
-    if (res.ok) {
-      state.positions[symbol] = (state.positions[symbol] || 0) + notional;
-      let reasons = notional < 0 ? res.reasons : [];
-      if (viaFlatten && state.killed) reasons = ['flatten allowed under kill switch; reducing orders are always permitted'];
-      appendLog(true, label, reasons);
-    } else {
-      appendLog(false, label, res.reasons);
-    }
+    logEntry(engine.placeOrder(symbol, notional, viaFlatten));
     renderState();
   }
 
@@ -3452,23 +2478,11 @@ function initQlfRiskGate(node: HTMLElement) {
   makeBtn(orderRow, '+$40k SPY', () => placeOrder('SPY', 40000), null, true);
   makeBtn(orderRow, '+$10k TSLA', () => placeOrder('TSLA', 10000), null, true);
 
-  function markPnl(delta: number) {
-    state.dayPnl += delta;
-    appendLog(null, `mark-to-market: day P&L now ${qlfMoney(state.dayPnl)}`);
-    const breached = state.dayPnl <= -LIMITS.dailyLoss;
-    if (breached && !state.killed) {
-      state.killed = true;
-      appendLog(false, 'KILL SWITCH TRIPPED', [`day P&L ${qlfMoney(state.dayPnl)} breached daily loss limit ${qlfMoney(-LIMITS.dailyLoss)}; halting all new buys`]);
-    } else if (!breached && state.killed) {
-      state.killed = false;
-      appendLog(null, `day P&L recovered above ${qlfMoney(-LIMITS.dailyLoss)}; kill switch released`);
-    }
-    renderState();
-  }
-  makeBtn(controlRow, 'simulate a -$6k day', () => markPnl(-6000), 'qlf-risk-btn-warn');
-  makeBtn(controlRow, 'simulate +$3k day', () => markPnl(3000));
+  const mark = (delta: number) => { engine.markPnl(delta).forEach(logEntry); renderState(); };
+  makeBtn(controlRow, 'simulate a -$6k day', () => mark(-6000), 'qlf-risk-btn-warn');
+  makeBtn(controlRow, 'simulate +$3k day', () => mark(3000));
   makeBtn(controlRow, 'flatten', () => {
-    const syms = Object.keys(state.positions).filter((k) => state.positions[k] > 0);
+    const syms = engine.flattenSymbols();
     if (!syms.length) {
       appendLog(null, 'flatten: already flat');
       renderState();
@@ -3477,10 +2491,7 @@ function initQlfRiskGate(node: HTMLElement) {
     syms.forEach((sym) => placeOrder(sym, -state.positions[sym], true));
   });
   makeBtn(controlRow, 'reset', () => {
-    state.positions = {};
-    state.dayPnl = 0;
-    state.killed = false;
-    appendLog(null, 'RESET: state cleared. the audit log itself is append-only');
+    logEntry(engine.reset());
     renderState();
   });
 
@@ -3509,9 +2520,14 @@ function initQuantlabVisuals() {
       .then((res) => (res.ok ? res.json() : Promise.reject(new Error(`HTTP ${res.status}`))))
       .then((data) => {
         if (disposed) return;
+        // Keep the classic fork's per-key diagnostics: a payload that fetches
+        // fine but lost a key used to leave a silently blank exhibit.
         if (gateNode && data.fixer) initQlaGate(gateNode, data.fixer);
+        else if (gateNode) console.warn('quantlab-visual-data.json: missing fixer key; repair exhibit skipped');
         if (judgeNode && Array.isArray(data.judgePairs) && data.judgePairs.length) initQlaJudge(judgeNode, data.judgePairs);
+        else if (judgeNode) console.warn('quantlab-visual-data.json: missing judgePairs; judge visual skipped');
         if (rosterNode && data.roster && Array.isArray(data.roster.models)) initQlaRoster(rosterNode, data.roster);
+        else if (rosterNode) console.warn('quantlab-visual-data.json: missing roster key; roster exhibit skipped');
       })
       .catch((err) => {
         // visuals are progressive enhancement; the article reads fine without them
@@ -3537,8 +2553,11 @@ function initQuantlabFinVisuals() {
       .then((data) => {
         if (disposed) return;
         if (lookaheadNode && data.lookahead) initQlfLookahead(lookaheadNode, data.lookahead);
+        else if (lookaheadNode) console.warn('quantlab-fin-data.json: missing lookahead key; visual skipped');
         if (kalmanNode && data.kalman) initQlfKalman(kalmanNode, data.kalman);
+        else if (kalmanNode) console.warn('quantlab-fin-data.json: missing kalman key; visual skipped');
         if (survivorshipNode && data.survivorship) initQlfSurvivorship(survivorshipNode, data.survivorship);
+        else if (survivorshipNode) console.warn('quantlab-fin-data.json: missing survivorship key; visual skipped');
       })
       .catch((err) => {
         console.warn('quantlab visuals: data fetch failed', err);
