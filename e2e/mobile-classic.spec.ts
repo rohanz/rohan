@@ -306,3 +306,31 @@ test('the testimonial rail stops ticking on phones (it is display:none there)', 
   await page.waitForTimeout(1200);
   await expect(page.locator('.scroll-testimonial.center')).toHaveCount(1);
 });
+
+test('nav clearance is server-rendered: no post-paint jump when the bar slides in', async ({ page }) => {
+  // The margin-top that clears the fixed mobile nav must arrive WITH the
+  // HTML. When index.ts added it on astro:page-load it landed ~260ms after
+  // first paint and the whole page jumped down mid-slide (the reported
+  // mobile stutter + the /music "songs shift down" flicker).
+  for (const route of ['/music', '/projects', '/about']) {
+    const res = await page.request.get(route);
+    const html = await res.text();
+    expect(html, `${route} must ship nav-visible on #mainContent`).toMatch(
+      /<main[^>]*class="[^"]*\bnav-visible\b[^"]*"[^>]*id="mainContent"|<main[^>]*id="mainContent"[^>]*class="[^"]*\bnav-visible\b/,
+    );
+  }
+
+  // And the CSS default for --mobile-nav-height must equal the measured bar
+  // height, so the JS measurement is a no-op rather than a correction.
+  await page.setViewportSize(PHONE);
+  await page.goto('/music', { waitUntil: 'networkidle' });
+  await page.waitForTimeout(600);
+  const m = await page.evaluate(() => {
+    const sidebar = document.getElementById('sidebar')!;
+    return {
+      measured: sidebar.offsetHeight,
+      cssVar: parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--mobile-nav-height')),
+    };
+  });
+  expect(Math.abs(m.measured - m.cssVar), `nav ${m.measured}px vs --mobile-nav-height ${m.cssVar}px`).toBeLessThanOrEqual(1);
+});

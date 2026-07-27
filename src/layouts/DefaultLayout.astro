@@ -136,7 +136,14 @@ const personLd = JSON.stringify({
         </a>
       </nav>
 
-      <main class:list={["main-content", mainClass]} id="mainContent">
+      {/* nav-visible is rendered SERVER-SIDE for inner pages. It applies the
+          mobile top-nav clearance (margin-top: var(--mobile-nav-height)), and
+          when it was added by JS on astro:page-load it landed ~260ms after
+          first paint — the whole page visibly jumped down while the mobile nav
+          was mid-slide. index.ts still toggles it (the homepage <-> inner
+          transition under the persisted layout), but on a fresh paint it must
+          already be there. */}
+      <main class:list={["main-content", mainClass, { 'nav-visible': section !== 'homepage' }]} id="mainContent">
         <slot />
       </main>
 
