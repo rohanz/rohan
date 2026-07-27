@@ -1,3 +1,75 @@
+/* ============================================================
+   Chillax — metric-compatible local fallback
+   ============================================================
+   Chillax ships `font-display: swap`, so the first frames render in the next
+   family in the stack and re-lay out when the woff2 lands. With a raw Arial
+   fallback that swap RESIZED every Chillax run: the site-controls row moved
+   the theme toggle 15.3px sideways on every classic reload, and the logo and
+   homepage name went with it.
+
+   'Chillax Fallback' is Arial re-metricked to Chillax so the swap is a
+   repaint, not a relayout.
+
+   TUNING METHOD (by measurement, not by eye). The site's real Chillax strings
+   were rendered at their real sizes and letter-spacing in Chillax and in the
+   candidate fallback, and `size-adjust` set to the advance-width ratio. Two
+   things fell out of that and are worth keeping in mind before editing:
+
+   1. The 600/700 faces must resolve to Arial BOLD, not Arial. A @font-face
+      declaring `font-weight: 700` whose src is `local('Arial')` binds Arial
+      REGULAR and then suppresses synthetic bolding, so the fallback came out
+      narrower than plain Arial and the shift got worse, not better. Hence the
+      explicit Arial Bold / Arial-BoldMT / Liberation Sans Bold locals.
+
+   2. Per-string ratios vary by a few percent, so the values below are fitted
+      to what actually moves. Weight 700 is fitted to the two site-switch
+      pills TOGETHER (they are what pushes #themeToggle): Chillax
+      99.55 + 116.80 = 216.35 vs Arial Bold 91.22 + 109.78 = 201.00 -> 107.64%,
+      which lands the pair within ~1.4px each and the row within ~0.1px.
+      Weight 600 is fitted to the sidebar logo ("rohan.jk", -0.5px tracking):
+      141.00 / 132.92 = 106.08%. Weights 200-500 are fitted to body copy
+      against Arial Regular: ~0.919/0.907 -> 91.00%.
+
+   Chillax's vertical metrics are identical across all six weights
+   (unitsPerEm 1000, hhea/typo ascent 980, descent -330, line gap 90), so the
+   line-box targets are 98% / 33% / 9% of the em. size-adjust scales the
+   overridden metrics too, so each override is divided by its own size-adjust
+   (the standard derivation — the same arithmetic next/font uses).
+
+   src is local() only, deliberately: if Arial is absent the face simply fails
+   to match and the stack falls through to 'Inter' exactly as it did before.
+   Liberation Sans (the usual Linux Arial alias) is metric-identical. */
+@font-face {
+  font-family: 'Chillax Fallback';
+  src: local('Arial'), local('ArialMT'), local('Liberation Sans'), local('Helvetica');
+  font-weight: 200 500;
+  font-style: normal;
+  size-adjust: 91.00%;
+  ascent-override: 107.69%;
+  descent-override: 36.26%;
+  line-gap-override: 9.89%;
+}
+@font-face {
+  font-family: 'Chillax Fallback';
+  src: local('Arial Bold'), local('Arial-BoldMT'), local('Liberation Sans Bold'), local('Helvetica Bold');
+  font-weight: 600;
+  font-style: normal;
+  size-adjust: 106.08%;
+  ascent-override: 92.38%;
+  descent-override: 31.11%;
+  line-gap-override: 8.48%;
+}
+@font-face {
+  font-family: 'Chillax Fallback';
+  src: local('Arial Bold'), local('Arial-BoldMT'), local('Liberation Sans Bold'), local('Helvetica Bold');
+  font-weight: 700 900;
+  font-style: normal;
+  size-adjust: 107.64%;
+  ascent-override: 91.05%;
+  descent-override: 30.66%;
+  line-gap-override: 8.36%;
+}
+
 /* Chillax */
 @font-face {
   font-family: 'Chillax';

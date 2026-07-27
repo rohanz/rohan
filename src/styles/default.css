@@ -174,9 +174,32 @@ html.theme-default .homepage-menu {
         color: var(--accent-amber) !important;
     }
 
-    html.theme-default .section.active,
-    html.theme-default .section.active .stagger-child {
+    /* Reveal sections instantly instead of animating them in — EXCEPT while
+       an entrance is still held.
+       .about-pending and .music-pending exist because those two sections are
+       finished after first paint (fit-scale.js zooms the bento grid;
+       audio-players.js builds the player rows), so they are kept at their
+       from-state until the real geometry exists. This rule's `!important`
+       used to overrule that hold, which is why reduced-motion users — and
+       only them — saw /about lay itself out twice in the open: CLS 0.54, the
+       worst shift on the site, and /music 0.06 for the same reason.
+       Excluding the two pending states restores the hold; the section still
+       appears instantly, just a few frames later and already correct. */
+    html.theme-default .section.active:not(.about-pending):not(.music-pending),
+    html.theme-default .section.active:not(.about-pending):not(.music-pending) .stagger-child {
         opacity: 1 !important;
+        transform: none !important;
+        animation: none !important;
+    }
+
+    /* While held, reduced motion still gets NO movement: the hold keeps
+       opacity 0 (so nothing is painted in the wrong place) but drops
+       music-pending's 30px/20px translate, so the release is a pure reveal
+       rather than a snapped slide. */
+    html.theme-default .section.active.about-pending,
+    html.theme-default .section.active.about-pending .stagger-child,
+    html.theme-default .section.active.music-pending,
+    html.theme-default .section.active.music-pending .stagger-child {
         transform: none !important;
         animation: none !important;
     }
@@ -285,6 +308,47 @@ html.theme-default .sidebar { view-transition-name: classic-sidebar; }
 ::view-transition-new(classic-sidebar) { animation: none; }
 ::view-transition-old(classic-sidebar) { display: none; }
 
+/* ...and the noise film has to come with it, for the same reason.
+   The overlay is z-index 9999 and the sidebar 1000, so in normal rendering
+   the film lies ON TOP of the bar and lifts it from its raw #0f0f23
+   (15,15,35) to 18,18,37. But the sidebar is lifted into its own
+   view-transition group, which paints ABOVE the root group — and the film,
+   having no name of its own, stayed inside the root snapshot UNDERNEATH it.
+   So for the length of every navigation the bar rendered at its raw, flatter
+   colour and then brightened again when the transition ended: "the colour of
+   the nav bar changes when I click something in the nav bar."
+
+   Naming the overlay restores the true paint order (its higher z-index means
+   it is captured later, so its group paints above the sidebar's), and the
+   same old/new treatment as the sidebar stops it cross-fading with itself —
+   it is pixel-identical on both pages. Measured through a slowed 3s
+   transition: sidebar delta 3/255 on every route change, before; 0 after. */
+html.theme-default .noise-overlay { view-transition-name: classic-noise; }
+::view-transition-group(classic-noise),
+::view-transition-image-pair(classic-noise),
+::view-transition-new(classic-noise) { animation: none; }
+::view-transition-old(classic-noise) { display: none; }
+
+/* Reduced motion: the sidebar is BORN at its resting position rather than
+   snapped there. The blanket reduce rule collapses transition-duration to
+   0.01ms, which turned the 0.7s entrance slide into a one-frame 268.8px
+   teleport ~380ms after paint — the largest reduced-motion shift on every
+   classic inner route, and the exact opposite of what the setting asks for.
+   With no transform and no transition the bar is simply present from the
+   first frame.
+
+   Desktop-only on purpose: below 769px `.sidebar` IS the collapsible mobile
+   drawer and its transform is functional, not decorative — pinning it there
+   would leave the nav permanently open. Normal-motion rendering is
+   untouched. */
+@media (prefers-reduced-motion: reduce) and (min-width: 769px) {
+    html.theme-default .sidebar,
+    html.theme-default .sidebar.show {
+        transform: none;
+        transition: none;
+    }
+}
+
 html.theme-default .logo {
     text-align: center;
     margin-bottom: 4rem;
@@ -293,7 +357,7 @@ html.theme-default .logo {
 
 html.theme-default .logo h1 {
     color: var(--text-primary);
-    font-family: 'Chillax', 'Inter', sans-serif;
+    font-family: 'Chillax', 'Chillax Fallback', 'Inter', sans-serif;
     font-size: 2.2rem;
     font-weight: 600;
     letter-spacing: -0.5px;
@@ -326,7 +390,7 @@ html.theme-default .nav-link {
     padding: 2rem;
     color: var(--text-primary);
     text-decoration: none;
-    font-family: 'Chillax', 'Inter', sans-serif;
+    font-family: 'Chillax', 'Chillax Fallback', 'Inter', sans-serif;
     font-weight: 700;
     font-size: 2rem;
     text-align: center;
@@ -416,7 +480,7 @@ html.theme-default .homepage-logo.fade-to-amber {
 
 /* Homepage name */
 html.theme-default .homepage-name {
-    font-family: 'Chillax', 'Inter', sans-serif;
+    font-family: 'Chillax', 'Chillax Fallback', 'Inter', sans-serif;
     font-size: 5.5rem;
     font-weight: 700;
     color: var(--text-primary);
@@ -444,7 +508,7 @@ html.theme-default .homepage-name-shadow {
     color: var(--shadow-color, rgba(255, 204, 128, 0.15));
     z-index: -1;
     opacity: 0 !important;
-    font-family: 'Chillax', 'Inter', sans-serif;
+    font-family: 'Chillax', 'Chillax Fallback', 'Inter', sans-serif;
     font-size: 5.5rem;
     font-weight: 700;
     pointer-events: none;
@@ -513,7 +577,7 @@ html.theme-default .homepage-menu.animate {
 }
 
 html.theme-default .homepage-menu-item {
-    font-family: 'Chillax', 'Inter', sans-serif;
+    font-family: 'Chillax', 'Chillax Fallback', 'Inter', sans-serif;
     font-size: 2.5rem;
     font-weight: 600;
     color: var(--text-secondary);
@@ -617,6 +681,40 @@ html.theme-default .contact-link i {
     font-size: 2rem;
     color: var(--text-muted);
     transition: color 0.3s ease;
+    /* Font Awesome is a CDN stylesheet and its glyphs arrive as ::before
+       content, so before it lands each <i> is an EMPTY inline box and after it
+       lands it is a glyph — the box resized (23.1x37 -> 31x32) mid-load. A
+       fixed 1em square makes the arrival a repaint: the glyph is centred in a
+       box whose size never depended on the font. */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1em;
+    height: 1em;
+    line-height: 1;
+    font-style: normal;
+}
+
+/* Same reservation for the about page's tech-stack icons, which sit in a
+   wrapping flex row beside .tech-svg (already a 1em box) — an unsized <i>
+   there re-flowed the whole row when Font Awesome arrived. */
+html.theme-default .tech-icon i {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1em;
+    height: 1em;
+    line-height: 1;
+    font-style: normal;
+}
+
+/* The site-switch pills' font stack lives in default-phase2.css, which loads
+   AFTER this file; this higher-specificity rule adds the metric-compatible
+   Chillax fallback (see public/fonts/fonts.css) without reaching into that
+   file. These two pills are what pushed #themeToggle 15.3px sideways on every
+   classic reload when Chillax swapped in. */
+html.theme-default .site-controls .site-switch-link {
+    font-family: 'Chillax', 'Chillax Fallback', 'Inter', sans-serif;
 }
 
 /* Theme toggle */
@@ -1015,7 +1113,7 @@ html.theme-default .meter-group {
 }
 
 html.theme-default .meter-label {
-    font-family: 'Chillax', 'Inter', sans-serif;
+    font-family: 'Chillax', 'Chillax Fallback', 'Inter', sans-serif;
     font-size: 11px;
     font-weight: 500;
     letter-spacing: 0.08em;
@@ -1887,6 +1985,24 @@ html.theme-default .article-image-button {
     cursor: zoom-in;
 }
 
+/* WRAPPING MUST BE MARGIN-NEUTRAL. lightbox.js wraps every article image in
+   .article-image-button ~265ms after first paint, so the wrapper has to occupy
+   exactly the box the bare <img> did or the whole article moves under the
+   reader. Body images already match (bare `.detail-body img` and the button
+   both carry `margin: 1.5rem auto`, and the inner img is zeroed below), but
+   the hero banner does not: it has NO top margin and a 2rem bottom margin, so
+   the generic button margin added 1.5rem above it — and because a button is
+   its own formatting context that top margin collapsed straight out through
+   #detailContent, dropping the entire article body 24px. Restate the hero's
+   own margins on its wrapper and zero them on the image. */
+html.theme-default .article-image-button:has(> .detail-hero-image) {
+    margin: 0 0 2rem;
+}
+
+html.theme-default .article-image-button > .detail-hero-image {
+    margin-bottom: 0;
+}
+
 /* Natural-width centring applies to BODY images only — the hero banner keeps
    its own full-article-width rule (.detail-hero-image), which this generic
    selector would otherwise override by source order. */
@@ -1910,7 +2026,7 @@ html.theme-default .article-image-button::after {
     border-radius: 4px;
     background: color-mix(in srgb, var(--bg-primary) 84%, transparent);
     color: var(--accent);
-    font-family: 'Chillax', 'Inter', sans-serif;
+    font-family: 'Chillax', 'Chillax Fallback', 'Inter', sans-serif;
     font-size: 0.72rem;
     font-weight: 600;
     letter-spacing: 0;
@@ -1950,6 +2066,84 @@ html.theme-default .detail-body img.img-portrait {
     max-width: 350px;
 }
 
+/* ------------------------------------------------------------
+   Article body images — intrinsic-size reservation
+   ------------------------------------------------------------
+   The images come out of the markdown with no width/height attributes, so
+   until each file's headers arrive its box is zero-height and everything
+   below it slides. Declaring the real aspect ratio reserves the correct box
+   from first paint; because the ratio EQUALS the file's natural ratio,
+   nothing is distorted and the loaded rendering is byte-identical.
+
+   Ratios are the files' true pixel dimensions (public/assets/images/
+   projects/**). The `max-width: 350px` on the portrait ones mirrors what
+   lightbox.js's classify() applies as `.img-portrait` after the image
+   loads — stating it up front means that class is now a no-op instead of a
+   post-load resize.
+
+   Adding or replacing an article image? Add its line here (and the matching
+   one in src/pages/transit/projects/[slug].astro), or it will shift on load.
+   ------------------------------------------------------------ */
+html.theme-default .detail-body img[src*="bqst/final-ui.webp"] { aspect-ratio: 1344 / 1376; }
+html.theme-default .detail-body img[src*="bqst/prototype-ui.webp"] { aspect-ratio: 1028 / 664; }
+html.theme-default .detail-body img[src*="bqst/asset-knob-large.webp"] { aspect-ratio: 1600 / 1600; }
+html.theme-default .detail-body img[src*="bqst/asset-knob-small.webp"] { aspect-ratio: 1600 / 1600; }
+html.theme-default .detail-body img[src*="bqst/asset-vu-meter.webp"] { aspect-ratio: 1600 / 1600; }
+html.theme-default .detail-body img[src*="careersphere/architecture.webp"] { aspect-ratio: 1720 / 1000; }
+html.theme-default .detail-body img[src*="careersphere/how-to-get-there.webp"] { aspect-ratio: 3024 / 1670; }
+html.theme-default .detail-body img[src*="careersphere/onboarding.webp"] { aspect-ratio: 3024 / 1670; }
+html.theme-default .detail-body img[src*="careersphere/pycon-results.webp"] { aspect-ratio: 3024 / 1670; }
+html.theme-default .detail-body img[src*="careersphere/sphere.webp"] { aspect-ratio: 3024 / 1670; }
+html.theme-default .detail-body img[src*="careersphere/where-you-could-go.webp"] { aspect-ratio: 3024 / 1670; }
+html.theme-default .detail-body img[src*="careersphere/where-you-stand.webp"] { aspect-ratio: 3024 / 1670; }
+html.theme-default .detail-body img[src*="datacenter/architecture.webp"] { aspect-ratio: 291 / 892; max-width: 350px; }
+html.theme-default .detail-body img[src*="datacenter/screenshot-complete.webp"] { aspect-ratio: 502 / 549; }
+html.theme-default .detail-body img[src*="datacenter/screenshot-sources.webp"] { aspect-ratio: 566 / 409; }
+html.theme-default .detail-body img[src*="datacenter/screenshot-news.webp"] { aspect-ratio: 530 / 299; }
+html.theme-default .detail-body img[src*="datacenter/screenshot-agent.webp"] { aspect-ratio: 709 / 317; }
+html.theme-default .detail-body img[src*="live-chord-monitor/app-ui.webp"] { aspect-ratio: 1248 / 848; }
+html.theme-default .detail-body img[src*="patent/screenshot-tracking.webp"] { aspect-ratio: 540 / 1170; max-width: 350px; }
+html.theme-default .detail-body img[src*="patent/screenshot-dashboard.webp"] { aspect-ratio: 540 / 1170; max-width: 350px; }
+html.theme-default .detail-body img[src*="patent/screenshot-similarity.webp"] { aspect-ratio: 540 / 1170; max-width: 350px; }
+html.theme-default .detail-body img[src*="tesla/changelog.webp"] { aspect-ratio: 571 / 432; }
+html.theme-default .detail-body img[src*="website/mobile-view.webp"] { aspect-ratio: 434 / 935; max-width: 350px; }
+html.theme-default .detail-body img[src*="yourcast/architecture.webp"] { aspect-ratio: 1600 / 1187; }
+html.theme-default .detail-body img[src*="yourcast/screenshot-landing.webp"] { aspect-ratio: 1170 / 2532; max-width: 350px; }
+html.theme-default .detail-body img[src*="yourcast/screenshot-personalize.webp"] { aspect-ratio: 1170 / 2532; max-width: 350px; }
+html.theme-default .detail-body img[src*="yourcast/screenshot-player.webp"] { aspect-ratio: 1170 / 2532; max-width: 350px; }
+
+/* ------------------------------------------------------------
+   Article widget placeholders — space reservation
+   ------------------------------------------------------------
+   The interactive figures in the project articles are empty <div>s in the
+   markdown that their scripts (bqst-visuals / qla-visuals / qlf-visuals /
+   the chord-monitor demo) fill ~265ms after first paint. Until then they are
+   ZERO height, so #detailContent grew ~2,900px under the reader's scroll
+   position on every article load.
+
+   Each reservation below is the widget's measured rendered height at desktop
+   width (1280px viewport, 604px article column). The `:empty` guard is what
+   makes an approximate number safe: the moment a script inserts its first
+   child the selector stops matching and the box takes its true height, so an
+   over- or under-estimate costs a few px of settle rather than leaving dead
+   space forever. It also means a widget whose script never runs holds its
+   space instead of collapsing. */
+html.theme-default #bqst-eq-visual:empty { min-height: 454px; }
+html.theme-default #bqst-transfer-visual:empty { min-height: 441px; }
+html.theme-default #bqst-harmonics-visual:empty { min-height: 441px; }
+html.theme-default #bqst-oversampling-visual:empty { min-height: 444px; }
+html.theme-default #bqst-audio-demo:empty { min-height: 227px; }
+html.theme-default #qla-compound-visual:empty { min-height: 430px; }
+html.theme-default #qla-gate-visual:empty { min-height: 762px; }
+html.theme-default #qla-judge-visual:empty { min-height: 1297px; }
+html.theme-default #qla-quant-visual:empty { min-height: 503px; }
+html.theme-default #qla-roster-visual:empty { min-height: 813px; }
+html.theme-default #qlf-lookahead-visual:empty { min-height: 738px; }
+html.theme-default #qlf-kalman-visual:empty { min-height: 487px; }
+html.theme-default #qlf-survivorship-visual:empty { min-height: 626px; }
+html.theme-default #qlf-risk-visual:empty { min-height: 790px; }
+html.theme-default #lcm-demo:empty { min-height: 346px; }
+
 /* Demo player in project detail */
 html.theme-default .demo-player {
     display: flex;
@@ -1982,7 +2176,7 @@ html.theme-default .demo-meter-group {
 }
 
 html.theme-default .demo-meter-label {
-    font-family: 'Chillax', 'Inter', sans-serif;
+    font-family: 'Chillax', 'Chillax Fallback', 'Inter', sans-serif;
     font-size: 11px;
     font-weight: 500;
     letter-spacing: 0.06em;
@@ -2146,7 +2340,7 @@ html.theme-default .article-stat-card:last-child {
 html.theme-default .article-stat-value {
     display: block;
     color: var(--accent);
-    font-family: 'Chillax', 'Inter', sans-serif;
+    font-family: 'Chillax', 'Chillax Fallback', 'Inter', sans-serif;
     font-size: 1.25rem;
     font-weight: 700;
     line-height: 1.15;
@@ -2246,7 +2440,7 @@ html.theme-default .image-lightbox-hint {
     border-radius: 4px;
     background: color-mix(in srgb, var(--bg-primary) 88%, transparent);
     color: var(--text-secondary);
-    font-family: 'Chillax', 'Inter', sans-serif;
+    font-family: 'Chillax', 'Chillax Fallback', 'Inter', sans-serif;
     font-size: 0.84rem;
     font-weight: 600;
     letter-spacing: 0;
@@ -2360,7 +2554,7 @@ html.theme-default .bqst-audio-toggle button {
     border-radius: 999px;
     background: transparent;
     color: var(--text-secondary);
-    font-family: 'Chillax', 'Inter', sans-serif;
+    font-family: 'Chillax', 'Chillax Fallback', 'Inter', sans-serif;
     font-size: 0.92rem;
     font-weight: 700;
     cursor: pointer;
@@ -2438,7 +2632,7 @@ html.theme-default .bqst-lab-header {
 }
 
 html.theme-default .bqst-lab-kicker {
-    font-family: 'Chillax', 'Inter', sans-serif;
+    font-family: 'Chillax', 'Chillax Fallback', 'Inter', sans-serif;
     font-weight: 700;
     color: var(--accent);
     font-size: 1rem;
@@ -2547,7 +2741,7 @@ html.theme-default .bqst-drive-control label {
     display: grid;
     justify-items: center;
     gap: 0.1rem;
-    font-family: 'Chillax', 'Inter', sans-serif;
+    font-family: 'Chillax', 'Chillax Fallback', 'Inter', sans-serif;
     text-align: center;
 }
 
@@ -2608,7 +2802,7 @@ html.theme-default .detail-body a.try-it-btn {
     padding: 0.7rem 1.8rem;
     background: #FFCC80;
     color: #1a1a2e;
-    font-family: 'Chillax', 'Inter', sans-serif;
+    font-family: 'Chillax', 'Chillax Fallback', 'Inter', sans-serif;
     font-size: 1rem;
     font-weight: 600;
     text-decoration: none;
@@ -2668,7 +2862,7 @@ html.theme-default .detail-body a.support-btn {
     display: inline-block;
     padding: 0.68rem 1.35rem;
     color: #FFCC80;
-    font-family: 'Chillax', 'Inter', sans-serif;
+    font-family: 'Chillax', 'Chillax Fallback', 'Inter', sans-serif;
     font-size: 1rem;
     font-weight: 600;
     text-decoration: none;
@@ -2895,7 +3089,7 @@ html.theme-default .bento-card {
 }
 
 html.theme-default .bento-label {
-    font-family: 'Chillax', 'Inter', sans-serif;
+    font-family: 'Chillax', 'Chillax Fallback', 'Inter', sans-serif;
     font-size: 0.85rem;
     font-weight: 600;
     text-transform: uppercase;
@@ -3030,7 +3224,7 @@ html.theme-default .marquee-track {
 }
 
 html.theme-default .marquee-content {
-    font-family: 'Chillax', 'Inter', sans-serif;
+    font-family: 'Chillax', 'Chillax Fallback', 'Inter', sans-serif;
     font-size: 1rem;
     font-weight: 500;
     color: var(--text-muted);
@@ -3056,7 +3250,7 @@ html.theme-default .stat-item {
 }
 
 html.theme-default .stat-number {
-    font-family: 'Chillax', 'Inter', sans-serif;
+    font-family: 'Chillax', 'Chillax Fallback', 'Inter', sans-serif;
     font-size: 2.5rem;
     font-weight: 700;
     color: var(--text-primary);
@@ -3633,7 +3827,7 @@ html.theme-default .lcm-readout {
 }
 
 html.theme-default .lcm-chord {
-    font-family: 'Chillax', 'Inter', sans-serif;
+    font-family: 'Chillax', 'Chillax Fallback', 'Inter', sans-serif;
     font-size: 2.6rem;
     font-weight: 700;
     color: var(--accent);
@@ -3781,7 +3975,7 @@ html.theme-default .qla-visual-header {
 }
 
 html.theme-default .qla-visual-kicker {
-    font-family: 'Chillax', 'Inter', sans-serif;
+    font-family: 'Chillax', 'Chillax Fallback', 'Inter', sans-serif;
     font-weight: 700;
     color: var(--accent);
     font-size: 1rem;
@@ -3797,7 +3991,7 @@ html.theme-default .qla-visual-body {
 }
 
 html.theme-default .qla-btn {
-    font-family: 'Chillax', 'Inter', sans-serif;
+    font-family: 'Chillax', 'Chillax Fallback', 'Inter', sans-serif;
     font-weight: 700;
     font-size: 0.88rem;
     padding: 0.45rem 1.1rem;
@@ -3942,7 +4136,7 @@ html.theme-default[data-theme="light"] .qla-mark-good {
 }
 
 html.theme-default .qla-gate-report-title {
-    font-family: 'Chillax', 'Inter', sans-serif;
+    font-family: 'Chillax', 'Chillax Fallback', 'Inter', sans-serif;
     font-weight: 700;
     font-size: 0.85rem;
     color: var(--text-muted);
@@ -3959,7 +4153,7 @@ html.theme-default .qla-fixer-grid {
 }
 
 html.theme-default .qla-fixer-col-title {
-    font-family: 'Chillax', 'Inter', sans-serif;
+    font-family: 'Chillax', 'Chillax Fallback', 'Inter', sans-serif;
     font-weight: 700;
     font-size: 0.82rem;
     color: var(--text-muted);
@@ -3968,7 +4162,7 @@ html.theme-default .qla-fixer-col-title {
 
 /* --- 3. you be the judge --- */
 html.theme-default .qla-judge-status {
-    font-family: 'Chillax', 'Inter', sans-serif;
+    font-family: 'Chillax', 'Chillax Fallback', 'Inter', sans-serif;
     font-weight: 700;
     color: var(--text-muted);
     font-size: 0.85rem;
@@ -4025,7 +4219,7 @@ html.theme-default[data-theme="light"] .qla-judge-panel.is-pick-wrong {
 }
 
 html.theme-default .qla-judge-panel-label {
-    font-family: 'Chillax', 'Inter', sans-serif;
+    font-family: 'Chillax', 'Chillax Fallback', 'Inter', sans-serif;
     font-weight: 700;
     font-size: 0.82rem;
     color: var(--accent);
@@ -4264,7 +4458,7 @@ html.theme-default .qlf-la-stat-hold {
 }
 
 html.theme-default .qlf-la-big {
-    font-family: 'Chillax', 'Inter', sans-serif;
+    font-family: 'Chillax', 'Chillax Fallback', 'Inter', sans-serif;
     font-weight: 700;
     font-size: 1.7rem;
     line-height: 1.1;
@@ -4478,7 +4672,7 @@ html.theme-default[data-theme="light"] .qlf-meter-btn.is-active {
 
 html.theme-default .qlf-meter-big {
     margin: 0.7rem 0 0.3rem;
-    font-family: 'Chillax', 'Inter', sans-serif;
+    font-family: 'Chillax', 'Chillax Fallback', 'Inter', sans-serif;
     font-weight: 700;
     font-size: 1.25rem;
     color: var(--text-primary);
@@ -4658,7 +4852,7 @@ html.theme-default .qlf-status-strip {
     border-radius: 5px;
     border: 1px solid var(--border-subtle);
     color: var(--text-muted);
-    font-family: 'Chillax', 'Inter', sans-serif;
+    font-family: 'Chillax', 'Chillax Fallback', 'Inter', sans-serif;
     font-weight: 700;
     font-size: 0.82rem;
     white-space: nowrap;
@@ -5234,4 +5428,137 @@ html.theme-default #detailToc.can-down { --toc-fade-bottom: 28px; }
    are full navigations; this gives them a native cross-fade where supported. */
 @view-transition {
   navigation: auto;
+}
+
+/* ============================================================
+   MOBILE OPTIMISATION SWEEP (classic is the ONLY theme on phones)
+   ------------------------------------------------------------
+   Everything below is either viewport-agnostic-but-invisible
+   (text-size-adjust) or guarded behind the existing <=768px
+   breakpoint. Nothing here may change desktop rendering.
+   ============================================================ */
+
+/* The about-page ticker was the one piece of motion on the site that ignored
+   prefers-reduced-motion: a 25s infinite translate, which is exactly the
+   continuous scrolling movement WCAG 2.3.3 asks to be stoppable. Parking it
+   at 0% keeps the ticker legible (it reads from its start) without moving. */
+@media (prefers-reduced-motion: reduce) {
+    html.theme-default .marquee-track {
+        animation: none;
+    }
+}
+
+/* iOS Safari inflates text in landscape unless this is pinned. Desktop
+   engines ignore it entirely, so this is a no-op above the breakpoint. */
+html.theme-default {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+}
+
+@media (max-width: 768px) {
+    /* --- 1. Typography floor -------------------------------------------
+       Nothing readable should render below 12px effective. Measured
+       offenders before this block: .tech-label 10.4px, .project-card-tag
+       11.2px, .project-card-unlisted-badge 9.92px, .lcm-key-label 11.2px,
+       .bqst-data-table th/td 11.52px, the qla/qlf readout labels 11.52px,
+       .demo-meter-label 11px. */
+    html.theme-default .tech-label { font-size: 0.75rem; }
+    html.theme-default .project-card-tag { font-size: 0.75rem; }
+    html.theme-default .project-card-unlisted-badge { font-size: 0.75rem; }
+    html.theme-default .lcm-key-label { font-size: 0.75rem; }
+    html.theme-default .demo-meter-label { font-size: 0.75rem; }
+
+    html.theme-default .bqst-data-table th,
+    html.theme-default .bqst-data-table td { font-size: 0.78rem; }
+
+    html.theme-default .qlf-readout-label,
+    html.theme-default .qla-gate-report-label,
+    html.theme-default .qla-gate-report-tail,
+    html.theme-default .qla-roster-label { font-size: 0.78rem; }
+
+    /* --- 2. Mobile nav -------------------------------------------------
+       "about me" wrapped onto a second line at every phone width, which
+       both looked broken and inflated --mobile-nav-height (it is measured
+       from sidebar.offsetHeight) so every route lost ~28px of content
+       clearance. Narrower gap + nowrap fits all three on one row at 360px. */
+    html.theme-default .nav-menu { gap: 0.5rem; }
+    html.theme-default .nav-link { white-space: nowrap; }
+
+    /* --- 3. Touch targets (WCAG 2.5.8 / 44px platform guidance) ---------
+       Measured before: .logo-link 82x27, .bento-social-link 20x36,
+       .music-link *x39, .qla-roster-grip *x16, .qla-roster-select 160x31,
+       .qla-btn *x36. */
+    html.theme-default .logo-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 44px;
+        padding-inline: 0.5rem;
+    }
+
+    html.theme-default .bento-social-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 44px;
+        min-height: 44px;
+    }
+
+    html.theme-default .music-link {
+        display: inline-flex;
+        align-items: center;
+        min-height: 44px;
+    }
+
+    html.theme-default .qla-btn { min-height: 44px; }
+
+    html.theme-default .qla-roster-select {
+        min-height: 44px;
+        font-size: 1rem; /* <16px makes iOS Safari zoom the page on focus */
+    }
+
+    /* The visible grip is the 40x7 ::before pseudo; growing the container
+       only grows the invisible hit area around it. */
+    html.theme-default .qla-roster-grip { height: 44px; }
+
+    /* --- 4. Overflow ---------------------------------------------------
+       .img-portrait's flat 350px max-width overflowed the 360px-class
+       viewports once the 1rem content padding was accounted for
+       (measured 32..382 on /projects/this-website at 360px). */
+    html.theme-default .detail-body img.img-portrait { max-width: min(350px, 100%); }
+
+    /* --- 5. Viewport correctness --------------------------------------
+       100vh is the LARGE viewport on mobile: with the URL bar showing, a
+       100vh homepage is taller than the visible area and its bottom is
+       clipped (and .homepage-active sets overflow:hidden, so it is not
+       even scrollable to). dvh tracks the live viewport. Guarded by
+       @supports so nothing regresses where dvh is unsupported. */
+    @supports (height: 100dvh) {
+        html.theme-default body { min-height: 100dvh; }
+        html.theme-default .main-content { min-height: 100dvh; }
+        html.theme-default .main-content.nav-visible { min-height: calc(100dvh - var(--mobile-nav-height)); }
+        html.theme-default .main-content.homepage-active { height: 100dvh; }
+        html.theme-default .section { min-height: calc(100dvh - var(--mobile-nav-height)); }
+    }
+
+    /* Notch / home-indicator clearance. env() resolves to 0 on hardware
+       without insets, so this is inert on every non-notched device. */
+    html.theme-default .sidebar {
+        padding-top: calc(1.25rem + env(safe-area-inset-top, 0px));
+    }
+
+    html.theme-default .main-content {
+        padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px));
+        padding-left: max(1rem, env(safe-area-inset-left, 0px));
+        padding-right: max(1rem, env(safe-area-inset-right, 0px));
+    }
+
+    /* .site-controls is a fixed bottom-right FAB on mobile; on a notched
+       phone in portrait it sat under the home indicator, and in landscape
+       under the rounded corner. Higher specificity than the
+       default-phase2.css rule it refines (.container is its parent). */
+    html.theme-default .container .site-controls {
+        bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
+        right: max(0.75rem, env(safe-area-inset-right, 0px));
+    }
 }

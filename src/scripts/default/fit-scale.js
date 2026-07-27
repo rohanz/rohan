@@ -8,9 +8,38 @@
 let cleanupFns = [];
 let refitting = false;
 
-function fitLayout({ el, measureEl, pad, capFor, minZoom, afterFit }) {
+// fit-scale is a DESKTOP composition tool. On phones the zoom-to-fit crushed
+// the about page to its 0.62 floor (bio text ~11.4px effective), and its zoom
+// writes forced a full-document relayout + re-raster in the same frames as the
+// mobile nav's 0.7s slide-in — the mobile-only stutter. On mobile every fitted
+// layout stands down to zoom 1 and scrolls naturally (the testimonial rail the
+// about fit sizes is display:none there anyway). Breakpoint matches the CSS.
+const mobileQuery = window.matchMedia('(max-width: 768px)');
+
+function fitLayout({ el, measureEl, pad, capFor, minZoom, afterFit, standDown, onSettled }) {
     let lastZoom = null;
+    // onSettled fires exactly once, when the fit is AUTHORITATIVE — i.e. after
+    // the double-rAF pass below, not after the first synchronous one. Callers
+    // use it to release a held entrance; releasing on the first fit meant the
+    // second fit re-laid the page out under an already-visible layout (see the
+    // .about-pending note in init()).
+    let settled = false;
+    const settle = () => {
+        if (settled) return;
+        settled = true;
+        if (onSettled) onSettled();
+    };
     const fit = () => {
+        if (mobileQuery.matches) {
+            // Clear anything a pre-resize desktop fit left behind, then stop.
+            el.style.zoom = '';
+            lastZoom = 1;
+            if (standDown) standDown();
+            // Mobile never runs a second fit, so nothing would ever release a
+            // held entrance — release it here or the page stays invisible.
+            settle();
+            return;
+        }
         el.style.zoom = '1';
         if (afterFit) afterFit(1, true); // reset pass (rail height etc.)
         const natural = (measureEl || el).getBoundingClientRect();
@@ -24,7 +53,12 @@ function fitLayout({ el, measureEl, pad, capFor, minZoom, afterFit }) {
     };
     fit();
     // Fonts/images settling on first load can change the natural height.
-    requestAnimationFrame(() => requestAnimationFrame(fit));
+    requestAnimationFrame(() =>
+        requestAnimationFrame(() => {
+            fit();
+            settle();
+        }),
+    );
     const onResize = () => {
         if (refitting) return; // ignore our own synthetic resize
         fit();
@@ -37,9 +71,16 @@ export function init() {
     const aboutLayout = document.querySelector('.about-layout');
     if (aboutLayout) {
         // The entrance is held (see .about-pending in default.css) until the
-        // first fit lands, so the grid never paints at zoom 1 and resizes.
+        // fit lands, so the grid never paints at zoom 1 and resizes.
+        //
+        // It is released from onSettled — after the SECOND (double-rAF) fit,
+        // which is the authoritative one. Releasing after the first fit, as
+        // this used to, let the bento grid become visible and then get
+        // re-zoomed and re-shifted by the second pass. Under normal motion the
+        // entrance animation hid it; under prefers-reduced-motion the
+        // animations are gone and the re-lay-out was fully exposed — CLS 0.54,
+        // by far the worst shift on the site.
         const section = aboutLayout.closest('#about.about-pending');
-        if (section) requestAnimationFrame(() => section.classList.remove('about-pending'));
         const rail = aboutLayout.querySelector('.scrolling-testimonials');
         fitLayout({
             el: aboutLayout,
@@ -74,6 +115,13 @@ export function init() {
                     aboutLayout.style.position = 'relative';
                     aboutLayout.style.left = `${shift / z}px`;
                 }
+            },
+            standDown: () => {
+                aboutLayout.style.left = '';
+                if (rail) rail.style.height = '';
+            },
+            onSettled: () => {
+                if (section) section.classList.remove('about-pending');
             },
         });
     }

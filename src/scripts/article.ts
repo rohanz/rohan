@@ -240,7 +240,16 @@ function initToc(article: HTMLElement) {
   const alignTop = () => {
     if (!banner) return;
     const top = Math.round(banner.getBoundingClientRect().top + window.scrollY);
-    if (top > 0) toc.style.top = `${top}px`;
+    if (top <= 0) return;
+    // Only write when the CSS resting value is actually wrong. The template's
+    // --transit-toc-top is derived from the same constants (sign-header +
+    // page-body padding + the banner's own top margin), so on load this is a
+    // no-op and the rail never moves. It used to overwrite the resting 176px
+    // with 138px a frame after paint — a visible 38px jump on every article
+    // load. The write survives as a self-heal for the day those constants
+    // change out from under the template.
+    if (Math.abs(toc.getBoundingClientRect().top - top) < 1) return;
+    toc.style.top = `${top}px`;
   };
   alignTop();
 

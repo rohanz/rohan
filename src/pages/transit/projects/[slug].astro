@@ -185,6 +185,72 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
   .article :global(pre) { max-width: 100%; box-sizing: border-box; overflow-x: auto; }
   .article :global(pre code) { white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; }
   .article :global(.article-banner) { cursor: zoom-in; }
+
+  /* ------------------------------------------------------------
+     Article body images — intrinsic-size reservation
+     ------------------------------------------------------------
+     Transit renders the same markdown, and the same missing width/height
+     attributes cost it ~1,000px of growth per article load. Same remedy,
+     same numbers as the classic theme — src/styles/default.css holds the
+     canonical list and the note about keeping the two in sync. No
+     max-width here: transit has no portrait-image cap. */
+.article :global(img[src*="bqst/final-ui.webp"]) { aspect-ratio: 1344 / 1376; }
+  .article :global(img[src*="bqst/prototype-ui.webp"]) { aspect-ratio: 1028 / 664; }
+  .article :global(img[src*="bqst/asset-knob-large.webp"]) { aspect-ratio: 1600 / 1600; }
+  .article :global(img[src*="bqst/asset-knob-small.webp"]) { aspect-ratio: 1600 / 1600; }
+  .article :global(img[src*="bqst/asset-vu-meter.webp"]) { aspect-ratio: 1600 / 1600; }
+  .article :global(img[src*="careersphere/architecture.webp"]) { aspect-ratio: 1720 / 1000; }
+  .article :global(img[src*="careersphere/how-to-get-there.webp"]) { aspect-ratio: 3024 / 1670; }
+  .article :global(img[src*="careersphere/onboarding.webp"]) { aspect-ratio: 3024 / 1670; }
+  .article :global(img[src*="careersphere/pycon-results.webp"]) { aspect-ratio: 3024 / 1670; }
+  .article :global(img[src*="careersphere/sphere.webp"]) { aspect-ratio: 3024 / 1670; }
+  .article :global(img[src*="careersphere/where-you-could-go.webp"]) { aspect-ratio: 3024 / 1670; }
+  .article :global(img[src*="careersphere/where-you-stand.webp"]) { aspect-ratio: 3024 / 1670; }
+  .article :global(img[src*="datacenter/architecture.webp"]) { aspect-ratio: 291 / 892; }
+  .article :global(img[src*="datacenter/screenshot-complete.webp"]) { aspect-ratio: 502 / 549; }
+  .article :global(img[src*="datacenter/screenshot-sources.webp"]) { aspect-ratio: 566 / 409; }
+  .article :global(img[src*="datacenter/screenshot-news.webp"]) { aspect-ratio: 530 / 299; }
+  .article :global(img[src*="datacenter/screenshot-agent.webp"]) { aspect-ratio: 709 / 317; }
+  .article :global(img[src*="live-chord-monitor/app-ui.webp"]) { aspect-ratio: 1248 / 848; }
+  .article :global(img[src*="patent/screenshot-tracking.webp"]) { aspect-ratio: 540 / 1170; }
+  .article :global(img[src*="patent/screenshot-dashboard.webp"]) { aspect-ratio: 540 / 1170; }
+  .article :global(img[src*="patent/screenshot-similarity.webp"]) { aspect-ratio: 540 / 1170; }
+  .article :global(img[src*="tesla/changelog.webp"]) { aspect-ratio: 571 / 432; }
+  .article :global(img[src*="website/mobile-view.webp"]) { aspect-ratio: 434 / 935; }
+  .article :global(img[src*="yourcast/architecture.webp"]) { aspect-ratio: 1600 / 1187; }
+  .article :global(img[src*="yourcast/screenshot-landing.webp"]) { aspect-ratio: 1170 / 2532; }
+  .article :global(img[src*="yourcast/screenshot-personalize.webp"]) { aspect-ratio: 1170 / 2532; }
+  .article :global(img[src*="yourcast/screenshot-player.webp"]) { aspect-ratio: 1170 / 2532; }
+
+  /* ------------------------------------------------------------
+     Article widget placeholders — space reservation
+     ------------------------------------------------------------
+     Same mechanism (and same fix) as the classic theme: the interactive
+     figures are empty <div>s in the shared markdown that article-widgets.ts
+     fills ~700ms after first paint, so .article grew ~2,500px under the
+     reader on every transit article load.
+
+     Heights are measured at desktop width (1280px viewport, 602px article
+     column) and differ slightly from the classic numbers because the column
+     is 2px narrower. The `:empty` guard releases the reservation the instant
+     a script inserts its first child, so an imperfect estimate costs a few px
+     of settle instead of leaving permanent dead space — and a widget whose
+     script never runs holds its place rather than collapsing. */
+  .article :global(#bqst-eq-visual:empty) { min-height: 464px; }
+  .article :global(#bqst-transfer-visual:empty) { min-height: 453px; }
+  .article :global(#bqst-harmonics-visual:empty) { min-height: 453px; }
+  .article :global(#bqst-oversampling-visual:empty) { min-height: 454px; }
+  .article :global(#bqst-audio-demo:empty) { min-height: 227px; }
+  .article :global(#qla-compound-visual:empty) { min-height: 430px; }
+  .article :global(#qla-gate-visual:empty) { min-height: 762px; }
+  .article :global(#qla-judge-visual:empty) { min-height: 1253px; }
+  .article :global(#qla-quant-visual:empty) { min-height: 486px; }
+  .article :global(#qla-roster-visual:empty) { min-height: 803px; }
+  .article :global(#qlf-lookahead-visual:empty) { min-height: 703px; }
+  .article :global(#qlf-kalman-visual:empty) { min-height: 487px; }
+  .article :global(#qlf-survivorship-visual:empty) { min-height: 606px; }
+  .article :global(#qlf-risk-visual:empty) { min-height: 784px; }
+  .article :global(#lcm-demo:empty) { min-height: 346px; }
   .article :global(a:not(.try-it-btn):not(.support-btn)) { color: var(--line-projects); }
   .article :global(table) { border-collapse: collapse; width: 100%; margin: 1.5rem 0; font-size: 0.92rem; }
   .article :global(th), .article :global(td) { border: 1px solid rgba(0,0,0,0.12); padding: 0.5rem 0.7rem; text-align: left; }
@@ -207,9 +273,25 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
       display: flex;
       flex-direction: column;
       position: fixed;
-      /* top is set from the banner's edge by article.ts; this is the pre-JS
-         default (header + page-body padding) to avoid a first-paint jump. */
-      top: 11rem;
+      /* The rail's top edge IS the banner's top edge. article.ts measures that
+         and writes it back; this resting value used to be a rough 11rem —
+         38px too low — so the rail visibly jumped up on every article load
+         once the measurement landed.
+
+         The offset is entirely static, so it is now derived rather than
+         guessed: the sign-header is 74px tall, .page-body adds 40px of top
+         padding, and the banner picks up a 1.5rem top margin from the generic
+         `.article :global(img)` rule below (which out-specifies
+         `.article-banner`'s own `margin: 0 0 2rem`). 74 + 40 + 24 = 138px,
+         constant at every viewport width — verified at 1024/1280/1440/1920/
+         2560. article.ts now measures the same number, so its write is a
+         no-op on load and the rail never moves.
+
+         If the header height or page padding ever changes, the
+         `transit TOC never repositions` case in e2e/layout-shift.spec.ts
+         fails and this value needs updating with it. */
+      --transit-toc-top: calc(74px + 40px + 1.5rem);
+      top: var(--transit-toc-top);
       /* End the rail a small fixed margin above the viewport bottom so the
          prev/next nav (pinned to the bottom via margin-top:auto) holds ONE fixed
          spot regardless of the TOC's length — it never shifts when you page

@@ -81,16 +81,40 @@ function updateCenterTestimonial() {
 }
 
 export function init() {
-    if (!document.querySelector('.scrolling-testimonials')) return;
+    const rail = document.querySelector('.scrolling-testimonials');
+    if (!rail) return;
     if (interval) clearInterval(interval);
     if (onResize) window.removeEventListener('resize', onResize);
     geom = null;
     // fit-scale re-zooms the layout on resize; drop the cache and let the
-    // next tick re-measure after its refit has settled.
-    onResize = () => requestAnimationFrame(() => { geom = null; });
+    // next tick re-measure after its refit has settled. The same handler
+    // starts/stops the tracker when the mobile boundary is crossed.
+    onResize = () => requestAnimationFrame(() => { geom = null; syncTicker(); });
     window.addEventListener('resize', onResize);
-    interval = setInterval(updateCenterTestimonial, 100);
-    setTimeout(updateCenterTestimonial, 100);
+    syncTicker();
+}
+
+// The rail is `display: none` below 768px (default.css). Ticking a hidden
+// rail 10x/second still ran measureGeometry() — a forced layout over the
+// 176-node list — on every phone that ever opened /about, for a `.center`
+// class nobody can see. Track only while the rail is actually rendered.
+const isMobileViewport = window.matchMedia('(max-width: 768px)');
+
+function railIsRendered() {
+    return !!document.querySelector('.scrolling-testimonials') && !isMobileViewport.matches;
+}
+
+function syncTicker() {
+    if (railIsRendered()) {
+        if (!interval) {
+            interval = setInterval(updateCenterTestimonial, 100);
+            setTimeout(updateCenterTestimonial, 100);
+        }
+    } else if (interval) {
+        clearInterval(interval);
+        interval = null;
+        if (currentCenter) { currentCenter.classList.remove('center'); currentCenter = null; }
+    }
 }
 
 export function cleanup() {

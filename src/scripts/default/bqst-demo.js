@@ -78,29 +78,58 @@ function initBqstAudioDemo(container) {
     root.classList.add('is-ready');
     drawWaveform();
 
-    Promise.all([fetchAudioData(cleanUrl), fetchAudioData(processedUrl)])
-        .then(async ([cleanData, processedData]) => {
-            cleanRawData = cleanData;
-            processedRawData = processedData;
-            refreshRawWaveforms();
-            drawWaveform();
+    // The A/B demo is two uncompressed WAVs (~1.9MB combined, and the
+    // fetch+decode pair is the single heaviest thing classic ships). On
+    // desktop that has always been eager. On phones the widget sits far
+    // down a long article, so we hold the download until the reader is
+    // actually approaching it — or taps play, whichever comes first.
+    // Behaviour once loaded is identical; only the trigger moves.
+    let audioLoadStarted = false;
+    let lazyObserver = null;
 
-            ensureAudioContext();
-            const [clean, processed] = await Promise.all([
-                context.decodeAudioData(cleanData.slice(0)),
-                context.decodeAudioData(processedData.slice(0)),
-            ]);
-            cleanBuffer = clean;
-            processedBuffer = processed;
-            isReady = true;
-            playButton.removeAttribute('aria-busy');
-            drawWaveform();
-            if (wantsToPlay && !isPlaying) start();
-        })
-        .catch(() => {
-            root.classList.add('is-error');
-            playButton.removeAttribute('aria-busy');
-        });
+    function loadAudio() {
+        if (audioLoadStarted) return;
+        audioLoadStarted = true;
+        if (lazyObserver) { lazyObserver.disconnect(); lazyObserver = null; }
+
+        Promise.all([fetchAudioData(cleanUrl), fetchAudioData(processedUrl)])
+            .then(async ([cleanData, processedData]) => {
+                cleanRawData = cleanData;
+                processedRawData = processedData;
+                refreshRawWaveforms();
+                drawWaveform();
+
+                ensureAudioContext();
+                const [clean, processed] = await Promise.all([
+                    context.decodeAudioData(cleanData.slice(0)),
+                    context.decodeAudioData(processedData.slice(0)),
+                ]);
+                cleanBuffer = clean;
+                processedBuffer = processed;
+                isReady = true;
+                playButton.removeAttribute('aria-busy');
+                drawWaveform();
+                if (wantsToPlay && !isPlaying) start();
+            })
+            .catch(() => {
+                root.classList.add('is-error');
+                playButton.removeAttribute('aria-busy');
+            });
+    }
+
+    const deferAudio = window.matchMedia('(max-width: 768px)').matches
+        && typeof IntersectionObserver === 'function';
+
+    if (deferAudio) {
+        // A full viewport of lead-in: by the time the widget is on screen the
+        // bytes are usually already in flight, so the play button is live.
+        lazyObserver = new IntersectionObserver((entries) => {
+            if (entries.some(e => e.isIntersecting)) loadAudio();
+        }, { rootMargin: '100% 0px' });
+        lazyObserver.observe(root);
+    } else {
+        loadAudio();
+    }
 
     function ensureAudioContext() {
         if (context) return context;
@@ -523,6 +552,7 @@ function initBqstAudioDemo(container) {
 
     async function start() {
         stopOtherPlayers();
+        loadAudio(); // no-op once started; covers "tapped play before scrolled in"
         const unlock = unlockAudioContext();
 
         if (!isReady || !cleanBuffer || !processedBuffer) {
@@ -619,6 +649,7 @@ function initBqstAudioDemo(container) {
     bqstAudioDemoCleanup = () => {
         if (rafId) cancelAnimationFrame(rafId);
         if (waveFadeId) cancelAnimationFrame(waveFadeId);
+        if (lazyObserver) { lazyObserver.disconnect(); lazyObserver = null; }
         window.removeEventListener('resize', onResize);
         window.removeEventListener('theme-changed', onResize);
         stopSources();

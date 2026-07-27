@@ -156,16 +156,54 @@ function initDemoPlayer(container) {
     // contexts (browsers cap ~6) and eventually breaks the demo.
     const decodeCtx = demoAudioContext || (demoAudioContext = new (window.AudioContext || window.webkitAudioContext)());
 
-    fetch('/assets/audio/snippets/dontwantme.mp3')
-        .then(r => r.arrayBuffer())
-        .then(buf => decodeCtx.decodeAudioData(buf))
-        .then(decoded => {
-            if (disposed) return;
-            audioBuffer = decoded;
-            playbackStart = performance.now();
-            demoAnimId = requestAnimationFrame(drawLive);
-        })
-        .catch(() => {});
+    // This meter demo pulls a 1.4MB MP3 and then runs an unconditional rAF
+    // loop for the lifetime of the page. On desktop that is a decorative
+    // always-on flourish and stays as-is. On phones it was a 1.4MB cellular
+    // download plus a permanent 60fps loop for a widget most readers never
+    // scroll to, so there we hold both until it is actually near the
+    // viewport, and park the loop again once it leaves.
+    let demoObserver = null;
+    let audioLoadStarted = false;
+    const deferDemo = window.matchMedia('(max-width: 768px)').matches
+        && typeof IntersectionObserver === 'function';
+
+    function loadDemoAudio() {
+        if (audioLoadStarted || disposed) return;
+        audioLoadStarted = true;
+        fetch('/assets/audio/snippets/dontwantme.mp3')
+            .then(r => r.arrayBuffer())
+            .then(buf => decodeCtx.decodeAudioData(buf))
+            .then(decoded => {
+                if (disposed) return;
+                audioBuffer = decoded;
+                playbackStart = performance.now();
+                if (!deferDemo || demoIsOnScreen) startLoop();
+            })
+            .catch(() => {});
+    }
+
+    function startLoop() {
+        if (disposed || demoAnimId) return;
+        playbackStart = performance.now();
+        demoAnimId = requestAnimationFrame(drawLive);
+    }
+
+    function stopLoop() {
+        if (demoAnimId) { cancelAnimationFrame(demoAnimId); demoAnimId = null; }
+    }
+
+    let demoIsOnScreen = !deferDemo;
+
+    if (deferDemo) {
+        demoObserver = new IntersectionObserver((entries) => {
+            demoIsOnScreen = entries.some(e => e.isIntersecting);
+            if (demoIsOnScreen) { loadDemoAudio(); startLoop(); }
+            else stopLoop();
+        }, { rootMargin: '50% 0px' });
+        demoObserver.observe(player);
+    } else {
+        loadDemoAudio();
+    }
 
     function drawLive() {
         if (disposed) return;
@@ -256,6 +294,7 @@ function initDemoPlayer(container) {
     demoCleanup = () => {
         disposed = true;
         if (demoAnimId) cancelAnimationFrame(demoAnimId);
+        if (demoObserver) { demoObserver.disconnect(); demoObserver = null; }
         window.removeEventListener('resize', onResize);
         demoAnimId = null;
         audioBuffer = null;
