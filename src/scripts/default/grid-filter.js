@@ -1,3 +1,7 @@
+// Alias encoding/matching is shared with transit and blueprint; only the DOM
+// effect below (hiding grid cards) is classic-specific.
+import { decodeFilter, matchesFilter } from '../../data/project-filters';
+
 let cleanupFilter = null;
 
 function setActiveFilterTag(filterBar, tag) {
@@ -38,7 +42,7 @@ function initFilterHandlers(root) {
         filterTimer = window.setTimeout(() => {
             grid.querySelectorAll('.project-card').forEach(card => {
                 const cardTechs = (card.dataset.techs || '').split(',');
-                const match = activeFilter === 'all' || activeFilter.split('||').some(t => cardTechs.includes(t));
+                const match = activeFilter === 'all' || matchesFilter(cardTechs, decodeFilter(activeFilter));
                 card.classList.toggle('hidden', !match);
             });
             grid.classList.remove('filtering');

@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 import { COLORS, FONT, WORKSHOP_ROOM } from './constants.js';
 import { solidify, inkLine, hatchLines, constructionLine, floorGrid } from './materials.js';
+import { matchesFilter, visibleProjectFilters } from './site-data.generated.js';
 
 const { w: W, d: D, h: H, wallT: T } = WORKSHOP_ROOM;
 const CENTRE = { x: 6.3, z: -0.5 };
@@ -711,20 +712,17 @@ function buildTools() {
   return g;
 }
 
-// Curated filter bar, mirrored from the live site's projects index.
-const FILTERS = [
-  { label: 'all', match: null },
-  { label: 'ai agents', match: ['AI Agents'] },
-  { label: 'fine-tuning', match: ['Fine-tuning', 'QLoRA'] },
-  { label: 'evals', match: ['Evals'] },
-  { label: 'machine learning', match: ['Machine Learning'] },
-  { label: 'finance', match: ['Finance', 'Backtesting'] },
-  { label: 'dsp', match: ['DSP'] },
-  { label: 'data pipelines', match: ['Data Pipelines'] },
-  { label: 'cloud infra', match: ['Cloud Infra'] },
-  { label: 'devops', match: ['DevOps'] },
-  { label: 'web scraping', match: ['Web Scraping'] },
-];
+// Curated filter bar. Labels, aliases and display order are the site's single
+// source of truth (src/data/project-filters.ts, shared with classic and
+// transit); only the 3D pill rendering and the sheet repagination below are
+// blueprint's. The leading 'all' pill is a blueprint-side affordance: classic
+// and transit render it as their own literal too, since it isn't a curated tag.
+function buildFilters(projects) {
+  return [
+    { label: 'all', match: null },
+    ...visibleProjectFilters(projects.flatMap((p) => p.tech || [])),
+  ];
+}
 
 // One filter pill: drafted rounded button, hover inverts, active stays
 // filled. Sized to its label.
@@ -798,7 +796,7 @@ export function buildWorkshop(projects) {
   group.add(buildTools());
 
   // Filter bar above the sheets, neat centred rows like the site's.
-  const pills = FILTERS.map((f) => ({ ...buildFilterPill(f.label), match: f.match }));
+  const pills = buildFilters(projects).map((f) => ({ ...buildFilterPill(f.label), match: f.match }));
   {
     const wallZ = -D / 2 + T / 2 + 0.014;
     const GAP = 0.045, MAX_W = 99; // single line
@@ -916,7 +914,7 @@ export function buildWorkshop(projects) {
       activeFilter = pill;
       pill.setState('active');
       filtered = pill.match
-        ? projects.filter((pr) => (pr.tech || []).some((t) => pill.match.includes(t)))
+        ? projects.filter((pr) => matchesFilter(pr.tech || [], pill.match))
         : projects;
       page = 0;
       applyPage();

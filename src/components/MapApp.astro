@@ -4,8 +4,13 @@ import TransitMap from '../components/TransitMap.astro';
 import StationBoard from '../components/StationBoard.astro';
 import TransitThemeSwitch from '../components/TransitThemeSwitch.astro';
 import { getCollection } from 'astro:content';
-import music from '../data/music.json';
+import { BIO_FULL } from '../data/bio';
+import { SONGS as music } from '../data/music';
+import { encodeFilter, visibleProjectFilters } from '../data/project-filters';
+import { RESUME_LABEL_TITLE, RESUME_PATH } from '../data/resume';
 import { SOCIALS } from '../data/socials';
+import { STATS as stats } from '../data/stats';
+import { TECH_STACK } from '../data/tech-stack';
 
 interface Props {
   title: string;
@@ -21,54 +26,20 @@ const projects = (await getCollection('projects'))
   .filter((p) => !p.data.unlisted)
   .sort((a, b) => a.data.order - b.data.order);
 
-// Filter pills: one per unique technology across all projects, matching the
-// full tag set from the original site (wraps to two centered rows if needed).
-// CURATED filter pills, not the raw union: with 11 projects the union is ~38
-// tags in five rows — a wall where most filters match one project. One row of
-// skills-level pills, each matching one or more underlying technology tags
-// (ALIASES: the pill's data-filter carries its matched tags '||'-joined; the
-// engine's applyFilter ORs across them). Cards still show their full
-// technology lists; a pill whose aliases all vanish from the content is
-// dropped automatically rather than rendering a dead filter.
-const CURATED_PILLS: { label: string; match: string[] }[] = [
-  { label: 'finance', match: ['Finance', 'Backtesting'] },
-  { label: 'machine learning', match: ['Machine Learning'] },
-  { label: 'fine-tuning', match: ['Fine-tuning', 'QLoRA'] },
-  { label: 'evals', match: ['Evals'] },
-  { label: 'ai agents', match: ['AI Agents'] },
-  { label: 'data pipelines', match: ['Data Pipelines'] },
-  { label: 'web scraping', match: ['Web Scraping'] },
-  { label: 'dsp', match: ['DSP'] },
-  { label: 'cloud infra', match: ['Cloud Infra'] },
-  { label: 'devops', match: ['DevOps'] },
-];
-const allTags = new Set(projects.flatMap((p) => p.data.technologies));
-const filterTags = CURATED_PILLS.filter((p) => p.match.some((t) => allTags.has(t)));
+// Curated filter pills (labels, aliases, display order) come from
+// src/data/project-filters.ts, shared with classic and blueprint; a pill whose
+// aliases all vanish from the content is dropped there rather than rendering a
+// dead filter. The pill's data-filter carries its matched tags '||'-joined (see
+// encodeFilter); map-view.ts's applyFilter ORs across them, and re-slices the
+// platform stop slots — that DOM behaviour stays transit-local. Cards still
+// show their full technology lists. One row of pills wraps to two centered rows
+// if needed.
+const filterTags = visibleProjectFilters(projects.flatMap((p) => p.data.technologies));
 
-const stats = [
-  { value: '1.3m+', label: 'streams' },
-  { value: '8+', label: 'projects built' },
-];
-
-const tech = [
-  'Python',
-  'JavaScript',
-  'React',
-  'C++',
-  'JUCE',
-  'DSP',
-  'OpenAI',
-  'Codex',
-  'Google Cloud',
-  'Node.js',
-  'Docker',
-  'Git',
-  'Linux',
-  'DuckDB',
-  'PostgreSQL',
-  'Claude',
-  'Gemini',
-];
+// Transit's chips use the full product names ("JavaScript", "PostgreSQL");
+// classic's grid uses the terse `label` of the same records. One list, two
+// registers — see src/data/tech-stack.ts.
+const tech = TECH_STACK.map((t) => t.name);
 
 ---
 <Layout title={title} description={description} bodyClass="home" initialView={initialView}>
@@ -99,7 +70,7 @@ const tech = [
       <div id="filter-bar" hidden>
         <button type="button" class="filter-tag active" data-filter="all" aria-pressed="true">all</button>
         {filterTags.map((t) => (
-          <button type="button" class="filter-tag" data-filter={t.match.join('||')} aria-pressed="false">{t.label}</button>
+          <button type="button" class="filter-tag" data-filter={encodeFilter(t.match)} aria-pressed="false">{t.label}</button>
         ))}
       </div>
 
@@ -184,7 +155,7 @@ const tech = [
 
         <div class="platform-card card-about card-about-bio" data-card="about">
           <h3 class="about-label">Bio</h3>
-          <p class="bio">hi, i'm rohan, a computer engineering student at ntu, singapore. i build end-to-end products with AI, from data pipelines and cloud infrastructure to mobile apps and everything in between. outside of code, i write, produce and record music. feel free to reach out below!</p>
+          <p class="bio">{BIO_FULL}</p>
         </div>
 
         <div class="platform-card card-about card-about-stats" data-card="about">
@@ -219,7 +190,7 @@ const tech = [
 
         <div class="platform-card card-about card-about-cv" data-card="about">
           <h3 class="about-label">CV</h3>
-          <a class="cv-btn" href="/downloads/resume.pdf" download>Download CV</a>
+          <a class="cv-btn" href={RESUME_PATH} download>{RESUME_LABEL_TITLE}</a>
         </div>
       </div>
     </div>

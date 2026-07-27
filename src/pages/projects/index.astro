@@ -1,29 +1,22 @@
 ---
 import DefaultLayout from '../../layouts/DefaultLayout.astro';
 import { getCollection } from 'astro:content';
+import { encodeFilter, visibleProjectFilters } from '../../data/project-filters';
 
 const projects = (await getCollection('projects')).sort((a, b) => a.data.order - b.data.order);
 const visibleForFilters = projects.filter((project) => !project.data.unlisted);
-const allTechs = new Set(visibleForFilters.flatMap((project) => project.data.technologies));
-const curatedFilters = [
-  { label: 'ai agents', match: ['AI Agents'] },
-  { label: 'fine-tuning', match: ['Fine-tuning', 'QLoRA'] },
-  { label: 'evals', match: ['Evals'] },
-  { label: 'machine learning', match: ['Machine Learning'] },
-  { label: 'finance', match: ['Finance', 'Backtesting'] },
-  { label: 'dsp', match: ['DSP'] },
-  { label: 'data pipelines', match: ['Data Pipelines'] },
-  { label: 'cloud infra', match: ['Cloud Infra'] },
-  { label: 'devops', match: ['DevOps'] },
-  { label: 'web scraping', match: ['Web Scraping'] },
-].filter((filter) => filter.match.some((tag) => allTechs.has(tag)));
+// Pills (labels, aliases, order) come from src/data/project-filters.ts; what a
+// click DOES here — hiding grid cards — stays local to grid-filter.js.
+const curatedFilters = visibleProjectFilters(
+  visibleForFilters.flatMap((project) => project.data.technologies),
+);
 ---
 <DefaultLayout title="projects - rohan.jk" description="Projects by rohan.jk — software, AI, audio, and data engineering builds." section="projects">
   <section id="projects" class="section active">
     <div class="projects-grid-view" id="projectsGridView">
       <div class="projects-filter-bar" id="projectsFilterBar">
         <button class="filter-tag active" data-filter="all" aria-pressed="true">all</button>
-        {curatedFilters.map((filter) => <button class="filter-tag" data-filter={filter.match.join('||')} aria-pressed="false">{filter.label}</button>)}
+        {curatedFilters.map((filter) => <button class="filter-tag" data-filter={encodeFilter(filter.match)} aria-pressed="false">{filter.label}</button>)}
       </div>
       <div class="projects-grid projects-entering" id="projectsGrid">
         {projects.map((project, index) => (

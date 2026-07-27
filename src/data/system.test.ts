@@ -12,6 +12,7 @@ import {
   MUSIC_STOP_COUNT,
   type Point,
 } from './system';
+import { SONGS } from './music';
 
 function offCanvas([x, y]: Point): boolean {
   return x < 0 || x > VIEWBOX.w || y < 0 || y > VIEWBOX.h;
@@ -169,14 +170,12 @@ describe('content-count-driven geometry guards', () => {
     expect(lineById('projects').platform!.stops).toHaveLength(PROJECT_STOP_COUNT);
   });
 
-  it('MUSIC_STOP_COUNT matches the tracks in music.json', () => {
-    // MapApp.astro renders one platform row per entry of src/data/music.json.
-    const tracks = JSON.parse(
-      readFileSync(fileURLToPath(new URL('music.json', import.meta.url)), 'utf8'),
-    ) as unknown[];
+  it('MUSIC_STOP_COUNT matches the tracks in music.ts', () => {
+    // MapApp.astro renders one platform row per entry of src/data/music.ts.
+    const tracks = SONGS;
     expect(
       tracks.length,
-      `src/data/music.json has ${tracks.length} tracks but MUSIC_STOP_COUNT is ${MUSIC_STOP_COUNT}. ` +
+      `src/data/music.ts has ${tracks.length} tracks but MUSIC_STOP_COUNT is ${MUSIC_STOP_COUNT}. ` +
         `Bump MUSIC_STOP_COUNT in src/data/system.ts — the music line and its stop run extend ` +
         `automatically from the constant.`,
     ).toBe(MUSIC_STOP_COUNT);

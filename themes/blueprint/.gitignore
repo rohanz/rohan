@@ -2,3 +2,4 @@ node_modules
 dist
 src/content/articles/
 src/projects.generated.js
+src/site-data.generated.js

@@ -2,6 +2,19 @@
 // treated as an A4 technical specification on the coffee table.
 import { asset } from './base.js';
 import { PROJECTS } from './projects.js';
+// Shared with the classic about page — src/data/{testimonials,stats,bio,
+// tech-stack,resume}.ts, inlined at build time by tools/build-blueprint.mjs.
+import {
+  BIO_SHEET_LINES,
+  PROJECTS_BUILT_STAT,
+  RESUME_LABEL,
+  RESUME_PATH,
+  STREAMS_STAT,
+  TAGLINE,
+  TECH_SHEET_ROWS,
+  TESTIMONIALS,
+  techSheetRow,
+} from './site-data.generated.js';
 import * as THREE from 'three';
 import { COLORS, FONT, ROOM } from './constants.js';
 import { solidify, inkLine, hatchLines, constructionLine, floorGrid } from './materials.js';
@@ -84,7 +97,7 @@ function bioSheet() {
     ctx.font = `700 44px ${FONT}`;
     ctx.fillText('rohan.jk', 48, 168);
     ctx.font = `500 22px ${FONT}`;
-    ctx.fillText('computer engineering @ ntu', 48, 210);
+    ctx.fillText(TAGLINE, 48, 210);
 
     // photo panel, top right — cover-fitted, drafted frame; hatch until it loads
     const px = 408, py = 118, pw = 174, ph = 210;
@@ -108,22 +121,12 @@ function bioSheet() {
     ctx.font = `500 15px ${FONT}`;
     ctx.fillText('FIG. 01 — THE ENGINEER', px, py + ph + 26);
 
-    // Bio copy mirrored from the live site's about page (DefaultAbout.astro).
+    // Bio copy — same sentences the classic/transit about pages render, kept
+    // hand-wrapped in src/data/bio.ts because canvas has no text layout engine.
     // First lines wrap NARROW beside the photo; the rest run full width.
     ctx.font = `500 21px ${FONT}`;
-    const beside = [
-      "hi, i'm rohan, a computer",
-      'engineering student at ntu,',
-      'singapore.',
-    ];
+    const { beside, below } = BIO_SHEET_LINES;
     beside.forEach((line, i) => ctx.fillText(line, 48, 268 + i * 33));
-    const below = [
-      'i build end-to-end products with AI, from data',
-      'pipelines and cloud infrastructure to mobile',
-      'apps and everything in between.',
-      '',
-      'outside of code, i write, produce and record music.',
-    ];
     below.forEach((line, i) => ctx.fillText(line, 48, 402 + i * 33));
 
     // STATS — from the live site's about bento
@@ -131,24 +134,24 @@ function bioSheet() {
     ctx.font = `600 18px ${FONT}`;
     ctx.fillText('STATS', 48, 602);
     ctx.font = `700 40px ${FONT}`;
-    ctx.fillText('1.3m+', 48, 652);
-    // derived from the generated registry — stays honest as projects ship
+    ctx.fillText(STREAMS_STAT.value, 48, 652);
+    // Blueprint keeps DERIVING its project count from the generated registry —
+    // stays honest as projects ship — so it takes only the wording from the
+    // shared stat (classic/transit render its hand-set `value` verbatim).
     const projectCount = PROJECTS.filter((p) => !p.unlisted).length;
     ctx.fillText(`${projectCount}+`, 330, 652);
     ctx.font = `500 18px ${FONT}`;
-    ctx.fillText('streams', 48, 680);
-    ctx.fillText('projects built', 330, 680);
+    ctx.fillText(STREAMS_STAT.label, 48, 680);
+    ctx.fillText(PROJECTS_BUILT_STAT.label, 330, 680);
 
     // TECH STACK — same list as the site
     ctx.beginPath(); ctx.moveTo(48, 712); ctx.lineTo(582, 712); ctx.stroke();
     ctx.font = `600 18px ${FONT}`;
     ctx.fillText('TECH STACK', 48, 746);
     ctx.font = `500 19px ${FONT}`;
-    const stack = [
-      'python · js · react · c++ · juce · dsp',
-      'openai · codex · claude · gemini · gcp',
-      'node · docker · git · linux · duckdb · sql',
-    ];
+    // Same list as the site; the three-row grouping (AI names together) is
+    // blueprint's own and lives with the data as ids — src/data/tech-stack.ts.
+    const stack = TECH_SHEET_ROWS.map((row) => techSheetRow(row));
     stack.forEach((line, i) => ctx.fillText(line, 48, 780 + i * 29));
     texture.needsUpdate = true;
   }
@@ -195,7 +198,7 @@ function cvTag() {
     ctx.stroke();
     ctx.font = `600 30px ${FONT}`;
     ctx.textBaseline = 'middle';
-    ctx.fillText('download cv', 96, PXH / 2 + 2);
+    ctx.fillText(RESUME_LABEL, 96, PXH / 2 + 2);
     ctx.textBaseline = 'alphabetic';
     texture.needsUpdate = true;
   }
@@ -268,20 +271,6 @@ function wallFrames() {
   return frames;
 }
 
-// Testimonials mirrored from the live site's about page (DefaultAbout.astro).
-const TESTIMONIALS = [
-  ["Rohan was here for me when I was down, and I'm never gonna forget that. I'm still down though so he's still here.", 'Sidharth M., friend'],
-  ['He is the only one who likes the Instagram reels I send.', 'Lin S., friend'],
-  ['Rohan is a radiant sun in the darkness, a warm blanket on a rainy night.', 'Dylan C., friend'],
-  ['Please hire my brother.', 'Ankit K., brother'],
-  ['He was one of the roommates I ever had.', 'Feng Kai P., friend'],
-  ['He helps me with any computer problems.', 'Rachele M., friend'],
-  ['He kindly humors my terrible music recommendations. Great guy.', 'Hrishi S., friend'],
-  ['Using his programming expertise and high IQ, he designed a program to help me.', 'Sarah O., friend'],
-  ['A dependable friend who always makes time to see me.', 'Anish K., friend'],
-  ["Easily in the top 3 children we've ever had.", 'Mum and Dad, Parents of 3'],
-  ['I remember his first words to me: be calm, sister, for I am here now.', 'Arisha K., sister'],
-];
 
 // Guest book: an open notebook flat on the table, one testimony per
 // page spread side. A blank hinged page sweeps across every few seconds
@@ -327,7 +316,7 @@ function guestBook() {
     ctx.globalAlpha = 0.6;
     ctx.fillText(`${index + 1} / ${TESTIMONIALS.length}`, PXW - 70, 40);
     ctx.globalAlpha = 1;
-    const [quote, who] = TESTIMONIALS[index % TESTIMONIALS.length];
+    const { quote, author: who } = TESTIMONIALS[index % TESTIMONIALS.length];
     ctx.font = `500 24px ${FONT}`;
     const words = quote.split(' ');
     const lines = [];
@@ -464,7 +453,7 @@ function guestBook() {
   return { group, tick };
 }
 
-const CV_URL = asset('/downloads/resume.pdf'); // copied from the live site
+const CV_URL = asset(RESUME_PATH); // shared path — src/data/resume.ts
 
 export function buildLounge() {
   const group = new THREE.Group();

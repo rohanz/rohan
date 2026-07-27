@@ -20,6 +20,10 @@ import { createArticleOverlay } from './article-overlay.js';
 import { createRig } from './camera-rig.js';
 import * as entranceDraw from './entrances/draw.js';
 import { withBase, stripBase } from './base.js';
+// Resume filename shared with classic/transit — src/data/resume.ts, inlined by
+// tools/build-blueprint.mjs. Only the link TEST comes from there; the
+// GoatCounter event name below stays hand-written, matching classic's.
+import { RESUME_FILENAME } from './site-data.generated.js';
 
 // GoatCounter (loaded in index.html with no_onload): manual pageview counts
 // on every route change, plus the same named events the classic site logs.
@@ -225,7 +229,7 @@ rig.onPointerRay((raycaster) => {
   if (mode === 'about') {
     const link = lounge.getLinkUnderRay(raycaster);
     if (link) {
-      if (link.endsWith('resume.pdf')) gcCount({ path: 'resume-download', event: true });
+      if (link.endsWith(RESUME_FILENAME)) gcCount({ path: 'resume-download', event: true });
       window.open(link, '_blank', 'noopener');
     }
     return;

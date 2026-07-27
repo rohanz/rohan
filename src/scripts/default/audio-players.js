@@ -1,4 +1,5 @@
 import { isLightTheme, sizeCanvas, prefersReducedMotion } from './shared.js';
+import { SONGS as musicData } from '../../data/music';
 
 let cleanups = [];
 let musicRoot = document;
@@ -22,48 +23,8 @@ let audioSource = null;
 // ============================================================
 // MUSIC DATA
 // ============================================================
-const musicData = [
-    {
-        title: "LOOSE ENDS",
-        artist: "rohan.jk and kairi",
-        summary: "hyperpop/pop rock song with heavy guitars and energetic production",
-        coverUrl: "/assets/images/looseends.webp",
-        spotifyUrl: "https://open.spotify.com/track/7xy7dlw4npEZ88uxVkFCJa?si=4d997b7d891b4214",
-        youtubeUrl: "https://www.youtube.com/watch?v=EJ1uM3mIk7Y",
-        appleMusicUrl: "https://music.apple.com/us/song/loose-ends/1874970496",
-        audioSnippetUrl: "/assets/audio/snippets/looseends.mp3",
-    },
-    {
-        title: "DON'T WANT ME",
-        artist: "rohan.jk and kairi",
-        summary: "rnb/house song with a smooth groove, and infectious rhythm",
-        coverUrl: "/assets/images/dontwantme.webp",
-        spotifyUrl: "https://open.spotify.com/track/0zYAFsKdFfbGfnMvRrEDgM?si=d8c21fc716e146d0",
-        youtubeUrl: "https://www.youtube.com/watch?v=UDpBfwxMZvI",
-        appleMusicUrl: "https://music.apple.com/us/song/dont-want-me/1832074479",
-        audioSnippetUrl: "/assets/audio/snippets/dontwantme.mp3",
-    },
-    {
-        title: "call me back",
-        artist: "rohan.jk and kairi",
-        summary: "feng kai and i tried writing a fun indie pop song with groovy bass and an upbeat tempo",
-        coverUrl: "/assets/images/callmeback.webp",
-        spotifyUrl: "https://open.spotify.com/track/3m1PQRxlKQh1tzxFP1C0ZY?si=642929c16c284e61",
-        youtubeUrl: "https://www.youtube.com/watch?v=iXYprE6T5ec",
-        appleMusicUrl: "https://music.apple.com/sg/album/call-me-back/1756849369?i=1756849370",
-        audioSnippetUrl: "/assets/audio/snippets/callmeback.mp3",
-    },
-    {
-        title: "where have u been?",
-        artist: "rohan.jk, tristan and hannah",
-        summary: "chill rnb/pop song with a smooth feel",
-        coverUrl: "/assets/images/wherehaveubeen.webp",
-        spotifyUrl: "https://open.spotify.com/track/0CqWJMqXpq2CqtyCfPWigj?si=0ad5ddf4f7c449ee",
-        youtubeUrl: "https://www.youtube.com/watch?v=XUDQDO6qpQA",
-        appleMusicUrl: "https://music.apple.com/sg/album/where-have-u-been-feat-trxstan-hannah-single/1727956658",
-        audioSnippetUrl: "/assets/audio/snippets/wherehaveubeen.mp3",
-    }
-];
+// Catalogue lives in src/data/music.ts (shared with transit and blueprint);
+// everything below is the classic waveform-player rendering of it.
 
 let musicSectionRendered = false;
 function initializeMusicSection() {
@@ -120,15 +81,15 @@ function displayMusic(tracks) {
         itemEl.innerHTML = `
             <div class="music-content">
                 <div class="music-header">
-                    ${track.coverUrl ? `<img src="${track.coverUrl}" alt="${DOMPurify.sanitize(track.title)} cover" class="music-cover img-fade" onload="this.classList.add('loaded')">` : ''}
+                    ${track.cover ? `<img src="${track.cover}" alt="${DOMPurify.sanitize(track.title)} cover" class="music-cover img-fade" onload="this.classList.add('loaded')">` : ''}
                     <div class="music-header-text">
                         <h3 class="music-title gloss-term" data-gloss="${DOMPurify.sanitize(track.summary)}" tabindex="0" aria-describedby="gloss-tooltip">${DOMPurify.sanitize(track.title)}</h3>
                         ${track.artist ? `<p class="music-artist">${DOMPurify.sanitize(track.artist)}</p>` : ''}
                         ${links.length ? `<div class="music-links">${links.join('')}</div>` : ''}
                     </div>
                 </div>
-                ${track.audioSnippetUrl ? `
-                <div class="waveform-player" data-audio-url="${track.audioSnippetUrl}">
+                ${track.audio ? `
+                <div class="waveform-player" data-audio-url="${track.audio}">
                     <button class="waveform-play-btn" aria-label="Play snippet of ${DOMPurify.sanitize(track.title)}" aria-pressed="false">
                         <i class="fas fa-play"></i>
                     </button>

@@ -2,6 +2,8 @@
 // Generated at build from the same content collection the site renders, so
 // it can never drift from the published articles.
 import { getCollection } from 'astro:content';
+import { LLMS_SUMMARY_LINES } from '../data/bio';
+import { RESUME_PATH } from '../data/resume';
 
 const SITE = 'https://www.rohanjk.xyz';
 
@@ -13,10 +15,9 @@ export async function GET() {
   const lines = [
     '# rohan.jk',
     '',
-    '> Portfolio of Rohan Kulshrestha — computer engineering student at NTU',
-    '> Singapore building end-to-end products with AI: data pipelines, cloud',
-    '> infrastructure, audio DSP, and apps. Also a musician (writes, produces,',
-    '> and records original songs).',
+    // The machine-facing summary is third person by design; it lives beside
+    // the visitor-facing bio in src/data/bio.ts so the two stay in step.
+    ...LLMS_SUMMARY_LINES.map((line) => `> ${line}`),
     '',
     'The site has three visual themes serving the same content: classic (the',
     'default, fully server-rendered — canonical for all content), transit (a',
@@ -33,7 +34,7 @@ export async function GET() {
     `- [Projects overview](${SITE}/projects/): all project write-ups`,
     `- [Music](${SITE}/music/): original songs, playable in the browser`,
     `- [About](${SITE}/about/): bio, tech stack, and resume`,
-    `- [Resume (PDF)](${SITE}/downloads/resume.pdf)`,
+    `- [Resume (PDF)](${SITE}${RESUME_PATH})`,
     '',
   ];
 
