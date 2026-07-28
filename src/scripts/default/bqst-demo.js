@@ -237,7 +237,11 @@ function initBqstAudioDemo(container) {
         });
     }
 
-    drawWaveform();
+    // NOTE: the initial drawWaveform() happens AFTER the engine is
+    // constructed — drawWaveform reads engine.version, and `const engine`
+    // is temporal-dead-zone until its initializer runs. Calling it here
+    // threw "Cannot access 'engine' before initialization" and killed the
+    // entire widget init on /projects/bqst.
 
     // -- engine ---------------------------------------------------------
     const engine = new BqstEngine({
@@ -283,6 +287,8 @@ function initBqstAudioDemo(container) {
             progress.style.width = `${ratio * 100}%`;
         },
     });
+
+    drawWaveform();
 
     // The A/B demo is two uncompressed WAVs (~1.9MB combined, and the
     // fetch+decode pair is the single heaviest thing classic ships). On

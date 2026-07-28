@@ -454,7 +454,10 @@ function initBqstAudioDemo() {
     });
   }
 
-  drawWaveform();
+  // NOTE: the initial drawWaveform() runs AFTER the engine is constructed —
+  // drawWaveform reads engine state, and `const engine` is TDZ until its
+  // initializer completes. Calling it earlier threw "Cannot access 'engine'
+  // before initialization" and killed the whole widget init.
 
   // -- engine ---------------------------------------------------------
   const engine = new BqstEngine({
@@ -497,6 +500,8 @@ function initBqstAudioDemo() {
       progress.style.transform = `scaleX(${ratio})`;
     },
   });
+
+  drawWaveform();
 
   const onPlayClick = () => {
     if (engine.isPlaying) engine.pause();
