@@ -11,6 +11,7 @@ import { asset } from './base.js';
 // `palette.ts`. That file is also where this theme's old `BLUE`/`PINK`/`TEAL`
 // constants — all three of which held the same chrome grey, and none of which
 // was blue — got replaced by names describing what they draw.
+import { createGlossaryTooltip } from '../../../src/lib/chrome/glossary';
 import { sizeCanvasWithDpr, blueprintDpr } from '../../../src/lib/visuals/canvas';
 import { blueprintPalette as PALETTE } from '../../../src/lib/visuals/themes';
 import { lcmDetectChord, lcmName, lcmPc, LCM_BLACK, LCM_KEY_OFFSETS } from '../../../src/lib/chord-engine';
@@ -2160,111 +2161,23 @@ function initQuantlabFinVisuals() {
 // ============================================================
 // wiring
 // ============================================================
+// Canonical glossary tooltip lives in src/lib/chrome/glossary.ts, shared with
+// classic and transit (see that file for the wave3 audit notes). This theme's
+// contribution that won the audit is aria-hidden maintenance on the tooltip
+// (already folded into the shared module) plus fixing a real bug: blueprint's
+// article body scrolls inside its own `.article-overlay` element, not the
+// window, so dismissing the tooltip only on window resize (never scroll) let
+// it strand mid-page when the overlay scrolled under it. scrollTarget below
+// fixes that.
 function initGlossary(article: HTMLElement) {
-  const terms = Array.from(article.querySelectorAll<HTMLElement>('.gloss-term[data-gloss]'));
-  if (!terms.length) return;
-
-  const tip = document.createElement('div');
-  tip.className = 'gloss-tooltip';
-  tip.id = 'gloss-tooltip';
-  tip.setAttribute('role', 'tooltip');
-  tip.setAttribute('aria-hidden', 'true');
-  document.body.appendChild(tip);
-
-  let active: HTMLElement | null = null;
-  const touchLike = window.matchMedia('(hover: none), (pointer: coarse)').matches;
-
-  const show = (term: HTMLElement, clientY?: number) => {
-    const text = term.dataset.gloss;
-    if (!text) return;
-    if (active && active !== term) active.removeAttribute('aria-describedby');
-    active = term;
-    term.setAttribute('aria-describedby', tip.id);
-    tip.textContent = text;
-    tip.classList.add('is-visible');
-    tip.setAttribute('aria-hidden', 'false');
-
-    const rects = Array.from(term.getClientRects());
-    let rect = term.getBoundingClientRect();
-    if (rects.length) {
-      rect = rects[0];
-      if (clientY != null) {
-        let best = rects[0];
-        let bestDistance = Infinity;
-        for (const fragment of rects) {
-          if (clientY >= fragment.top && clientY <= fragment.bottom) {
-            best = fragment;
-            break;
-          }
-          const distance = Math.min(Math.abs(clientY - fragment.top), Math.abs(clientY - fragment.bottom));
-          if (distance < bestDistance) {
-            bestDistance = distance;
-            best = fragment;
-          }
-        }
-        rect = best;
-      }
-    }
-    const tooltipRect = tip.getBoundingClientRect();
-    const margin = 12;
-    const gap = 10;
-    const column = article.getBoundingClientRect();
-    const minLeft = Math.max(margin, column.left);
-    const maxLeft = Math.min(window.innerWidth - tooltipRect.width - margin, column.right - tooltipRect.width);
-    const left = Math.max(minLeft, Math.min(rect.left + rect.width / 2 - tooltipRect.width / 2, maxLeft));
-    let top = rect.top - tooltipRect.height - gap;
-    if (top < margin) top = rect.bottom + gap;
-    tip.style.left = `${Math.round(left)}px`;
-    tip.style.top = `${Math.round(top)}px`;
-  };
-
-  const hide = () => {
-    active?.removeAttribute('aria-describedby');
-    active = null;
-    tip.classList.remove('is-visible');
-    tip.setAttribute('aria-hidden', 'true');
-  };
-  const onEnter = (event: Event) => {
-    const term = (event.target as HTMLElement).closest<HTMLElement>('.gloss-term');
-    if (term) show(term, (event as MouseEvent).clientY);
-  };
-
-  terms.forEach((term) => {
-    if (!term.hasAttribute('tabindex')) term.tabIndex = 0;
+  if (!article.querySelector('.gloss-term[data-gloss]')) return;
+  const scrollTarget = article.closest('.article-overlay') ?? window;
+  const glossary = createGlossaryTooltip({
+    container: article,
+    columnSelector: '.article-body',
+    scrollTarget,
   });
-  if (touchLike) {
-    const onTap = (event: Event) => {
-      const term = (event.target as HTMLElement).closest<HTMLElement>('.gloss-term');
-      if (!term || !article.contains(term)) {
-        hide();
-        return;
-      }
-      event.preventDefault();
-      if (active === term) hide();
-      else show(term, (event as MouseEvent).clientY);
-    };
-    document.addEventListener('click', onTap);
-    cleanups.push(() => document.removeEventListener('click', onTap));
-  } else {
-    terms.forEach((term) => {
-      term.addEventListener('mouseenter', onEnter);
-      term.addEventListener('mouseleave', hide);
-      term.addEventListener('focus', onEnter);
-      term.addEventListener('blur', hide);
-    });
-    cleanups.push(() => terms.forEach((term) => {
-      term.removeEventListener('mouseenter', onEnter);
-      term.removeEventListener('mouseleave', hide);
-      term.removeEventListener('focus', onEnter);
-      term.removeEventListener('blur', hide);
-    }));
-  }
-  const dismiss = () => hide();
-  window.addEventListener('resize', dismiss);
-  cleanups.push(() => {
-    window.removeEventListener('resize', dismiss);
-    tip.remove();
-  });
+  cleanups.push(() => glossary.destroy());
 }
 
 export function initWidgets(article: HTMLElement | null = document.querySelector('.article-body')) {

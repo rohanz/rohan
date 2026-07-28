@@ -469,6 +469,14 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
     max-width: 100%;
     margin: 1.5rem auto;
     cursor: zoom-in;
+    /* wave3: wrapper is now a real <button>, not a <span role="button"> —
+       reset the UA button chrome it otherwise inherits. */
+    border: 0;
+    padding: 0;
+    background: none;
+    font: inherit;
+    text-align: inherit;
+    color: inherit;
   }
   .article-zoom img { margin: 0 !important; }
   /* Portrait / phone screenshots: kept narrow and centred, not stretched full-width. */

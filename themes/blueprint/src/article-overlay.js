@@ -1,6 +1,9 @@
 import { marked } from 'marked';
 import { withBase, asset } from './base.js';
 import { cleanupWidgets, initWidgets } from './article-widgets.ts';
+import { createLightbox } from '../../../src/lib/chrome/lightbox';
+import { computeActiveHeadingId, triggerFraction, createClickSuppression } from '../../../src/lib/chrome/toc-scrollspy';
+import { HEADING_SLUGS } from './heading-slugs.generated.js';
 import './article-overlay.css';
 import './article-widgets.css';
 
@@ -30,6 +33,13 @@ const ARTICLES = {
   'this-website': thisWebsite,
 };
 
+// wave3: heading ids now come from HEADING_SLUGS (tools/build-blueprint.mjs,
+// see the comment on extractHeadingSlugs there), pre-slugged with
+// github-slugger the same way classic/transit get theirs from Astro \u2014 so
+// identically-titled headings agree on an id across every theme instead of
+// each hand-rolling its own dedup scheme. headingSlug() is kept only as a
+// defensive fallback for the (should-never-happen) case where the generated
+// table is missing or short for an article.
 function headingSlug(text, used) {
   const base = text
     .normalize('NFKD')
@@ -143,28 +153,35 @@ export function createArticleOverlay(projects, { onNavigate } = {}) {
     }
   }
 
+  // wave3: gained the tuned trigger model (0.5 viewport for h2, 0.38 for h3 —
+  // classic/transit's model, this theme previously used a single flat 0.38
+  // for both) and click suppression (below) from the shared scroll-spy core.
+  // Stays 'auto'-scrolling and keyed off the overlay's own scroll container
+  // by design — unlike classic/transit's window scroll.
+  const clickSuppress = createClickSuppression((target) => setActive(target));
   function updateScrollSpy() {
+    if (clickSuppress.target) return;
     const headings = [...body.querySelectorAll('h2[id], h3[id]')];
     if (!headings.length) return;
-    const atBottom = overlay.scrollTop + overlay.clientHeight >= overlay.scrollHeight - 12;
-    if (atBottom) {
-      setActive(headings.at(-1).id);
-      return;
-    }
-    const trigger = overlay.getBoundingClientRect().top + overlay.clientHeight * 0.38;
-    let active = headings[0];
-    headings.forEach((heading) => {
-      if (heading.getBoundingClientRect().top <= trigger) active = heading;
-    });
-    setActive(active.id);
+    const activeId = computeActiveHeadingId(
+      headings,
+      (heading) => overlay.getBoundingClientRect().top + overlay.clientHeight * triggerFraction(heading),
+      () => overlay.scrollTop + overlay.clientHeight >= overlay.scrollHeight - 12
+    );
+    setActive(activeId);
   }
 
-  function buildToc() {
+  function buildToc(slug) {
     const used = new Set();
+    const generatedIds = HEADING_SLUGS[slug];
     const headings = [...body.querySelectorAll('h2, h3')];
     let parentIndex = null;
     const items = headings.map((heading, index) => {
-      heading.id = headingSlug(heading.textContent, used);
+      // Build-time slugs (see comment on headingSlug above) — falls back to
+      // the runtime slugger only if the generated table doesn't cover this
+      // heading, which shouldn't happen once tools/build-blueprint.mjs has run.
+      heading.id = generatedIds?.[index] ?? headingSlug(heading.textContent, used);
+      used.add(heading.id);
       if (heading.tagName === 'H2') parentIndex = String(index);
       const parent = heading.tagName === 'H3' ? parentIndex : '';
       return `<a class="toc-item toc-${heading.tagName.toLowerCase()}" href="#${heading.id}" data-target="${heading.id}" data-index="${index}" data-parent="${parent ?? ''}">${heading.textContent}</a>`;
@@ -255,7 +272,7 @@ export function createArticleOverlay(projects, { onNavigate } = {}) {
     body.replaceChildren(tpl.content);
     captionImages(body);
     initWidgets(body);
-    buildToc();
+    buildToc(project.slug);
     projectNav.classList.toggle('is-unlisted', !isListed);
     projectNav.innerHTML = isListed
       ? `${projectLink(listedProjects[listedIndex - 1], 'prev', 'prev')}
@@ -286,44 +303,34 @@ export function createArticleOverlay(projects, { onNavigate } = {}) {
     onNavigate?.(null);
   }
 
-  // Image lightbox, adapted from the original site: click any body image
-  // to expand full-screen; any key or click closes.
-  const lightbox = document.createElement('div');
-  lightbox.className = 'article-lightbox';
-  lightbox.innerHTML = '<img alt=""><div class="article-lightbox-hint">press any key or click to close</div>';
-  document.body.appendChild(lightbox);
-  const lightboxImg = lightbox.querySelector('img');
-  let lightboxClearTimer = 0;
-  function closeLightbox() {
-    lightbox.classList.remove('is-visible');
-    // keep the image through the fade-out, then release it
-    clearTimeout(lightboxClearTimer);
-    lightboxClearTimer = setTimeout(() => lightboxImg.removeAttribute('src'), 240);
-  }
+  // Image lightbox: canonical core from src/lib/chrome/lightbox.ts (wave3
+  // unification — see that file for the classic/transit/blueprint audit).
+  // Blueprint's own contribution that won the audit is stopImmediatePropagation
+  // on Escape, passed here as stopImmediatePropagationOnClose: without it the
+  // article overlay's own Escape listener fires on the same keypress and
+  // closes the article underneath the just-closed image. Blueprint's markdown
+  // body images stay unwrapped (no <button>) — the overlay is a transient,
+  // JS-rendered surface with no CLS budget to protect, unlike classic/transit's
+  // static article flow, so the extra wrapper machinery isn't worth the risk
+  // to already-audited overlay markup.
+  const lightbox = createLightbox({
+    hintText: 'press any key or click to close',
+    stopImmediatePropagationOnClose: true,
+    overlayClassName: 'article-lightbox',
+  });
   body.addEventListener('click', (event) => {
     const img = event.target.closest('img');
     if (!img || img.closest('a')) return;
     event.preventDefault();
-    clearTimeout(lightboxClearTimer); // reopen within the fade-out keeps its src
-    lightboxImg.src = img.currentSrc || img.src;
-    lightboxImg.alt = img.alt || '';
-    lightbox.classList.add('is-visible');
-  });
-  lightbox.addEventListener('click', closeLightbox);
-  document.addEventListener('keydown', (event) => {
-    if (!lightbox.classList.contains('is-visible')) return;
-    if (event.metaKey || event.ctrlKey) return;
-    event.preventDefault();
-    // this keypress belongs to the lightbox alone — without this, the article
-    // overlay's own Escape listener fires on the same event and closes the
-    // article underneath the just-closed image
-    event.stopImmediatePropagation();
-    closeLightbox();
+    lightbox.open(img);
   });
 
   closeButton.addEventListener('click', close);
   overlay.addEventListener('wheel', (event) => event.stopPropagation(), { passive: true });
-  overlay.addEventListener('scroll', updateScrollSpy, { passive: true });
+  overlay.addEventListener('scroll', () => {
+    clickSuppress.poke();
+    updateScrollSpy();
+  }, { passive: true });
   overlay.addEventListener('click', (event) => {
     const tocLink = event.target.closest('.toc-item[data-target]');
     if (tocLink) {
@@ -332,8 +339,10 @@ export function createArticleOverlay(projects, { onNavigate } = {}) {
       if (!heading) return;
       const top = overlay.scrollTop + heading.getBoundingClientRect().top
         - overlay.getBoundingClientRect().top - 86;
-      overlay.scrollTo({ top: Math.max(0, top), behavior: 'auto' }); // direct jump, like the original
+      clickSuppress.start(tocLink.dataset.target);
+      overlay.scrollTo({ top: Math.max(0, top), behavior: 'auto' }); // direct jump, like the original — stays 'auto' by design
       setActive(tocLink.dataset.target);
+      history.replaceState(null, '', `#${tocLink.dataset.target}`);
       return;
     }
     const nav = event.target.closest('[data-slug], [data-close]');
@@ -368,7 +377,7 @@ export function createArticleOverlay(projects, { onNavigate } = {}) {
     }
   });
   document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape' && !overlay.hidden && !lightbox.classList.contains('is-visible')) close();
+    if (event.key === 'Escape' && !overlay.hidden && !lightbox.isOpen()) close();
   });
 
   return {
