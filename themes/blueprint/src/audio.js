@@ -20,6 +20,7 @@ export function createPlayer(songs) {
   let timeL = null;
   let timeR = null;
   const gains = [];   // per-song GainNode
+  const stopTimers = [];   // per-song pending "finish the 170ms fade-out pause" timer id
   const elements = songs.map((s) => {
     if (typeof Audio === 'undefined') return null;
     const el = new Audio(s.url);
@@ -74,15 +75,30 @@ export function createPlayer(songs) {
     if (ctx.state === 'suspended') ctx.resume();
   }
 
+  function clearStopTimer(i) {
+    if (stopTimers[i]) {
+      clearTimeout(stopTimers[i]);
+      stopTimers[i] = null;
+    }
+  }
+
   function stop(i, fade) {
     const el = elements[i];
     const g = gains[i];
+    clearStopTimer(i);
     if (fade && g && ctx) {
       const t = ctx.currentTime;
       g.gain.cancelScheduledValues(t);
       g.gain.setValueAtTime(g.gain.value, t);
       g.gain.linearRampToValueAtTime(0, t + 0.15);
-      setTimeout(() => { el.pause(); el.currentTime = 0; }, 170);
+      // Stored so a quick restart of THIS song (toggle(i) again before the
+      // fade finishes) can cancel it — uncancelled, this used to fire 170ms
+      // later and pause/rewind the just-restarted element out from under it.
+      stopTimers[i] = setTimeout(() => {
+        stopTimers[i] = null;
+        el.pause();
+        el.currentTime = 0;
+      }, 170);
     } else {
       el.pause();
       el.currentTime = 0;
@@ -101,6 +117,10 @@ export function createPlayer(songs) {
     currentIndex = i;
     const el = elements[i];
     const g = gains[i];
+    // Cancel any pending fade-out finish-pause left over from this song's
+    // own last stop() — otherwise it fires mid-playback and kills a track
+    // that was just quickly restarted.
+    clearStopTimer(i);
     const t = ctx.currentTime;
     g.gain.cancelScheduledValues(t);
     g.gain.setValueAtTime(0, t);
@@ -112,7 +132,13 @@ export function createPlayer(songs) {
         emit();
       }
     };
-    el.play();
+    el.play().catch((err) => {
+      console.warn('[blueprint audio] playback failed', songs[i]?.url, err);
+      if (currentIndex === i) {
+        currentIndex = null;
+        emit();
+      }
+    });
     emit();
   }
 
@@ -252,8 +278,12 @@ export function createPlayer(songs) {
     applyMono();
   }
 
-  // Release the audio graph: pause every element and close the context so a
-  // teardown (or the browser's pagehide) doesn't strand a live AudioContext.
+  // Release the audio graph: pause every element and close the context. This
+  // is a genuine, final teardown — after it runs, `ctx` and every node ref
+  // are gone, and `elements[i]` already had a MediaElementSourceNode created
+  // against it (createMediaElementSource can only be called ONCE per
+  // element), so ensureContext() cannot safely rebuild the graph afterward.
+  // Only call this when the player itself is being discarded.
   function dispose() {
     for (const el of elements) {
       if (!el) continue;
@@ -261,10 +291,26 @@ export function createPlayer(songs) {
       el.removeAttribute('src');
       el.load();
     }
+    for (let i = 0; i < stopTimers.length; i++) clearStopTimer(i);
     ctx?.close().catch(() => {});
     ctx = null;
+    analyser = masterGain = splitFeed = analyserL = analyserR = null;
   }
-  window.addEventListener('pagehide', dispose);
+
+  // pagehide fires on EVERY navigation away from the page, including ones the
+  // browser intends to restore from bfcache (back/forward) — calling the full
+  // dispose() there used to strip every element's src and close the
+  // AudioContext, which cannot be rebuilt (see dispose()'s comment), leaving
+  // the player permanently dead after a bfcache restore. Suspend the context
+  // instead: it stops audio immediately and is cheap while backgrounded, and
+  // ensureContext() already resumes a suspended context on the next toggle.
+  function suspendForBackground() {
+    ctx?.suspend().catch(() => {});
+  }
+  window.addEventListener('pagehide', suspendForBackground);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') suspendForBackground();
+  });
 
   return {
     toggle, current, position, level, onChange, getTimeDomain, getFrequency,
