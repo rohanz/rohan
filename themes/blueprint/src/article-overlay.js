@@ -1,6 +1,7 @@
 import { marked } from 'marked';
 import { withBase, asset } from './base.js';
 import { cleanupWidgets, initWidgets } from './article-widgets.ts';
+import { createLightbox } from '../../../src/lib/chrome/lightbox';
 import './article-overlay.css';
 import './article-widgets.css';
 
@@ -286,39 +287,26 @@ export function createArticleOverlay(projects, { onNavigate } = {}) {
     onNavigate?.(null);
   }
 
-  // Image lightbox, adapted from the original site: click any body image
-  // to expand full-screen; any key or click closes.
-  const lightbox = document.createElement('div');
-  lightbox.className = 'article-lightbox';
-  lightbox.innerHTML = '<img alt=""><div class="article-lightbox-hint">press any key or click to close</div>';
-  document.body.appendChild(lightbox);
-  const lightboxImg = lightbox.querySelector('img');
-  let lightboxClearTimer = 0;
-  function closeLightbox() {
-    lightbox.classList.remove('is-visible');
-    // keep the image through the fade-out, then release it
-    clearTimeout(lightboxClearTimer);
-    lightboxClearTimer = setTimeout(() => lightboxImg.removeAttribute('src'), 240);
-  }
+  // Image lightbox: canonical core from src/lib/chrome/lightbox.ts (wave3
+  // unification — see that file for the classic/transit/blueprint audit).
+  // Blueprint's own contribution that won the audit is stopImmediatePropagation
+  // on Escape, passed here as stopImmediatePropagationOnClose: without it the
+  // article overlay's own Escape listener fires on the same keypress and
+  // closes the article underneath the just-closed image. Blueprint's markdown
+  // body images stay unwrapped (no <button>) — the overlay is a transient,
+  // JS-rendered surface with no CLS budget to protect, unlike classic/transit's
+  // static article flow, so the extra wrapper machinery isn't worth the risk
+  // to already-audited overlay markup.
+  const lightbox = createLightbox({
+    hintText: 'press any key or click to close',
+    stopImmediatePropagationOnClose: true,
+    overlayClassName: 'article-lightbox',
+  });
   body.addEventListener('click', (event) => {
     const img = event.target.closest('img');
     if (!img || img.closest('a')) return;
     event.preventDefault();
-    clearTimeout(lightboxClearTimer); // reopen within the fade-out keeps its src
-    lightboxImg.src = img.currentSrc || img.src;
-    lightboxImg.alt = img.alt || '';
-    lightbox.classList.add('is-visible');
-  });
-  lightbox.addEventListener('click', closeLightbox);
-  document.addEventListener('keydown', (event) => {
-    if (!lightbox.classList.contains('is-visible')) return;
-    if (event.metaKey || event.ctrlKey) return;
-    event.preventDefault();
-    // this keypress belongs to the lightbox alone — without this, the article
-    // overlay's own Escape listener fires on the same event and closes the
-    // article underneath the just-closed image
-    event.stopImmediatePropagation();
-    closeLightbox();
+    lightbox.open(img);
   });
 
   closeButton.addEventListener('click', close);
@@ -368,7 +356,7 @@ export function createArticleOverlay(projects, { onNavigate } = {}) {
     }
   });
   document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape' && !overlay.hidden && !lightbox.classList.contains('is-visible')) close();
+    if (event.key === 'Escape' && !overlay.hidden && !lightbox.isOpen()) close();
   });
 
   return {

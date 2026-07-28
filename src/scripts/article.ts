@@ -1,135 +1,27 @@
 // Project detail-page chrome: full-screen image lightbox + train-line TOC
 // scroll-spy. Initialized on astro:page-load, torn down on astro:before-swap.
 
+// Canonical lightbox core lives in src/lib/chrome/lightbox.ts, shared with
+// the classic and blueprint forks (see that file for the wave3 audit notes:
+// this theme's behaviour won the audit, grafted with classic's real <button>
+// wrapper element in place of a <span role="button">).
+import { createLightbox, wrapZoomableImages } from '../lib/chrome/lightbox';
+
 let cleanups: Array<() => void> = [];
 
 function initLightbox(article: HTMLElement) {
-  const overlay = document.createElement('div');
-  overlay.className = 'image-lightbox';
-  overlay.setAttribute('role', 'dialog');
-  overlay.setAttribute('aria-modal', 'true');
-  overlay.setAttribute('aria-hidden', 'true');
-  overlay.tabIndex = -1;
-  overlay.innerHTML =
-    '<img class="image-lightbox-img" alt=""><div class="image-lightbox-hint">Press any key or click to close</div>';
-  document.body.appendChild(overlay);
-
-  const expanded = overlay.querySelector('.image-lightbox-img') as HTMLImageElement;
-  let lastTrigger: HTMLElement | null = null;
-
-  const close = () => {
-    if (!overlay.classList.contains('is-visible')) return;
-    overlay.classList.remove('is-visible');
-    overlay.setAttribute('aria-hidden', 'true');
-    document.body.classList.remove('image-lightbox-open');
-    expanded.removeAttribute('src');
-    expanded.alt = '';
-    const t = lastTrigger;
-    lastTrigger = null;
-    if (t && document.contains(t)) t.focus({ preventScroll: true });
-  };
-
-  const open = (img: HTMLImageElement) => {
-    const src = img.currentSrc || img.src;
-    if (!src) return;
-    // Return focus to the focusable .article-zoom wrapper (not the inert <img>)
-    // so keyboard users land back where they opened from.
-    lastTrigger = img.closest<HTMLElement>('.article-zoom') ?? img;
-    expanded.src = src;
-    expanded.alt = img.alt || '';
-    overlay.classList.add('is-visible');
-    overlay.setAttribute('aria-hidden', 'false');
-    document.body.classList.add('image-lightbox-open');
-    overlay.focus({ preventScroll: true });
-  };
-
-  const onArticleClick = (e: Event) => {
-    const img = (e.target as HTMLElement).closest('img');
-    if (!img || !article.contains(img)) return;
-    // A linked image navigates; hijacking it into the lightbox (and
-    // preventDefault-ing the link) would break the author's intent.
-    if (img.closest('a')) return;
-    e.preventDefault();
-    open(img);
-  };
-  // The zoom wrappers are keyboard buttons (tabindex + role, set below) —
-  // Enter/Space opens the same path as a click.
-  const onArticleKeydown = (e: KeyboardEvent) => {
-    if (e.key !== 'Enter' && e.key !== ' ') return;
-    const box = (e.target as HTMLElement).closest<HTMLElement>('.article-zoom');
-    if (!box || !article.contains(box)) return;
-    const img = box.querySelector('img');
-    if (!img || img.closest('a')) return;
-    e.preventDefault(); // Space would otherwise scroll the page
-    open(img);
-  };
-  const onOverlayClick = (e: Event) => {
-    if (e.target === overlay || e.target === expanded) close();
-  };
-  const onKeydown = (e: KeyboardEvent) => {
-    if (!overlay.classList.contains('is-visible')) return;
-    // Modifier-only presses and command combos (Cmd/Ctrl+C, screen-reader and
-    // browser shortcuts) must pass through un-prevented, not close the lightbox.
-    if (e.key === 'Shift' || e.key === 'Control' || e.key === 'Alt' || e.key === 'Meta') return;
-    if (e.metaKey || e.ctrlKey) return;
-    e.preventDefault();
-    close();
-  };
-
+  const lightbox = createLightbox({ hintText: 'Press any key or click to close' });
   // Wrap each zoomable image in a sizing box that centres it (narrow images stay
   // their own width, centred, rather than left-aligned) and carries a "click to
   // expand" hint pill in the bottom-right — matching the original site.
-  const wrapped: HTMLElement[] = [];
-  article.querySelectorAll<HTMLImageElement>('img').forEach((img) => {
-    if (img.closest('.article-zoom')) return;
-    const box = document.createElement('span');
-    box.className = 'article-zoom';
-    // Linked images keep the sizing wrap but not the "expand" affordance — the
-    // click/keydown handlers bail on them, so a hint or button role would lie.
-    if (!img.closest('a')) {
-      box.dataset.hint = 'click to expand';
-      // Keyboard operability: the wrapper is the tab stop that opens the
-      // lightbox (see onArticleKeydown), announced as a button with the
-      // image's own alt text for context.
-      box.tabIndex = 0;
-      box.setAttribute('role', 'button');
-      box.setAttribute('aria-label', img.alt ? `Expand image: ${img.alt}` : 'Expand image');
-    }
-    img.parentNode?.insertBefore(box, img);
-    box.appendChild(img);
-    wrapped.push(box);
-    // Portrait shots (e.g. phone screenshots) are held to a narrow, centred width
-    // instead of being stretched to fill the whole column. Classify as robustly as
-    // possible: immediately, on load, AND after decode() — on a client-side page
-    // swap a cached image can be `complete` but not yet measurable, and its `load`
-    // never fires, so decode() is what catches it (otherwise it stays full-width).
-    const classify = () => {
-      if (img.naturalWidth && img.naturalHeight > img.naturalWidth * 1.3)
-        box.classList.add('is-portrait');
-    };
-    classify();
-    img.addEventListener('load', classify);
-    img.decode?.().then(classify).catch(() => {});
+  const unwrap = wrapZoomableImages(article, lightbox, {
+    wrapperClassName: 'article-zoom',
+    hintAttr: 'click to expand',
   });
 
-  article.addEventListener('click', onArticleClick);
-  article.addEventListener('keydown', onArticleKeydown);
-  overlay.addEventListener('click', onOverlayClick);
-  document.addEventListener('keydown', onKeydown);
-
   cleanups.push(() => {
-    close();
-    article.removeEventListener('click', onArticleClick);
-    article.removeEventListener('keydown', onArticleKeydown);
-    overlay.removeEventListener('click', onOverlayClick);
-    document.removeEventListener('keydown', onKeydown);
-    overlay.remove();
-    // Unwrap so a re-init (client nav back to this page) doesn't double-wrap.
-    wrapped.forEach((box) => {
-      const img = box.querySelector('img');
-      if (img && box.parentNode) box.parentNode.insertBefore(img, box);
-      box.remove();
-    });
+    lightbox.destroy();
+    unwrap();
   });
 }
 
