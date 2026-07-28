@@ -11,7 +11,23 @@
  * currently-playing track animates. The engine (ride.ts) calls
  * stopMusicPlayback() when leaving the music view so audio never bleeds back
  * onto the map, and astro:before-swap silences it on cross-page navigation.
+ *
+ * The Web Audio graph and analysis maths are shared with the classic theme's
+ * `src/scripts/default/audio-players.js` fork via `src/lib/audio/` — see
+ * that directory for the equivalence fixtures.
  */
+import { buildAnalyserGraph, ensureAudioContext, type AnalyserGraph } from '../lib/audio/graph';
+import {
+  FREQ_BANDS,
+  RED_THRESHOLD_DB,
+  dbToFrac,
+  computeBands,
+  blurHighlights,
+  smoothCurve,
+  curveIntensity,
+  vuDbFromStereo,
+  onePole,
+} from '../lib/audio/analysis';
 
 // -- palette -----------------------------------------------------------------
 // Amber is reserved for the map's stop-lighting language (ride.ts) and must
@@ -87,48 +103,21 @@ function ensureAudioGraph(): void {
   // after ClientRouter swaps: the swap replaces <body>, orphaning the element
   // (playback still works detached, but keep the stated inspectability true).
   if (!audioEl.isConnected) document.body.appendChild(audioEl);
-  if (!audioCtx) {
-    const AC = window.AudioContext || (window as any).webkitAudioContext;
-    if (AC) audioCtx = new AC();
-  }
+  audioCtx = ensureAudioContext(audioCtx);
   if (!audioCtx || source) return;
-  try {
-    source = audioCtx.createMediaElementSource(audioEl);
-    analyser = audioCtx.createAnalyser();
-    analyser.fftSize = 4096;
-    analyser.smoothingTimeConstant = 0.78;
-
-    const splitter = audioCtx.createChannelSplitter(2);
-    analyserL = audioCtx.createAnalyser();
-    analyserR = audioCtx.createAnalyser();
-    analyserL.fftSize = 2048;
-    analyserR.fftSize = 2048;
-
-    source.connect(analyser);
-    source.connect(splitter);
-    splitter.connect(analyserL, 0);
-    splitter.connect(analyserR, 1);
-    analyser.connect(audioCtx.destination);
-  } catch (err) {
-    // A partial failure here would be the worst kind: `source` exists (a
-    // MediaElementSource CAPTURES the element's output — and can only be created
-    // once per element, so there is no rebuilding) but was never routed to
-    // destination, which would leave every track playing SILENTLY forever. Fall
-    // back to wiring the source straight to the speakers: audio works, the
-    // analyser visuals just stay idle.
-    console.warn('[music] analyser graph setup failed — visuals disabled', err);
-    analyser = analyserL = analyserR = null;
-    try {
-      source?.connect(audioCtx.destination);
-    } catch {
-      /* source itself failed to create — element output was never captured */
-    }
+  // buildAnalyserGraph handles the case where analyser setup fails partway
+  // through: it still routes `source` straight to destination so playback
+  // never goes silently unrouted (see src/lib/audio/graph.ts).
+  const graph: AnalyserGraph | null = buildAnalyserGraph(audioCtx, audioEl);
+  if (graph) {
+    source = graph.source;
+    analyser = graph.analyser;
+    analyserL = graph.analyserL;
+    analyserR = graph.analyserR;
   }
 }
 
 // -- one row's player ------------------------------------------------------
-const FREQ_BANDS = 128;
-const RED_THRESHOLD_DB = -10;
 
 class RowPlayer {
   el: HTMLElement;
@@ -437,20 +426,8 @@ class RowPlayer {
     const heightLevels = this.curveHeights;
     for (let i = 0; i < n; i++) heightLevels[i] = Math.max(0, Math.min(0.72, levels[i]));
     const smoothLevels = this.curveSmooth;
-    for (let i = 0; i < n; i++) {
-      const a = heightLevels[Math.max(0, i - 2)];
-      const b = heightLevels[Math.max(0, i - 1)];
-      const d = heightLevels[Math.min(n - 1, i + 1)];
-      const e = heightLevels[Math.min(n - 1, i + 2)];
-      smoothLevels[i] = (a + b * 2 + heightLevels[i] * 3 + d * 2 + e) / 9;
-    }
-    // The smoothstep "color level" per band was only ever reduced to its max,
-    // so compute the max inline instead of materialising a third array.
-    let intensity = 0;
-    for (let i = 0; i < n; i++) {
-      const t = Math.max(0, Math.min(1, (smoothLevels[i] - 0.3) / 0.34));
-      intensity = Math.max(intensity, t * t * (3 - 2 * t));
-    }
+    smoothCurve(heightLevels, smoothLevels);
+    const intensity = curveIntensity(smoothLevels);
     const xFor = (i: number) => (i / (n - 1)) * freqW;
     const yFor = (value: number) => baseline - Math.max(0, Math.min(1, value)) * (freqH - topPad);
 
@@ -553,41 +530,8 @@ class RowPlayer {
     const freqData = (freqScratch = u8Scratch(freqScratch, freqBins));
     analyser.getByteFrequencyData(freqData);
 
-    const minBin = 2;
-    const maxBin = Math.min(freqBins - 1, Math.floor(freqBins * 0.62));
-    for (let i = 0; i < FREQ_BANDS; i++) {
-      const startT = i / FREQ_BANDS;
-      const endT = (i + 1) / FREQ_BANDS;
-      const start = Math.max(minBin, Math.floor(minBin * Math.pow(maxBin / minBin, startT)));
-      const end = Math.max(start + 1, Math.floor(minBin * Math.pow(maxBin / minBin, endT)));
-      let total = 0;
-      let bandPeak = 0;
-      let count = 0;
-      for (let bin = start; bin < end; bin++) {
-        const value = freqData[bin] || 0;
-        total += value;
-        bandPeak = Math.max(bandPeak, value);
-        count++;
-      }
-      const average = count ? total / count : 0;
-      const level = (average * 0.62 + bandPeak * 0.38) / 255;
-      const shaped = Math.min(0.7, Math.pow(level, 0.68) * 0.74);
-      const rise = Math.max(0, shaped - this.freqSmoothed[i]);
-      const bandT = i / Math.max(1, FREQ_BANDS - 1);
-      const lowKickBias = bandT < 0.28 ? 1.55 - bandT * 1.2 : 1;
-      const transient = Math.max(0, (rise - 0.012) / 0.12);
-      const body = Math.max(0, (shaped - 0.2) / 0.44);
-      const rawHighlight = Math.min(1, Math.pow(transient, 0.72) * Math.pow(body, 0.42) * lowKickBias);
-      const targetSpeed = rawHighlight > this.freqHighlightTargets[i] ? 0.2 : 0.026;
-      this.freqHighlightTargets[i] += (rawHighlight - this.freqHighlightTargets[i]) * targetSpeed;
-      this.freqSmoothed[i] += (shaped - this.freqSmoothed[i]) * 0.34;
-    }
-    for (let i = 0; i < FREQ_BANDS; i++) {
-      const left = this.freqHighlightTargets[Math.max(0, i - 1)];
-      const center = this.freqHighlightTargets[i];
-      const right = this.freqHighlightTargets[Math.min(FREQ_BANDS - 1, i + 1)];
-      this.freqHighlightBlurred[i] = (left + center * 2 + right) / 4;
-    }
+    computeBands(freqData, { freqSmoothed: this.freqSmoothed, freqHighlightTargets: this.freqHighlightTargets });
+    blurHighlights(this.freqHighlightTargets, this.freqHighlightBlurred);
     this.drawFrequencyCurve(this.freqSmoothed, 1, this.freqHighlightBlurred);
   }
 
@@ -681,15 +625,8 @@ class RowPlayer {
 
   drawVuLive(dataL: Float32Array, dataR: Float32Array, bufLen: number): void {
     if (!this.vuCtx) return;
-    let sumSq = 0;
-    for (let i = 0; i < bufLen; i++) {
-      const mid = (dataL[i] + dataR[i]) * 0.5;
-      sumSq += mid * mid;
-    }
-    const rms = Math.sqrt(sumSq / bufLen);
-    const dbFS = rms > 0 ? 20 * Math.log10(rms) : -40;
-    const vuNow = Math.max(-40, Math.min(0, dbFS));
-    this.vuSmoothed += (vuNow - this.vuSmoothed) * 0.18;
+    const vuNow = vuDbFromStereo(dataL, dataR, bufLen);
+    this.vuSmoothed = onePole(this.vuSmoothed, vuNow, 0.18);
     this.vuCtx.clearRect(0, 0, this.vuW, this.vuH);
     this.drawAnalogArc(this.vuCtx, this.vuW, this.vuH, dbToFrac(this.vuSmoothed));
   }
@@ -954,14 +891,6 @@ class RowPlayer {
         if (activePlayer === this) activePlayer = null;
       });
   }
-}
-
-/** Non-linear dB→arc-fraction mapping: -40..-10 spans 70% of the arc, the
- *  hot -10..0 stretch the remaining 30%. */
-function dbToFrac(db: number): number {
-  const clamped = Math.max(-40, Math.min(0, db));
-  if (clamped <= -10) return ((clamped + 40) / 30) * 0.7;
-  return 0.7 + ((clamped + 10) / 10) * 0.3;
 }
 
 // -- module lifecycle ------------------------------------------------------
