@@ -40,6 +40,11 @@ export interface BqstEngineOptions {
    *  context variable so the SAME context can be shared with other players
    *  on the page, matching the original's behaviour). */
   getAudioContext: () => AudioContext | null;
+  /** Defaults to true (load immediately). Pass false to defer — the caller
+   *  must then call `engine.load()` itself (e.g. from an IntersectionObserver
+   *  on mobile — see e2e/mobile-classic.spec.ts's no-eager-audio invariant).
+   *  `start()` always calls `load()` too, so a play tap works either way. */
+  autoLoad?: boolean;
   mediaSession?: Omit<MediaSessionConfig, 'onPlay' | 'onPause'>;
   /** Called as soon as each version's raw bytes are in and hand-parsed —
    *  before decodeAudioData resolves — so the theme can paint an immediate
@@ -86,10 +91,15 @@ export class BqstEngine {
   private rafId: number | null = null;
   private mutexToken: object | null = null;
   private unlocker = new SilentWavUnlocker({ buildSilentWavUrl });
+  private loadStarted = false;
 
   constructor(opts: BqstEngineOptions) {
     this.opts = opts;
-    this.loadBuffers();
+    // `autoLoad: false` lets the caller defer the fetch (mobile — see
+    // classic's IntersectionObserver-gated `loadAudio()`, which this
+    // preserves via the theme calling `engine.load()` itself once the
+    // widget nears the viewport, or on first play via start()).
+    if (opts.autoLoad !== false) this.load();
   }
 
   get isPlaying(): boolean {
@@ -103,6 +113,17 @@ export class BqstEngine {
   }
   get duration(): number {
     return this.cleanBuffer?.duration || this.processedBuffer?.duration || 0;
+  }
+  /** The decoded AudioBuffer for `version`, or null before it's ready — for
+   *  the theme's own waveform drawing (canvas rendering stays theme-local,
+   *  see this file's header comment). */
+  getBuffer(version: BqstVersion): AudioBuffer | null {
+    return version === 'clean' ? this.cleanBuffer : this.processedBuffer;
+  }
+  /** Current position within the loop, in seconds — for the theme's own
+   *  progress-bar rendering beyond the per-frame onProgress ratio. */
+  getPlaybackSeconds(): number {
+    return this.getPlaybackTime();
   }
 
   private ensureAudioContext(): AudioContext {
@@ -122,9 +143,21 @@ export class BqstEngine {
     return ctx;
   }
 
-  /** Fetch + decode both versions. Runs at construction, and again from
-   *  start() after a failure — a flaky network shouldn't permanently brick
-   *  the demo (transit's contribution: loadFailed retry). */
+  /** Fetch + decode both versions. Idempotent (a no-op once started, matching
+   *  classic's `loadAudio()` — safe to call from both an IntersectionObserver
+   *  and "tapped play before scrolled in"), except after a failure, where
+   *  `retryLoad()` explicitly re-arms it. */
+  load(): void {
+    if (this.loadStarted) return;
+    this.loadStarted = true;
+    this.loadBuffers();
+  }
+
+  private retryLoad(): void {
+    this.loadStarted = true; // already true, but keep loadBuffers()'s caller symmetric
+    this.loadBuffers();
+  }
+
   private loadBuffers(): void {
     Promise.all([this.fetchAudioData(this.opts.cleanUrl), this.fetchAudioData(this.opts.processedUrl)])
       .then(async ([cleanData, processedData]) => {
@@ -246,6 +279,7 @@ export class BqstEngine {
     // audio silent).
     this.clearStopTimer();
     this.mutexToken = claimPlayback(() => this.stopForHandoff());
+    this.load(); // no-op once started — covers "tapped play before scrolled in" on mobile
 
     const ctx = this.ensureAudioContext();
     if (ctx.state === 'suspended') {
@@ -264,7 +298,7 @@ export class BqstEngine {
     if (!this.isReady_ || !this.cleanBuffer || !this.processedBuffer) {
       if (this.loadFailed) {
         this.loadFailed = false;
-        this.loadBuffers();
+        this.retryLoad();
       }
       this.wantsToPlay = true;
       return;
