@@ -1,3 +1,10 @@
+// Canonical scroll-spy trigger model + click-suppression helper live in
+// src/lib/chrome/toc-scrollspy.ts, shared with the transit and blueprint
+// forks (see that file for the wave3 audit notes — this theme's container
+// abstraction below, and its reduced-motion guard on the click-scroll below,
+// are what transit/blueprint were missing).
+import { computeActiveHeadingId, triggerFraction, scrollBehavior } from '../../lib/chrome/toc-scrollspy';
+
 let cleanups = [];
 
 function setActive(items, slug) {
@@ -54,18 +61,16 @@ export function init(root = document) {
             setActive(items, landedTarget);
         }, 180);
     };
+    const isNearBottom = () =>
+        scrollElement.scrollTop + scrollElement.clientHeight >= scrollElement.scrollHeight - 12;
     const compute = () => {
         if (clickTarget) return;
-        if (scrollElement.scrollTop + scrollElement.clientHeight >= scrollElement.scrollHeight - 12) {
-            setActive(items, headings[headings.length - 1].id);
-            return;
-        }
-        let active = headings[0];
-        headings.forEach(heading => {
-            const trigger = innerHeight * (heading.tagName === 'H3' ? 0.38 : 0.5);
-            if (heading.getBoundingClientRect().top <= trigger) active = heading;
-        });
-        setActive(items, active.id);
+        const activeId = computeActiveHeadingId(
+            headings,
+            heading => innerHeight * triggerFraction(heading),
+            isNearBottom
+        );
+        setActive(items, activeId);
     };
     const onScroll = () => {
         settleClick();
@@ -79,7 +84,7 @@ export function init(root = document) {
         event.preventDefault();
         clickTarget = item.dataset.target;
         setActive(items, clickTarget);
-        const behavior = matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+        const behavior = scrollBehavior();
         if (mainContentScrolls) {
             const containerTop = mainContent.getBoundingClientRect().top;
             const top = mainContent.scrollTop + heading.getBoundingClientRect().top - containerTop - innerHeight * 0.5;

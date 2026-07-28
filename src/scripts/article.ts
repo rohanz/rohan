@@ -6,6 +6,15 @@
 // this theme's behaviour won the audit, grafted with classic's real <button>
 // wrapper element in place of a <span role="button">).
 import { createLightbox, wrapZoomableImages } from '../lib/chrome/lightbox';
+// Canonical glossary tooltip lives in src/lib/chrome/glossary.ts, shared with
+// classic and blueprint (see that file for the wave3 audit notes: classic's
+// geometry won, grafted with this theme's dynamic aria-describedby wiring).
+import { createGlossaryTooltip } from '../lib/chrome/glossary';
+// Canonical TOC scroll-spy trigger model + click-suppression helper, shared
+// with classic and blueprint (see that file for the wave3 audit notes: this
+// theme's core won, grafted with classic's reduced-motion guard on the
+// click-scroll below, fixing a real bug — this used to hardcode 'smooth').
+import { computeActiveHeadingId, triggerFraction, scrollBehavior } from '../lib/chrome/toc-scrollspy';
 
 let cleanups: Array<() => void> = [];
 
@@ -205,21 +214,16 @@ function initToc(article: HTMLElement) {
     // once the page is scrolled to the bottom, force the final heading active
     // (mirrors the original's isNearBottom).
     const doc = document.documentElement;
-    if (window.innerHeight + window.scrollY >= doc.scrollHeight - 4) {
-      setCurrent(headings[headings.length - 1].id);
-      return;
-    }
     // Viewport-proportional trigger lines, matching the original site: a
     // section goes current when its heading crosses ~mid-screen (50% of the
     // viewport for h2s, 38% for h3s — subsections trigger higher). The old
     // fixed 140px line made the switch feel late, worse the taller the screen.
-    let active = headings[0];
-    for (const h of headings) {
-      const trigger = window.innerHeight * (h.tagName === 'H3' ? 0.38 : 0.5);
-      if (h.getBoundingClientRect().top <= trigger) active = h;
-      else break;
-    }
-    setCurrent(active.id);
+    const activeId = computeActiveHeadingId(
+      headings,
+      (h) => window.innerHeight * triggerFraction(h),
+      () => window.innerHeight + window.scrollY >= doc.scrollHeight - 4
+    );
+    setCurrent(activeId);
   };
 
   const io = new IntersectionObserver(computeActive, {
@@ -259,7 +263,7 @@ function initToc(article: HTMLElement) {
     clickTarget = slug;
     setCurrent(slug);
     const y = target.getBoundingClientRect().top + window.scrollY - 90;
-    window.scrollTo({ top: y, behavior: 'smooth' });
+    window.scrollTo({ top: y, behavior: scrollBehavior() });
     history.replaceState(null, '', `#${slug}`);
     // Fallback in case the target is already in place and no scroll fires.
     clearTimeout(clickTimer);
@@ -315,106 +319,9 @@ function initToc(article: HTMLElement) {
 // line fragment under the cursor (so a wrapped term positions per word), flips
 // below when there's no room, and clamps to the viewport.
 function initGlossary(article: HTMLElement) {
-  const terms = Array.from(article.querySelectorAll<HTMLElement>('.gloss-term'));
-  if (!terms.length) return;
-
-  const tip = document.createElement('div');
-  tip.className = 'gloss-tooltip';
-  tip.setAttribute('role', 'tooltip');
-  // Stable id so the active term can point at the tooltip via aria-describedby
-  // (set on show, removed on hide) — otherwise the definition is visual-only.
-  tip.id = 'gloss-tooltip';
-  document.body.appendChild(tip);
-
-  let active: HTMLElement | null = null;
-  const touchLike = window.matchMedia('(hover: none), (pointer: coarse)').matches;
-
-  const show = (term: HTMLElement, clientY?: number) => {
-    const text = term.dataset.gloss;
-    if (!text) return;
-    // Re-point the association when hopping directly between terms.
-    if (active && active !== term) active.removeAttribute('aria-describedby');
-    active = term;
-    term.setAttribute('aria-describedby', tip.id);
-    tip.textContent = text;
-    tip.classList.add('is-visible');
-    const rects = Array.from(term.getClientRects());
-    let rect = term.getBoundingClientRect();
-    if (rects.length) {
-      rect = rects[0];
-      if (clientY != null) {
-        let best = rects[0];
-        let bd = Infinity;
-        for (const r of rects) {
-          if (clientY >= r.top && clientY <= r.bottom) {
-            best = r;
-            break;
-          }
-          const d = Math.min(Math.abs(clientY - r.top), Math.abs(clientY - r.bottom));
-          if (d < bd) {
-            bd = d;
-            best = r;
-          }
-        }
-        rect = best;
-      }
-    }
-    const tr = tip.getBoundingClientRect();
-    const margin = 12;
-    const gap = 10;
-    let left = rect.left + rect.width / 2 - tr.width / 2;
-    left = Math.max(margin, Math.min(left, window.innerWidth - tr.width - margin));
-    let top = rect.top - tr.height - gap;
-    if (top < margin) top = rect.bottom + gap;
-    tip.style.left = `${Math.round(left)}px`;
-    tip.style.top = `${Math.round(top)}px`;
-  };
-  const hide = () => {
-    active?.removeAttribute('aria-describedby');
-    active = null;
-    tip.classList.remove('is-visible');
-  };
-
-  const onEnter = (e: Event) => {
-    const t = (e.target as HTMLElement).closest<HTMLElement>('.gloss-term');
-    if (t) show(t, (e as MouseEvent).clientY);
-  };
-  if (touchLike) {
-    const onTap = (e: Event) => {
-      const t = (e.target as HTMLElement).closest<HTMLElement>('.gloss-term');
-      if (t) {
-        e.preventDefault();
-        if (active === t) hide();
-        else show(t, (e as MouseEvent).clientY);
-      } else hide();
-    };
-    document.addEventListener('click', onTap);
-    cleanups.push(() => document.removeEventListener('click', onTap));
-  } else {
-    terms.forEach((t) => {
-      if (!t.hasAttribute('tabindex')) t.tabIndex = 0;
-      t.addEventListener('mouseenter', onEnter);
-      t.addEventListener('mouseleave', hide);
-      t.addEventListener('focus', onEnter);
-      t.addEventListener('blur', hide);
-    });
-    cleanups.push(() =>
-      terms.forEach((t) => {
-        t.removeEventListener('mouseenter', onEnter);
-        t.removeEventListener('mouseleave', hide);
-        t.removeEventListener('focus', onEnter);
-        t.removeEventListener('blur', hide);
-      }),
-    );
-  }
-  const dismiss = () => active && hide();
-  window.addEventListener('scroll', dismiss, { passive: true });
-  window.addEventListener('resize', dismiss);
-  cleanups.push(() => {
-    window.removeEventListener('scroll', dismiss);
-    window.removeEventListener('resize', dismiss);
-    tip.remove();
-  });
+  if (!article.querySelector('.gloss-term')) return;
+  const glossary = createGlossaryTooltip({ container: article, columnSelector: '.article' });
+  cleanups.push(() => glossary.destroy());
 }
 
 function init() {

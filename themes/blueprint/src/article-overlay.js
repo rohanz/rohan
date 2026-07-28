@@ -2,6 +2,7 @@ import { marked } from 'marked';
 import { withBase, asset } from './base.js';
 import { cleanupWidgets, initWidgets } from './article-widgets.ts';
 import { createLightbox } from '../../../src/lib/chrome/lightbox';
+import { computeActiveHeadingId, triggerFraction, createClickSuppression } from '../../../src/lib/chrome/toc-scrollspy';
 import './article-overlay.css';
 import './article-widgets.css';
 
@@ -144,20 +145,22 @@ export function createArticleOverlay(projects, { onNavigate } = {}) {
     }
   }
 
+  // wave3: gained the tuned trigger model (0.5 viewport for h2, 0.38 for h3 —
+  // classic/transit's model, this theme previously used a single flat 0.38
+  // for both) and click suppression (below) from the shared scroll-spy core.
+  // Stays 'auto'-scrolling and keyed off the overlay's own scroll container
+  // by design — unlike classic/transit's window scroll.
+  const clickSuppress = createClickSuppression((target) => setActive(target));
   function updateScrollSpy() {
+    if (clickSuppress.target) return;
     const headings = [...body.querySelectorAll('h2[id], h3[id]')];
     if (!headings.length) return;
-    const atBottom = overlay.scrollTop + overlay.clientHeight >= overlay.scrollHeight - 12;
-    if (atBottom) {
-      setActive(headings.at(-1).id);
-      return;
-    }
-    const trigger = overlay.getBoundingClientRect().top + overlay.clientHeight * 0.38;
-    let active = headings[0];
-    headings.forEach((heading) => {
-      if (heading.getBoundingClientRect().top <= trigger) active = heading;
-    });
-    setActive(active.id);
+    const activeId = computeActiveHeadingId(
+      headings,
+      (heading) => overlay.getBoundingClientRect().top + overlay.clientHeight * triggerFraction(heading),
+      () => overlay.scrollTop + overlay.clientHeight >= overlay.scrollHeight - 12
+    );
+    setActive(activeId);
   }
 
   function buildToc() {
@@ -311,7 +314,10 @@ export function createArticleOverlay(projects, { onNavigate } = {}) {
 
   closeButton.addEventListener('click', close);
   overlay.addEventListener('wheel', (event) => event.stopPropagation(), { passive: true });
-  overlay.addEventListener('scroll', updateScrollSpy, { passive: true });
+  overlay.addEventListener('scroll', () => {
+    clickSuppress.poke();
+    updateScrollSpy();
+  }, { passive: true });
   overlay.addEventListener('click', (event) => {
     const tocLink = event.target.closest('.toc-item[data-target]');
     if (tocLink) {
@@ -320,8 +326,10 @@ export function createArticleOverlay(projects, { onNavigate } = {}) {
       if (!heading) return;
       const top = overlay.scrollTop + heading.getBoundingClientRect().top
         - overlay.getBoundingClientRect().top - 86;
-      overlay.scrollTo({ top: Math.max(0, top), behavior: 'auto' }); // direct jump, like the original
+      clickSuppress.start(tocLink.dataset.target);
+      overlay.scrollTo({ top: Math.max(0, top), behavior: 'auto' }); // direct jump, like the original — stays 'auto' by design
       setActive(tocLink.dataset.target);
+      history.replaceState(null, '', `#${tocLink.dataset.target}`);
       return;
     }
     const nav = event.target.closest('[data-slug], [data-close]');
