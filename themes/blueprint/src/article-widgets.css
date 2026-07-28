@@ -720,7 +720,7 @@
 }
 
 /* Keep a dark outline on active black keys so they stay distinct from an
-   adjacent active (also-amber) white key instead of merging into one blob. */
+   adjacent active (also-navy) white key instead of merging into one blob. */
 .article-overlay .lcm-key.black.active {
     border-color: #14141f;
 }
@@ -734,7 +734,7 @@
 
 .article-overlay .lcm-key.white .lcm-key-label { color: #6a6a72; }
 .article-overlay .lcm-key.black .lcm-key-label { color: #cfcfd8; padding-bottom: 0.35rem; }
-.article-overlay .lcm-key.active .lcm-key-label { color: #1a1a2e; }
+.article-overlay .lcm-key.active .lcm-key-label { color: #f4f4f8; } /* near-white on the navy accent — the old #1a1a2e was black-on-navy */
 
 .article-overlay .lcm-hint {
     text-align: center;
