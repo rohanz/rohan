@@ -1,15 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import { lcmDetectChord } from './article-widgets.js';
 
-// Drift guard for the hand-maintained chord engine in `article-widgets.ts` (the blueprint SPA fork).
-//
-// That engine is one of three forks of the same code — the other two are `src/scripts/default/
-// chord-demo.js` (classic theme) and `src/scripts/article-widgets.ts` (transit theme) — all
-// descended from `live-chord-monitor/src/music/chords.ts` in a separate repo. Nothing links them.
-// Every expectation below is the app corpus's own expected name for the same voicing, and the SAME
-// list is pinned by the other two forks' tests, so a fix landing in one theme and not here shows up
-// as a failure rather than as a demo that quietly names chords wrong for months.
-// `src/scripts/chord-forks-parity.test.ts` additionally sweeps all three forks side by side.
+// Corpus guard for `article-widgets.ts`'s (the blueprint theme's) re-export of the shared chord engine
+// in `src/lib/chord-engine.ts`. That engine, descended from `live-chord-monitor/src/music/chords.ts`
+// in a separate repo, is shared by all three themes — see its header for the full story. Every
+// expectation below is the app corpus's own expected name for the same voicing, and the SAME list is
+// pinned by the other two themes' colocated tests, so a regression in the shared engine fails all
+// three rather than quietly naming chords wrong for months.
+// `src/scripts/chord-forks-parity.test.ts` additionally sweeps all three themes side by side, guarding
+// against a theme ever re-forking its own copy of the engine.
 //
 // The two DELIBERATE reductions, which are not drift:
 //   - sharps only: no flat-key preference and no enharmonic root respelling, so the app's `Eb6` for
