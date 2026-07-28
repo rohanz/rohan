@@ -27,6 +27,9 @@ import {
   LOOKAHEAD_HEIGHT, LOOKAHEAD_PAD, KALMAN_HEIGHT, KALMAN_PAD,
   SURVIVORSHIP_HEIGHT, SURVIVORSHIP_PAD,
 } from '../lib/visuals/qlf-render';
+import { BqstEngine } from '../lib/audio/bqst-engine';
+import type { BqstVersion } from '../lib/audio/bqst-transport';
+import type { WavWaveform } from '../lib/audio/bqst-wav';
 
 // ---- palette (this site) ----
 // Only the audio widgets still read raw hexes; the charts go through PALETTE.
@@ -268,9 +271,9 @@ function initBqstAudioDemo() {
   const settings = placeholder.dataset.settings || 'matched clean/processed drum loop';
   const bpm = Number.parseFloat(placeholder.dataset.bpm || '90');
   if (!cleanUrl || !processedUrl) return;
-  // Re-bind as plain `string` past the guard: loadBuffers below is a hoisted
-  // function declaration, so TS's narrowing of cleanUrl/processedUrl doesn't
-  // reach into it.
+  // Re-bind as plain `string` past the guard: the engine option object below
+  // is built once, so TS's narrowing of cleanUrl/processedUrl doesn't need to
+  // reach into any nested closures.
   const cleanSrc: string = cleanUrl;
   const processedSrc: string = processedUrl;
   const AC = window.AudioContext || (window as any).webkitAudioContext;
@@ -306,100 +309,49 @@ function initBqstAudioDemo() {
   const waveCtx = waveCanvas.getContext('2d')!;
   const progress = root.querySelector('.bqst-audio-wave i') as HTMLElement;
 
-  let context: AudioContext | null = null;
-  let masterGain: GainNode | null = null;
-  let cleanGain: GainNode | null = null;
-  let processedGain: GainNode | null = null;
-  let cleanBuffer: AudioBuffer | null = null;
-  let processedBuffer: AudioBuffer | null = null;
-  let cleanSource: AudioBufferSourceNode | null = null;
-  let processedSource: AudioBufferSourceNode | null = null;
-  let startedAt = 0;
-  let pausedAt = 0;
-  let wantsToPlay = false;
-  let activeVersion = 'clean';
-  let isPlaying = false;
-  let isReady = false;
-  // Set when the fetch/decode below fails. Without it a post-failure click
-  // would set aria-busy + wantsToPlay and wait on an isReady that can never
-  // arrive — a spinner stuck for the rest of the page's life. start() checks
-  // this flag and re-runs loadBuffers() so a later click is a real retry.
-  let loadFailed = false;
-  let rafId: number | null = null;
+  root.classList.add('is-ready');
+
+  // -- waveform drawing (theme-local — colours/BPM grid are transit's own;
+  // canvas rendering is never shared, only the audio engine below is) --
+  let cleanWaveform: WavWaveform | null = null;
+  let processedWaveform: WavWaveform | null = null;
+  let previousWaveVersion: BqstVersion | null = null;
   let waveFadeId: number | null = null;
-  // Pending "kill the sources after the pause fade" timer — see pause()/start().
-  let stopTimer = 0;
-  let previousWaveVersion: string | null = null;
   let waveFadeStart = 0;
 
-  root.classList.add('is-ready');
-  drawWaveform();
-
-  loadBuffers();
-
-  /** Fetch + decode both versions. Runs once at init, and again from start()
-   *  after a failure (a flaky network shouldn't permanently brick the demo). */
-  function loadBuffers() {
-    Promise.all([fetchAudioData(cleanSrc), fetchAudioData(processedSrc)])
-      .then(async ([cleanData, processedData]) => {
-        ensureAudioContext();
-        const [clean, processed] = await Promise.all([
-          context!.decodeAudioData(cleanData.slice(0)),
-          context!.decodeAudioData(processedData.slice(0)),
-        ]);
-        cleanBuffer = clean;
-        processedBuffer = processed;
-        isReady = true;
-        root.classList.remove('is-error'); // a retry succeeded — clear the failure badge
-        playButton.removeAttribute('aria-busy');
-        drawWaveform();
-        if (wantsToPlay && !isPlaying) start();
-      })
-      .catch(() => {
-        loadFailed = true;
-        root.classList.add('is-error');
-        // Clear the spinner even mid-"wantsToPlay": the wait is over, it lost.
-        playButton.removeAttribute('aria-busy');
-      });
+  function waveformForVersion(version: BqstVersion) {
+    return version === 'clean' ? cleanWaveform : processedWaveform;
   }
 
-  function ensureAudioContext() {
-    if (context) return context;
-    context = getAC();
-    masterGain = context.createGain();
-    cleanGain = context.createGain();
-    processedGain = context.createGain();
-    cleanGain.connect(masterGain);
-    processedGain.connect(masterGain);
-    masterGain.connect(context.destination);
-    masterGain.gain.value = 0;
-    cleanGain.gain.value = 1;
-    processedGain.gain.value = 0;
-    return context;
+  function drawWaveformData(waveform: WavWaveform | null, version: BqstVersion, alpha = 1) {
+    if (!waveform?.peaks?.length) return;
+    const width = waveCanvas.width;
+    const height = waveCanvas.height;
+    const dpr = window.devicePixelRatio || 1;
+    const isProcessed = version === 'processed';
+    const lineColor = isProcessed ? `rgba(${PINK_RGB},${0.8 * alpha})` : `rgba(${MUTED_RGB},${0.72 * alpha})`;
+    const fillColor = isProcessed ? `rgba(${PINK_RGB},${0.14 * alpha})` : `rgba(${MUTED_RGB},${0.13 * alpha})`;
+    const center = height * 0.5;
+    const amp = height * 0.42;
+    waveCtx.beginPath();
+    for (let x = 0; x < width; x++) {
+      const peak = waveform.peaks[Math.min(waveform.peaks.length - 1, Math.floor((x / width) * waveform.peaks.length))];
+      waveCtx.moveTo(x + 0.5, center - peak.max * amp);
+      waveCtx.lineTo(x + 0.5, center - peak.min * amp);
+    }
+    waveCtx.strokeStyle = lineColor;
+    waveCtx.lineWidth = Math.max(1, dpr);
+    waveCtx.stroke();
+    waveCtx.fillStyle = fillColor;
+    waveCtx.fillRect(0, center - 1 * dpr, width, 2 * dpr);
   }
 
-  function getPlaybackTime() {
-    const duration = cleanBuffer?.duration || processedBuffer?.duration || 0;
-    if (duration <= 0) return 0;
-    if (!isPlaying || !context) return pausedAt % duration;
-    return (context.currentTime - startedAt) % duration;
-  }
-  function setActiveButton() {
-    versionButtons.forEach((button) => {
-      const isActive = button.dataset.version === activeVersion;
-      button.classList.toggle('is-active', isActive);
-      button.setAttribute('aria-pressed', String(isActive));
-    });
-  }
-  function bufferForVersion(version: string) { return version === 'clean' ? cleanBuffer : processedBuffer; }
-  function activeBuffer() { return bufferForVersion(activeVersion); }
-
-  function drawBufferWaveform(buffer: AudioBuffer, alpha = 1) {
+  function drawBufferWaveform(buffer: AudioBuffer, version: BqstVersion, alpha = 1) {
     if (!buffer) return;
     const width = waveCanvas.width;
     const height = waveCanvas.height;
     const dpr = window.devicePixelRatio || 1;
-    const isProcessed = buffer === processedBuffer;
+    const isProcessed = version === 'processed';
     const lineColor = isProcessed ? `rgba(${PINK_RGB},${0.8 * alpha})` : `rgba(${MUTED_RGB},${0.72 * alpha})`;
     const fillColor = isProcessed ? `rgba(${PINK_RGB},${0.14 * alpha})` : `rgba(${MUTED_RGB},${0.13 * alpha})`;
     const center = height * 0.5;
@@ -437,8 +389,10 @@ function initBqstAudioDemo() {
       waveCanvas.height = height;
     }
     waveCtx.clearRect(0, 0, width, height);
-    const buffer = activeBuffer();
-    const duration = buffer?.duration || 0;
+    const activeVersion = engine.version;
+    const buffer = engine.getBuffer(activeVersion);
+    const waveform = waveformForVersion(activeVersion);
+    const duration = buffer?.duration || waveform?.duration || 0;
     const gridCol = `rgba(${INK_RGB},0.10)`;
     const subGridCol = `rgba(${INK_RGB},0.055)`;
     const barCol = `rgba(${BLUE_RGB},0.24)`;
@@ -460,13 +414,15 @@ function initBqstAudioDemo() {
     waveCtx.lineWidth = Math.max(1, dpr);
     waveCtx.beginPath(); waveCtx.moveTo(0, center); waveCtx.lineTo(width, center); waveCtx.stroke();
     if (previousWaveVersion && blend < 1) {
-      const previousBuffer = bufferForVersion(previousWaveVersion);
-      if (previousBuffer) drawBufferWaveform(previousBuffer, 1 - blend);
+      const previousBuffer = engine.getBuffer(previousWaveVersion);
+      if (previousBuffer) drawBufferWaveform(previousBuffer, previousWaveVersion, 1 - blend);
+      else drawWaveformData(waveformForVersion(previousWaveVersion), previousWaveVersion, 1 - blend);
     }
-    if (buffer) drawBufferWaveform(buffer, blend);
+    if (buffer) drawBufferWaveform(buffer, activeVersion, blend);
+    else drawWaveformData(waveform, activeVersion, blend);
   }
 
-  function animateWaveformChange(fromVersion: string) {
+  function animateWaveformChange(fromVersion: BqstVersion) {
     if (waveFadeId) cancelAnimationFrame(waveFadeId);
     previousWaveVersion = fromVersion;
     waveFadeStart = performance.now();
@@ -481,115 +437,71 @@ function initBqstAudioDemo() {
     waveFadeId = requestAnimationFrame(step);
   }
 
-  function drawProgress() {
-    const duration = cleanBuffer?.duration || processedBuffer?.duration || 0;
-    const ratio = duration > 0 ? (getPlaybackTime() % duration) / duration : 0;
-    // Written as a transform (paired with the full-width scaleX(0) styling in
-    // [slug].astro) so the per-frame update stays compositor-only — animating
-    // `width` would relayout the wave row 60 times a second.
-    progress.style.transform = `scaleX(${Math.max(0, Math.min(1, ratio))})`;
-    if (isPlaying) rafId = requestAnimationFrame(drawProgress);
-  }
-
-  async function fetchAudioData(url: string) {
-    const response = await fetch(url);
-    if (!response.ok) throw new Error(`Could not load audio: ${url}`);
-    return response.arrayBuffer();
-  }
-  function makeSource(buffer: AudioBuffer, gainNode: GainNode) {
-    const source = context!.createBufferSource();
-    source.buffer = buffer;
-    source.loop = true;
-    source.connect(gainNode);
-    return source;
-  }
-  function stopSources() {
-    [cleanSource, processedSource].forEach((source) => {
-      if (!source) return;
-      try { source.stop(); } catch { /* */ }
-      source.disconnect();
+  function setActiveButton() {
+    versionButtons.forEach((button) => {
+      const isActive = button.dataset.version === engine.version;
+      button.classList.toggle('is-active', isActive);
+      button.setAttribute('aria-pressed', String(isActive));
     });
-    cleanSource = null;
-    processedSource = null;
-  }
-  function crossfadeTo(version: string) {
-    if (version === activeVersion) return;
-    const oldVersion = activeVersion;
-    activeVersion = version;
-    setActiveButton();
-    animateWaveformChange(oldVersion);
-    if (!context || !cleanGain || !processedGain) return;
-    const now = context.currentTime;
-    const fadeSeconds = 0.075;
-    cleanGain.gain.cancelScheduledValues(now);
-    processedGain.gain.cancelScheduledValues(now);
-    cleanGain.gain.setValueAtTime(cleanGain.gain.value, now);
-    processedGain.gain.setValueAtTime(processedGain.gain.value, now);
-    cleanGain.gain.linearRampToValueAtTime(version === 'clean' ? 1 : 0, now + fadeSeconds);
-    processedGain.gain.linearRampToValueAtTime(version === 'processed' ? 1 : 0, now + fadeSeconds);
   }
 
-  async function start() {
-    // pause() defers stopSources by 60ms to let its fade-out finish; a
-    // pause→play inside that window must cancel the pending stop or the stale
-    // timer kills the freshly started sources (UI says playing, audio dead).
-    clearTimeout(stopTimer);
-    ensureAudioContext();
-    if (context!.state === 'suspended') { try { await context!.resume(); } catch { /* */ } }
-    if (!isReady || !cleanBuffer || !processedBuffer) {
-      // After a failed load isReady can never flip on its own — re-run the
-      // loader so this click is a retry, not an eternal aria-busy spinner.
-      if (loadFailed) {
-        loadFailed = false;
-        loadBuffers();
-      }
-      wantsToPlay = true;
-      playButton.setAttribute('aria-busy', 'true');
-      return;
-    }
-    wantsToPlay = false;
-    stopSources();
-    const duration = cleanBuffer.duration;
-    const offset = duration > 0 ? pausedAt % duration : 0;
-    const when = context!.currentTime;
-    startedAt = when - offset;
-    cleanSource = makeSource(cleanBuffer, cleanGain!);
-    processedSource = makeSource(processedBuffer, processedGain!);
-    cleanSource.start(when, offset);
-    processedSource.start(when, offset);
-    masterGain!.gain.cancelScheduledValues(when);
-    cleanGain!.gain.setValueAtTime(activeVersion === 'clean' ? 1 : 0, when);
-    processedGain!.gain.setValueAtTime(activeVersion === 'processed' ? 1 : 0, when);
-    masterGain!.gain.setValueAtTime(0, when);
-    masterGain!.gain.linearRampToValueAtTime(0.95, when + 0.035);
-    isPlaying = true;
-    playButton.classList.add('playing');
-    playButton.setAttribute('aria-pressed', 'true');
-    playButton.innerHTML = PAUSE;
-    if (rafId) cancelAnimationFrame(rafId);
-    rafId = requestAnimationFrame(drawProgress);
-  }
-  function pause() {
-    pausedAt = getPlaybackTime();
-    isPlaying = false;
-    wantsToPlay = false;
-    playButton.classList.remove('playing');
-    playButton.setAttribute('aria-pressed', 'false');
-    playButton.innerHTML = PLAY;
-    if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
-    if (context && masterGain) {
-      const now = context.currentTime;
-      masterGain.gain.cancelScheduledValues(now);
-      masterGain.gain.setValueAtTime(masterGain.gain.value, now);
-      masterGain.gain.linearRampToValueAtTime(0, now + 0.045);
-    }
-    // Stored so start() (and cleanup) can cancel it — see the note in start().
-    stopTimer = window.setTimeout(stopSources, 60);
-  }
+  drawWaveform();
 
-  const onPlayClick = () => { if (isPlaying) pause(); else start(); };
+  // -- engine ---------------------------------------------------------
+  const engine = new BqstEngine({
+    cleanUrl: cleanSrc,
+    processedUrl: processedSrc,
+    getAudioContext: () => (window.AudioContext || (window as any).webkitAudioContext ? getAC() : null),
+    mediaSession: {
+      title: 'BQST A/B demo',
+      artist: 'rohan.jk',
+      album: 'projects',
+      artworkSrc: '/assets/images/projects/bqst/banner.webp',
+    },
+    onRawWaveform(version, waveform) {
+      if (version === 'clean') cleanWaveform = waveform;
+      else processedWaveform = waveform;
+      drawWaveform();
+    },
+    onReady() {
+      root.classList.remove('is-error'); // a retry succeeded — clear the failure badge
+      playButton.removeAttribute('aria-busy');
+      drawWaveform();
+    },
+    onLoadError() {
+      root.classList.add('is-error');
+      playButton.removeAttribute('aria-busy');
+    },
+    onPlayStateChange(isPlaying) {
+      playButton.classList.toggle('playing', isPlaying);
+      playButton.setAttribute('aria-pressed', String(isPlaying));
+      playButton.innerHTML = isPlaying ? PAUSE : PLAY;
+      if (isPlaying) playButton.removeAttribute('aria-busy');
+    },
+    onVersionChange(version, previous) {
+      setActiveButton();
+      animateWaveformChange(previous);
+    },
+    onProgress(ratio) {
+      // Written as a transform (paired with the full-width scaleX(0) styling
+      // in [slug].astro) so the per-frame update stays compositor-only —
+      // animating `width` would relayout the wave row 60 times a second.
+      progress.style.transform = `scaleX(${ratio})`;
+    },
+  });
+
+  const onPlayClick = () => {
+    if (engine.isPlaying) engine.pause();
+    else {
+      playButton.setAttribute('aria-busy', String(!engine.isReady));
+      void engine.start();
+    }
+  };
   playButton.addEventListener('click', onPlayClick);
-  const onVersionClick = (button: HTMLButtonElement) => () => crossfadeTo(button.dataset.version!);
+  const onPointerPrime = () => engine.primeUnlock();
+  playButton.addEventListener('pointerdown', onPointerPrime, { passive: true });
+  playButton.addEventListener('touchstart', onPointerPrime, { passive: true });
+  const onVersionClick = (button: HTMLButtonElement) => () => engine.crossfadeTo(button.dataset.version as BqstVersion);
   const versionHandlers = versionButtons.map((button) => {
     const h = onVersionClick(button);
     button.addEventListener('click', h);
@@ -599,16 +511,13 @@ function initBqstAudioDemo() {
   window.addEventListener('resize', onResize);
 
   cleanups.push(() => {
-    if (rafId) cancelAnimationFrame(rafId);
     if (waveFadeId) cancelAnimationFrame(waveFadeId);
-    clearTimeout(stopTimer); // stopSources below runs synchronously instead
     window.removeEventListener('resize', onResize);
     playButton.removeEventListener('click', onPlayClick);
+    playButton.removeEventListener('pointerdown', onPointerPrime);
+    playButton.removeEventListener('touchstart', onPointerPrime);
     versionHandlers.forEach(({ button, h }) => button.removeEventListener('click', h));
-    stopSources();
-    cleanGain?.disconnect();
-    processedGain?.disconnect();
-    masterGain?.disconnect();
+    engine.dispose();
   });
 }
 
