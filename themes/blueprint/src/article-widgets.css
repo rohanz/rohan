@@ -715,8 +715,11 @@
 }
 
 .article-overlay .lcm-key.active {
-    background: var(--accent);
-    border-color: var(--accent);
+    /* The lighter blueprint blue (matches the overlay's other accents, e.g.
+       .qlf-sw-accent) rather than the near-black navy --accent, so a held
+       key reads as lit rather than blacked out. */
+    background: #5C77C4;
+    border-color: #5C77C4;
 }
 
 /* Keep a dark outline on active black keys so they stay distinct from an
