@@ -1,8 +1,9 @@
 ---
 import MapApp from '../../components/MapApp.astro';
+import { MUSIC_DESCRIPTION } from '../../data/page-meta';
 ---
 <MapApp
   title="music — rohan.jk"
-  description="Music by rohan.jk — releases, previews, and streaming links."
+  description={MUSIC_DESCRIPTION}
   initialView="music"
 />
