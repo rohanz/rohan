@@ -1,12 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { lcmDetectChord } from './chord-demo.js';
 
-// Drift guard for the hand-maintained chord engine in `chord-demo.js`.
-//
-// That engine is a port of `live-chord-monitor/src/music/chords.ts` (a separate repo — nothing links
-// the two files). Every expectation below is the app corpus's own expected name for the same voicing
-// (`src/music/chords.corpus.test.ts` there), so a fix landing in the app and not here shows up as a
-// failure rather than as a demo that quietly names chords wrong for months.
+// Corpus guard for `chord-demo.js`'s (the classic theme's) re-export of the shared chord engine in
+// `src/lib/chord-engine.ts`, a port of `live-chord-monitor/src/music/chords.ts` (a separate repo —
+// nothing links the two files). Every expectation below is the app corpus's own expected name for the
+// same voicing (`src/music/chords.corpus.test.ts` there), so a fix landing in the app and not here
+// shows up as a failure rather than as a demo that quietly names chords wrong for months. The other
+// two themes' colocated tests pin the same list against their own import path.
 //
 // The two DELIBERATE reductions, which are not drift:
 //   - sharps only: no flat-key preference and no enharmonic root respelling, so the app's `Eb6` for

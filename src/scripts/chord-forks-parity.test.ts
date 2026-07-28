@@ -3,14 +3,16 @@ import { lcmDetectChord as classic } from './default/chord-demo.js';
 import { lcmDetectChord as transit } from './article-widgets.js';
 import { lcmDetectChord as blueprint } from '../../themes/blueprint/src/article-widgets.js';
 
-// The chord engine exists as THREE hand-maintained forks, one per theme:
-//   - `src/scripts/default/chord-demo.js`        (classic)
-//   - `src/scripts/article-widgets.ts`           (transit)
-//   - `themes/blueprint/src/article-widgets.ts`  (blueprint SPA)
-// Nothing links them, so they drift silently. The per-fork tests pin each one against the app corpus;
-// this file pins them against EACH OTHER, by running the same exhaustive voicing sweep through all
-// three and demanding byte-identical output — name, alternatives and spelling. A change made in one
-// fork and not the others fails here even if it is a change the corpus tests say nothing about.
+// The chord engine used to exist as THREE hand-maintained forks, one per theme, and they drifted
+// silently more than once. They now share a single implementation, `src/lib/chord-engine.ts`:
+//   - `src/scripts/default/chord-demo.js`        (classic)   re-exports it directly
+//   - `src/scripts/article-widgets.ts`           (transit)   re-exports it directly
+//   - `themes/blueprint/src/article-widgets.ts`  (blueprint) re-exports it via a relative import
+// This file no longer proves three independent engines agree — it guards against a theme ever
+// re-forking its own copy again: every theme's `lcmDetectChord` must still trace back to the same
+// shared module, verified the same way drift used to be caught, by running the same exhaustive
+// voicing sweep through all three and demanding byte-identical output — name, alternatives and
+// spelling. If this ever fails, a theme has stopped importing the shared engine.
 
 type Detect = typeof classic;
 
