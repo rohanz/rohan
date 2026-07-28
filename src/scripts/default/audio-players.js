@@ -1,5 +1,17 @@
 import { isLightTheme, sizeCanvas, prefersReducedMotion } from './shared.js';
 import { SONGS as musicData } from '../../data/music';
+import { buildAnalyserGraph, ensureAudioContext } from '../../lib/audio/graph';
+import {
+    FREQ_BANDS,
+    RED_THRESHOLD_DB,
+    dbToFrac,
+    computeBands,
+    blurHighlights,
+    smoothCurve,
+    curveIntensity,
+    vuDbFromStereo,
+    onePole,
+} from '../../lib/audio/analysis';
 
 let cleanups = [];
 let musicRoot = document;
@@ -152,27 +164,23 @@ function displayMusic(tracks) {
 }
 
 function ensureAudioGraph() {
+    // Lazily create the AudioContext on first play (a user gesture), not at
+    // page load — see init(), which used to build one eagerly on every page
+    // visit/theme swap, triggering "AudioContext not allowed to start"
+    // warnings and getting close()d unused on the next navigation.
+    audioContext = ensureAudioContext(audioContext);
     if (!audioContext || audioSource) return;
-    try {
-        audioSource = audioContext.createMediaElementSource(audioPlayer);
-        analyser = audioContext.createAnalyser();
-        analyser.fftSize = 4096;
-        analyser.smoothingTimeConstant = 0.78;
-
-        // Stereo split for vectorscope + LUFS
-        const splitter = audioContext.createChannelSplitter(2);
-        analyserL = audioContext.createAnalyser();
-        analyserR = audioContext.createAnalyser();
-        analyserL.fftSize = 2048;
-        analyserR.fftSize = 2048;
-
-        audioSource.connect(analyser);
-        audioSource.connect(splitter);
-        splitter.connect(analyserL, 0);
-        splitter.connect(analyserR, 1);
-        analyser.connect(audioContext.destination);
-    } catch (e) {
-        // Already connected
+    // buildAnalyserGraph falls back to routing straight to destination if
+    // analyser setup fails partway through, instead of the bare catch{} this
+    // used to have: that swallowed the error while `source` (which can only
+    // be created ONCE per <audio> element) sat unrouted, leaving every future
+    // play silently produce no sound, forever.
+    const graph = buildAnalyserGraph(audioContext, audioPlayer);
+    if (graph) {
+        audioSource = graph.source;
+        analyser = graph.analyser;
+        analyserL = graph.analyserL;
+        analyserR = graph.analyserR;
     }
 }
 
@@ -225,22 +233,12 @@ function initWaveformPlayer(playerEl) {
     let vuW = 150, vuH = 100;
     let vecW = 110, vecH = 110;
     let freqW = 300, freqH = 110;
-    const freqBands = 128;
+    const freqBands = FREQ_BANDS;
     const freqSmoothed = new Float32Array(freqBands);
     const freqHighlights = new Float32Array(freqBands);
     const freqHighlightTargets = new Float32Array(freqBands);
     const freqHighlightBlurred = new Float32Array(freqBands);
-    const redThresholdDb = -10; // red zone starts at -10 dB
-
-    // Non-linear dB-to-fraction mapping: piecewise to spread upper range
-    // -40 to -10 gets 70% of arc, -10 to 0 gets 30%
-    function dbToFrac(db) {
-        const clamped = Math.max(-40, Math.min(0, db));
-        if (clamped <= -10) {
-            return ((clamped + 40) / 30) * 0.70;
-        }
-        return 0.70 + ((clamped + 10) / 10) * 0.30;
-    }
+    const redThresholdDb = RED_THRESHOLD_DB;
 
     function drawAnalogArc(ctx, w, h, needleFrac) {
         const cx = w / 2;
@@ -372,25 +370,16 @@ function initWaveformPlayer(playerEl) {
         const baseline = freqH;
         const topPad = 6;
         const heightLevels = Array.from(levels, value => Math.max(0, Math.min(0.72, value)));
-        const smoothLevels = heightLevels.map((value, index) => {
-            const a = heightLevels[Math.max(0, index - 2)];
-            const b = heightLevels[Math.max(0, index - 1)];
-            const d = heightLevels[Math.min(heightLevels.length - 1, index + 1)];
-            const e = heightLevels[Math.min(heightLevels.length - 1, index + 2)];
-            return (a + b * 2 + value * 3 + d * 2 + e) / 9;
-        });
-        const colorLevels = smoothLevels.map(value => {
-            const t = Math.max(0, Math.min(1, (value - 0.3) / 0.34));
-            return t * t * (3 - 2 * t);
-        });
-        const intensity = colorLevels.reduce((max, value) => Math.max(max, value), 0);
+        const smoothLevels = new Float64Array(heightLevels.length);
+        smoothCurve(heightLevels, smoothLevels);
+        const intensity = curveIntensity(smoothLevels);
         const xFor = i => (i / (smoothLevels.length - 1)) * freqW;
         const yFor = value => baseline - Math.max(0, Math.min(1, value)) * (freqH - topPad);
 
         freqCtx.clearRect(0, 0, freqW, freqH);
         drawFrequencyGrid();
 
-        const points = smoothLevels.map((value, index) => ({ x: xFor(index), y: yFor(value) }));
+        const points = Array.from(smoothLevels, (value, index) => ({ x: xFor(index), y: yFor(value) }));
 
         function traceCurve(startWithMove = true) {
             if (startWithMove) freqCtx.moveTo(points[0].x, points[0].y);
@@ -635,15 +624,8 @@ function initWaveformPlayer(playerEl) {
 
             // --- VU Meter (analog needle) ---
             if (vuCtx) {
-                let sumSq = 0;
-                for (let i = 0; i < bufLen; i++) {
-                    const mid = (dataL[i] + dataR[i]) * 0.5;
-                    sumSq += mid * mid;
-                }
-                const rms = Math.sqrt(sumSq / bufLen);
-                const dbFS = rms > 0 ? 20 * Math.log10(rms) : -40;
-                const vuNow = Math.max(-40, Math.min(0, dbFS));
-                vuSmoothed += (vuNow - vuSmoothed) * 0.18;
+                const vuNow = vuDbFromStereo(dataL, dataR, bufLen);
+                vuSmoothed = onePole(vuSmoothed, vuNow, 0.18);
 
                 vuCtx.clearRect(0, 0, vuW, vuH);
                 const needleFrac = dbToFrac(vuSmoothed);
@@ -688,41 +670,8 @@ function initWaveformPlayer(playerEl) {
             const freqData = new Uint8Array(freqBins);
             analyser.getByteFrequencyData(freqData);
 
-            const minBin = 2;
-            const maxBin = Math.min(freqBins - 1, Math.floor(freqBins * 0.62));
-            for (let i = 0; i < freqBands; i++) {
-                const startT = i / freqBands;
-                const endT = (i + 1) / freqBands;
-                const start = Math.max(minBin, Math.floor(minBin * Math.pow(maxBin / minBin, startT)));
-                const end = Math.max(start + 1, Math.floor(minBin * Math.pow(maxBin / minBin, endT)));
-                let total = 0;
-                let bandPeak = 0;
-                let count = 0;
-                for (let bin = start; bin < end; bin++) {
-                    const value = freqData[bin] || 0;
-                    total += value;
-                    bandPeak = Math.max(bandPeak, value);
-                    count++;
-                }
-                const average = count ? total / count : 0;
-                const level = ((average * 0.62) + (bandPeak * 0.38)) / 255;
-                const shaped = Math.min(0.7, Math.pow(level, 0.68) * 0.74);
-                const rise = Math.max(0, shaped - freqSmoothed[i]);
-                const bandT = i / Math.max(1, freqBands - 1);
-                const lowKickBias = bandT < 0.28 ? 1.55 - bandT * 1.2 : 1;
-                const transient = Math.max(0, (rise - 0.012) / 0.12);
-                const body = Math.max(0, (shaped - 0.2) / 0.44);
-                const rawHighlight = Math.min(1, Math.pow(transient, 0.72) * Math.pow(body, 0.42) * lowKickBias);
-                const targetSpeed = rawHighlight > freqHighlightTargets[i] ? 0.2 : 0.026;
-                freqHighlightTargets[i] += (rawHighlight - freqHighlightTargets[i]) * targetSpeed;
-                freqSmoothed[i] += (shaped - freqSmoothed[i]) * 0.34;
-            }
-            for (let i = 0; i < freqBands; i++) {
-                const left = freqHighlightTargets[Math.max(0, i - 1)];
-                const center = freqHighlightTargets[i];
-                const right = freqHighlightTargets[Math.min(freqBands - 1, i + 1)];
-                freqHighlightBlurred[i] = (left + center * 2 + right) / 4;
-            }
+            computeBands(freqData, { freqSmoothed, freqHighlightTargets });
+            blurHighlights(freqHighlightTargets, freqHighlightBlurred);
             drawFrequencyCurve(freqSmoothed, 1, freqHighlightBlurred);
         }
     }
@@ -755,6 +704,17 @@ function initWaveformPlayer(playerEl) {
     listen(window, 'theme-changed', handleThemeChanged);
 
     function drawLive() {
+        // Reduced motion: show the calm idle visuals rather than drawing (and
+        // freezing on) a single live frame — the button's playing state still
+        // reflects playback. This used to only be checked AFTER drawing a live
+        // frame, when deciding whether to schedule the next one, so reduced
+        // motion froze a random mid-song waveform/spectrum snapshot on screen
+        // for the rest of the track instead of showing idle visuals.
+        if (prefersReducedMotion.matches) {
+            drawIdle();
+            drawMetersIdle();
+            return;
+        }
         if (!analyser) { drawIdle(); return; }
 
         const bufferLength = analyser.frequencyBinCount;
@@ -795,7 +755,7 @@ function initWaveformPlayer(playerEl) {
 
         drawMetersLive();
 
-        if (isPlaying && !prefersReducedMotion.matches) {
+        if (isPlaying) {
             animationId = requestAnimationFrame(drawLive);
         }
     }
@@ -888,12 +848,12 @@ export function init(root = document) {
     musicRoot = root;
     audioPlayer = document.getElementById('audio-player');
     if (!audioPlayer) return;
-    try {
-        const AC = window.AudioContext || window.webkitAudioContext;
-        if (AC) audioContext = new AC();
-    } catch (e) {
-        console.error('Web Audio API not supported:', e);
-    }
+    // The AudioContext is now created lazily on first play (see
+    // ensureAudioGraph/ensureAudioContext), not here at every page visit —
+    // building one eagerly at page load triggers "AudioContext was not
+    // allowed to start" autoplay warnings before any gesture has happened,
+    // and cleanup() used to close() it on every navigation even when nothing
+    // had played, churning a context per page swap.
     initializeMusicSection();
 }
 export function cleanup() {
@@ -904,8 +864,12 @@ export function cleanup() {
         audioPlayer.load();
         audioPlayer.onended = null;
     }
+    // `audioSource` (MediaElementAudioSourceNode) is tied to the OLD
+    // audioPlayer element, which is about to be discarded — drop the refs so
+    // ensureAudioGraph() rebuilds a fresh graph against the next page's
+    // element. The AudioContext itself is reused (kept alive) across
+    // swaps: it isn't tied to any element, and closing/recreating it per
+    // navigation is exactly the churn this fix removes.
     audioSource = analyser = analyserL = analyserR = null;
-    audioContext?.close?.().catch(() => {});
-    audioContext = null;
     musicSectionRendered = false;
 }
