@@ -3,6 +3,7 @@ import { withBase, asset } from './base.js';
 import { cleanupWidgets, initWidgets } from './article-widgets.ts';
 import { createLightbox } from '../../../src/lib/chrome/lightbox';
 import { computeActiveHeadingId, triggerFraction, createClickSuppression } from '../../../src/lib/chrome/toc-scrollspy';
+import { HEADING_SLUGS } from './heading-slugs.generated.js';
 import './article-overlay.css';
 import './article-widgets.css';
 
@@ -32,6 +33,13 @@ const ARTICLES = {
   'this-website': thisWebsite,
 };
 
+// wave3: heading ids now come from HEADING_SLUGS (tools/build-blueprint.mjs,
+// see the comment on extractHeadingSlugs there), pre-slugged with
+// github-slugger the same way classic/transit get theirs from Astro \u2014 so
+// identically-titled headings agree on an id across every theme instead of
+// each hand-rolling its own dedup scheme. headingSlug() is kept only as a
+// defensive fallback for the (should-never-happen) case where the generated
+// table is missing or short for an article.
 function headingSlug(text, used) {
   const base = text
     .normalize('NFKD')
@@ -163,12 +171,17 @@ export function createArticleOverlay(projects, { onNavigate } = {}) {
     setActive(activeId);
   }
 
-  function buildToc() {
+  function buildToc(slug) {
     const used = new Set();
+    const generatedIds = HEADING_SLUGS[slug];
     const headings = [...body.querySelectorAll('h2, h3')];
     let parentIndex = null;
     const items = headings.map((heading, index) => {
-      heading.id = headingSlug(heading.textContent, used);
+      // Build-time slugs (see comment on headingSlug above) — falls back to
+      // the runtime slugger only if the generated table doesn't cover this
+      // heading, which shouldn't happen once tools/build-blueprint.mjs has run.
+      heading.id = generatedIds?.[index] ?? headingSlug(heading.textContent, used);
+      used.add(heading.id);
       if (heading.tagName === 'H2') parentIndex = String(index);
       const parent = heading.tagName === 'H3' ? parentIndex : '';
       return `<a class="toc-item toc-${heading.tagName.toLowerCase()}" href="#${heading.id}" data-target="${heading.id}" data-index="${index}" data-parent="${parent ?? ''}">${heading.textContent}</a>`;
@@ -259,7 +272,7 @@ export function createArticleOverlay(projects, { onNavigate } = {}) {
     body.replaceChildren(tpl.content);
     captionImages(body);
     initWidgets(body);
-    buildToc();
+    buildToc(project.slug);
     projectNav.classList.toggle('is-unlisted', !isListed);
     projectNav.innerHTML = isListed
       ? `${projectLink(listedProjects[listedIndex - 1], 'prev', 'prev')}

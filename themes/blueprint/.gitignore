@@ -3,3 +3,4 @@ dist
 src/content/articles/
 src/projects.generated.js
 src/site-data.generated.js
+src/heading-slugs.generated.js
