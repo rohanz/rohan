@@ -175,6 +175,27 @@ describe('shared datasets have exactly one definition', () => {
     });
   }
 
+  it('blueprint footer socials placeholder matches socials.ts (build-time injection target)', () => {
+    const html = readFileSync(join(repoRoot, 'themes', 'blueprint', 'index.html'), 'utf8');
+    const start = html.indexOf('<!-- SOCIALS:START -->');
+    const end = html.indexOf('<!-- SOCIALS:END -->');
+    expect(start, 'missing SOCIALS:START marker in themes/blueprint/index.html').toBeGreaterThan(-1);
+    expect(end, 'missing SOCIALS:END marker in themes/blueprint/index.html').toBeGreaterThan(-1);
+
+    const block = html.slice(start, end);
+    for (const social of SOCIALS) {
+      expect(block, `${social.name} href missing/stale between the SOCIALS markers`).toContain(
+        `href="${social.href}"`,
+      );
+    }
+
+    const script = readFileSync(join(repoRoot, 'tools', 'build-blueprint.mjs'), 'utf8');
+    expect(
+      script,
+      'tools/build-blueprint.mjs should stamp the blueprint footer socials from socials.ts',
+    ).toContain('injectFooterSocials');
+  });
+
   it('the retired src/data/music.json is gone', () => {
     expect(readdirSync(dataDir)).not.toContain('music.json');
   });
