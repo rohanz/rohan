@@ -1,7 +1,8 @@
 ---
 import DefaultLayout from '../layouts/DefaultLayout.astro';
+import { MUSIC_DESCRIPTION } from '../data/page-meta';
 ---
-<DefaultLayout title="music - rohan.jk" description="Music by rohan.jk — releases, previews, and streaming links." section="music">
+<DefaultLayout title="music - rohan.jk" description={MUSIC_DESCRIPTION} section="music">
   <section id="music" class="section active music-pending">
     <div class="music-list">
       <div class="loading-state">Loading music...</div>

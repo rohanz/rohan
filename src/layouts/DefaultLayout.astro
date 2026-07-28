@@ -2,8 +2,10 @@
 import Analytics from '../components/Analytics.astro';
 import '../styles/default.css';
 import '../styles/default-phase2.css';
+import '../styles/fa-icons.css';
 import { ClientRouter } from 'astro:transitions';
 import { blueprintEntryFor, transitPathFor } from '../lib/theme-paths';
+import { BENTO_SOCIALS, socialByName } from '../data/socials';
 
 interface Props {
   title: string;
@@ -35,11 +37,7 @@ const personLd = JSON.stringify({
   name: 'rohan.jk',
   description: 'Computer engineering student building end-to-end products with AI',
   url: 'https://www.rohanjk.xyz',
-  sameAs: [
-    'https://github.com/rohanz',
-    'https://www.instagram.com/rrohan.jk/',
-    'https://open.spotify.com/artist/3I1V2FxqX2qs3zrUY0fCPp',
-  ],
+  sameAs: ['github', 'instagram', 'spotify'].map((name) => socialByName(name).href),
   jobTitle: 'Software Developer',
   affiliation: { '@type': 'Organization', name: 'Nanyang Technological University' },
   mainEntityOfPage: { '@type': 'WebPage', '@id': 'https://www.rohanjk.xyz' },
@@ -78,13 +76,11 @@ const personLd = JSON.stringify({
     <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
-    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin />
     <!-- Keep these Chillax preload hrefs in sync with public/fonts/fonts.css. -->
     <link rel="preload" as="font" type="font/woff2" href="/fonts/chillax-WZY5PMNTII6NKOB2TTIAX7QV.woff2" crossorigin />
     <link rel="preload" as="font" type="font/woff2" href="/fonts/chillax-THF5L6EHVL4N4NNE3GYDZNZS.woff2" crossorigin />
     <link rel="preload" as="font" type="font/woff2" href="/fonts/chillax-T2KA2X72VGASVXFVB7QCOIFY.woff2" crossorigin />
     <link rel="stylesheet" href="/fonts/fonts.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="sha384-3B6NwesSXE7YJlcLI9RpRqGf2p/EgVH8BgoKTaUrmKNDkHPStTQ3EyoYjCGXaOTS" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <script is:inline>
       // Apply the saved theme before first paint. Leaving this to theme.js
       // (end of body) painted the first frames dark, then flipped data-theme
@@ -152,10 +148,9 @@ const personLd = JSON.stringify({
       </main>
 
       <div class:list={["floating-contact", section === 'homepage' ? 'homepage-active' : 'show']} id="floatingContact" role="region" aria-label="Social links">
-        <div class="contact-item"><a href="https://www.instagram.com/rrohan.jk/" class="contact-link" target="_blank" rel="noopener noreferrer" aria-label="Instagram"><i class="fab fa-instagram" aria-hidden="true"></i></a></div>
-        <div class="contact-item"><a href="https://open.spotify.com/artist/3I1V2FxqX2qs3zrUY0fCPp?si=SiJ7DZ_xQXiNG9uy_G1SsQ" class="contact-link" target="_blank" rel="noopener noreferrer" aria-label="Spotify"><i class="fab fa-spotify" aria-hidden="true"></i></a></div>
-        <div class="contact-item"><a href="https://github.com/rohanz" class="contact-link" target="_blank" rel="noopener noreferrer" aria-label="GitHub"><i class="fab fa-github" aria-hidden="true"></i></a></div>
-        <div class="contact-item"><a href="https://www.linkedin.com/in/rohan-jk" class="contact-link" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn"><i class="fab fa-linkedin-in" aria-hidden="true"></i></a></div>
+        {BENTO_SOCIALS.map((social) => (
+          <div class="contact-item"><a href={social.href} class="contact-link" target="_blank" rel="noopener noreferrer" aria-label={social.label}><i class={social.faIcon} aria-hidden="true"></i></a></div>
+        ))}
       </div>
     </div>
     <audio id="audio-player" preload="metadata"></audio>

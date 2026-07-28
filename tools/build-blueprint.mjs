@@ -251,6 +251,38 @@ async function writeShareStubs(projects) {
   }
 }
 
+// themes/blueprint/index.html is static markup with no templating, so the
+// footer socials can't import src/data/socials.ts the way the Astro/JS sides
+// do. Instead this stamps the rendered links between a marker comment pair,
+// re-derived from socials.ts on every build — idempotent because it always
+// replaces the full marker span rather than appending to it.
+const SOCIALS_START = '<!-- SOCIALS:START -->';
+const SOCIALS_END = '<!-- SOCIALS:END -->';
+
+async function injectFooterSocials() {
+  const file = path.join(blueprintRoot, 'index.html');
+  const source = await readFile(path.join(sharedDataDir, 'socials.ts'), 'utf8');
+  const { code } = await transform(source, { loader: 'ts', format: 'esm', target: 'es2022' });
+  const module = await import(`data:text/javascript,${encodeURIComponent(code)}`);
+
+  const links = module.SOCIALS
+    .map((social) => `\n      <a href="${social.href}" target="_blank" rel="noopener">${social.name}</a>`)
+    .join('');
+
+  const html = await readFile(file, 'utf8');
+  const startIndex = html.indexOf(SOCIALS_START);
+  const endIndex = html.indexOf(SOCIALS_END);
+  if (startIndex === -1 || endIndex === -1 || endIndex < startIndex) {
+    throw new Error(`${file}: missing or malformed SOCIALS marker pair`);
+  }
+  const updated =
+    html.slice(0, startIndex + SOCIALS_START.length) +
+    links +
+    '\n    ' +
+    html.slice(endIndex);
+  await writeFile(file, updated);
+}
+
 async function main() {
   if (!(await pathExists(path.join(blueprintRoot, 'node_modules')))) {
     await run('npm', ['ci'], blueprintRoot);
@@ -258,6 +290,7 @@ async function main() {
 
   const projects = await syncProjectContent();
   await syncSiteData();
+  await injectFooterSocials();
   await run('npx', ['vite', 'build'], blueprintRoot);
 
   await rm(siteBlueprintDir, { recursive: true, force: true });
