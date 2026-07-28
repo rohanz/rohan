@@ -215,6 +215,10 @@
   border: 1px solid var(--article-ink);
   font-size: 10px;
   font-weight: 600;
+  /* Frontmatter tags are capitalised ("Product Design"); classic lowercases
+     them at presentation (default.css does the same) so tags match the
+     lowercase filter pills. Same treatment here. */
+  text-transform: lowercase;
 }
 
 .article-meta > a,

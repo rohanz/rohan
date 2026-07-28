@@ -353,7 +353,9 @@ function buildSheet(project, index) {
     let tx = 50;
     const ty = 312, pillH = 26;
     for (let i = 0; i < techs.length; i++) {
-      const label = techs[i];
+      // Lowercased to match the filter pills and the article overlay's tags
+      // (canvas text has no text-transform, so it happens here).
+      const label = techs[i].toLowerCase();
       const tw = ctx.measureText(label).width + 20;
       if (tx + tw > 640) {
         const more = `+${techs.length - i}`;
