@@ -31,7 +31,7 @@ function initQuantlabFinVisuals(container) {
     if (riskNode) initQlfRiskGate(riskNode);
 
     if (lookaheadNode || kalmanNode || survivorshipNode) {
-        fetch('/assets/js/quantlab-fin-data.json', { cache: 'no-cache' })
+        fetch('/assets/data/quantlab-fin-data.json', { cache: 'no-cache' })
             .then(res => (res.ok ? res.json() : Promise.reject(new Error(`HTTP ${res.status}`))))
             .then(data => {
                 if (generation !== qlfGeneration) return;

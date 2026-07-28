@@ -36,7 +36,7 @@ function initQuantlabVisuals(container) {
     if (quantNode) initQlaQuant(quantNode, cleanups);
 
     if (gateNode || judgeNode || rosterNode) {
-        fetch('/assets/js/quantlab-visual-data.json', { cache: 'no-cache' })
+        fetch('/assets/data/quantlab-visual-data.json', { cache: 'no-cache' })
             .then(res => (res.ok ? res.json() : Promise.reject(new Error(`HTTP ${res.status}`))))
             .then(data => {
                 if (generation !== qlaGeneration) return;
