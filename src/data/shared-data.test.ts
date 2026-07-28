@@ -150,10 +150,6 @@ const SINGLE_DEFINITION_CASES: {
       'https://www.linkedin.com/in/rohan-jk',
       "'fab fa-linkedin-in'",
     ],
-    // src/layouts/DefaultLayout.astro still hardcodes the same four links in
-    // its nav rail, footer and JSON-LD sameAs. It is owned by another change
-    // in flight; until it consumes socials.ts these are known strays.
-    knownStrays: ['src/layouts/DefaultLayout.astro'],
   },
 ];
 
