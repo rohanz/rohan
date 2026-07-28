@@ -20,10 +20,14 @@ export interface Song {
   youtubeUrl: string;
   appleMusicUrl: string;
   /**
-   * Blueprint is a self-contained Vite app and ships its own byte-identical
-   * copies of the cover/snippet under themes/blueprint/public/, so it can run
-   * unmounted (`npm run dev` inside themes/blueprint) without the site root.
-   * Paths are relative to that public dir and go through base.js `asset()`.
+   * Blueprint used to ship its own byte-identical copies of the cover/snippet
+   * under themes/blueprint/public/ (~3.5MB duplicated across both trees).
+   * These now point at the same site-root paths as `cover`/`audio` above —
+   * base.js `asset()` passes `/assets/...` straight through unchanged. KNOWN
+   * COST: standalone `npm run dev` inside themes/blueprint no longer has
+   * these files locally, so covers/snippets 404 there; the sub-app only
+   * fully resolves them when served from the site root (mounted build, or
+   * `npm run dev` at the repo root).
    */
   blueprint: { cover: string; audio: string };
 }
@@ -38,7 +42,7 @@ export const SONGS: Song[] = [
     spotifyUrl: 'https://open.spotify.com/track/7xy7dlw4npEZ88uxVkFCJa?si=4d997b7d891b4214',
     youtubeUrl: 'https://www.youtube.com/watch?v=EJ1uM3mIk7Y',
     appleMusicUrl: 'https://music.apple.com/us/song/loose-ends/1874970496',
-    blueprint: { cover: '/covers/looseends.webp', audio: '/audio/looseends.mp3' },
+    blueprint: { cover: '/assets/images/looseends.webp', audio: '/assets/audio/snippets/looseends.mp3' },
   },
   {
     title: "DON'T WANT ME",
@@ -49,7 +53,7 @@ export const SONGS: Song[] = [
     spotifyUrl: 'https://open.spotify.com/track/0zYAFsKdFfbGfnMvRrEDgM?si=d8c21fc716e146d0',
     youtubeUrl: 'https://www.youtube.com/watch?v=UDpBfwxMZvI',
     appleMusicUrl: 'https://music.apple.com/us/song/dont-want-me/1832074479',
-    blueprint: { cover: '/covers/dontwantme.webp', audio: '/audio/dontwantme.mp3' },
+    blueprint: { cover: '/assets/images/dontwantme.webp', audio: '/assets/audio/snippets/dontwantme.mp3' },
   },
   {
     title: 'call me back',
@@ -61,7 +65,7 @@ export const SONGS: Song[] = [
     spotifyUrl: 'https://open.spotify.com/track/3m1PQRxlKQh1tzxFP1C0ZY?si=642929c16c284e61',
     youtubeUrl: 'https://www.youtube.com/watch?v=iXYprE6T5ec',
     appleMusicUrl: 'https://music.apple.com/sg/album/call-me-back/1756849369?i=1756849370',
-    blueprint: { cover: '/covers/callmeback.webp', audio: '/audio/callmeback.mp3' },
+    blueprint: { cover: '/assets/images/callmeback.webp', audio: '/assets/audio/snippets/callmeback.mp3' },
   },
   {
     title: 'where have u been?',
@@ -73,6 +77,6 @@ export const SONGS: Song[] = [
     youtubeUrl: 'https://www.youtube.com/watch?v=XUDQDO6qpQA',
     appleMusicUrl:
       'https://music.apple.com/sg/album/where-have-u-been-feat-trxstan-hannah-single/1727956658',
-    blueprint: { cover: '/covers/wherehaveubeen.webp', audio: '/audio/wherehaveubeen.mp3' },
+    blueprint: { cover: '/assets/images/wherehaveubeen.webp', audio: '/assets/audio/snippets/wherehaveubeen.mp3' },
   },
 ];

@@ -85,7 +85,10 @@ const SINGLE_DEFINITION_CASES: {
       'open.spotify.com/track/7xy7dlw4npEZ88uxVkFCJa',
       // NB: not the bare '/assets/audio/snippets/looseends.mp3' path — an
       // article widget legitimately fetches that file for its own demo.
-      '/covers/looseends.webp',
+      // Blueprint's own copy under /covers/ + /audio/ is retired (item 5,
+      // small-debt burn-down) — blueprint.cover/audio now equal the same
+      // /assets/... paths as cover/audio, so youtubeUrl is the unique marker.
+      'www.youtube.com/watch?v=EJ1uM3mIk7Y',
       'hyperpop/pop rock song with heavy guitars',
     ],
   },
@@ -247,19 +250,22 @@ describe('songs', () => {
       expect(song.summary.length).toBeGreaterThan(0);
       expect(song.cover).toMatch(/^\/assets\/images\/.+\.webp$/);
       expect(song.audio).toMatch(/^\/assets\/audio\/snippets\/.+\.mp3$/);
-      expect(song.blueprint.cover).toMatch(/^\/covers\/.+\.webp$/);
-      expect(song.blueprint.audio).toMatch(/^\/audio\/.+\.mp3$/);
+      // blueprint no longer ships its own byte-identical copies under
+      // themes/blueprint/public/ — blueprint.* now points at the same
+      // site-root paths, resolved by base.js `asset()` passing /assets/...
+      // straight through.
+      expect(song.blueprint.cover).toMatch(/^\/assets\/images\/.+\.webp$/);
+      expect(song.blueprint.audio).toMatch(/^\/assets\/audio\/snippets\/.+\.mp3$/);
       for (const url of [song.spotifyUrl, song.youtubeUrl, song.appleMusicUrl]) {
         expect(url).toMatch(/^https:\/\//);
       }
     }
   });
 
-  it('pairs each site asset with the blueprint copy of the same basename', () => {
+  it('the blueprint song fields are exactly the site asset paths (no separate copy)', () => {
     for (const song of SONGS) {
-      const base = (p: string) => p.slice(p.lastIndexOf('/') + 1);
-      expect(base(song.blueprint.cover)).toBe(base(song.cover));
-      expect(base(song.blueprint.audio)).toBe(base(song.audio));
+      expect(song.blueprint.cover).toBe(song.cover);
+      expect(song.blueprint.audio).toBe(song.audio);
     }
   });
 });
