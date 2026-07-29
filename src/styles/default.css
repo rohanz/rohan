@@ -311,17 +311,6 @@ html.theme-default .sidebar { view-transition-name: classic-sidebar; }
 ::view-transition-new(classic-sidebar) { animation: none; }
 ::view-transition-old(classic-sidebar) { display: none; }
 
-/* The fixed TOC rail gets the same treatment. Left inside the root group,
-   its position:fixed box was painted displaced toward the centre in the old
-   snapshot on project->project navigation, so the rail visibly jumped
-   right, faded, and re-appeared at its real position. As its own group
-   (old hidden, new live and unanimated) it simply stays put. */
-html.theme-default .detail-header-column { view-transition-name: classic-detail-rail; }
-::view-transition-group(classic-detail-rail),
-::view-transition-image-pair(classic-detail-rail),
-::view-transition-new(classic-detail-rail) { animation: none; }
-::view-transition-old(classic-detail-rail) { display: none; }
-
 /* ...and the noise film has to come with it, for the same reason.
    The overlay is z-index 9999 and the sidebar 1000, so in normal rendering
    the film lies ON TOP of the bar and lifts it from its raw #0f0f23
@@ -829,7 +818,11 @@ html.theme-default .homepage.active {
 }
 
 html.theme-default .section.fade-out {
-    transform: translateY(0) !important;
+    /* `none`, NOT translateY(0): an identity transform still creates a
+       containing block, which re-anchors the fixed TOC rail to the section
+       and teleported it ~350px toward the centre for the whole fade-out.
+       (Same trap the sectionFadeIn note below documents for fill-mode.) */
+    transform: none !important;
     animation: sectionFadeOut 0.4s ease-in forwards !important;
 }
 
