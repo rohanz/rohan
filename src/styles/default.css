@@ -311,6 +311,17 @@ html.theme-default .sidebar { view-transition-name: classic-sidebar; }
 ::view-transition-new(classic-sidebar) { animation: none; }
 ::view-transition-old(classic-sidebar) { display: none; }
 
+/* The fixed TOC rail gets the same treatment. Left inside the root group,
+   its position:fixed box was painted displaced toward the centre in the old
+   snapshot on project->project navigation, so the rail visibly jumped
+   right, faded, and re-appeared at its real position. As its own group
+   (old hidden, new live and unanimated) it simply stays put. */
+html.theme-default .detail-header-column { view-transition-name: classic-detail-rail; }
+::view-transition-group(classic-detail-rail),
+::view-transition-image-pair(classic-detail-rail),
+::view-transition-new(classic-detail-rail) { animation: none; }
+::view-transition-old(classic-detail-rail) { display: none; }
+
 /* ...and the noise film has to come with it, for the same reason.
    The overlay is z-index 9999 and the sidebar 1000, so in normal rendering
    the film lies ON TOP of the bar and lifts it from its raw #0f0f23
