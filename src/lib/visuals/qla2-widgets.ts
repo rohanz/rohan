@@ -4,8 +4,8 @@
 
 import type { VisualPalette } from './palette';
 import {
-  drawBench, drawCosts, drawLadder, drawRatchet,
-  BENCH_HEIGHT, COSTS_HEIGHT, LADDER_HEIGHT, RATCHET_HEIGHT,
+  drawBench, drawCosts, drawLadder, drawPromotion, drawRatchet,
+  BENCH_HEIGHT, COSTS_HEIGHT, LADDER_HEIGHT, PROMOTION_HEIGHT, RATCHET_HEIGHT,
   type BenchRow, type RatchetRow,
 } from './qla2-render';
 import '../../styles/qla2-widgets.css';
@@ -103,12 +103,15 @@ function initEpisode(node: HTMLElement, episodes: Episode[], options: WidgetOpti
   });
   const description = el('p', 'qla2-description');
   const question = el('p', 'qla2-question');
+  const storyHeader = el('div', 'qla2-zone-row');
   const storyLabel = el('div', 'qla2-zone-label', 'what the model did');
+  const playBtn = button('play it step by step', 'qla-btn qla2-play-btn');
+  storyHeader.append(storyLabel, playBtn);
   const story = el('ol', 'qla2-story');
   story.setAttribute('aria-live', 'polite');
   const outcomeLabel = el('div', 'qla2-zone-label', 'its answer');
   const outcome = el('div', 'qla2-outcome');
-  body.append(picker, description, question, storyLabel, story, outcomeLabel, outcome);
+  body.append(picker, description, question, storyHeader, story, outcomeLabel, outcome);
 
   let selected = 0;
   const render = () => {
@@ -136,7 +139,24 @@ function initEpisode(node: HTMLElement, episodes: Episode[], options: WidgetOpti
         : `the lookups were real, but the final arithmetic went wrong · scored ${episode.verdict.total.toFixed(2)} of 1`);
     outcome.append(answer, chip, note);
   };
-  pills.forEach((b, i) => b.addEventListener('click', () => { selected = i; render(); }));
+  pills.forEach((b, i) => b.addEventListener('click', () => { selected = i; stopPlay(); render(); }));
+  let playTimer = 0;
+  const stopPlay = () => { clearInterval(playTimer); story.classList.remove('is-playing'); outcome.classList.remove('is-hidden'); outcomeLabel.classList.remove('is-hidden'); story.querySelectorAll('.qla2-step').forEach((n) => n.classList.remove('is-revealed', 'is-current')); };
+  playBtn.addEventListener('click', () => {
+    stopPlay();
+    const steps = Array.from(story.querySelectorAll('.qla2-step'));
+    if (!steps.length) return;
+    story.classList.add('is-playing');
+    outcome.classList.add('is-hidden'); outcomeLabel.classList.add('is-hidden');
+    let at = -1;
+    const tick = () => {
+      at += 1;
+      steps.forEach((n, i) => { n.classList.toggle('is-revealed', i <= at); n.classList.toggle('is-current', i === at); });
+      if (at >= steps.length - 1) { clearInterval(playTimer); setTimeout(() => { outcome.classList.remove('is-hidden'); outcomeLabel.classList.remove('is-hidden'); steps.forEach((n) => n.classList.remove('is-current')); story.classList.remove('is-playing'); }, 900); }
+    };
+    tick();
+    playTimer = window.setInterval(tick, 1100) as unknown as number;
+  });
   if (options.onThemeChange) cleanups.push(options.onThemeChange(() => applyPalette(body, options.palette())));
   render();
 }
@@ -189,16 +209,41 @@ function initLadder(node: HTMLElement, ladder: Qla2Data['ladder'], options: Widg
   if (options.onThemeChange) cleanups.push(options.onThemeChange(redraw));
 }
 
-function initRatchet(node: HTMLElement, rows: RatchetRow[], options: WidgetOptions, cleanups: Array<() => void>) {
-  const body = shell(node, 'the autoresearch ratchet', 'five automated experiments; each dot is one training run the agent launched');
+function initRatchet(node: HTMLElement, data: Qla2Data, options: WidgetOptions, cleanups: Array<() => void>) {
+  const body = shell(node, 'the autoresearch ratchet', 'an agent ran the experiments; then reality graded its metric');
   applyPalette(body, options.palette());
-  const canvas = canvasFigure(body, 'Commit graph of ratchet experiments, costs, metrics, statuses and learning rates');
+  const rows = data.ratchet;
+  const toggle = el('div', 'qlf-mode-toggle');
+  toggle.setAttribute('role', 'group'); toggle.setAttribute('aria-label', 'Ratchet view');
+  const viewA = button('what the agent measured', 'qla-btn qla2-mode-btn');
+  const viewB = button('what happened at full scale', 'qla-btn qla2-mode-btn');
+  toggle.append(viewA, viewB);
+  const caption = el('p', 'qla2-description qla2-split-caption');
+  body.append(toggle, caption);
+  const canvas = canvasFigure(body, 'Ratchet experiments and the full-scale promotion outcome');
+  let mode: 'agent' | 'reality' = 'agent';
   const redraw = () => {
     applyPalette(body, options.palette());
-    const w = measuredWidth(canvas, options); canvas.style.height = `${RATCHET_HEIGHT}px`;
-    drawRatchet(options.sizeCanvas(canvas, w, RATCHET_HEIGHT), { w, palette: options.palette() }, rows);
+    const w = measuredWidth(canvas, options);
+    const h = mode === 'agent' ? RATCHET_HEIGHT : PROMOTION_HEIGHT;
+    canvas.style.height = `${h}px`;
+    const ctx = options.sizeCanvas(canvas, w, h);
+    if (mode === 'agent') drawRatchet(ctx, { w, palette: options.palette() }, rows);
+    else drawPromotion(ctx, { w, palette: options.palette() }, data.ladder);
   };
-  redraw(); window.addEventListener('resize', redraw); cleanups.push(() => window.removeEventListener('resize', redraw));
+  const select = (m: 'agent' | 'reality') => {
+    mode = m;
+    viewA.classList.toggle('is-active', m === 'agent'); viewA.setAttribute('aria-pressed', String(m === 'agent'));
+    viewB.classList.toggle('is-active', m === 'reality'); viewB.setAttribute('aria-pressed', String(m === 'reality'));
+    caption.textContent = m === 'agent'
+      ? 'The proxy metric climbed with every kept experiment: the agent raised my learning rate tenfold, for about $30.'
+      : 'Trained at full scale, its recipe won on the slice it optimized and lost on unseen question types. The metric was honest about one and blind to the other.';
+    redraw();
+  };
+  viewA.addEventListener('click', () => select('agent'));
+  viewB.addEventListener('click', () => select('reality'));
+  select('agent');
+  window.addEventListener('resize', redraw); cleanups.push(() => window.removeEventListener('resize', redraw));
   observeCanvas(canvas, redraw, cleanups);
   if (options.onThemeChange) cleanups.push(options.onThemeChange(redraw));
 }
@@ -265,7 +310,7 @@ export function initQla2Widgets(options: WidgetOptions): () => void {
       if (disposed) return;
       if (nodes.episode && Array.isArray(data.episodes)) initEpisode(nodes.episode, data.episodes, options, cleanups);
       if (nodes.ladder && data.ladder) initLadder(nodes.ladder, data.ladder, options, cleanups);
-      if (nodes.ratchet && Array.isArray(data.ratchet)) initRatchet(nodes.ratchet, data.ratchet, options, cleanups);
+      if (nodes.ratchet && Array.isArray(data.ratchet) && data.ladder) initRatchet(nodes.ratchet, data, options, cleanups);
       if (nodes.bench && data.bench) initBench(nodes.bench, data.bench, options, cleanups);
       if (nodes.costs && Array.isArray(data.costs)) initCosts(nodes.costs, data.costs, options, cleanups);
     })

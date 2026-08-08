@@ -231,3 +231,47 @@ export function drawCosts(
   ctx.fillStyle = palette.ink(0.82); ctx.font = `700 18px ${palette.fonts.title}`;
   ctx.textAlign = 'right'; ctx.fillText(`$${total} total`, w - 12, 25);
 }
+
+
+export const PROMOTION_HEIGHT = 232;
+export function drawPromotion(
+  ctx: CanvasRenderingContext2D,
+  { w, palette }: Qla2DrawOptions,
+  ladder: Record<string, Record<string, number>>,
+): void {
+  const h = PROMOTION_HEIGHT;
+  ctx.clearRect(0, 0, w, h);
+  const groups: Array<{ label: string; note: string; a: number; b: number }> = [
+    { label: 'validation set', note: 'the slice the agent optimized', a: ladder.val.grpo, b: ladder.val.grpo_v2 },
+    { label: 'unseen question types', note: 'what it never measured', a: ladder.unseen_templates.grpo, b: ladder.unseen_templates.grpo_v2 },
+  ];
+  const pad = { l: 30, r: 30 };
+  const gw = (w - pad.l - pad.r) / groups.length;
+  const barW = Math.min(74, gw * 0.24);
+  const y0 = 150; const scale = (v: number) => (v - 0.7) / 0.25 * 96;
+  groups.forEach((g, i) => {
+    const cx = pad.l + gw * i + gw / 2;
+    const better = g.b >= g.a;
+    ctx.fillStyle = palette.ink(0.35);
+    ctx.fillRect(cx - barW - 8, y0 - scale(g.a), barW, scale(g.a));
+    ctx.fillStyle = better ? palette.qla.compoundCurve : palette.qla.agentComparison;
+    ctx.fillRect(cx + 8, y0 - scale(g.b), barW, scale(g.b));
+    ctx.textAlign = 'center';
+    ctx.font = `700 13px ${palette.fonts.ui}`;
+    ctx.fillStyle = palette.ink(0.75);
+    ctx.fillText(`${(g.a * 100).toFixed(1)}%`, cx - barW / 2 - 8, y0 - scale(g.a) - 7);
+    ctx.fillStyle = better ? palette.qla.compoundCurve : palette.qla.agentComparison;
+    ctx.fillText(`${(g.b * 100).toFixed(1)}%`, cx + barW / 2 + 8, y0 - scale(g.b) - 7);
+    ctx.fillStyle = palette.ink(0.85); ctx.font = `700 13px ${palette.fonts.ui}`;
+    ctx.fillText(g.label, cx, y0 + 22);
+    ctx.fillStyle = palette.ink(0.5); ctx.font = `600 12px ${palette.fonts.ui}`;
+    ctx.fillText(g.note, cx, y0 + 40);
+    const delta = (g.b - g.a) * 100;
+    ctx.fillStyle = better ? palette.qla.compoundCurve : palette.qla.agentComparison;
+    ctx.font = `700 14px ${palette.fonts.ui}`;
+    ctx.fillText(`${delta >= 0 ? '+' : ''}${delta.toFixed(1)}`, cx, 26);
+  });
+  ctx.textAlign = 'left';
+  ctx.fillStyle = palette.ink(0.5); ctx.font = `600 12px ${palette.fonts.ui}`;
+  ctx.fillText('grey = old recipe · colored = the agent\u2019s recipe, trained at full scale', pad.l, h - 6);
+}
