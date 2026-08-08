@@ -10,13 +10,14 @@ import {
 } from './qla2-render';
 import '../../styles/qla2-widgets.css';
 
-interface EpisodeCall { tool: string; args: Record<string, unknown>; result_preview: string }
+interface EpisodeStep { tool: string; what: string; found: string }
 interface Episode {
   label: string;
+  description: string;
   question: string;
-  calls: EpisodeCall[];
+  steps: EpisodeStep[];
   answer: string;
-  score: { components: Record<string, number>; total: number };
+  verdict: { pass: boolean; total: number; grounded: boolean };
 }
 interface Qla2Data {
   ladder: Record<string, Record<string, number>>;
@@ -89,61 +90,47 @@ function observeCanvas(canvas: HTMLCanvasElement, redraw: () => void, cleanups: 
   cleanups.push(() => observer.disconnect());
 }
 
-const EPISODE_LABELS = ['simple lookup', 'multi-step chain', 'restatement trap', 'point-in-time', 'a failure'];
-const EPISODE_DESCRIPTIONS = [
-  'One filing lookup is enough to ground the answer.',
-  'A screen, several lookups, and arithmetic form one auditable chain.',
-  'The latest filing restates an older year, so memory gives the wrong number.',
-  'Each comparison uses only what had been filed by the stated date.',
-  'The calls are valid and grounded, but the final answer is incomplete.',
-];
-
-function humanArgs(args: Record<string, unknown>) {
-  return Object.entries(args).map(([key, value]) => `${key.replace(/_/g, ' ')}=${Array.isArray(value) ? value.join(', ') : String(value)}`).join(' · ');
-}
-
 function initEpisode(node: HTMLElement, episodes: Episode[], options: WidgetOptions, cleanups: Array<() => void>) {
-  const body = shell(node, 'inside one episode', 'real evaluation transcripts · inspect the evidence');
+  const body = shell(node, 'inside one episode', 'real transcripts from the evaluation runs');
   applyPalette(body, options.palette());
   const picker = el('div', 'qla2-episode-picker');
   picker.setAttribute('role', 'group');
   picker.setAttribute('aria-label', 'Choose transcript');
-  const pills = episodes.map((episode, index) => {
-    const b = button(EPISODE_LABELS[index] ?? episode.label, 'qla-btn qla2-mode-btn');
+  const pills = episodes.map((episode) => {
+    const b = button(episode.label, 'qla-btn qla2-mode-btn');
     picker.append(b);
     return b;
   });
   const description = el('p', 'qla2-description');
   const question = el('p', 'qla2-question');
-  const stream = el('div', 'qla2-transcript');
-  stream.setAttribute('aria-live', 'polite');
-  body.append(picker, description, question, stream);
+  const story = el('ol', 'qla2-story');
+  story.setAttribute('aria-live', 'polite');
+  const outcome = el('div', 'qla2-outcome');
+  body.append(picker, description, question, story, outcome);
 
   let selected = 0;
-
   const render = () => {
     const episode = episodes[selected];
     pills.forEach((b, i) => { const on = i === selected; b.classList.toggle('is-active', on); b.setAttribute('aria-pressed', String(on)); });
-    description.textContent = EPISODE_DESCRIPTIONS[selected] ?? 'A real evaluation transcript.';
+    description.textContent = episode.description;
     question.textContent = episode.question;
-    stream.textContent = '';
-    episode.calls.forEach((call) => {
-      const card = el('section', 'qla2-call');
-      const line = el('div', 'qla2-call-line');
-      line.append(el('code', 'qla2-tool', call.tool), el('code', 'qla2-code', humanArgs(call.args)));
-      const result = el('details', 'qla2-result');
-      result.append(el('summary', undefined, 'show result'), el('pre', 'qla2-code qla2-result-text', call.result_preview));
-      card.append(line, result);
-      stream.append(card);
+    story.textContent = '';
+    episode.steps.forEach((step) => {
+      const item = el('li', 'qla2-step');
+      const head = el('div', 'qla2-step-head');
+      head.append(el('span', 'qla2-tool', step.tool.replace(/_/g, ' ')), el('span', 'qla2-step-what', step.what));
+      item.append(head, el('div', 'qla2-step-found', step.found));
+      story.append(item);
     });
-    const answer = el('section', 'qla2-answer');
-    answer.append(el('div', 'qla2-block-label', 'answer'), el('pre', 'qla2-answer-text', episode.answer));
-    stream.append(answer);
-    const score = el('section', 'qla2-score qla2-score-compact');
-    score.append(el('span', 'qla2-block-label', 'reward'));
-    const parts = Object.entries(episode.score.components).map(([name, value]) => `${name} ${value.toFixed(2)}`).join(' · ');
-    score.append(el('span', 'qla2-score-components', parts), el('strong', undefined, `total ${episode.score.total.toFixed(2)}`));
-    stream.append(score);
+    outcome.textContent = '';
+    const chip = el('span', episode.verdict.pass ? 'qla2-verdict is-pass' : 'qla2-verdict is-fail',
+      episode.verdict.pass ? 'verified' : 'wrong answer');
+    const answer = el('code', 'qla2-final', episode.answer);
+    const note = el('span', 'qla2-outcome-note',
+      episode.verdict.pass
+        ? `every number traceable to a filing · reward ${episode.verdict.total.toFixed(2)}`
+        : `grounded but incorrect · reward ${episode.verdict.total.toFixed(2)}`);
+    outcome.append(answer, chip, note);
   };
   pills.forEach((b, i) => b.addEventListener('click', () => { selected = i; render(); }));
   if (options.onThemeChange) cleanups.push(options.onThemeChange(() => applyPalette(body, options.palette())));

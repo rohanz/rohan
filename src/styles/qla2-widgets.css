@@ -14,27 +14,25 @@
 .qla2-description { margin: 0 0 0.9rem; color: var(--text-secondary); font-size: 0.88rem; line-height: 1.5; font-style: italic; }
 .qla2-split-caption { margin: -0.15rem 0 0.7rem; }
 .qla2-question { margin: 0 0 1rem; padding: 0.7rem 0.95rem; border-left: 3px solid var(--accent); color: var(--text-primary); font-weight: 600; }
-.qla2-transcript { display: grid; border: 1px solid var(--border-subtle); border-radius: 8px; background: var(--bg-card); }
-.qla2-call, .qla2-answer, .qla2-score { padding: 0.72rem 0.85rem; border-bottom: 1px solid var(--border-subtle); }
-.qla2-transcript > :last-child { border-bottom: 0; }
-.qla2-call-line { display: flex; align-items: baseline; gap: 0.7rem; min-width: 0; flex-wrap: wrap; }
-.qla2-block-label { color: var(--text-secondary); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
+.qla2-story { margin: 0 0 1rem; padding: 0; list-style: none; counter-reset: qla2step; }
+ol.qla2-story > li.qla2-step { position: relative; margin: 0; padding: 0.5rem 0 0.5rem 2.4rem; counter-increment: qla2step; }
+ol.qla2-story > li.qla2-step::before { content: counter(qla2step); position: absolute; left: 0; top: 0.55rem; width: 1.45rem; height: 1.45rem; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: 50%; background: var(--bg-card); display: grid; place-items: center; font-size: 0.72rem; line-height: 1; font-weight: 700; color: var(--accent); }
+ol.qla2-story > li.qla2-step + li.qla2-step { border-top: 1px dashed var(--border-subtle); }
+.qla2-step-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.55rem; }
+.qla2-step-what { color: var(--text-secondary); font-size: 0.86rem; }
+.qla2-step-found { margin-top: 0.15rem; color: var(--text-secondary); font-size: 0.82rem; }
+.qla2-step-found::before { content: '→ '; color: var(--accent); }
 .qla2-tool { color: var(--accent); font-weight: 700; }
-.qla2-code, .qla2-answer-text, .qla2-tool {
-  margin: 0; white-space: pre-wrap; overflow-wrap: anywhere;
+.qla2-tool, .qla2-final {
   font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
-  font-size: 0.8rem; line-height: 1.55;
+  font-size: 0.82rem;
 }
-.qla2-code, .qla2-answer-text { color: var(--text-secondary); }
-.qla2-answer-text { color: var(--text-primary); }
-.qla2-result { margin-top: 0.35rem; }
-.qla2-result summary { cursor: pointer; color: var(--text-secondary); font-size: 0.78rem; font-weight: 700; }
-.qla2-result summary:hover { color: var(--text-primary); }
-.qla2-result[open] summary { margin-bottom: 0.5rem; }
-.qla2-answer-text { margin-top: 0.5rem; }
-.qla2-score-compact { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.4rem 0.9rem; font-size: 0.8rem; }
-.qla2-score-components { color: var(--text-secondary); }
-.qla2-score-compact strong { margin-left: auto; color: var(--text-primary); }
+.qla2-outcome { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem 0.8rem; padding: 0.7rem 0.85rem; border: 1px solid var(--border-subtle); border-radius: 8px; background: var(--bg-card); }
+.qla2-final { color: var(--text-primary); font-weight: 700; overflow-wrap: anywhere; }
+.qla2-verdict { padding: 0.14rem 0.65rem; border-radius: 999px; font-size: 0.74rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+.qla2-verdict.is-pass { color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.qla2-verdict.is-fail { color: var(--qla2-comparison, #c74b50); box-shadow: inset 0 0 0 1px currentColor; }
+.qla2-outcome-note { flex-basis: 100%; color: var(--text-secondary); font-size: 0.8rem; font-style: italic; }
 .qla2-cost-key { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.35rem 1.4rem; margin: 0; padding-left: 1.6rem; color: var(--text-secondary); font-size: 0.82rem; }
 .qla2-cost-key li { padding-left: 0.2rem; }
 .qla2-cost-key li::marker { color: var(--accent); font-weight: 700; }
@@ -42,6 +40,5 @@
 .qla2-legend-primary { color: var(--accent); }
 .qla2-legend-comparison { color: var(--qla2-comparison, var(--text-secondary)); }
 @media (max-width: 540px) {
-  .qla2-call-line { align-items: flex-start; flex-direction: column; gap: 0.2rem; }
   .qla2-cost-key { grid-template-columns: 1fr; }
 }
