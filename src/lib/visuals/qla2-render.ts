@@ -32,17 +32,22 @@ export function drawLadder(
   scores: Record<string, number>,
 ): void {
   const h = LADDER_HEIGHT;
-  const names = Object.keys(scores);
+  const ORDER = ['base', 'sft', 'grpo', 'teacher'];
+  const names = ORDER.filter((n) => n in scores);
   const pad = { l: Math.min(200, Math.max(165, w * 0.28)), r: 68, t: 18, b: 42 };
   const pw = w - pad.l - pad.r;
   const rowH = (h - pad.t - pad.b) / names.length;
-  const min = 0.7;
-  const max = 0.95;
+  const values = names.map((n) => scores[n]);
+  const min = Math.floor((Math.min(...values) - 0.015) * 100) / 100;
+  const max = Math.ceil((Math.max(...values) + 0.015) * 100) / 100;
   const x = (v: number) => pad.l + ((v - min) / (max - min)) * pw;
   ctx.clearRect(0, 0, w, h);
 
   ctx.font = `600 13px ${palette.fonts.ui}`;
-  [0.7, 0.75, 0.8, 0.85, 0.9, 0.95].forEach((tick) => {
+  const tickStep = (max - min) > 0.12 ? 0.05 : 0.02;
+  const ticks: number[] = [];
+  for (let t = Math.ceil(min / tickStep) * tickStep; t <= max + 1e-9; t += tickStep) ticks.push(t);
+  ticks.forEach((tick) => {
     const tx = x(tick);
     ctx.strokeStyle = palette.ink(0.12);
     ctx.beginPath(); ctx.moveTo(tx, pad.t); ctx.lineTo(tx, h - pad.b); ctx.stroke();
