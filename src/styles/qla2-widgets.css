@@ -41,3 +41,6 @@ ol.qla2-story > li.qla2-step + li.qla2-step { border-top: 1px dashed var(--borde
 @media (max-width: 540px) {
   .qla2-cost-key { grid-template-columns: 1fr; }
 }
+
+.qla2-zone-label { margin: 0.9rem 0 0.3rem; color: var(--text-secondary); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; }
+.qla2-story + .qla2-zone-label, ol.qla2-story ~ .qla2-zone-label { margin-top: 0.6rem; }

@@ -24,7 +24,7 @@
  },
  "episodes": [
   {
-   "label": "simple lookup",
+   "label": "an easy one",
    "description": "One filing query answers it.",
    "question": "What was NSC's free cash flow for the fiscal year ending 2025-12-31?",
    "steps": [
@@ -42,7 +42,7 @@
    }
   },
   {
-   "label": "multi-step chain",
+   "label": "a hard chain",
    "description": "A screen, several lookups, and explicit arithmetic.",
    "question": "What was the average fcf of the top 3 companies in edgar400:trade by revenue growth yoy in FY2024?",
    "steps": [
@@ -80,7 +80,7 @@
    }
   },
   {
-   "label": "restatement trap",
+   "label": "a memory trap",
    "description": "The filings hold a corrected figure; memory holds the old one.",
    "question": "What is A's cost of revenue for FY2013 according to its most recent filing?",
    "steps": [
@@ -98,7 +98,7 @@
    }
   },
   {
-   "label": "point-in-time",
+   "label": "time travel",
    "description": "Only what was public on the stated date counts.",
    "question": "Which company reported the higher net income as of 2026-02-12: BNY or CHTR?",
    "steps": [
@@ -121,7 +121,7 @@
    }
   },
   {
-   "label": "a failure",
+   "label": "one it got wrong",
    "description": "Valid calls, grounded numbers, wrong final answer.",
    "question": "What was the average total return 1y of the top 3 companies in edgar400:finance by net margin in FY2021?",
    "steps": [

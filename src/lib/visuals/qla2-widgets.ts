@@ -91,7 +91,7 @@ function observeCanvas(canvas: HTMLCanvasElement, redraw: () => void, cleanups: 
 }
 
 function initEpisode(node: HTMLElement, episodes: Episode[], options: WidgetOptions, cleanups: Array<() => void>) {
-  const body = shell(node, 'inside one episode', 'real transcripts from the evaluation runs');
+  const body = shell(node, 'inside one episode', 'watch the model answer one real question, step by step');
   applyPalette(body, options.palette());
   const picker = el('div', 'qla2-episode-picker');
   picker.setAttribute('role', 'group');
@@ -103,10 +103,12 @@ function initEpisode(node: HTMLElement, episodes: Episode[], options: WidgetOpti
   });
   const description = el('p', 'qla2-description');
   const question = el('p', 'qla2-question');
+  const storyLabel = el('div', 'qla2-zone-label', 'what the model did');
   const story = el('ol', 'qla2-story');
   story.setAttribute('aria-live', 'polite');
+  const outcomeLabel = el('div', 'qla2-zone-label', 'its answer');
   const outcome = el('div', 'qla2-outcome');
-  body.append(picker, description, question, story, outcome);
+  body.append(picker, description, question, storyLabel, story, outcomeLabel, outcome);
 
   let selected = 0;
   const render = () => {
@@ -130,8 +132,8 @@ function initEpisode(node: HTMLElement, episodes: Episode[], options: WidgetOpti
     const answer = el('code', 'qla2-final', episode.answer);
     const note = el('span', 'qla2-outcome-note',
       episode.verdict.pass
-        ? `every number traceable to a filing · reward ${episode.verdict.total.toFixed(2)}`
-        : `grounded but incorrect · reward ${episode.verdict.total.toFixed(2)}`);
+        ? `checked against the filings by code, not by a human · scored ${episode.verdict.total.toFixed(2)} of 1`
+        : `the lookups were real, but the final arithmetic went wrong · scored ${episode.verdict.total.toFixed(2)} of 1`);
     outcome.append(answer, chip, note);
   };
   pills.forEach((b, i) => b.addEventListener('click', () => { selected = i; render(); }));
@@ -140,7 +142,7 @@ function initEpisode(node: HTMLElement, episodes: Episode[], options: WidgetOpti
 }
 
 function initLadder(node: HTMLElement, ladder: Qla2Data['ladder'], options: WidgetOptions, cleanups: Array<() => void>) {
-  const body = shell(node, 'the training ladder', 'validation and two held-out splits');
+  const body = shell(node, 'the training ladder', 'the same model at each training stage, against its teacher');
   applyPalette(body, options.palette());
   const toggle = el('div', 'qlf-mode-toggle');
   toggle.setAttribute('role', 'group'); toggle.setAttribute('aria-label', 'Evaluation split');
@@ -188,7 +190,7 @@ function initLadder(node: HTMLElement, ladder: Qla2Data['ladder'], options: Widg
 }
 
 function initRatchet(node: HTMLElement, rows: RatchetRow[], options: WidgetOptions, cleanups: Array<() => void>) {
-  const body = shell(node, 'the autoresearch ratchet', 'failed serves, kept runs, and learning-rate jumps');
+  const body = shell(node, 'the autoresearch ratchet', 'five automated experiments; each dot is one training run the agent launched');
   applyPalette(body, options.palette());
   const canvas = canvasFigure(body, 'Commit graph of ratchet experiments, costs, metrics, statuses and learning rates');
   const redraw = () => {
@@ -202,15 +204,15 @@ function initRatchet(node: HTMLElement, rows: RatchetRow[], options: WidgetOptio
 }
 
 function initBench(node: HTMLElement, bench: Qla2Data['bench'], options: WidgetOptions, cleanups: Array<() => void>) {
-  const body = shell(node, 'serving agents, not chatbots', 'paired bf16 / fp8 throughput');
+  const body = shell(node, 'serving agents, not chatbots', 'full precision vs compressed (FP8), on two kinds of workload');
   applyPalette(body, options.palette());
   const toggle = el('div', 'qlf-mode-toggle');
   toggle.setAttribute('role', 'group'); toggle.setAttribute('aria-label', 'Benchmark metric');
-  const token = button('synthetic tokens/s', 'qla-btn qla2-mode-btn');
-  const episode = button('real episodes/min', 'qla-btn qla2-mode-btn');
+  const token = button('raw text speed', 'qla-btn qla2-mode-btn');
+  const episode = button('research tasks completed', 'qla-btn qla2-mode-btn');
   toggle.append(token, episode); body.append(toggle);
   const legend = el('div', 'qlf-legend qla2-legend');
-  legend.innerHTML = '<span class="qlf-legend-item qla2-legend-primary"><i class="qlf-legend-swatch"></i>bf16</span><span class="qlf-legend-item qla2-legend-comparison"><i class="qlf-legend-swatch"></i>fp8</span>';
+  legend.innerHTML = '<span class="qlf-legend-item qla2-legend-primary"><i class="qlf-legend-swatch"></i>full precision</span><span class="qlf-legend-item qla2-legend-comparison"><i class="qlf-legend-swatch"></i>compressed FP8</span>';
   body.append(legend);
   const canvas = canvasFigure(body, 'Line chart comparing BF16 and FP8 throughput by concurrency');
   let mode: 'tokens' | 'episodes' = 'tokens';

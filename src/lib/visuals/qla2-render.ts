@@ -17,7 +17,14 @@ export const RATCHET_HEIGHT = 205;
 export const BENCH_HEIGHT = 286;
 export const COSTS_HEIGHT = 205;
 
-const modelLabel = (name: string) => name.replace(/_/g, ' ');
+function modelLabel(name: string): string { return MODEL_LABELS[name] ?? name; }
+const MODEL_LABELS: Record<string, string> = {
+  base: 'untrained (base 9B)',
+  sft: 'after imitation (SFT)',
+  grpo: 'final model (RL)',
+  grpo_v2: 'RL variant v2',
+  teacher: 'its teacher (frontier API)',
+};
 
 export function drawLadder(
   ctx: CanvasRenderingContext2D,
@@ -26,7 +33,7 @@ export function drawLadder(
 ): void {
   const h = LADDER_HEIGHT;
   const names = Object.keys(scores);
-  const pad = { l: Math.min(116, Math.max(88, w * 0.19)), r: 46, t: 18, b: 42 };
+  const pad = { l: Math.min(200, Math.max(165, w * 0.28)), r: 68, t: 18, b: 42 };
   const pw = w - pad.l - pad.r;
   const rowH = (h - pad.t - pad.b) / names.length;
   const min = 0.7;
