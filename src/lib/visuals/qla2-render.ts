@@ -34,7 +34,7 @@ export function drawLadder(
   const x = (v: number) => pad.l + ((v - min) / (max - min)) * pw;
   ctx.clearRect(0, 0, w, h);
 
-  ctx.font = `600 10px ${palette.fonts.ui}`;
+  ctx.font = `600 13px ${palette.fonts.ui}`;
   [0.7, 0.75, 0.8, 0.85, 0.9, 0.95].forEach((tick) => {
     const tx = x(tick);
     ctx.strokeStyle = palette.ink(0.12);
@@ -59,14 +59,14 @@ export function drawLadder(
       ctx.strokeRect(pad.l + 1, y + 1, Math.max(0, x(value) - pad.l - 2), bh - 2);
     }
     ctx.fillStyle = teacher ? palette.qla.agentComparison : palette.ink(0.72);
-    ctx.font = `${teacher ? 700 : 600} 11px ${palette.fonts.ui}`;
+    ctx.font = `${teacher ? 700 : 600} 13px ${palette.fonts.ui}`;
     ctx.textAlign = 'right';
     ctx.fillText(modelLabel(name), pad.l - 9, y + bh * 0.68);
     ctx.textAlign = 'left';
     ctx.fillText(`${(value * 100).toFixed(1)}%`, Math.min(w - 34, x(value) + 6), y + bh * 0.68);
   });
   ctx.fillStyle = palette.ink(0.5);
-  ctx.font = `600 11px ${palette.fonts.ui}`;
+  ctx.font = `600 14px ${palette.fonts.ui}`;
   ctx.textAlign = 'center';
   ctx.fillText('evaluation reward', pad.l + pw / 2, h - 5);
 }
@@ -77,7 +77,7 @@ export function drawRatchet(
   rows: RatchetRow[],
 ): void {
   const h = RATCHET_HEIGHT;
-  const pad = { l: 36, r: 36 };
+  const pad = { l: 58, r: 58 };
   const pw = w - pad.l - pad.r;
   const x = (i: number) => pad.l + (rows.length === 1 ? pw / 2 : (i / (rows.length - 1)) * pw);
   const railY = 92;
@@ -88,7 +88,7 @@ export function drawRatchet(
   ctx.lineWidth = 1;
   ctx.beginPath(); ctx.moveTo(x(2), 26); ctx.lineTo(x(4), 26); ctx.stroke();
   ctx.fillStyle = palette.ink(0.58);
-  ctx.font = `600 10px ${palette.fonts.ui}`;
+  ctx.font = `600 13px ${palette.fonts.ui}`;
   ctx.textAlign = 'center';
   ctx.fillText('agent raised lr ×5 then ×2', (x(2) + x(4)) / 2, 17);
 
@@ -104,13 +104,13 @@ export function drawRatchet(
     else { ctx.fillStyle = palette.ink(0.04); ctx.fill(); ctx.strokeStyle = palette.ink(0.38); ctx.lineWidth = 1.5; ctx.stroke(); }
 
     ctx.textAlign = 'center';
-    ctx.font = `700 11px ${palette.fonts.ui}`;
+    ctx.font = `700 14px ${palette.fonts.ui}`;
     ctx.fillStyle = success ? palette.ink(0.82) : palette.ink(0.48);
     ctx.fillText(row.metric === null ? 'serve failed' : row.metric.toFixed(3), nx, 67);
-    ctx.font = `600 10px ${palette.fonts.ui}`;
+    ctx.font = `600 13px ${palette.fonts.ui}`;
     ctx.fillStyle = palette.ink(0.58);
     ctx.fillText(`lr ${row.lr.toExponential(0)}`, nx, 121);
-    ctx.font = `600 9px ${palette.fonts.ui}`;
+    ctx.font = `600 12px ${palette.fonts.ui}`;
     ctx.fillStyle = palette.ink(0.42);
     ctx.fillText(`run ${i + 1} · $${row.cost.toFixed(2)}`, nx, 145);
   });
@@ -139,7 +139,7 @@ export function drawBench(
   const x = (v: number) => pad.l + (xs.indexOf(v) / (xs.length - 1)) * (w - pad.l - pad.r);
   const y = (v: number) => pad.t + (1 - v / maxY) * (h - pad.t - pad.b);
   ctx.clearRect(0, 0, w, h);
-  ctx.font = `600 10px ${palette.fonts.ui}`;
+  ctx.font = `600 13px ${palette.fonts.ui}`;
 
   [0, 0.5, 1].forEach((f) => {
     const value = maxY * f;
@@ -176,7 +176,7 @@ export function drawBench(
       const drop = Math.round((1 - b.y / a.y) * 100);
       ctx.strokeStyle = palette.qla.compoundCurve; ctx.lineWidth = 1.5;
       ctx.beginPath(); ctx.moveTo(x(a.x) + 4, y(a.y) - 8); ctx.lineTo(x(b.x) - 4, y(b.y) - 8); ctx.stroke();
-      ctx.fillStyle = palette.qla.compoundCurve; ctx.font = `700 10px ${palette.fonts.ui}`;
+      ctx.fillStyle = palette.qla.compoundCurve; ctx.font = `700 13px ${palette.fonts.ui}`;
       ctx.textAlign = 'center'; ctx.fillText(`bf16: ${drop}% drop`, (x(a.x) + x(b.x)) / 2, Math.min(y(a.y), y(b.y)) - 15);
     }
   }
@@ -202,7 +202,7 @@ export function drawCosts(
     ctx.fillRect(cursor, y0, sw, bh);
     ctx.globalAlpha = 1;
     if (sw > 42) {
-      ctx.fillStyle = palette.ink(0.9); ctx.font = `700 10px ${palette.fonts.ui}`;
+      ctx.fillStyle = palette.ink(0.9); ctx.font = `700 13px ${palette.fonts.ui}`;
       ctx.textAlign = 'center'; ctx.fillText(`$${row.usd}`, cursor + sw / 2, y0 + 25);
     }
     cursor += sw;
@@ -215,11 +215,11 @@ export function drawCosts(
     ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(segmentMids[i], y0 + bh); ctx.lineTo(labelX, labelY - 11); ctx.stroke();
     ctx.fillStyle = palette.ink(0.62);
-    ctx.font = `600 9px ${palette.fonts.ui}`;
+    ctx.font = `600 12px ${palette.fonts.ui}`;
     ctx.textAlign = i === 0 ? 'left' : i === costs.length - 1 ? 'right' : 'center';
     ctx.fillText(shortLabels[i] ?? modelLabel(row.phase), labelX, labelY);
   });
-  ctx.fillStyle = palette.ink(0.5); ctx.font = `600 10px ${palette.fonts.ui}`;
+  ctx.fillStyle = palette.ink(0.5); ctx.font = `600 13px ${palette.fonts.ui}`;
   ctx.textAlign = 'left'; ctx.fillText('share of all-in cost', x0, 24);
   ctx.fillStyle = palette.ink(0.82); ctx.font = `700 18px ${palette.fonts.title}`;
   ctx.textAlign = 'right'; ctx.fillText(`$${total} total`, w - 12, 25);

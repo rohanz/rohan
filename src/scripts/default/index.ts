@@ -7,6 +7,7 @@ import * as lightbox from './lightbox.js';
 import * as bqstDemo from './bqst-demo.js';
 import * as chordDemo from './chord-demo.js';
 import * as qlaVisuals from './qla-visuals.js';
+import * as qla2Visuals from './qla2-visuals.js';
 import * as qlfVisuals from './qlf-visuals.js';
 import * as bqstVisuals from './bqst-visuals.js';
 import * as legacyWidgets from './legacy-widgets.js';
@@ -128,6 +129,9 @@ export function init() {
 
   if (document.querySelector('[id^="qla-"][id$="-visual"]'))
     use(qlaVisuals, () => qlaVisuals.init(document));
+
+  if (document.querySelector('[id^="qla2-"]'))
+    use(qla2Visuals, () => qla2Visuals.init(document));
 
   if (document.querySelector('[id^="qlf-"][id$="-visual"]'))
     use(qlfVisuals, () => qlfVisuals.init(document));

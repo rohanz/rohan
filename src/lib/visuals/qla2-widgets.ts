@@ -117,9 +117,11 @@ function initEpisode(node: HTMLElement, episodes: Episode[], options: WidgetOpti
     story.textContent = '';
     episode.steps.forEach((step) => {
       const item = el('li', 'qla2-step');
-      const head = el('div', 'qla2-step-head');
-      head.append(el('span', 'qla2-tool', step.tool.replace(/_/g, ' ')), el('span', 'qla2-step-what', step.what));
-      item.append(head, el('div', 'qla2-step-found', step.found));
+      item.append(
+        el('span', 'qla2-tool', step.tool.replace(/_/g, ' ')),
+        el('span', 'qla2-step-what', step.what),
+        el('span', 'qla2-step-found', step.found),
+      );
       story.append(item);
     });
     outcome.textContent = '';

@@ -30,11 +30,11 @@
    "steps": [
     {
      "tool": "get_fundamentals",
-     "what": "NSC \u00b7 free cash flow \u00b7 1",
-     "found": "1 fiscal years; FY ending 2025-12-31: 2,157,000,000"
+     "what": "NSC \u00b7 free cash flow",
+     "found": "FY ending 2025-12-31: 2,157,000,000"
     }
    ],
-   "answer": "ANSWER: 2157000000",
+   "answer": "2,157,000,000",
    "verdict": {
     "pass": true,
     "total": 1.0,
@@ -48,22 +48,22 @@
    "steps": [
     {
      "tool": "screen",
-     "what": "revenue growth yoy \u00b7 edgar400:trade \u00b7 2024 \u00b7 3",
+     "what": "revenue growth yoy \u00b7 edgar400:trade \u00b7 2024",
      "found": "top 3: CMG, COR, MCK (3 skipped)"
     },
     {
      "tool": "get_fundamentals",
-     "what": "CMG \u00b7 free cash flow \u00b7 5",
+     "what": "CMG \u00b7 free cash flow",
      "found": "5 fiscal years; FY ending 2024-12-31: 1,511,473,000"
     },
     {
      "tool": "get_fundamentals",
-     "what": "COR \u00b7 free cash flow \u00b7 5",
+     "what": "COR \u00b7 free cash flow",
      "found": "5 fiscal years; FY ending 2024-09-30: 2,997,512,000"
     },
     {
      "tool": "get_fundamentals",
-     "what": "MCK \u00b7 free cash flow \u00b7 5",
+     "what": "MCK \u00b7 free cash flow",
      "found": "5 fiscal years; FY ending 2024-03-31: 3,883,000,000"
     },
     {
@@ -72,7 +72,7 @@
      "found": "= 2.79733e+09"
     }
    ],
-   "answer": "ANSWER: 2797328333.33",
+   "answer": "2,797,328,333.33",
    "verdict": {
     "pass": true,
     "total": 1.0,
@@ -86,11 +86,11 @@
    "steps": [
     {
      "tool": "get_fundamentals",
-     "what": "A \u00b7 cost of revenue \u00b7 20",
+     "what": "A \u00b7 cost of revenue",
      "found": "11 fiscal years; FY ending 2013-10-31: 1,987,000,000"
     }
    ],
-   "answer": "ANSWER: 1987000000",
+   "answer": "1,987,000,000",
    "verdict": {
     "pass": true,
     "total": 1.0,
@@ -113,7 +113,7 @@
      "found": "as of that date: 4,987,000,000 (FY ending 2025-12-31)"
     }
    ],
-   "answer": "ANSWER: CHTR",
+   "answer": "CHTR",
    "verdict": {
     "pass": true,
     "total": 1.0,
@@ -127,22 +127,22 @@
    "steps": [
     {
      "tool": "screen",
-     "what": "net margin \u00b7 edgar400:finance \u00b7 2021 \u00b7 3",
+     "what": "net margin \u00b7 edgar400:finance \u00b7 2021",
      "found": "top 3: EXR, MET, COF (26 skipped)"
     },
     {
      "tool": "screen",
-     "what": "total return 1y \u00b7 edgar400:finance \u00b7 100",
+     "what": "total return 1y \u00b7 edgar400:finance",
      "found": "error: top_n: must be at most 50"
     },
     {
      "tool": "screen",
-     "what": "total return 1y \u00b7 edgar400:finance \u00b7 50",
+     "what": "total return 1y \u00b7 edgar400:finance",
      "found": "top 50: CNC, UNH, STT, PFG, TRV, BNY"
     },
     {
      "tool": "screen",
-     "what": "total return 1y \u00b7 edgar400:finance \u00b7 50",
+     "what": "total return 1y \u00b7 edgar400:finance",
      "found": "top 50: COIN, KKR, BX, CCI, BRO, APO"
     },
     {
@@ -151,7 +151,7 @@
      "found": "= 0.130452"
     }
    ],
-   "answer": "ANSWER: 0.1304522035571497",
+   "answer": "0.13",
    "verdict": {
     "pass": false,
     "total": 0.18,

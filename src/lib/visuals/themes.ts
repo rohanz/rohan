@@ -43,6 +43,7 @@ export function classicPalette(isLight: boolean): VisualPalette {
       // Opaque equivalent of ink(0.55) pre-blended onto each theme's
       // background: dots must be solid or the connector line ghosts through.
       quantDot: isLight ? '#90817B' : '#8B8A92',
+      agentComparison: warn,
     },
     qlf: {
       cheat: warn,
@@ -93,6 +94,7 @@ export const transitPalette: VisualPalette = (() => {
       quantImportant: TRANSIT_RED,
       // Opaque equivalent of ink@0.55 pre-blended onto the card (#eae7de).
       quantDot: '#7a7875',
+      agentComparison: TRANSIT_BLUE,
     },
     qlf: {
       cheat: TRANSIT_RED,
@@ -148,6 +150,7 @@ export const blueprintPalette: VisualPalette = (() => {
       rosterSeries: BP_RED,
       quantImportant: BP_RED,
       quantDot: BP_CHROME_GREY,
+      agentComparison: BP_LIGHT_NAVY,
     },
     qlf: {
       cheat: BP_RED,
