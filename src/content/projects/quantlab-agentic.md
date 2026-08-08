@@ -57,7 +57,7 @@ Supervised fine-tuning took the base model from 0.730 to 0.822, half the teacher
 
 Then the main event: 300 steps of GRPO, where no teacher exists. The model explores, the reward scores, and the verifier itself becomes the teacher. Getting it running took an eight-launch shakedown (missing dependencies, a weight-name mismatch between the training and serving stacks, out-of-memory arithmetic at 16k context), each failure one layer deeper than the last, which is the true texture of custom RL on rented hardware. The result: 0.829 overall, with the gains exactly where imitation couldn't reach. Multi-step chains rose 2.9 points and traps rose 1.6, and <span class="gloss-term" data-gloss="If the model's outputs become deterministic too early, RL has nothing left to explore and learning stops. The classic GRPO failure mode.">entropy stayed healthy</span> for the whole run.
 
-The chart below is the whole training arc in one picture: base model, supervised fine-tune, RL, and the frontier teacher, on three different exams. The toggle matters more than any single bar. On the validation set the ladder is orderly. On question shapes the model never saw in training, the RL-trained 9B scores 0.883, *above its frontier teacher's 0.852*.
+Here is where the edge lives. The chart below opens on the hardest exam: question types withheld from training entirely, dominated by the multi-step chains that every frontier model we measured struggles with most. On that split the RL-trained 9B overtakes its teacher. The other two views give the full, honest picture. On the validation set the ladder is orderly. On question shapes the model never saw in training, the RL-trained 9B scores 0.883, *above its frontier teacher's 0.852*.
 
 <div id="qla2-ladder"></div> The student out-disciplines the teacher on unseen procedures, because the student was optimized against the verifier and the teacher never was. The other column keeps this claim honest: on questions about companies held out of training, the teacher still leads, 0.882 to 0.83. The trained gains concentrate in the hard multi-step tail. Both columns are real, and citing only one would be marketing.
 
@@ -77,13 +77,9 @@ The chart below compares serving throughput two ways: the synthetic benchmark ev
 
 <div id="qla2-bench"></div> Synthetic token throughput climbs happily to 32 concurrent streams. Real agentic episodes saturate at concurrency around 16 and then degrade, because multi-turn tool loops are round-trips, not generations. If you serve agents, your capacity math is different from your chatbot's. The quantization result completes a two-project arc: at 4-bit, the memo project needed calibrated (imatrix) quantization to avoid a 7-point loss; at <span class="gloss-term" data-gloss="8-bit floating point, half the bytes of bf16. The production default on modern GPUs.">FP8</span>, this model runs 40% faster with zero measured quality loss on the frozen slice. Calibrate at 4 bits. Don't bother at 8. Measured, both times.
 
-## what it cost
-
-<div id="qla2-costs"></div>
-
-About $307 all-in: roughly $135 of frontier-API credits for baselines and teacher traces, and ~$170 of rented GPUs, of which every *training* run in this article cost $112 and the headline model (SFT plus RL) about $65. The rest went to serving models for evaluation, and to the failure catalog: a 59GB memory leak that made three overnight runs look stalled, a GPU-host lottery, one run killed by a dropped SSH pipe. All of it lives in the project's append-only journey log, because the failure catalog is where the reusable knowledge is.
-
 ## what this is
+
+The whole project cost about $307: roughly $135 of frontier-API credits for baselines and teacher traces, $170 of rented GPUs, and within that, about $65 to train the headline model. The failure catalog cost extra in dignity (a 59GB memory leak that made three overnight runs look stalled, a GPU-host lottery, one run killed by a dropped SSH pipe) and lives in the project's append-only journey log, because that is where the reusable knowledge is.
 
 A 9B model trained for $65 that beats its frontier teacher on unseen task types under an evidence-demanding scoreboard, and loses to it on unseen companies. A benchmark that made three frontier-class models fail in three different ways. A reward that survived seven adversarial rounds and still had two bugs that only real transcripts exposed. An autonomous research agent that fixed its own lab, corrected my hyperparameters, and then demonstrated the exact failure mode its design predicted. All of it is auditable, which is the property this domain was missing.
 

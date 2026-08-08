@@ -13,7 +13,7 @@ export interface BenchRow {
 }
 
 export const LADDER_HEIGHT = 280;
-export const RATCHET_HEIGHT = 205;
+export const RATCHET_HEIGHT = 252;
 export const BENCH_HEIGHT = 286;
 export const COSTS_HEIGHT = 205;
 
@@ -87,12 +87,21 @@ export function drawRatchet(
   ctx.clearRect(0, 0, w, h);
   const runs = rows.filter((r) => r.status === 'success' && r.metric !== null);
   if (!runs.length) return;
-  const pad = { l: 30, r: 30 };
+  const pad = { l: 64, r: 26 };
   const gw = (w - pad.l - pad.r) / runs.length;
   const barW = Math.min(96, gw * 0.42);
-  const y0 = h - 62;
+  const y0 = h - 78;
   const lo = 0.76; const hi = 0.85;
-  const scale = (v: number) => ((v - lo) / (hi - lo)) * (y0 - 46);
+  const scale = (v: number) => ((v - lo) / (hi - lo)) * (y0 - 50);
+  // y axis + gridlines, matching the ladder's chart furniture
+  ctx.textAlign = 'right';
+  for (let tick = lo; tick <= hi + 0.001; tick += 0.03) {
+    const ty = y0 - scale(tick);
+    ctx.strokeStyle = palette.ink(0.1); ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(pad.l, ty); ctx.lineTo(w - pad.r, ty); ctx.stroke();
+    ctx.fillStyle = palette.ink(0.5); ctx.font = `600 12px ${palette.fonts.ui}`;
+    ctx.fillText(`${Math.round(tick * 100)}%`, pad.l - 8, ty + 4);
+  }
   runs.forEach((run, i) => {
     const cx = pad.l + gw * i + gw / 2;
     const bh = scale(run.metric as number);
@@ -116,7 +125,7 @@ export function drawRatchet(
   });
   ctx.textAlign = 'left';
   ctx.fillStyle = palette.ink(0.5); ctx.font = `600 12px ${palette.fonts.ui}`;
-  ctx.fillText('score on the frozen 150-question evaluation slice', pad.l, h - 6);
+  ctx.fillText('score on the frozen 150-question evaluation slice', pad.l, h - 8);
 }
 function benchSeries(rows: BenchRow[], mode: 'tokens' | 'episodes'): Array<{ x: number; y: number }> {
   const workload = mode === 'tokens' ? 'synthetic' : 'real_episode';

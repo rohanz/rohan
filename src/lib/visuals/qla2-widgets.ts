@@ -142,17 +142,17 @@ function initEpisode(node: HTMLElement, episodes: Episode[], options: WidgetOpti
 }
 
 function initLadder(node: HTMLElement, ladder: Qla2Data['ladder'], options: WidgetOptions, cleanups: Array<() => void>) {
-  const body = shell(node, 'the training ladder', 'the same model at each training stage, against its teacher');
+  const body = shell(node, 'the training ladder', 'where the trained model gains its edge: the questions frontier models find hardest');
   applyPalette(body, options.palette());
   const toggle = el('div', 'qlf-mode-toggle');
   toggle.setAttribute('role', 'group'); toggle.setAttribute('aria-label', 'Evaluation split');
   const labels: Record<string, string> = { val: 'validation set', unseen_templates: 'unseen question types', unseen_tickers: 'unseen companies' };
   const captions: Record<string, string> = {
-    val: 'Questions drawn from the same distribution used while developing the model.',
-    unseen_templates: 'Question structures withheld from training test whether the learned workflow transfers.',
+    val: 'Questions from the development distribution. The orderly view: each training stage climbs toward the teacher.',
+    unseen_templates: 'The hardest test: multi-step question types withheld from training entirely. This is the split where the trained 9B overtakes its teacher.',
     unseen_tickers: 'Companies withheld from training test whether the model generalizes beyond familiar filings.',
   };
-  const keys = Object.keys(ladder);
+  const keys = ['unseen_templates', 'val', 'unseen_tickers'].filter((k) => k in ladder);
   const buttons = keys.map((key) => { const b = button(labels[key] ?? key, 'qla-btn qla2-mode-btn'); toggle.append(b); return b; });
   const caption = el('p', 'qla2-description qla2-split-caption');
   body.append(toggle, caption);
