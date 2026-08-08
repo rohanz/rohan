@@ -84,45 +84,40 @@ export function drawRatchet(
   rows: RatchetRow[],
 ): void {
   const h = RATCHET_HEIGHT;
-  const pad = { l: 58, r: 58 };
-  const pw = w - pad.l - pad.r;
-  const x = (i: number) => pad.l + (rows.length === 1 ? pw / 2 : (i / (rows.length - 1)) * pw);
-  const railY = 92;
   ctx.clearRect(0, 0, w, h);
-
-  // One quiet annotation replaces the old collision-prone learning-rate arcs.
-  ctx.strokeStyle = palette.ink(0.18);
-  ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(x(2), 26); ctx.lineTo(x(4), 26); ctx.stroke();
-  ctx.fillStyle = palette.ink(0.58);
-  ctx.font = `600 13px ${palette.fonts.ui}`;
-  ctx.textAlign = 'center';
-  ctx.fillText('agent raised lr ×5 then ×2', (x(2) + x(4)) / 2, 17);
-
-  ctx.strokeStyle = palette.ink(0.25);
-  ctx.lineWidth = 1.5;
-  ctx.beginPath(); ctx.moveTo(x(0), railY); ctx.lineTo(x(rows.length - 1), railY); ctx.stroke();
-
-  rows.forEach((row, i) => {
-    const nx = x(i);
-    const success = row.status === 'success';
-    ctx.beginPath(); ctx.arc(nx, railY, 6, 0, Math.PI * 2);
-    if (success) { ctx.fillStyle = palette.qla.compoundCurve; ctx.fill(); }
-    else { ctx.fillStyle = palette.ink(0.04); ctx.fill(); ctx.strokeStyle = palette.ink(0.38); ctx.lineWidth = 1.5; ctx.stroke(); }
-
+  const runs = rows.filter((r) => r.status === 'success' && r.metric !== null);
+  if (!runs.length) return;
+  const pad = { l: 30, r: 30 };
+  const gw = (w - pad.l - pad.r) / runs.length;
+  const barW = Math.min(96, gw * 0.42);
+  const y0 = h - 62;
+  const lo = 0.76; const hi = 0.85;
+  const scale = (v: number) => ((v - lo) / (hi - lo)) * (y0 - 46);
+  runs.forEach((run, i) => {
+    const cx = pad.l + gw * i + gw / 2;
+    const bh = scale(run.metric as number);
+    const last = i === runs.length - 1;
+    ctx.fillStyle = last ? palette.qla.compoundCurve : palette.ink(0.4);
+    ctx.fillRect(cx - barW / 2, y0 - bh, barW, bh);
     ctx.textAlign = 'center';
+    ctx.fillStyle = last ? palette.qla.compoundCurve : palette.ink(0.8);
     ctx.font = `700 14px ${palette.fonts.ui}`;
-    ctx.fillStyle = success ? palette.ink(0.82) : palette.ink(0.48);
-    ctx.fillText(row.metric === null ? 'serve failed' : row.metric.toFixed(3), nx, 67);
-    ctx.font = `600 13px ${palette.fonts.ui}`;
-    ctx.fillStyle = palette.ink(0.58);
-    ctx.fillText(`lr ${row.lr.toExponential(0)}`, nx, 121);
-    ctx.font = `600 12px ${palette.fonts.ui}`;
-    ctx.fillStyle = palette.ink(0.42);
-    ctx.fillText(`run ${i + 1} · $${row.cost.toFixed(2)}`, nx, 145);
+    ctx.fillText((run.metric as number).toFixed(3), cx, y0 - bh - 8);
+    ctx.fillStyle = palette.ink(0.85); ctx.font = `700 13px ${palette.fonts.ui}`;
+    ctx.fillText(`experiment ${i + 1}`, cx, y0 + 20);
+    ctx.fillStyle = palette.ink(0.55); ctx.font = `600 12px ${palette.fonts.ui}`;
+    ctx.fillText(`learning rate ${Number(run.lr).toExponential(0).replace('e-','e-')}`, cx, y0 + 38);
+    if (i > 0) {
+      const prev = runs[i - 1].metric as number;
+      const delta = ((run.metric as number) - prev) * 100;
+      ctx.fillStyle = palette.qla.compoundCurve; ctx.font = `700 13px ${palette.fonts.ui}`;
+      ctx.fillText(`+${delta.toFixed(1)}`, cx - gw / 2, y0 - scale(prev) - 26);
+    }
   });
+  ctx.textAlign = 'left';
+  ctx.fillStyle = palette.ink(0.5); ctx.font = `600 12px ${palette.fonts.ui}`;
+  ctx.fillText('score on the frozen 150-question evaluation slice', pad.l, h - 6);
 }
-
 function benchSeries(rows: BenchRow[], mode: 'tokens' | 'episodes'): Array<{ x: number; y: number }> {
   const workload = mode === 'tokens' ? 'synthetic' : 'real_episode';
   return rows.filter((row) => row.workload === workload).map((row) => ({
@@ -130,6 +125,7 @@ function benchSeries(rows: BenchRow[], mode: 'tokens' | 'episodes'): Array<{ x: 
     y: mode === 'tokens' ? Number(row.tokens_per_s) : Number(row.rps) * 60,
   }));
 }
+
 
 export function drawBench(
   ctx: CanvasRenderingContext2D,

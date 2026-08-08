@@ -45,13 +45,6 @@
 .qla-visual .qla-visual-body .qla2-zone-label { margin: 1.15rem 0 0.45rem; color: var(--text-secondary); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; }
 .qla-visual .qla-visual-body .qla2-story + .qla2-zone-label, ol.qla2-story ~ .qla2-zone-label { margin-top: 0.6rem; }
 
-.qla-visual .qla-visual-body .qla2-zone-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin: 1.15rem 0 0.45rem; }
-.qla-visual .qla-visual-body .qla2-zone-row .qla2-zone-label { margin: 0; }
-.qla-visual .qla-visual-body .qla2-play-btn { font-size: 0.78rem; padding: 0.3rem 0.85rem; }
-.qla-visual .qla-visual-body .qla2-story.is-playing .qla2-step { opacity: 0.12; transition: opacity 0.45s ease; }
-.qla-visual .qla-visual-body .qla2-story.is-playing .qla2-step.is-revealed { opacity: 0.55; }
-.qla-visual .qla-visual-body .qla2-story.is-playing .qla2-step.is-current { opacity: 1; }
 .qla-visual .qla-visual-body .is-hidden { visibility: hidden; }
 @media (prefers-reduced-motion: reduce) {
-  .qla-visual .qla-visual-body .qla2-story.is-playing .qla2-step { transition: none; }
-}
+  }

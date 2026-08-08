@@ -103,15 +103,12 @@ function initEpisode(node: HTMLElement, episodes: Episode[], options: WidgetOpti
   });
   const description = el('p', 'qla2-description');
   const question = el('p', 'qla2-question');
-  const storyHeader = el('div', 'qla2-zone-row');
   const storyLabel = el('div', 'qla2-zone-label', 'what the model did');
-  const playBtn = button('play it step by step', 'qla-btn qla2-play-btn');
-  storyHeader.append(storyLabel, playBtn);
   const story = el('ol', 'qla2-story');
   story.setAttribute('aria-live', 'polite');
   const outcomeLabel = el('div', 'qla2-zone-label', 'its answer');
   const outcome = el('div', 'qla2-outcome');
-  body.append(picker, description, question, storyHeader, story, outcomeLabel, outcome);
+  body.append(picker, description, question, storyLabel, story, outcomeLabel, outcome);
 
   let selected = 0;
   const render = () => {
@@ -139,24 +136,7 @@ function initEpisode(node: HTMLElement, episodes: Episode[], options: WidgetOpti
         : `the lookups were real, but the final arithmetic went wrong · scored ${episode.verdict.total.toFixed(2)} of 1`);
     outcome.append(answer, chip, note);
   };
-  pills.forEach((b, i) => b.addEventListener('click', () => { selected = i; stopPlay(); render(); }));
-  let playTimer = 0;
-  const stopPlay = () => { clearInterval(playTimer); story.classList.remove('is-playing'); outcome.classList.remove('is-hidden'); outcomeLabel.classList.remove('is-hidden'); story.querySelectorAll('.qla2-step').forEach((n) => n.classList.remove('is-revealed', 'is-current')); };
-  playBtn.addEventListener('click', () => {
-    stopPlay();
-    const steps = Array.from(story.querySelectorAll('.qla2-step'));
-    if (!steps.length) return;
-    story.classList.add('is-playing');
-    outcome.classList.add('is-hidden'); outcomeLabel.classList.add('is-hidden');
-    let at = -1;
-    const tick = () => {
-      at += 1;
-      steps.forEach((n, i) => { n.classList.toggle('is-revealed', i <= at); n.classList.toggle('is-current', i === at); });
-      if (at >= steps.length - 1) { clearInterval(playTimer); setTimeout(() => { outcome.classList.remove('is-hidden'); outcomeLabel.classList.remove('is-hidden'); steps.forEach((n) => n.classList.remove('is-current')); story.classList.remove('is-playing'); }, 900); }
-    };
-    tick();
-    playTimer = window.setInterval(tick, 1100) as unknown as number;
-  });
+  pills.forEach((b, i) => b.addEventListener('click', () => { selected = i; render(); }));
   if (options.onThemeChange) cleanups.push(options.onThemeChange(() => applyPalette(body, options.palette())));
   render();
 }
@@ -236,7 +216,7 @@ function initRatchet(node: HTMLElement, data: Qla2Data, options: WidgetOptions, 
     viewA.classList.toggle('is-active', m === 'agent'); viewA.setAttribute('aria-pressed', String(m === 'agent'));
     viewB.classList.toggle('is-active', m === 'reality'); viewB.setAttribute('aria-pressed', String(m === 'reality'));
     caption.textContent = m === 'agent'
-      ? 'The proxy metric climbed with every kept experiment: the agent raised my learning rate tenfold, for about $30.'
+      ? 'Three experiments, one dial: the agent raised my learning rate tenfold and the proxy score climbed each time, for about $30 total.'
       : 'Trained at full scale, its recipe won on the slice it optimized and lost on unseen question types. The metric was honest about one and blind to the other.';
     redraw();
   };
