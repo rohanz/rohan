@@ -8,6 +8,7 @@ import './article-overlay.css';
 import './article-widgets.css';
 
 import quantlabAnalyst from './content/articles/quantlab-analyst.md?raw';
+import quantlabAgentic from './content/articles/quantlab-agentic.md?raw';
 import quantlabResearch from './content/articles/quantlab-research.md?raw';
 import quantlabSystems from './content/articles/quantlab-systems.md?raw';
 import careersphere from './content/articles/careersphere.md?raw';
@@ -21,6 +22,7 @@ import thisWebsite from './content/articles/this-website.md?raw';
 
 const ARTICLES = {
   'quantlab-analyst': quantlabAnalyst,
+  'quantlab-agentic': quantlabAgentic,
   'quantlab-research': quantlabResearch,
   'quantlab-systems': quantlabSystems,
   careersphere,

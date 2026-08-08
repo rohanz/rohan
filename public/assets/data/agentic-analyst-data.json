@@ -1,0 +1,528 @@
+{
+ "ladder": {
+  "val": {
+   "base": 0.73,
+   "sft": 0.822,
+   "grpo": 0.829,
+   "grpo_v2": 0.844,
+   "teacher": 0.909
+  },
+  "unseen_templates": {
+   "base": 0.86,
+   "sft": 0.867,
+   "grpo": 0.883,
+   "grpo_v2": 0.857,
+   "teacher": 0.852
+  },
+  "unseen_tickers": {
+   "base": 0.824,
+   "sft": 0.832,
+   "grpo": 0.825,
+   "grpo_v2": 0.821,
+   "teacher": 0.882
+  }
+ },
+ "episodes": [
+  {
+   "label": "lookup",
+   "question": "What was NSC's free cash flow for the fiscal year ending 2025-12-31?",
+   "calls": [
+    {
+     "tool": "get_fundamentals",
+     "args": {
+      "concept": "free_cash_flow",
+      "ticker": "NSC",
+      "years": 1
+     },
+     "result_preview": "{'concept': 'free_cash_flow', 'rows': [{'filed': '2026-02-09', 'fiscal_year_end': '2025-12-31', 'form': 'DERIVED', 'tag': 'derived:free_cash_flow', 'value': 2157000000.0}], 'semantics': 'latest', 'ticker': 'NSC'}"
+    }
+   ],
+   "answer": "NSC's free cash flow for the fiscal year ending 2025-12-31 was $2,157,000,000.\n\nANSWER: 2157000000",
+   "score": {
+    "components": {
+     "answer": 1,
+     "efficiency": 1.0,
+     "grounding": 1,
+     "validity": 1.0
+    },
+    "parsed": 2157000000.0,
+    "total": 0.9999999999999999
+   }
+  },
+  {
+   "label": "chain",
+   "question": "What was the average fcf of the top 3 companies in edgar400:trade by revenue growth yoy in FY2024?",
+   "calls": [
+    {
+     "tool": "screen",
+     "args": {
+      "metric": "revenue_growth_yoy",
+      "order": "desc",
+      "top_n": 3,
+      "universe": "edgar400:trade",
+      "year": 2024
+     },
+     "result_preview": "{'metric': 'revenue_growth_yoy', 'order': 'desc', 'rows': [{'fiscal_year_end': '2024-12-31', 'ticker': 'CMG', 'value': 0.14609555100672633}, {'fiscal_year_end': '2024-09-30', 'ticker': 'COR', 'value': 0.12123726764954057}, {'fiscal_year_end': '2024-03-31', 'ticker': 'MCK', 'value': 0.11651145057478751}], 'skipped': 3, 'universe': 'edgar400:trade'}"
+    },
+    {
+     "tool": "get_fundamentals",
+     "args": {
+      "concept": "free_cash_flow",
+      "ticker": "CMG",
+      "years": 5
+     },
+     "result_preview": "{'concept': 'free_cash_flow', 'rows': [{'filed': '2024-02-08', 'fiscal_year_end': '2021-12-31', 'form': 'DERIVED', 'tag': 'derived:free_cash_flow', 'value': 839606000.0}, {'filed': '2025-02-05', 'fiscal_year_end': '2022-12-31', 'form': 'DERIVED', 'tag': 'derived:free_cash_flow', 'value': 844015000.0}, {'filed': '2026-02-04', 'fiscal_year_end': '2023-12-31', 'form': 'DERIVED', 'tag': 'derived:free_"
+    },
+    {
+     "tool": "get_fundamentals",
+     "args": {
+      "concept": "free_cash_flow",
+      "ticker": "COR",
+      "years": 5
+     },
+     "result_preview": "{'concept': 'free_cash_flow', 'rows': [{'filed': '2023-11-21', 'fiscal_year_end': '2021-09-30', 'form': 'DERIVED', 'tag': 'derived:free_cash_flow', 'value': 2228369000.0}, {'filed': '2024-11-26', 'fiscal_year_end': '2022-09-30', 'form': 'DERIVED', 'tag': 'derived:free_cash_flow', 'value': 2206770000.0}, {'filed': '2025-11-25', 'fiscal_year_end': '2023-09-30', 'form': 'DERIVED', 'tag': 'derived:fre"
+    },
+    {
+     "tool": "get_fundamentals",
+     "args": {
+      "concept": "free_cash_flow",
+      "ticker": "MCK",
+      "years": 5
+     },
+     "result_preview": "{'concept': 'free_cash_flow', 'rows': [{'filed': '2024-05-08', 'fiscal_year_end': '2022-03-31', 'form': 'DERIVED', 'tag': 'derived:free_cash_flow', 'value': 4046000000.0}, {'filed': '2025-05-09', 'fiscal_year_end': '2023-03-31', 'form': 'DERIVED', 'tag': 'derived:free_cash_flow', 'value': 4769000000.0}, {'filed': '2026-05-08', 'fiscal_year_end': '2024-03-31', 'form': 'DERIVED', 'tag': 'derived:fre"
+    },
+    {
+     "tool": "compute",
+     "args": {
+      "expr": "(1511473000.0 + 2997512000.0 + 3883000000.0) / 3"
+     },
+     "result_preview": "{'expr': '(1511473000.0 + 2997512000.0 + 3883000000.0) / 3', 'value': 2797328333.3333335}"
+    }
+   ],
+   "answer": "The average FCF of the top 3 companies in edgar400:trade by revenue growth yoy in FY2024 is approximately 2,797,328,333.33.\n\nANSWER: 2797328333.33",
+   "score": {
+    "components": {
+     "answer": 1,
+     "efficiency": 1.0,
+     "grounding": 1,
+     "validity": 1.0
+    },
+    "parsed": 2797328333.33,
+    "total": 0.9999999999999999
+   }
+  },
+  {
+   "label": "trap",
+   "question": "What is A's cost of revenue for FY2013 according to its most recent filing?",
+   "calls": [
+    {
+     "tool": "get_fundamentals",
+     "args": {
+      "concept": "cost_of_revenue",
+      "ticker": "A",
+      "years": 20
+     },
+     "result_preview": "{'concept': 'cost_of_revenue', 'rows': [{'filed': '2009-12-21', 'fiscal_year_end': '2007-10-31', 'form': '10-K', 'tag': 'CostOfRevenue', 'value': 2451000000.0}, {'filed': '2010-12-20', 'fiscal_year_end': '2008-10-31', 'form': '10-K', 'tag': 'CostOfRevenue', 'value': 2578000000.0}, {'filed': '2011-12-16', 'fiscal_year_end': '2009-10-31', 'form': '10-K', 'tag': 'CostOfRevenue', 'value': 2189000000.0"
+    }
+   ],
+   "answer": "7000000.0.\n\nThe question asks for \"FY2013 according to its most recent filing\". The semantics is \"latest\" which means latest-restated. The value for FY2013 (fiscal_year_end 2013-10-31) is 1,987,000,000.\n\nLet me verify this is correct - the row shows:\n- fiscal_year_end: \"2013-10-31\"\n- filed: \"2015-12-21\"\n- value: 1987000000.0\n\nSo the cost of revenue for FY2013 is $1,987,000,000.\n\nANSWER: 1987000000",
+   "score": {
+    "components": {
+     "answer": 1,
+     "efficiency": 1.0,
+     "grounding": 1,
+     "validity": 1.0
+    },
+    "parsed": 1987000000.0,
+    "total": 0.9999999999999999
+   }
+  },
+  {
+   "label": "pit",
+   "question": "Which company reported the higher net income as of 2026-02-12: BNY or CHTR?",
+   "calls": [
+    {
+     "tool": "fundamental_asof",
+     "args": {
+      "concept": "net_income",
+      "ticker": "BNY",
+      "when": "2026-02-12"
+     },
+     "result_preview": "{'concept': 'net_income', 'filed': '2025-02-27', 'fiscal_year_end': '2024-12-31', 'form': '10-K', 'tag': 'NetIncomeLoss', 'ticker': 'BNY', 'value': 4530000000.0, 'when': '2026-02-12'}"
+    },
+    {
+     "tool": "fundamental_asof",
+     "args": {
+      "concept": "net_income",
+      "ticker": "CHTR",
+      "when": "2026-02-12"
+     },
+     "result_preview": "{'concept': 'net_income', 'filed': '2026-01-30', 'fiscal_year_end': '2025-12-31', 'form': '10-K', 'tag': 'NetIncomeLoss', 'ticker': 'CHTR', 'value': 4987000000.0, 'when': '2026-02-12'}"
+    }
+   ],
+   "answer": "Based on the results:\n- BNY reported net income of $4,530,000,000 as of 2026-02-12\n- CHTR reported net income of $4,987,000,000 as of 2026-02-12\n\nComparing these values, CHTR ($4,987,000,000) has a higher net income than BNY ($4,530,000,000).\n\nANSWER: CHTR",
+   "score": {
+    "components": {
+     "answer": 1,
+     "efficiency": 1.0,
+     "grounding": 1,
+     "validity": 1.0
+    },
+    "parsed": "CHTR",
+    "total": 0.9999999999999999
+   }
+  },
+  {
+   "label": "failure",
+   "question": "Which of the top 3 companies in edgar400:trade by total return 1y in FY2023 reported no long term debt that year?",
+   "calls": [
+    {
+     "tool": "screen",
+     "args": {
+      "metric": "total_return_1y",
+      "order": "desc",
+      "top_n": 3,
+      "universe": "edgar400:trade",
+      "year": 2023
+     },
+     "result_preview": "{'metric': 'total_return_1y', 'order': 'desc', 'rows': [{'ticker': 'WSM', 'value': 0.8158003005734349, 'window': {'end': '2023-12-31', 'start': '2023-01-01'}}, {'ticker': 'AMZN', 'value': 0.7704498133500892, 'window': {'end': '2023-12-31', 'start': '2023-01-01'}}, {'ticker': 'CMG', 'value': 0.667938158240676, 'window': {'end': '2023-12-31', 'start': '2023-01-01'}}], 'skipped': 0, 'universe': 'edga"
+    },
+    {
+     "tool": "get_fundamentals",
+     "args": {
+      "concept": "long_term_debt",
+      "ticker": "WSM",
+      "years": 1
+     },
+     "result_preview": "{'concept': 'long_term_debt', 'rows': [{'filed': '2020-03-27', 'fiscal_year_end': '2019-02-03', 'form': '10-K', 'tag': 'LongTermDebtNoncurrent', 'value': 299620000.0}], 'semantics': 'latest', 'ticker': 'WSM'}"
+    },
+    {
+     "tool": "get_fundamentals",
+     "args": {
+      "concept": "long_term_debt",
+      "ticker": "AMZN",
+      "years": 1
+     },
+     "result_preview": "{'concept': 'long_term_debt', 'rows': [{'filed': '2026-02-06', 'fiscal_year_end': '2025-12-31', 'form': '10-K', 'tag': 'LongTermDebtNoncurrent', 'value': 65648000000.0}], 'semantics': 'latest', 'ticker': 'AMZN'}"
+    },
+    {
+     "tool": "get_fundamentals",
+     "args": {
+      "concept": "long_term_debt",
+      "ticker": "CMG",
+      "years": 1
+     },
+     "result_preview": "{'concept': 'long_term_debt', 'rows': [{'filed': '2026-02-04', 'fiscal_year_end': '2025-12-31', 'form': '10-K', 'tag': 'LongTermDebt', 'value': 0.0}], 'semantics': 'latest', 'ticker': 'CMG'}"
+    },
+    {
+     "tool": "get_fundamentals",
+     "args": {
+      "concept": "long_term_debt",
+      "ticker": "WSM",
+      "years": 5
+     },
+     "result_preview": "{'concept': 'long_term_debt', 'rows': [{'filed': '2019-04-04', 'fiscal_year_end': '2018-01-28', 'form': '10-K', 'tag': 'LongTermDebtNoncurrent', 'value': 299422000.0}, {'filed': '2020-03-27', 'fiscal_year_end': '2019-02-03', 'form': '10-K', 'tag': 'LongTermDebtNoncurrent', 'value': 299620000.0}], 'semantics': 'latest', 'ticker': 'WSM'}"
+    },
+    {
+     "tool": "get_fundamentals",
+     "args": {
+      "concept": "long_term_debt",
+      "ticker": "AMZN",
+      "years": 5
+     },
+     "result_preview": "{'concept': 'long_term_debt', 'rows': [{'filed': '2023-02-03', 'fiscal_year_end': '2021-12-31', 'form': '10-K', 'tag': 'LongTermDebtNoncurrent', 'value': 48744000000.0}, {'filed': '2024-02-02', 'fiscal_year_end': '2022-12-31', 'form': '10-K', 'tag': 'LongTermDebtNoncurrent', 'value': 67150000000.0}, {'filed': '2025-02-07', 'fiscal_year_end': '2023-12-31', 'form': '10-K', 'tag': 'LongTermDebtNoncur"
+    },
+    {
+     "tool": "get_fundamentals",
+     "args": {
+      "concept": "long_term_debt",
+      "ticker": "CMG",
+      "years": 5
+     },
+     "result_preview": "{'concept': 'long_term_debt', 'rows': [{'filed': '2022-02-11', 'fiscal_year_end': '2021-12-31', 'form': '10-K', 'tag': 'LongTermDebt', 'value': 0.0}, {'filed': '2023-02-09', 'fiscal_year_end': '2022-12-31', 'form': '10-K', 'tag': 'LongTermDebt', 'value': 0.0}, {'filed': '2024-02-08', 'fiscal_year_end': '2023-12-31', 'form': '10-K', 'tag': 'LongTermDebt', 'value': 0.0}, {'filed': '2025-02-05', 'fis"
+    }
+   ],
+   "answer": " 58314000000.0 (non-zero)\n- CMG: FY2023 (2023-12-31) = 0.0 (zero)\n\nFor WSM, I don't see a row with fiscal_year_end corresponding to FY2023. The latest is 2019-02-03. This means WSM doesn't have FY2023 data broken out in this response, so I cannot determine if WSM had zero long-term debt in FY2023.\n\nBased on the available data, only CMG clearly has FY2023 data showing 0 long-term debt.\n\nANSWER: CMG",
+   "score": {
+    "components": {
+     "answer": 0,
+     "efficiency": 0.5714285714285714,
+     "grounding": 1,
+     "validity": 1.0
+    },
+    "parsed": [
+     "CMG"
+    ],
+    "total": 0.2571428571428571
+   }
+  }
+ ],
+ "ratchet": [
+  {
+   "status": "serve_failed",
+   "metric": null,
+   "cost": 4.72,
+   "lr": 1e-06
+  },
+  {
+   "status": "serve_failed",
+   "metric": null,
+   "cost": 4.73,
+   "lr": 1e-06
+  },
+  {
+   "status": "success",
+   "metric": 0.789362642718,
+   "cost": 4.58,
+   "lr": 1e-06
+  },
+  {
+   "status": "success",
+   "metric": 0.814454256854,
+   "cost": 3.97,
+   "lr": 5e-06
+  },
+  {
+   "status": "success",
+   "metric": 0.822652177235,
+   "cost": 6.67,
+   "lr": 1e-05
+  }
+ ],
+ "bench": {
+  "bf16": [
+   {
+    "workload": "synthetic",
+    "concurrency": "1",
+    "rps": "0.166776",
+    "mean_latency_ms": "5995.367969",
+    "p50_latency_ms": "5984.819493",
+    "p95_latency_ms": "6003.208732",
+    "ttft_ms": "161.517504",
+    "tokens_per_s": "213.473343"
+   },
+   {
+    "workload": "real_episode",
+    "concurrency": "1",
+    "rps": "0.063213",
+    "mean_latency_ms": "15340.187402",
+    "p50_latency_ms": "12151.166479",
+    "p95_latency_ms": "31777.817818",
+    "ttft_ms": "",
+    "tokens_per_s": "488.261856"
+   },
+   {
+    "workload": "synthetic",
+    "concurrency": "4",
+    "rps": "0.604129",
+    "mean_latency_ms": "6620.265426",
+    "p50_latency_ms": "6618.508110",
+    "p95_latency_ms": "6625.134021",
+    "ttft_ms": "184.627949",
+    "tokens_per_s": "773.284608"
+   },
+   {
+    "workload": "real_episode",
+    "concurrency": "4",
+    "rps": "0.213209",
+    "mean_latency_ms": "16893.453570",
+    "p50_latency_ms": "14616.832350",
+    "p95_latency_ms": "39394.846770",
+    "ttft_ms": "",
+    "tokens_per_s": "1579.769901"
+   },
+   {
+    "workload": "synthetic",
+    "concurrency": "8",
+    "rps": "1.152739",
+    "mean_latency_ms": "6935.437335",
+    "p50_latency_ms": "6929.355435",
+    "p95_latency_ms": "6993.902799",
+    "ttft_ms": "272.816678",
+    "tokens_per_s": "1475.505634"
+   },
+   {
+    "workload": "real_episode",
+    "concurrency": "8",
+    "rps": "0.333466",
+    "mean_latency_ms": "17466.538060",
+    "p50_latency_ms": "15581.589821",
+    "p95_latency_ms": "39355.500814",
+    "ttft_ms": "",
+    "tokens_per_s": "2284.550020"
+   },
+   {
+    "workload": "synthetic",
+    "concurrency": "16",
+    "rps": "2.073454",
+    "mean_latency_ms": "7704.371615",
+    "p50_latency_ms": "7694.344840",
+    "p95_latency_ms": "7823.663224",
+    "ttft_ms": "420.705698",
+    "tokens_per_s": "2654.021415"
+   },
+   {
+    "workload": "real_episode",
+    "concurrency": "16",
+    "rps": "0.516098",
+    "mean_latency_ms": "20645.655615",
+    "p50_latency_ms": "19741.737487",
+    "p95_latency_ms": "36916.506520",
+    "ttft_ms": "",
+    "tokens_per_s": "3704.876189"
+   },
+   {
+    "workload": "synthetic",
+    "concurrency": "32",
+    "rps": "3.346349",
+    "mean_latency_ms": "9509.032690",
+    "p50_latency_ms": "9460.172591",
+    "p95_latency_ms": "10235.073570",
+    "ttft_ms": "672.308680",
+    "tokens_per_s": "4283.326228"
+   },
+   {
+    "workload": "real_episode",
+    "concurrency": "32",
+    "rps": "0.417855",
+    "mean_latency_ms": "32523.985541",
+    "p50_latency_ms": "26559.038053",
+    "p95_latency_ms": "64700.298532",
+    "ttft_ms": "",
+    "tokens_per_s": "3224.521642"
+   }
+  ],
+  "fp8": [
+   {
+    "workload": "synthetic",
+    "concurrency": "1",
+    "rps": "0.237147",
+    "mean_latency_ms": "4216.446953",
+    "p50_latency_ms": "4207.571552",
+    "p95_latency_ms": "4227.563317",
+    "ttft_ms": "133.893797",
+    "tokens_per_s": "303.548634"
+   },
+   {
+    "workload": "real_episode",
+    "concurrency": "1",
+    "rps": "0.089171",
+    "mean_latency_ms": "10664.376365",
+    "p50_latency_ms": "10408.331505",
+    "p95_latency_ms": "18617.025121",
+    "ttft_ms": "",
+    "tokens_per_s": "585.659891"
+   },
+   {
+    "workload": "synthetic",
+    "concurrency": "4",
+    "rps": "0.909150",
+    "mean_latency_ms": "4399.192039",
+    "p50_latency_ms": "4395.780529",
+    "p95_latency_ms": "4418.427065",
+    "ttft_ms": "156.140786",
+    "tokens_per_s": "1163.712305"
+   },
+   {
+    "workload": "real_episode",
+    "concurrency": "4",
+    "rps": "0.286018",
+    "mean_latency_ms": "12560.450463",
+    "p50_latency_ms": "11361.631393",
+    "p95_latency_ms": "28624.117227",
+    "ttft_ms": "",
+    "tokens_per_s": "2096.969455"
+   },
+   {
+    "workload": "synthetic",
+    "concurrency": "8",
+    "rps": "1.685601",
+    "mean_latency_ms": "4743.738831",
+    "p50_latency_ms": "4740.910121",
+    "p95_latency_ms": "4780.535726",
+    "ttft_ms": "232.790944",
+    "tokens_per_s": "2157.569659"
+   },
+   {
+    "workload": "real_episode",
+    "concurrency": "8",
+    "rps": "0.432576",
+    "mean_latency_ms": "14498.661212",
+    "p50_latency_ms": "12670.149589",
+    "p95_latency_ms": "32629.247410",
+    "ttft_ms": "",
+    "tokens_per_s": "2991.304773"
+   },
+   {
+    "workload": "synthetic",
+    "concurrency": "16",
+    "rps": "2.934103",
+    "mean_latency_ms": "5444.660100",
+    "p50_latency_ms": "5421.204921",
+    "p95_latency_ms": "5585.062948",
+    "ttft_ms": "367.252762",
+    "tokens_per_s": "3755.652094"
+   },
+   {
+    "workload": "real_episode",
+    "concurrency": "16",
+    "rps": "0.310624",
+    "mean_latency_ms": "22012.925851",
+    "p50_latency_ms": "19147.311399",
+    "p95_latency_ms": "48008.641749",
+    "ttft_ms": "",
+    "tokens_per_s": "2754.616985"
+   },
+   {
+    "workload": "synthetic",
+    "concurrency": "32",
+    "rps": "4.590965",
+    "mean_latency_ms": "6932.687416",
+    "p50_latency_ms": "6888.273462",
+    "p95_latency_ms": "7565.706360",
+    "ttft_ms": "572.212205",
+    "tokens_per_s": "5876.435035"
+   },
+   {
+    "workload": "real_episode",
+    "concurrency": "32",
+    "rps": "0.476261",
+    "mean_latency_ms": "28394.537152",
+    "p50_latency_ms": "23315.189428",
+    "p95_latency_ms": "62250.199372",
+    "ttft_ms": "",
+    "tokens_per_s": "3594.457523"
+   }
+  ]
+ },
+ "costs": [
+  {
+   "phase": "Frontier baselines + teacher traces (API credits)",
+   "usd": 135
+  },
+  {
+   "phase": "SFT training",
+   "usd": 26
+  },
+  {
+   "phase": "GRPO v1 campaign",
+   "usd": 37
+  },
+  {
+   "phase": "GRPO v2 promotion",
+   "usd": 22
+  },
+  {
+   "phase": "Autoresearch campaigns 1-3",
+   "usd": 27
+  },
+  {
+   "phase": "Eval + baseline serving pods",
+   "usd": 56
+  },
+  {
+   "phase": "Deployment benchmarks",
+   "usd": 4
+  }
+ ]
+}

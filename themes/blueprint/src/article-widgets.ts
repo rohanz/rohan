@@ -33,6 +33,7 @@ import {
   LOOKAHEAD_HEIGHT, LOOKAHEAD_PAD, KALMAN_HEIGHT, KALMAN_PAD,
   SURVIVORSHIP_HEIGHT, SURVIVORSHIP_PAD,
 } from '../../../src/lib/visuals/qlf-render';
+import { initQla2Widgets } from '../../../src/lib/visuals/qla2-widgets';
 import { BqstEngine } from '../../../src/lib/audio/bqst-engine';
 import type { BqstVersion } from '../../../src/lib/audio/bqst-transport';
 import type { WavWaveform } from '../../../src/lib/audio/bqst-wav';
@@ -2069,6 +2070,17 @@ function initQuantlabFinVisuals() {
   }
 }
 
+function initQuantlabAgenticVisuals(article: HTMLElement) {
+  if (!article.querySelector('[id^="qla2-"]')) return;
+  cleanups.push(initQla2Widgets({
+    root: article,
+    palette: () => PALETTE,
+    sizeCanvas,
+    canvasWidth: (canvas) => canvas.parentElement?.getBoundingClientRect().width || canvas.getBoundingClientRect().width,
+    dataUrl: asset('/assets/data/agentic-analyst-data.json'),
+  }));
+}
+
 // ============================================================
 // wiring
 // ============================================================
@@ -2102,6 +2114,7 @@ export function initWidgets(article: HTMLElement | null = document.querySelector
   initDemoPlayer();
   initQuantlabVisuals();
   initQuantlabFinVisuals();
+  initQuantlabAgenticVisuals(article);
 }
 export function cleanupWidgets() {
   while (cleanups.length) {
