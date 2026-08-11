@@ -136,7 +136,9 @@ test('unlisted project is hostname-gated in the grid but its direct production r
 
   await page.goto('/projects', { waitUntil: 'networkidle' });
   expect(new URL(page.url()).hostname).toBe('localhost');
-  const card = page.locator('.project-card[data-unlisted]');
+  const cards = page.locator('.project-card[data-unlisted]');
+  expect(await cards.count()).toBeGreaterThanOrEqual(1);
+  const card = cards.first();
   await expect(card).toBeVisible();
   await expect(card.locator('.project-card-unlisted-badge')).toHaveText('unlisted');
   await expect(card).toHaveAttribute('data-unlisted', '');
