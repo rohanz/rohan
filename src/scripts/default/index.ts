@@ -56,7 +56,6 @@ export function init() {
   // then take the original left/top transition exactly once here.
   const sidebar = document.getElementById('sidebar');
   const onInnerPage = location.pathname !== '/';
-  sidebar?.classList.toggle('show', onInnerPage);
 
   // Mobile top-nav clearance (ported from the original's updateMobileNavHeight,
   // dropped in the 3a extraction as SPA machinery): the fixed mobile nav's
@@ -85,12 +84,25 @@ export function init() {
       : path.startsWith('/projects')
         ? 'projects'
         : null;
-  sidebar?.querySelectorAll<HTMLElement>('.nav-link').forEach((link) => {
-    const active = link.dataset.section === activeSection;
-    link.classList.toggle('active', active);
-    if (active) link.setAttribute('aria-current', 'page');
-    else link.removeAttribute('aria-current');
+  // The sidebar `show` flip and the active-link swap are both transition
+  // triggers, and astro:page-load fires on
+  // the first client-side navigation while the view transition still has
+  // rendering suppressed - style changes applied then never start their CSS
+  // transitions, so the sidebar entrance and the active-link swap snapped
+  // instantly on that first nav. A double rAF guarantees one frame paints in the
+  // old state before the classes change, so the transitions always run.
+  let pendingFrame = requestAnimationFrame(() => {
+    pendingFrame = requestAnimationFrame(() => {
+      sidebar?.classList.toggle('show', onInnerPage);
+      sidebar?.querySelectorAll<HTMLElement>('.nav-link').forEach((link) => {
+        const active = link.dataset.section === activeSection;
+        link.classList.toggle('active', active);
+        if (active) link.setAttribute('aria-current', 'page');
+        else link.removeAttribute('aria-current');
+      });
+    });
   });
+  activeCleanups.push(() => cancelAnimationFrame(pendingFrame));
 
   // Theme restoration must precede every canvas draw.
   use(theme, () => theme.init());

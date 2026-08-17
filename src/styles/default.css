@@ -300,38 +300,6 @@ html.theme-default .sidebar.show {
     transform: translateX(0);
 }
 
-/* The sidebar gets its own view-transition group so the router's root
-   snapshot no longer contains it: the old-page screenshot fading out was
-   painting a ghost of the bar over the live slide. The group's OLD image is
-   hidden and its NEW image is live, so the real slide is the only thing
-   ever visible. */
-html.theme-default .sidebar { view-transition-name: classic-sidebar; }
-::view-transition-group(classic-sidebar),
-::view-transition-image-pair(classic-sidebar),
-::view-transition-new(classic-sidebar) { animation: none; }
-::view-transition-old(classic-sidebar) { display: none; }
-
-/* ...and the noise film has to come with it, for the same reason.
-   The overlay is z-index 9999 and the sidebar 1000, so in normal rendering
-   the film lies ON TOP of the bar and lifts it from its raw #0f0f23
-   (15,15,35) to 18,18,37. But the sidebar is lifted into its own
-   view-transition group, which paints ABOVE the root group — and the film,
-   having no name of its own, stayed inside the root snapshot UNDERNEATH it.
-   So for the length of every navigation the bar rendered at its raw, flatter
-   colour and then brightened again when the transition ended: "the colour of
-   the nav bar changes when I click something in the nav bar."
-
-   Naming the overlay restores the true paint order (its higher z-index means
-   it is captured later, so its group paints above the sidebar's), and the
-   same old/new treatment as the sidebar stops it cross-fading with itself —
-   it is pixel-identical on both pages. Measured through a slowed 3s
-   transition: sidebar delta 3/255 on every route change, before; 0 after. */
-html.theme-default .noise-overlay { view-transition-name: classic-noise; }
-::view-transition-group(classic-noise),
-::view-transition-image-pair(classic-noise),
-::view-transition-new(classic-noise) { animation: none; }
-::view-transition-old(classic-noise) { display: none; }
-
 /* Reduced motion: the sidebar is BORN at its resting position rather than
    snapped there. The blanket reduce rule collapses transition-duration to
    0.01ms, which turned the 0.7s entrance slide into a one-frame 268.8px

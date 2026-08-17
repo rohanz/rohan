@@ -129,14 +129,15 @@ arbitrary shas — instead revert the commit on astro-site, push, re-run).
   shipped at 1x and had to be retrofitted — audit with
   `grep -n "createElement('canvas')" themes/blueprint/src/*.js` and check each
   hit before shipping a new surface.
-- **View-transition ghost gotcha**: the classic sidebar slides via a 0.7s CSS
-  transition while the router's view transition cross-fades full-page
-  snapshots — the old snapshot contained the bar, painting a fading ghost
-  over the live slide. Fix (default.css): the sidebar has its own
-  `view-transition-name: classic-sidebar`; its group's OLD image is
-  `display: none` and its NEW image (which is live) has `animation: none`,
-  so only the real sliding bar ever paints. Any element that animates its
-  own entrance/exit across swaps needs this same treatment.
+- **View-transition ghost gotcha**: an element that animates its own
+  entrance/exit across swaps must NOT be given its own
+  `view-transition-name` group — while the router's view transition runs, a
+  named element is painted only through its frozen group snapshot, so CSS
+  transitions triggered on `astro:page-load` play invisibly and the element
+  pops into its final state (this broke the classic sidebar's slide/fade;
+  the `classic-sidebar`/`classic-noise` groups were removed). The original
+  fading-ghost artifact was actually caused by the fade-out
+  identity-transform containing block, fixed separately in default.css.
 - **3D canvas gotchas** (bit us repeatedly): coplanar canvas planes z-fight
   (shimmer) — offset stacked planes by ~0.001 in z; canvas planes referencing
   materials before they exist TDZ-crash the whole boot — after any change,
