@@ -156,7 +156,21 @@ function buildFatSwap(line) {
   return { geom, apply: () => upload('sorted'), undo: () => upload('original') };
 }
 
+// Geometry is static for the lifetime of the scene, so the sort result is
+// too: build each swap ONCE and stash it on the geometry. Rebuilding per run
+// allocated a fresh index/attribute set every transition and undo() only
+// re-pointed at the originals — one leaked GPU buffer per line per run.
+// (buildFatSwap already reuses its buffers by copying into them in place.)
+// A null result (nothing to sort) is cached too, so it isn't recomputed.
 function buildSortedSwap(line) {
+  const geom = line.geometry;
+  if (!geom) return null;
+  const ud = geom.userData;
+  if (!('drawSortedSwap' in ud)) ud.drawSortedSwap = buildSortedSwapUncached(line);
+  return ud.drawSortedSwap;
+}
+
+function buildSortedSwapUncached(line) {
   if (line.isLineSegments2 || line.geometry?.isInstancedBufferGeometry) return buildFatSwap(line);
   if (!line.isLineSegments) return null; // plain Line (doorway arc): ramp only
   const geom = line.geometry;
@@ -184,9 +198,12 @@ function buildSortedSwap(line) {
       arr[p * 2] = s.ia;
       arr[p * 2 + 1] = s.ib;
     });
+    // Build the sorted index attribute ONCE (see the cache note above):
+    // allocating it inside apply() leaked a GPU buffer per line per run.
+    const sortedIndex = new THREE.BufferAttribute(arr, 1);
     return {
       geom,
-      apply: () => geom.setIndex(new THREE.BufferAttribute(arr, 1)),
+      apply: () => geom.setIndex(sortedIndex),
       undo: () => geom.setIndex(idx),
     };
   }
@@ -271,7 +288,40 @@ function snapshot(acts) {
   return saved;
 }
 
+// Clone disposal is DEFERRED, not skipped. GC alone does not free them: the
+// renderer holds program refcounts and uniform state per material until
+// dispose(). But freeing dozens of them inside the settle frame caused a
+// visible hitch — so clones queue here and are released in one batch a few
+// frames later, when the browser is idle.
+let pendingClones = [];
+let disposeScheduled = false;
+
+function flushCloneDisposal() {
+  disposeScheduled = false;
+  const batch = pendingClones;
+  pendingClones = [];
+  for (const m of batch) m.dispose();
+}
+
+function scheduleCloneDisposal(clones) {
+  if (!clones.length) return;
+  pendingClones.push(...clones);
+  if (disposeScheduled) return;
+  disposeScheduled = true;
+  // ~4 frames of slack, then idle time if the browser offers it.
+  if (typeof requestIdleCallback === 'function') {
+    setTimeout(() => requestIdleCallback(flushCloneDisposal, { timeout: 1000 }), 66);
+  } else {
+    setTimeout(flushCloneDisposal, 66);
+  }
+}
+
 function restore(saved) {
+  // restore() runs from finish() AND from the cancel path in run(); the guard
+  // keeps a cancelled-mid-flight run's clones queued exactly once.
+  if (saved.restored) return;
+  saved.restored = true;
+  const clones = [];
   for (const s of saved) {
     if (s.type === 'line') {
       if (s.swap) s.swap.undo();
@@ -280,10 +330,11 @@ function restore(saved) {
     } else {
       s.node.visible = s.visible;
       s.node.material = s.original;
-      // no clone.dispose() here: freeing dozens of materials in the settle
-      // frame caused a visible hitch; GC reclaims them off the hot path.
+      // Never queue the shared original — only this run's private clone.
+      if (s.clone && s.clone !== s.original) clones.push(s.clone);
     }
   }
+  scheduleCloneDisposal(clones);
 }
 
 // ---------------------------------------------------------------------------

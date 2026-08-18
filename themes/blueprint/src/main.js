@@ -794,6 +794,11 @@ for (const sceneId of Object.keys(scenes)) {
 
 // Frame loop (Timer, not the deprecated THREE.Clock)
 const timer = new THREE.Timer();
+// Page Visibility: connect() makes the Timer report dt = 0 while the document
+// is hidden and reset its clock on the way back, so the first visible frame
+// can never hand a multi-minute delta to the ticks below.
+timer.connect(document);
+let rafId = null;
 function frame() {
   timer.update();
   const dt = timer.getDelta();
@@ -818,8 +823,25 @@ function frame() {
   if (cur !== null && cur !== undefined) consoleKit.setLevel(cur, player.level());
   if (mode === 'music') annotations.updateLabels(camera, renderer);
   renderer.render(scene, camera);
-  requestAnimationFrame(frame);
+  rafId = requestAnimationFrame(frame);
 }
+// Hidden tab: stop scheduling frames entirely (browsers throttle rAF, but a
+// backgrounded-yet-unthrottled window would keep rendering the whole scene
+// forever). Resuming re-zeroes the Timer first so nothing sees the gap.
+function startLoop() {
+  if (rafId !== null) return;
+  timer.reset();
+  rafId = requestAnimationFrame(frame);
+}
+function stopLoop() {
+  if (rafId === null) return;
+  cancelAnimationFrame(rafId);
+  rafId = null;
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) stopLoop();
+  else startLoop();
+});
 frame();
 
 // ---------------------------------------------------------------------------

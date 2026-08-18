@@ -5,9 +5,21 @@
  *  every 250ms — cheap enough to not perturb what it measures. */
 import { PERF_HUD_KEY } from './keys';
 
+// The HUD div lives on <body>, which ClientRouter replaces on every swap, so the
+// element-presence check can't guard against duplicates — the node is gone but
+// its rAF loop isn't. Track the loop at module scope instead and cancel it both
+// on re-init and before each swap, so exactly one loop is ever in flight.
+let rafId: number | null = null;
+
+function stopPerfHud() {
+  if (rafId !== null) cancelAnimationFrame(rafId);
+  rafId = null;
+}
+
 export function mountPerfHud() {
+  stopPerfHud();
   if (typeof localStorage === 'undefined' || localStorage.getItem(PERF_HUD_KEY) !== '1') return;
-  if (document.getElementById('perf-hud')) return;
+  document.getElementById('perf-hud')?.remove();
   const hud = document.createElement('div');
   hud.id = 'perf-hud';
   hud.setAttribute('aria-hidden', 'true');
@@ -36,7 +48,11 @@ export function mountPerfHud() {
       hud.textContent = `fps ${(1000 / p50).toFixed(0)}  worst ${worst.toFixed(0)}ms\ndropped ${dropped}`;
       hud.style.background = worst > vsync * 2 ? 'rgba(160,40,40,0.9)' : 'rgba(20,20,20,0.85)';
     }
-    requestAnimationFrame(tick);
+    rafId = requestAnimationFrame(tick);
   };
-  requestAnimationFrame(tick);
+  rafId = requestAnimationFrame(tick);
 }
+
+// Mirrors ride.ts's dispose-on-swap: the HUD's node dies with the outgoing body,
+// so drop its loop too. Registered once, at module scope.
+document.addEventListener('astro:before-swap', stopPerfHud);
