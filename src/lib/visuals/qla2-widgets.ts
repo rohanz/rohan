@@ -144,17 +144,17 @@ function initEpisode(node: HTMLElement, episodes: Episode[], options: WidgetOpti
 }
 
 function initLadder(node: HTMLElement, ladder: Qla2Data['ladder'], options: WidgetOptions, cleanups: Array<() => void>) {
-  const body = shell(node, 'the training ladder, twice', 'the staircase we recorded through a faulted serving stack, and the one that survived re-measurement');
+  const body = shell(node, 'the training ladder', 'the honest numbers, next to what the broken evaluation setup originally reported');
   applyPalette(body, options.palette());
   const toggle = el('div', 'qlf-mode-toggle');
   toggle.setAttribute('role', 'group'); toggle.setAttribute('aria-label', 'Evaluation view');
-  const labels: Record<string, string> = { unseen_templates: 'the recorded headline', val: 'recorded validation', honest_val: 'the honest ladder' };
+  const labels: Record<string, string> = { honest_val: 'the honest ladder', unseen_templates: 'what I almost published', val: 'what was recorded' };
   const captions: Record<string, string> = {
-    unseen_templates: 'What we believed: on question types withheld from training, the RL-trained 9B overtakes its teacher, 0.883 to 0.852. Later found to be the base model in a costume; the adapters were never actually served.',
-    val: 'The recorded validation staircase, orderly and wrong for the same reason. Every fine-tuned score here is base plus sampling noise.',
-    honest_val: 'Re-measured through the byte-faithful harness: base 0.790, SFT 0.899, GRPO-v1 0.871. SFT is the champion; the RL stage gave points back. The teacher (API-served, never affected) still leads on this split.',
+    honest_val: 'Measured through the rebuilt byte-faithful harness: base 0.790, SFT 0.899, GRPO-v1 0.871. SFT is the champion; the RL stage gave points back. The teacher (API-served, never affected) still leads.',
+    unseen_templates: 'The headline the broken setup nearly shipped: the trained 9B "overtaking" its teacher 0.883 to 0.852 on unseen question types. The adapters were never actually served; this is the base model in a costume.',
+    val: 'The originally recorded validation staircase, orderly and wrong for the same reason. Every fine-tuned score here is base plus sampling noise.',
   };
-  const keys = ['unseen_templates', 'val', 'honest_val'].filter((k) => k in ladder);
+  const keys = ['honest_val', 'unseen_templates', 'val'].filter((k) => k in ladder);
   const buttons = keys.map((key) => { const b = button(labels[key] ?? key, 'qla-btn qla2-mode-btn'); toggle.append(b); return b; });
   const caption = el('p', 'qla2-description qla2-split-caption');
   body.append(toggle, caption);
