@@ -19,12 +19,14 @@ interface Episode {
   answer: string;
   verdict: { pass: boolean; total: number; grounded: boolean };
 }
+interface CascadeRow { belief: string; experiment: string; verdict: string }
 interface Qla2Data {
   ladder: Record<string, Record<string, number>>;
   episodes: Episode[];
   ratchet: RatchetRow[];
   bench: { bf16: BenchRow[]; fp8: BenchRow[] };
   costs: Array<{ phase: string; usd: number }>;
+  cascade?: CascadeRow[];
 }
 interface WidgetOptions {
   root: ParentNode;
@@ -142,17 +144,17 @@ function initEpisode(node: HTMLElement, episodes: Episode[], options: WidgetOpti
 }
 
 function initLadder(node: HTMLElement, ladder: Qla2Data['ladder'], options: WidgetOptions, cleanups: Array<() => void>) {
-  const body = shell(node, 'the training ladder', 'where the trained model gains its edge: the questions frontier models find hardest');
+  const body = shell(node, 'the training ladder, twice', 'the staircase we recorded through a faulted serving stack, and the one that survived re-measurement');
   applyPalette(body, options.palette());
   const toggle = el('div', 'qlf-mode-toggle');
-  toggle.setAttribute('role', 'group'); toggle.setAttribute('aria-label', 'Evaluation split');
-  const labels: Record<string, string> = { val: 'validation set', unseen_templates: 'unseen question types', unseen_tickers: 'unseen companies' };
+  toggle.setAttribute('role', 'group'); toggle.setAttribute('aria-label', 'Evaluation view');
+  const labels: Record<string, string> = { unseen_templates: 'the recorded headline', val: 'recorded validation', honest_val: 'the honest ladder' };
   const captions: Record<string, string> = {
-    val: 'Questions from the development distribution. The orderly view: each training stage climbs toward the teacher.',
-    unseen_templates: 'The hardest test: multi-step question types withheld from training entirely. This is the split where the trained 9B overtakes its teacher.',
-    unseen_tickers: 'Companies withheld from training test whether the model generalizes beyond familiar filings.',
+    unseen_templates: 'What we believed: on question types withheld from training, the RL-trained 9B overtakes its teacher, 0.883 to 0.852. Later found to be the base model in a costume; the adapters were never actually served.',
+    val: 'The recorded validation staircase, orderly and wrong for the same reason. Every fine-tuned score here is base plus sampling noise.',
+    honest_val: 'Re-measured through the byte-faithful harness: base 0.790, SFT 0.899, GRPO-v1 0.871. SFT is the champion; the RL stage gave points back. The teacher (API-served, never affected) still leads on this split.',
   };
-  const keys = ['unseen_templates', 'val', 'unseen_tickers'].filter((k) => k in ladder);
+  const keys = ['unseen_templates', 'val', 'honest_val'].filter((k) => k in ladder);
   const buttons = keys.map((key) => { const b = button(labels[key] ?? key, 'qla-btn qla2-mode-btn'); toggle.append(b); return b; });
   const caption = el('p', 'qla2-description qla2-split-caption');
   body.append(toggle, caption);
@@ -160,12 +162,23 @@ function initLadder(node: HTMLElement, ladder: Qla2Data['ladder'], options: Widg
   let active = keys[0];
   let current = { ...ladder[active] };
   let frame = 0;
+  const RENDERED = ['base', 'sft', 'grpo', 'teacher'];
+  // One global axis across every view: markers never move between selections.
+  let axis = { min: 0, max: 1 };
+  function axisFor(views: Array<Record<string, number>>) {
+    const values = views.flatMap((view) => RENDERED.filter((n) => n in view).map((n) => view[n]));
+    return {
+      min: Math.floor((Math.min(...values) - 0.015) * 100) / 100,
+      max: Math.ceil((Math.max(...values) + 0.015) * 100) / 100,
+    };
+  }
   const draw = () => {
     applyPalette(body, options.palette());
     const w = measuredWidth(canvas, options);
     canvas.style.height = `${LADDER_HEIGHT}px`;
-    drawLadder(options.sizeCanvas(canvas, w, LADDER_HEIGHT), { w, palette: options.palette() }, current);
+    drawLadder(options.sizeCanvas(canvas, w, LADDER_HEIGHT), { w, palette: options.palette() }, current, axis);
   };
+  axis = axisFor(keys.map((k) => ladder[k]));
   const select = (key: string) => {
     const from = { ...current }; const to = ladder[key]; active = key;
     caption.textContent = captions[key] ?? '';
@@ -187,6 +200,27 @@ function initLadder(node: HTMLElement, ladder: Qla2Data['ladder'], options: Widg
   const redraw = () => draw(); window.addEventListener('resize', redraw); cleanups.push(() => window.removeEventListener('resize', redraw));
   observeCanvas(canvas, redraw, cleanups);
   if (options.onThemeChange) cleanups.push(options.onThemeChange(redraw));
+}
+
+function initCascade(node: HTMLElement, rows: CascadeRow[], options: WidgetOptions) {
+  const body = shell(node, 'six wrong conclusions', 'each belief killed by a cheaper experiment than the one before it');
+  applyPalette(body, options.palette());
+  const list = el('ol', 'qla2-cascade');
+  rows.forEach((row, index) => {
+    const item = el('li', 'qla2-cascade-step');
+    const head = el('div', 'qla2-cascade-head');
+    head.append(
+      el('span', 'qla2-cascade-index', String(index + 1)),
+      el('span', 'qla2-cascade-belief', row.belief),
+    );
+    const test = el('div', 'qla2-cascade-experiment');
+    test.append(el('span', 'qla2-cascade-tag', 'test'), document.createTextNode(row.experiment));
+    const verdict = el('div', 'qla2-cascade-verdict');
+    verdict.append(el('span', 'qla2-cascade-tag', 'found'), document.createTextNode(row.verdict));
+    item.append(head, test, verdict);
+    list.append(item);
+  });
+  body.append(list);
 }
 
 function initRatchet(node: HTMLElement, data: Qla2Data, options: WidgetOptions, cleanups: Array<() => void>) {
@@ -280,6 +314,7 @@ export function initQla2Widgets(options: WidgetOptions): () => void {
     ratchet: options.root.querySelector<HTMLElement>('#qla2-ratchet'),
     bench: options.root.querySelector<HTMLElement>('#qla2-bench'),
     costs: options.root.querySelector<HTMLElement>('#qla2-costs'),
+    cascade: options.root.querySelector<HTMLElement>('#qla2-cascade'),
   };
   if (!Object.values(nodes).some(Boolean)) return () => {};
   const cleanups: Array<() => void> = [];
@@ -293,6 +328,7 @@ export function initQla2Widgets(options: WidgetOptions): () => void {
       if (nodes.ratchet && Array.isArray(data.ratchet) && data.ladder) initRatchet(nodes.ratchet, data, options, cleanups);
       if (nodes.bench && data.bench) initBench(nodes.bench, data.bench, options, cleanups);
       if (nodes.costs && Array.isArray(data.costs)) initCosts(nodes.costs, data.costs, options, cleanups);
+      if (nodes.cascade && Array.isArray(data.cascade)) initCascade(nodes.cascade, data.cascade, options);
     })
     .catch((error) => console.warn('quantlab-agentic widgets: data fetch failed', error));
   return () => { disposed = true; cleanups.splice(0).forEach((cleanup) => cleanup()); };

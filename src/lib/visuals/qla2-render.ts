@@ -30,6 +30,7 @@ export function drawLadder(
   ctx: CanvasRenderingContext2D,
   { w, palette }: Qla2DrawOptions,
   scores: Record<string, number>,
+  bounds?: { min: number; max: number },
 ): void {
   const h = LADDER_HEIGHT;
   const ORDER = ['base', 'sft', 'grpo', 'teacher'];
@@ -38,8 +39,10 @@ export function drawLadder(
   const pw = w - pad.l - pad.r;
   const rowH = (h - pad.t - pad.b) / names.length;
   const values = names.map((n) => scores[n]);
-  const min = Math.floor((Math.min(...values) - 0.015) * 100) / 100;
-  const max = Math.ceil((Math.max(...values) + 0.015) * 100) / 100;
+  // Bounds may be supplied by the caller so a view transition can hold one
+  // fixed axis; recomputing per animation frame makes the gridlines flicker.
+  const min = bounds ? bounds.min : Math.floor((Math.min(...values) - 0.015) * 100) / 100;
+  const max = bounds ? bounds.max : Math.ceil((Math.max(...values) + 0.015) * 100) / 100;
   const x = (v: number) => pad.l + ((v - min) / (max - min)) * pw;
   ctx.clearRect(0, 0, w, h);
 

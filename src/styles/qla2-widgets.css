@@ -48,3 +48,67 @@
 .qla-visual .qla-visual-body .is-hidden { visibility: hidden; }
 @media (prefers-reduced-motion: reduce) {
   }
+
+/* six-wrong-conclusions cascade (anchored under the card body: the classic
+   theme's universal reset zeroes lower-specificity list spacing) */
+.qla-visual .qla-visual-body .qla2-cascade {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.65rem;
+}
+.qla-visual .qla-visual-body .qla2-cascade-step {
+  border: 1px solid var(--border-subtle);
+  border-left: 3px solid var(--qla2-accent);
+  border-radius: 10px;
+  padding: 0.7rem 0.9rem;
+  background: var(--bg-card);
+  display: grid;
+  gap: 0.35rem;
+}
+.qla-visual .qla-visual-body .qla2-cascade-step:last-child {
+  border-left-color: var(--qla2-comparison);
+}
+.qla-visual .qla-visual-body .qla2-cascade-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+}
+.qla-visual .qla-visual-body .qla2-cascade-index {
+  font-family: 'Chillax', sans-serif;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--qla2-accent);
+  min-width: 1.2rem;
+}
+.qla-visual .qla-visual-body .qla2-cascade-step:last-child .qla2-cascade-index {
+  color: var(--qla2-comparison);
+}
+.qla-visual .qla-visual-body .qla2-cascade-belief {
+  font-weight: 600;
+  font-size: 0.98rem;
+  color: var(--text-primary);
+}
+.qla-visual .qla-visual-body .qla2-cascade-experiment,
+.qla-visual .qla-visual-body .qla2-cascade-verdict {
+  font-size: 0.95rem;
+  line-height: 1.45;
+  color: var(--text-primary);
+  opacity: 0.85;
+  display: flex;
+  gap: 0.55rem;
+  align-items: baseline;
+}
+.qla-visual .qla-visual-body .qla2-cascade-tag {
+  font-family: 'Chillax', sans-serif;
+  font-weight: 600;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  text-transform: lowercase;
+  color: var(--qla2-accent);
+  flex: 0 0 3.2rem;
+}
+.qla-visual .qla-visual-body .qla2-cascade-verdict .qla2-cascade-tag {
+  color: var(--qla2-comparison);
+}

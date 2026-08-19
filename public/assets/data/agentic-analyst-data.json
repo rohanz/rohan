@@ -4,22 +4,29 @@
    "base": 0.73,
    "sft": 0.822,
    "grpo": 0.829,
-   "grpo_v2": 0.844,
-   "teacher": 0.909
+   "teacher": 0.909,
+   "grpo_v2": 0.844
   },
   "unseen_templates": {
    "base": 0.86,
    "sft": 0.867,
    "grpo": 0.883,
-   "grpo_v2": 0.857,
-   "teacher": 0.852
+   "teacher": 0.852,
+   "grpo_v2": 0.857
   },
   "unseen_tickers": {
    "base": 0.824,
    "sft": 0.832,
    "grpo": 0.825,
-   "grpo_v2": 0.821,
-   "teacher": 0.882
+   "teacher": 0.882,
+   "grpo_v2": 0.821
+  },
+  "honest_val": {
+   "base": 0.79,
+   "sft": 0.899,
+   "grpo": 0.871,
+   "teacher": 0.909,
+   "grpo_v2": 0.871
   }
  },
  "episodes": [
@@ -425,6 +432,43 @@
   {
    "phase": "Deployment benchmarks",
    "usd": 4
+  }
+ ],
+ "cascade": [
+  {
+   "belief": "the surgery didn't bind",
+   "experiment": "re-train with byte-matched chat template",
+   "verdict": "real bug, fixed; behavior still unchanged"
+  },
+  {
+   "belief": "the model can't learn",
+   "experiment": "probe it on its own training questions",
+   "verdict": "can't reproduce training data: measurement suspect"
+  },
+  {
+   "belief": "vLLM serves the adapter",
+   "experiment": "compare logprobs, adapter vs base",
+   "verdict": "token-identical: zero of 256 tensors applied, silently"
+  },
+  {
+   "belief": "so the campaign ladder is real",
+   "experiment": "re-serve GRPO-v1 with adapter correctly applied",
+   "verdict": "scores 0.24: now the MODEL looks broken"
+  },
+  {
+   "belief": "the model is broken",
+   "experiment": "run the same weights offline in plain transformers",
+   "verdict": "clean, coherent tool calls: serving path suspect again"
+  },
+  {
+   "belief": "prompts match training",
+   "experiment": "diff rendered tool schemas byte by byte",
+   "verdict": "alphabetical vs code-order properties: dict-equal, byte-different"
+  },
+  {
+   "belief": "now measure honestly",
+   "experiment": "full ladder through the byte-faithful harness",
+   "verdict": "base 0.790, SFT 0.899, GRPO 0.871: SFT was the champion"
   }
  ]
 }
