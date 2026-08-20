@@ -83,6 +83,21 @@ The debugging cascade, for the curious. Each row is a belief the next experiment
 
 The one-line takeaway: train-time and serve-time must match down to the byte, value-equality checks cannot see the drift that matters, and the fine-tuned model you produce is exactly the model most brittle to it. The whole detour cost about $45.50 and was the best value in the project.
 
+## how far the training reaches
+
+With trustworthy instruments in hand, the last measurement asked the question the old headline pretended to answer: what happens off the training distribution? Two held-out exams, run for every model on identical questions: question *types* excluded from training entirely, and *companies* excluded from training.
+
+| model | validation | unseen question types | unseen companies |
+|---|---|---|---|
+| base 9B (untrained) | 0.790 | **0.776** | 0.760 |
+| SFT | **0.899** | 0.704 | **0.783** |
+| GRPO | 0.871 | 0.647 | 0.706 |
+| teacher (frontier API) | 0.909 | 0.847 | 0.877 |
+
+The middle column is the finding of the project. On question shapes the models never practiced, the *untrained* base wins, and each stage of fine-tuning makes it worse. Training didn't teach generalization; it traded generalization for mastery of the practiced templates. SFT's gains transfer to new companies (familiar procedures, new entities) but not to new procedures, which is exactly what imitation predicts and exactly what the celebrated-then-retracted 0.883 claimed to have escaped. The teacher leads everywhere off-distribution.
+
+For the product this is fine: its queries live in-distribution, where SFT is eleven points better than anything else here. For the research it sets the next question precisely: can you train a small model *for* procedure generality, with held-out shapes in the loop, instead of discovering afterward that you trained it out? That experiment now has a baseline table waiting to be beaten. (One postscript: the shiny new 27B released this week was auditioned through the same harness before any re-platforming enthusiasm could set in. Untrained, it ties the 9B base on unseen types at three times the serving cost. Audition before adopting: the doctrine keeps earning its keep.)
+
 ## production serving
 
 Training a model is half the job. Running one is a discipline of its own, and this project treats it as part of the result. The serving stack is the same one industry runs (vLLM, containerized, <span class="gloss-term" data-gloss="The industry-standard system for running fleets of containers. A 'manifest' is the config file describing what to run.">Kubernetes</span> manifests with a <span class="gloss-term" data-gloss="Releasing a new model to a small slice of traffic first, watching it, and only then rolling it out fully. Named after the canary in the coal mine.">canary rollout</span> in the repo), and the benchmarks below were measured on it, not estimated. First, the engine choice, since the two projects together earn an opinion: the memo project served on <span class="gloss-term" data-gloss="A developer-friendly wrapper around llama.cpp: trivially easy local model running. The right tool for trying models on your own machine.">Ollama</span> and this one on <span class="gloss-term" data-gloss="The de-facto industry inference engine: continuous batching, paged attention, prefix caching, multi-adapter serving, OpenAI-compatible API.">vLLM</span>, and the rule of thumb is: Ollama to try models, vLLM to serve them. This project needed what Ollama doesn't have. Continuous batching for 16-plus concurrent RL rollouts, maintained tool-call parsers for the model family, and one base model hosting multiple <span class="gloss-term" data-gloss="Low-rank adapters, the small trained weight deltas from fine-tuning. vLLM can serve several on one loaded base model, like profiles.">LoRA adapters</span> at once.
