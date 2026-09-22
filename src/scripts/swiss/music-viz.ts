@@ -7,6 +7,12 @@ let context: AudioContext | null = null;
 const graphs = new WeakMap<HTMLAudioElement, AnalyserGraph | null>();
 type Surface = { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D; w: number; h: number };
 const surfaces = new WeakMap<HTMLElement, Surface[]>();
+const OUTRO_MS = 450;
+const outros = new Map<HTMLElement, number>();
+function cancelOutro(row: HTMLElement) {
+  const id = outros.get(row);
+  if (id !== undefined) { cancelAnimationFrame(id); outros.delete(row); }
+}
 
 function resize(row: HTMLElement) {
   const next: Surface[] = [];
@@ -54,7 +60,7 @@ function drawVu(surface: Surface, db: number, ink: string, hair: string, accent:
   ctx.stroke();
   // Sparse labels keep the small face legible; minor ticks retain the hot scale.
   const marks = [-40, -20, -10, 0];
-  ctx.font = '8px ui-monospace, monospace';
+  ctx.font = "500 8px 'General Sans', 'General Sans Fallback', system-ui, sans-serif";
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   for (let value = -40; value <= 0; value++) {
@@ -73,8 +79,6 @@ function drawVu(surface: Surface, db: number, ink: string, hair: string, accent:
       ctx.fillText(String(value), cx + (radius + 11) * cos, cy + (radius + 11) * sin);
     }
   }
-  ctx.fillStyle = ink;
-  ctx.fillText('DB', cx, cy - 8);
   const needle = angleFor(db);
   ctx.strokeStyle = ink;
   ctx.lineWidth = 1.5;
@@ -123,6 +127,7 @@ export function attachViz(row: HTMLElement, audio: HTMLAudioElement): () => void
   const graph = graphs.get(audio);
   if (context.state === 'suspended') void context.resume().catch(() => {});
   if (!graph?.analyser) return () => {};
+  cancelOutro(row);
   const { analyser, analyserL, analyserR } = graph;
   const wave = new Uint8Array(analyser.frequencyBinCount);
   const freq = new Uint8Array(analyser.frequencyBinCount);
@@ -140,6 +145,67 @@ export function attachViz(row: HTMLElement, audio: HTMLAudioElement): () => void
   let stopped = false;
   let vuSmoothed = -40;
 
+  // Paints one frame from the current buffers. `alpha` scales the signal ink
+  // (the outro fades it over the grid); `vuDb` drives the needle.
+  function paint(alpha: number, vuDb: number) {
+    computeBands(freq, bands);
+    smoothCurve(bands.freqSmoothed, curve);
+    for (const surface of surfaces.get(row) ?? []) {
+      const { ctx, canvas, w, h } = surface;
+      ctx.globalAlpha = 1;
+      drawGrid(surface, hair);
+      ctx.globalAlpha = alpha;
+      ctx.strokeStyle = ink;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      if (canvas.dataset.viz === 'wave') {
+        for (let i = 0; i < wave.length; i++) {
+          const x = 4 + i / (wave.length - 1) * (w - 8);
+          const y = h / 2 + (wave[i] / 128 - 1) * (h / 2 - 4);
+          if (!i) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+      } else if (canvas.dataset.viz === 'freq') {
+        let peak = 0;
+        for (let i = 0; i < curve.length; i++) {
+          const x = 4 + i / (curve.length - 1) * (w - 8);
+          const y = h - 5 - curve[i] * (h - 10);
+          if (!i) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+          if (curve[i] > curve[peak]) peak = i;
+        }
+        ctx.stroke();
+        // The only coloured mark is the current spectral peak.
+        ctx.fillStyle = accent;
+        ctx.fillRect(3 + peak / (curve.length - 1) * (w - 8), h - 6 - curve[peak] * (h - 10), 2, 2);
+        continue;
+      } else if (canvas.dataset.viz === 'vu') {
+        ctx.globalAlpha = 1;
+        drawVu(surface, vuDb, ink, hair, accent);
+        continue;
+      } else {
+        const radius = Math.min(w, h) / 2 - 4;
+        const bufLen = Math.min(left.length, right.length);
+        const step = Math.max(1, Math.floor(bufLen / 512));
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(w / 2, h / 2, radius, 0, Math.PI * 2);
+        ctx.clip();
+        ctx.fillStyle = ink;
+        ctx.globalAlpha = .7 * alpha;
+        for (let i = 0; i < bufLen; i += step) {
+          const mid = (left[i] + right[i]) * .5;
+          const side = (left[i] - right[i]) * .5;
+          const x = w / 2 + side * radius * 2;
+          const y = h / 2 - mid * radius * 2;
+          ctx.fillRect(x, y, 1.5, 1.5);
+        }
+        ctx.restore();
+        continue;
+      }
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+  }
+
   function draw() {
     if (stopped || audio.paused || audio.ended) return;
     if (!document.hidden) {
@@ -148,58 +214,7 @@ export function attachViz(row: HTMLElement, audio: HTMLAudioElement): () => void
       analyserL?.getFloatTimeDomainData(left);
       analyserR?.getFloatTimeDomainData(right);
       vuSmoothed = onePole(vuSmoothed, vuDbFromStereo(left, right, Math.min(left.length, right.length)), .18);
-      computeBands(freq, bands);
-      smoothCurve(bands.freqSmoothed, curve);
-      for (const surface of surfaces.get(row) ?? []) {
-        drawGrid(surface, hair);
-        const { ctx, canvas, w, h } = surface;
-        ctx.strokeStyle = ink;
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        if (canvas.dataset.viz === 'wave') {
-          for (let i = 0; i < wave.length; i++) {
-            const x = 4 + i / (wave.length - 1) * (w - 8);
-            const y = h / 2 + (wave[i] / 128 - 1) * (h / 2 - 4);
-            if (!i) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-          }
-        } else if (canvas.dataset.viz === 'freq') {
-          let peak = 0;
-          for (let i = 0; i < curve.length; i++) {
-            const x = 4 + i / (curve.length - 1) * (w - 8);
-            const y = h - 5 - curve[i] * (h - 10);
-            if (!i) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-            if (curve[i] > curve[peak]) peak = i;
-          }
-          ctx.stroke();
-          // The only coloured mark is the current spectral peak.
-          ctx.fillStyle = accent;
-          ctx.fillRect(3 + peak / (curve.length - 1) * (w - 8), h - 6 - curve[peak] * (h - 10), 2, 2);
-          continue;
-        } else if (canvas.dataset.viz === 'vu') {
-          drawVu(surface, vuSmoothed, ink, hair, accent);
-          continue;
-        } else {
-          const radius = Math.min(w, h) / 2 - 4;
-          const bufLen = Math.min(left.length, right.length);
-          const step = Math.max(1, Math.floor(bufLen / 512));
-          ctx.save();
-          ctx.beginPath();
-          ctx.arc(w / 2, h / 2, radius, 0, Math.PI * 2);
-          ctx.clip();
-          ctx.fillStyle = ink;
-          ctx.globalAlpha = .7;
-          for (let i = 0; i < bufLen; i += step) {
-            const mid = (left[i] + right[i]) * .5;
-            const side = (left[i] - right[i]) * .5;
-            const x = w / 2 + side * radius * 2;
-            const y = h / 2 - mid * radius * 2;
-            ctx.fillRect(x, y, 1.5, 1.5);
-          }
-          ctx.restore();
-          continue;
-        }
-        ctx.stroke();
-      }
+      paint(1, vuSmoothed);
     }
     // Reduced motion samples twice per second, with no intervening RAF loop.
     if (reduced.matches || document.hidden) timer = setTimeout(draw, 500);
@@ -214,6 +229,22 @@ export function attachViz(row: HTMLElement, audio: HTMLAudioElement): () => void
     // A previous track's queued pause event can arrive after the next play.
     if (audio.paused) cleanup();
   }
+  // Graceful reset: the signals fade over the grid and the needle eases home
+  // over OUTRO_MS, then the row settles on its idle drawing.
+  function outro() {
+    cancelOutro(row);
+    if (reduced.matches) { idle(row); return; }
+    const fromDb = vuSmoothed;
+    const t0 = performance.now();
+    const step = (now: number) => {
+      const t = Math.min(1, (now - t0) / OUTRO_MS);
+      const e = 1 - Math.pow(1 - t, 3);
+      paint(1 - e, fromDb + (-40 - fromDb) * e);
+      if (t < 1) outros.set(row, requestAnimationFrame(step));
+      else { outros.delete(row); idle(row); }
+    };
+    outros.set(row, requestAnimationFrame(step));
+  }
   function cleanup() {
     stopped = true;
     cancelAnimationFrame(frame);
@@ -221,7 +252,7 @@ export function attachViz(row: HTMLElement, audio: HTMLAudioElement): () => void
     audio.removeEventListener('playing', start);
     audio.removeEventListener('pause', onPause);
     audio.removeEventListener('ended', cleanup);
-    idle(row);
+    outro();
   }
   audio.addEventListener('playing', start);
   audio.addEventListener('pause', onPause);
