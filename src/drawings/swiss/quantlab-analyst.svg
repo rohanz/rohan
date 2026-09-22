@@ -36,8 +36,8 @@
   </g>
   <g class="swiss-analyst-stamp">
     <g transform="rotate(-8 161 201)" stroke="var(--accent)" stroke-width="1.25">
-      <rect x="119" y="189" width="84" height="24" rx="4"/>
-      <text x="161" y="205" text-anchor="middle" font-family="'General Sans', sans-serif" font-size="10" letter-spacing="1.6" fill="var(--accent)" stroke="none">VERIFIED</text>
+      <rect x="101" y="184" width="120" height="34" rx="4" stroke-width="2"/>
+      <text x="161" y="208" text-anchor="middle" font-family="'General Sans', sans-serif" font-size="16" font-weight="600" letter-spacing="2.4" fill="var(--accent)" stroke="none">VERIFIED</text>
     </g>
   </g>
 </svg>

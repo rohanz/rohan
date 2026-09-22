@@ -118,7 +118,7 @@ html.theme-swiss .sw-hero-copy { position: relative; }
 html.theme-swiss .sw-hero-copy h1 { font-size: clamp(2.125rem, 9.8vw, 6rem); margin: 0; font-weight: 600; letter-spacing: -0.03em; }
 html.theme-swiss .sw-hero-copy .sw-body-lg { margin: 2rem 0 0; }
 html.theme-swiss .sw-quads { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; border-left: 1px solid var(--tint-hair); }
-html.theme-swiss .sw-quad { display: flex; flex-direction: column; justify-content: space-between; padding: 1.5rem; border-right: 1px solid var(--tint-hair); border-bottom: 1px solid var(--tint-hair); min-height: 12rem; background: var(--tint); transition: background .3s ease, color .3s ease; }
+html.theme-swiss .sw-quad { display: flex; flex-direction: column; justify-content: flex-end; padding: 1.5rem; border-right: 1px solid var(--tint-hair); border-bottom: 1px solid var(--tint-hair); min-height: 12rem; background: var(--tint); transition: background .3s ease, color .3s ease; }
 /* One accent cell: the primary destination. */
 html.theme-swiss .sw-quad-primary { background: var(--accent); color: var(--paper); border-right-color: transparent; border-bottom-color: transparent; }
 html.theme-swiss .sw-quad-primary .sw-label { color: inherit; }
