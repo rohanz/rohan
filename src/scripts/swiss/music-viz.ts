@@ -130,7 +130,17 @@ export function observeViz(row: HTMLElement): () => void {
     idle(row);
   });
   observer.observe(row);
-  return () => { observer.disconnect(); cancelOutro(row); surfaces.delete(row); };
+  // A window moved to a monitor with a different pixel ratio keeps its CSS size,
+  // so ResizeObserver stays quiet; watch the ratio itself and re-rasterise.
+  let dprQuery: MediaQueryList | null = null;
+  const watchDpr = () => {
+    dprQuery?.removeEventListener('change', onDpr);
+    dprQuery = matchMedia(`(resolution: ${deviceDpr()}dppx)`);
+    dprQuery.addEventListener('change', onDpr, { once: true });
+  };
+  const onDpr = () => { resize(row); idle(row); watchDpr(); };
+  watchDpr();
+  return () => { observer.disconnect(); dprQuery?.removeEventListener('change', onDpr); cancelOutro(row); surfaces.delete(row); };
 }
 
 /** Attach only the playing row; cleanup restores its quiet grids. */

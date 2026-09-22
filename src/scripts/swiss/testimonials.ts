@@ -21,7 +21,8 @@ function init() {
   let elapsed = 0; // ms into the current interval
   let last = 0;
   let raf = 0;
-  let hovered = root.matches(':hover');
+  const hover = window.matchMedia('(hover: hover) and (pointer: fine)');
+  let hovered = hover.matches && root.matches(':hover');
   let focused = root.contains(document.activeElement);
   quotes.forEach((quote) => { quote.hidden = false; });
   controls.hidden = false;
@@ -63,7 +64,7 @@ function init() {
   }
 
   const options = { signal: events.signal };
-  root.addEventListener('mouseenter', () => { hovered = true; schedule(); }, options);
+  root.addEventListener('mouseenter', () => { hovered = hover.matches; schedule(); }, options);
   root.addEventListener('mouseleave', () => { hovered = false; schedule(); }, options);
   root.addEventListener('focusin', () => { focused = true; schedule(); }, options);
   root.addEventListener('focusout', (event) => {

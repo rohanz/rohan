@@ -61,6 +61,16 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
         <a class="sw-label sw-link sw-toc-all" href="/swiss/projects">all projects</a>
       </div>
     </nav>
+    {sections.length > 0 && <details class="sw-mobile-sections">
+      <summary class="sw-label">sections</summary>
+      <nav aria-label="Article sections">
+        <ol>
+          {sections.map((h) => <li class={h.depth === 3 ? 'sub' : ''}>
+            <a href={`#${h.slug}`}>{h.text}</a>
+          </li>)}
+        </ol>
+      </nav>
+    </details>}
     <article class="article">
       <Content />
       <nav class="sw-article-foot" aria-label="project navigation">
@@ -75,6 +85,29 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
   <script>
     import '../../../scripts/article.ts';
     import '../../../scripts/article-widgets.ts';
+
+    let cleanupSections: (() => void) | undefined;
+    function initSections() {
+      cleanupSections?.();
+      const disclosure = document.querySelector<HTMLDetailsElement>('.sw-mobile-sections');
+      if (!disclosure) return;
+      const onClick = (event: MouseEvent) => {
+        const link = (event.target as Element).closest<HTMLAnchorElement>('a[href^="#"]');
+        if (!link || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+        const target = document.getElementById(decodeURIComponent(link.hash.slice(1)));
+        if (!target) return;
+        event.preventDefault();
+        disclosure.open = false;
+        history.replaceState(null, '', link.hash);
+        target.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
+        target.setAttribute('tabindex', '-1');
+        target.focus({ preventScroll: true });
+      };
+      disclosure.addEventListener('click', onClick);
+      cleanupSections = () => disclosure.removeEventListener('click', onClick);
+    }
+    document.addEventListener('astro:page-load', initSections);
+    document.addEventListener('astro:before-swap', () => { cleanupSections?.(); cleanupSections = undefined; });
 
     let cleanupArt: (() => void) | undefined;
     function initArt() {

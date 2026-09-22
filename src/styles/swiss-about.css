@@ -63,3 +63,16 @@ html.theme-swiss .sw-about-links.sw-rail-socials { grid-template-columns: repeat
 html.theme-swiss .sw-about-links.sw-rail-socials a { min-height: 2.6rem; padding: .55rem 1rem; }
 html.theme-swiss .sw-about-links.sw-rail-socials a:nth-last-child(-n+2) { border-bottom: 0; }
 html.theme-swiss .sw-about-bio h1 { font-size: clamp(1.5rem, 2.1vw, 2.1rem); }
+
+/* Phone and tablet reading order: portrait, caption, then the four cells. */
+@media (max-width: 1099px) {
+  html.theme-swiss .sw-about-rail { grid-template-columns: minmax(0, 1fr); }
+  html.theme-swiss .sw-about-photo { height: 55svh; min-height: 0; border-right: 0; border-bottom: 1px solid var(--tint-hair); }
+  html.theme-swiss .sw-about-caption { gap: 1.5rem; }
+  html.theme-swiss .sw-about-cell { overflow: visible; }
+  html.theme-swiss .sw-testimonial-ring { flex-shrink: 0; }
+}
+/* Keep the face in the shallow portrait crop on a rotated phone. */
+@media (max-width: 1099px) and (orientation: landscape) {
+  html.theme-swiss .sw-about-photo img { object-position: center 62%; }
+}

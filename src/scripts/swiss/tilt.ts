@@ -1,6 +1,7 @@
 // One binding per card, with frame-coalesced pointer updates and live capability checks.
 const MAX_DEG = 6;
 const fine = window.matchMedia('(hover: hover) and (pointer: fine)');
+const touch = window.matchMedia('(hover: none)');
 const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
 const bound = new WeakSet<HTMLElement>();
 let cleanups: Array<() => void> = [];
@@ -46,16 +47,46 @@ function bindCard(card: HTMLElement) {
   });
 }
 
+function bindTouchCards(cards: HTMLElement[]) {
+  // Keep playing below the entry threshold until the card actually leaves.
+  const observer = reduce.matches ? undefined : new IntersectionObserver((entries) => {
+    for (const entry of entries) {
+      if (entry.intersectionRatio >= 0.6) entry.target.classList.add('is-hover');
+      else if (!entry.isIntersecting) entry.target.classList.remove('is-hover');
+    }
+  }, { threshold: [0, 0.6] });
+  for (const card of cards) {
+    observer?.observe(card);
+    const play = (event: MouseEvent) => {
+      // Keyboard activation and text links always navigate immediately.
+      if (event.detail === 0 || event.button !== 0 || event.metaKey || event.ctrlKey ||
+          event.shiftKey || event.altKey || !(event.target instanceof Element) ||
+          !event.target.closest('.swiss-card-art') || card.classList.contains('is-hover')) return;
+      event.preventDefault();
+      card.classList.add('is-hover');
+    };
+    card.addEventListener('click', play);
+    cleanups.push(() => {
+      card.removeEventListener('click', play);
+      card.classList.remove('is-hover');
+    });
+  }
+  cleanups.push(() => observer?.disconnect());
+}
+
 function cleanup() {
   cleanups.forEach((dispose) => dispose());
   cleanups = [];
 }
 function init() {
   cleanup();
-  if (!document.documentElement.classList.contains('theme-swiss') || !enabled()) return;
-  document.querySelectorAll<HTMLElement>('.swiss-card').forEach(bindCard);
+  if (!document.documentElement.classList.contains('theme-swiss')) return;
+  const cards = Array.from(document.querySelectorAll<HTMLElement>('.swiss-card'));
+  if (touch.matches) bindTouchCards(cards);
+  else if (enabled()) cards.forEach(bindCard);
 }
 fine.addEventListener('change', init);
+touch.addEventListener('change', init);
 reduce.addEventListener('change', init);
 window.addEventListener('blur', init);
 window.addEventListener('resize', init);
