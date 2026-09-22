@@ -110,37 +110,21 @@ test('reduced motion leaves swatch cards visible without pointer tilt', async ({
   await expect(card).toHaveCSS('transform', 'none');
 });
 
-test('home glides to selected work on the first wheel tick', async ({ page }, testInfo) => {
+test('home uses native mandatory scroll snap on desktop and none under reduced motion', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/swiss/');
   await expect(page.locator('.sw-nav')).toHaveCSS('opacity', '0');
-  await expect(page.locator('.sw-hero h1')).toHaveClass(/is-in/);
-  const target = await page.locator('.sw-selected-work').evaluate((el) =>
-    el.getBoundingClientRect().top + window.scrollY);
-  const trace: { ms: number; y: number }[] = [];
-  const started = Date.now();
-  await page.mouse.wheel(0, 40);
-  await page.waitForTimeout(250);
-  const midway = await page.evaluate(() => window.scrollY);
-  trace.push({ ms: Date.now() - started, y: midway });
-  expect(midway).toBeGreaterThan(0);
-  for (let i = 0; i < 15; i++) {
-    await page.waitForTimeout(100);
-    trace.push({ ms: Date.now() - started, y: await page.evaluate(() => window.scrollY) });
-  }
-  expect(trace.at(-1)!.y).toBe(target);
+  expect(await page.evaluate(() => getComputedStyle(document.documentElement).scrollSnapType)).toMatch(/y mandatory/);
+  expect(await page.locator('.sw-selected-work').evaluate((el) => getComputedStyle(el).scrollSnapAlign)).toMatch(/start/);
+  // Mandatory snap pulls a mid-scroll back to a snap point, so land on one.
+  await page.evaluate(() => window.scrollTo({ top: document.querySelector('.sw-selected-work')!.getBoundingClientRect().top + window.scrollY, behavior: 'instant' }));
+  await page.waitForTimeout(600);
   await expect(page.locator('.sw-nav')).toHaveCSS('opacity', '1');
-  await testInfo.attach('home-scroll-trace', { body: JSON.stringify({ target, trace }, null, 2), contentType: 'application/json' });
-  await testInfo.attach('home-settled', { body: await page.screenshot(), contentType: 'image/png' });
   await page.getByRole('navigation', { name: 'Primary' }).getByRole('link', { name: 'music', exact: true }).click();
   await expect(page).toHaveURL(/\/swiss\/music\/?$/);
   await expect(page.locator('.sw-nav')).toHaveCSS('position', 'sticky');
   await expect(page.locator('.sw-nav')).toHaveCSS('opacity', '1');
-  await page.getByRole('navigation', { name: 'Primary' }).getByRole('link', { name: 'home', exact: true }).click();
-  await expect(page).toHaveURL(/\/swiss\/?$/);
-  await expect(page.locator('.sw-nav')).toHaveCSS('opacity', '0');
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.mouse.wheel(0, 180);
-  await page.waitForTimeout(800);
-  expect(await page.evaluate(() => window.scrollY)).toBe(180);
+  await page.goto('/swiss/');
+  expect(await page.evaluate(() => getComputedStyle(document.documentElement).scrollSnapType)).toBe('none');
 });

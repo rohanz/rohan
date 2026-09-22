@@ -27,7 +27,7 @@ html.theme-swiss {
 
   --font-ui: 'General Sans', 'General Sans Fallback', system-ui, sans-serif;
   --font-display: 'Chillax', 'Chillax Fallback', var(--font-ui);
-  --max: 1440px;
+  --max: none; /* edge to edge; only the gutters hold the content in */
   --gutter: clamp(1rem, 4vw, 5rem);
   --section: clamp(4rem, 9vw, 8rem);
   --track-caps: 0.08em;
@@ -37,6 +37,9 @@ html.theme-swiss, html.theme-swiss *, html.theme-swiss *::before, html.theme-swi
 html.theme-swiss { background: var(--paper); color: var(--ink); scroll-behavior: smooth; }
 html.theme-swiss body {
   margin: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
   font-family: var(--font-ui);
   font-size: 17px;
   font-weight: 450;
@@ -83,7 +86,8 @@ html.theme-swiss .sw-nav-inner { display: flex; align-items: center; justify-con
 html.theme-swiss .sw-wordmark { font-family: var(--font-display); font-weight: 600; font-size: 1.3rem; letter-spacing: -0.02em; }
 html.theme-swiss .sw-nav-links { display: flex; gap: clamp(1rem, 2.5vw, 2.5rem); font-size: 16px; font-weight: 500; }
 html.theme-swiss .sw-nav-links a[aria-current="page"] { color: var(--accent); }
-html.theme-swiss .sw-footer { --footer-h: 6.5rem; border-top: 1px solid var(--hair); height: var(--footer-h); box-sizing: border-box; display: flex; align-items: center; font-size: 14px; color: var(--muted); }
+html.theme-swiss #sw-main { flex: 1 0 auto; }
+html.theme-swiss .sw-footer { --footer-h: 6.5rem; margin-top: auto; border-top: 1px solid var(--hair); height: var(--footer-h); box-sizing: border-box; display: flex; align-items: center; font-size: 14px; color: var(--muted); }
 html.theme-swiss .sw-footer > .sw-wrap { width: 100%; }
 html.theme-swiss .sw-footer-inner { display: flex; flex-wrap: wrap; gap: 1rem 2rem; justify-content: space-between; }
 html.theme-swiss .sw-themes { display: flex; flex-wrap: wrap; gap: .75rem 1.25rem; }
@@ -154,3 +158,12 @@ html.theme-swiss .sw-section-head > h1, html.theme-swiss .sw-section-head > h2 {
 /* Home snap: native CSS mandatory snap between hero and selected work; the
    footer is a snap point too so the page can still rest at its end. */
 html.theme-swiss .sw-selected-work h2 { font-weight: 600; }
+
+/* Home snap: native, compositor-driven. Mandatory with snap-stop so one
+   gesture moves exactly one screen; the footer is the last resting point. */
+@media (min-width: 900px) and (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  html.theme-swiss.sw-home { scroll-snap-type: y mandatory; }
+  html.theme-swiss.sw-home .sw-hero { scroll-snap-align: start; scroll-snap-stop: always; }
+  html.theme-swiss.sw-home .sw-selected-work { scroll-snap-align: start; scroll-snap-stop: always; }
+  html.theme-swiss.sw-home .sw-footer { scroll-snap-align: end; }
+}

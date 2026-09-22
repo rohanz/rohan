@@ -26,6 +26,7 @@ function resize(row: HTMLElement) {
 
 function drawGrid(surface: Surface, hair: string) {
   const { ctx, w, h, canvas } = surface;
+  ctx.globalAlpha = 1; // the outro leaves this canvas faded; the grid never is
   ctx.clearRect(0, 0, w, h);
   if (canvas.dataset.viz === 'freq' || canvas.dataset.viz === 'vu') return;
   ctx.strokeStyle = hair;
