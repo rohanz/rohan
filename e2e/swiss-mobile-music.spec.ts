@@ -26,7 +26,7 @@ for (const phone of phones) {
         if (message.type() === 'error') errors.push(message.text());
       });
 
-      const response = await page.goto('/swiss/music');
+      const response = await page.goto('/music');
       expect(response?.ok()).toBe(true);
 
       const tracks = page.locator('.sw-track');

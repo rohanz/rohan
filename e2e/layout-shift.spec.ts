@@ -1,25 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 
-/**
- * Load-time layout-shift budgets.
- *
- * The owner's rule for entrances: elements are BORN in their final position
- * and fade/transform in from there. Nothing repositions after first paint.
- * These tests are the enforcement — each assertion below pins a specific
- * regression that shipped once already:
- *
- *  - lightbox.js wrapping article images in a margin-carrying <button>
- *    (article body dropped 24px ~265ms after paint)
- *  - zero-height widget placeholders (#bqst-*, #qla-*, #qlf-*, #lcm-demo)
- *    that grew the article by thousands of px when their JS filled them
- *  - article.ts writing nav.train-toc's `top` over the CSS resting value
- *  - Chillax swapping in without metric-compatible fallback overrides, and
- *    Font Awesome glyphs resizing their unsized boxes
- *  - the /about entrance releasing after the FIRST fit while the second,
- *    authoritative fit landed later (visible under prefers-reduced-motion)
- *  - the reduced-motion sidebar snapping across 268px in one frame
- */
-
+/** Shared layout stability checks for classic (Swiss design) and transit. */
 const SETTLE_MS = 2600;
 
 /** Routes that must stay under budget on a warm reload. */
@@ -29,13 +10,10 @@ const ALL_ROUTES = [...CLASSIC_ROUTES, ...TRANSIT_ROUTES];
 
 /** Elements sampled every frame for positional stability. */
 const TRACKED = [
-  '#themeToggle',
-  '.site-controls',
-  '.logo-link',
-  '.sidebar',
+  '.sw-nav',
+  '.sw-hero-copy',
   'nav.train-toc',
-  '#detailContent',
-  '.homepage-name',
+
   '.article',
 ];
 
@@ -292,273 +270,24 @@ test.describe('CLS budget — prefers-reduced-motion', () => {
   }
 });
 
-// ============================================================
-// Rect stability — "born in the right place"
-// ============================================================
 
-const MOVE_BUDGET = 2; // px
-
-/**
- * Font-fallback forensics, attached to every rect-stability failure message.
- *
- * The chrome only moves horizontally for one reason: the Chillax swap changed
- * the width of the two site-switch pills. When that regresses it is nearly
- * always the fallback family failing to bind on the platform under test — and
- * a PARTIALLY bound family is the nastiest case, because CSS weight matching
- * never leaves a family that has any usable face, so a weight-700 request
- * silently renders in the 200-500 face's much narrower size-adjust instead of
- * falling through to Inter. None of that is visible in the shift number, so
- * report face states and real advance widths beside it. scrollbarPx is here to
- * rule out the other candidate: a platform with classic (non-overlay)
- * scrollbars nudging the right-anchored .site-controls.
- */
-const fontDiag = (page: Page) =>
-  page
-    .evaluate(async () => {
-      await document.fonts.ready;
-      const width = (family: string, weight: number, px = 15.2) => {
-        const s = document.createElement('span');
-        s.textContent = 'transit mode';
-        s.style.cssText = `position:absolute;left:-9999px;white-space:pre;font-size:${px}px;font-family:${family};font-weight:${weight}`;
-        document.body.appendChild(s);
-        const w = +s.getBoundingClientRect().width.toFixed(2);
-        s.remove();
-        return w;
-      };
-      // Measured at the real 15.2px AND at 10x that. If the two sizes
-      // disagree about the Chillax/fallback ratio, the culprit is per-glyph
-      // advance rounding (platform rasterisation), which no size-adjust can
-      // correct. If they agree, it is a genuine metric difference and
-      // size-adjust is the right lever.
-      const at = (px: number) =>
-        `chillax=${width("'Chillax'", 700, px)} fallback=${width("'Chillax Fallback'", 700, px)}` +
-        ` inter=${width("'Inter'", 700, px)} arial=${width('Arial', 700, px)}` +
-        ` sans=${width('sans-serif', 700, px)}`;
-      return {
-        faces: [...document.fonts]
-          .filter((f) => f.family.includes('Chillax'))
-          .map((f) => `${f.family}/${f.weight}/${f.status}`)
-          .join(' '),
-        pill700: at(15.2),
-        pill700x10: at(152),
-        scrollbarPx: window.innerWidth - document.documentElement.clientWidth,
-      };
-    })
-    .then(
-      (d) =>
-        `\n  faces: ${d.faces}\n  pill @15.2px: ${d.pill700}\n  pill @152px: ${d.pill700x10}` +
-        `\n  scrollbar: ${d.scrollbarPx}px`,
-    )
-    .catch(() => ' (font diagnostics unavailable)');
-
-test.describe('rect stability', () => {
-  for (const path of CLASSIC_ROUTES) {
-    test(`classic chrome holds still on ${path}`, async ({ page }) => {
-      await instrument(page);
-      await loadAndSettle(page, path);
-      const rects = await readRects(page);
-      const diag = await fontDiag(page);
-      for (const sel of ['#themeToggle', '.site-controls', '.logo-link']) {
-        const r = rects[sel];
-        expect(r, `${sel} was never sampled on ${path}`).toBeTruthy();
-        expect(r.dy, `${sel} moved vertically on ${path} at t=${r.atY}ms${diag}`).toBeLessThan(
-          MOVE_BUDGET,
-        );
-        expect(r.dx, `${sel} moved horizontally on ${path}${diag}`).toBeLessThan(MOVE_BUDGET);
-      }
-    });
-  }
-
-  test('classic chrome holds still with fonts throttled', async ({ page }) => {
-    await instrument(page, TRACKED, 3400);
-    await throttleFonts(page, 700);
-    await loadAndSettle(page, '/');
-    const rects = await readRects(page);
-    const diag = await fontDiag(page);
-    for (const sel of ['#themeToggle', '.site-controls', '.logo-link']) {
-      const r = rects[sel];
-      expect(r.dy, `${sel} moved when Chillax swapped in (t=${r.atY}ms)${diag}`).toBeLessThan(
-        MOVE_BUDGET,
-      );
-      expect(r.dx, `${sel} moved when Chillax swapped in${diag}`).toBeLessThan(MOVE_BUDGET);
-    }
-  });
-
-  test('classic article body never repositions', async ({ page }) => {
-    await instrument(page);
-    await loadAndSettle(page, '/projects/bqst');
-    const r = (await readRects(page))['#detailContent'];
-    expect(r, '#detailContent was never sampled').toBeTruthy();
-    expect(r.dy, `#detailContent top moved at t=${r.atY}ms`).toBeLessThan(MOVE_BUDGET);
-  });
-
-  test('transit TOC never repositions', async ({ page }) => {
-    await instrument(page);
-    await loadAndSettle(page, '/transit/projects/bqst');
-    const r = (await readRects(page))['nav.train-toc'];
-    expect(r, 'nav.train-toc was never sampled').toBeTruthy();
-    expect(r.dy, `train-toc moved at t=${r.atY}ms`).toBeLessThan(MOVE_BUDGET);
-  });
-
-  test('reduced-motion sidebar does not teleport', async ({ browser }) => {
-    const { ctx, page } = await reducedMotionPage(browser);
-    await instrument(page);
-    await loadAndSettle(page, '/projects');
-    const r = (await readRects(page))['.sidebar'];
-    await ctx.close();
-    expect(r, '.sidebar was never sampled').toBeTruthy();
-    expect(r.dx, `sidebar slid horizontally under reduce at t=${r.atY}ms`).toBeLessThan(MOVE_BUDGET);
-  });
-
-  test('reduced-motion /about entrance lands settled', async ({ browser }) => {
-    const { ctx, page } = await reducedMotionPage(browser);
-    await instrument(page, ['.about-layout', '.bento-grid'], SETTLE_MS);
-    await loadAndSettle(page, '/about');
-    const rects = await readRects(page);
-    await ctx.close();
-    const layout = rects['.about-layout'];
-    expect(layout, '.about-layout was never sampled').toBeTruthy();
-    // The double-rAF second fit is the authoritative one; the entrance must
-    // not be released until it has landed, so the grid is born in place.
-    expect(layout.dy, `.about-layout moved at t=${layout.atY}ms`).toBeLessThan(MOVE_BUDGET);
-    expect(layout.dx, `.about-layout moved horizontally at t=${layout.atY}ms`).toBeLessThan(
-      MOVE_BUDGET,
-    );
-  });
-});
-
-// ============================================================
-// Widget placeholder reservation
-// ============================================================
-
-test.describe('widget placeholders reserve their space', () => {
-  const GROWTH_BUDGET = 400; // px
-
-  test('classic /projects/bqst article barely grows', async ({ page }) => {
-    await instrument(page, TRACKED, SETTLE_MS, true);
-    await loadAndSettle(page, '/projects/bqst');
-    const r = (await readRects(page))['#detailContent'];
-    expect(r.dh, `#detailContent grew ${Math.round(r.dh)}px at t=${r.atH}ms`).toBeLessThan(
-      GROWTH_BUDGET,
-    );
-  });
-
-  test('transit /transit/projects/bqst article barely grows', async ({ page }) => {
-    await instrument(page, TRACKED, SETTLE_MS, true);
-    await loadAndSettle(page, '/transit/projects/bqst');
+for (const path of ['/projects/bqst', '/transit/projects/bqst']) {
+  test(`article reserves widget space on ${path}`, async ({ page }) => {
+    await instrument(page, ['.article'], SETTLE_MS, true);
+    await loadAndSettle(page, path);
     const r = (await readRects(page))['.article'];
-    expect(r.dh, `.article grew ${Math.round(r.dh)}px at t=${r.atH}ms`).toBeLessThan(GROWTH_BUDGET);
+    expect(r, 'article was sampled').toBeTruthy();
+    expect(r.dh, `article grew ${r.dh}px at ${r.atH}ms`).toBeLessThan(50);
   });
-});
+}
 
-// ============================================================
-// Client-side navigation must stay clean (it already is — don't regress)
-// ============================================================
-
-// ============================================================
-// The sidebar must not change SHADE during a view transition either
-// ============================================================
-
-/**
- * The bar is z-index 1000 and .noise-overlay is 9999, so the film normally
- * lies on top of it. The sidebar's own view-transition group paints above the
- * root group, so unless the overlay is named too it ends up UNDER the bar for
- * the length of every navigation — the bar visibly flattens to its raw
- * #0f0f23 and brightens back when the transition ends. Slow the transition
- * right down and sample three solid strips of the bar; nothing may move by
- * more than a rounding step.
- */
-test('sidebar holds its colour through a view transition', async ({ browser }) => {
-  const ctx = await browser.newContext({
-    viewport: { width: 1280, height: 820 },
-    colorScheme: 'dark',
-  });
-  // The slow-down has to survive Astro's same-document swap, which rewrites
-  // <head> — re-append it on every router lifecycle event.
-  await ctx.addInitScript(() => {
-    const add = () => {
-      if (document.getElementById('__vtslow')) return;
-      const s = document.createElement('style');
-      s.id = '__vtslow';
-      s.textContent = `::view-transition-group(*), ::view-transition-old(*),
-        ::view-transition-new(*) { animation-duration: 3s !important; }`;
-      document.head.appendChild(s);
-    };
-    add();
-    document.addEventListener('DOMContentLoaded', add);
-    for (const ev of ['astro:before-swap', 'astro:after-swap', 'astro:page-load']) {
-      document.addEventListener(ev, add);
-    }
-  });
-
-  const page = await ctx.newPage();
-  const decoder = await ctx.newPage();
-  await decoder.goto('about:blank');
-  const mean = async (clip: { x: number; y: number; width: number; height: number }) => {
-    const buf = await page.screenshot({ clip });
-    return decoder.evaluate(async (b64: string) => {
-      const res = await fetch('data:image/png;base64,' + b64);
-      const bmp = await createImageBitmap(await res.blob());
-      const c = new OffscreenCanvas(bmp.width, bmp.height);
-      const g = c.getContext('2d')!;
-      g.drawImage(bmp, 0, 0);
-      const d = g.getImageData(0, 0, bmp.width, bmp.height).data;
-      let r = 0;
-      let gg = 0;
-      let b = 0;
-      for (let i = 0; i < d.length; i += 4) {
-        r += d[i];
-        gg += d[i + 1];
-        b += d[i + 2];
-      }
-      const n = d.length / 4;
-      return [Math.round(r / n), Math.round(gg / n), Math.round(b / n)];
-    }, buf.toString('base64'));
-  };
-
-  // Solid bar only — the 7rem top padding, the gap below the nav list, and the
-  // bottom. The active nav link legitimately moves between routes.
-  const CLIPS = [
-    { x: 40, y: 20, width: 180, height: 60 },
-    { x: 40, y: 560, width: 180, height: 80 },
-    { x: 40, y: 730, width: 180, height: 70 },
-  ];
-
-  await page.goto('/projects', { waitUntil: 'load' });
-  await page.waitForTimeout(1800);
-  const base: number[][] = [];
-  for (const clip of CLIPS) base.push(await mean(clip));
-
-  await page.click('a[href="/music"]');
-  let worst = 0;
-  let worstAt = 0;
-  const t0 = Date.now();
-  for (let i = 0; i < 20; i++) {
-    for (let c = 0; c < CLIPS.length; c++) {
-      const now = await mean(CLIPS[c]);
-      const d = Math.max(...now.map((v, j) => Math.abs(v - base[c][j])));
-      if (d > worst) {
-        worst = d;
-        worstAt = Date.now() - t0;
-      }
-    }
-    await page.waitForTimeout(40);
-  }
-  await ctx.close();
-  expect(worst, `sidebar shade moved ${worst}/255 mid-transition (t=${worstAt}ms)`).toBeLessThanOrEqual(1);
-});
-
-test('client-side navigation stays shift-free', async ({ page }) => {
+test('classic client-side article navigation stays shift-free', async ({ page }) => {
   await instrument(page, TRACKED, 1200);
-  await page.goto('/projects', { waitUntil: 'load' });
-  await page.waitForTimeout(1400);
-  await page.evaluate(() => {
-    window.__cls = 0;
-    window.__shifts = [];
-  });
-  await page.click('a[href="/projects/bqst"], a[href="/projects/bqst/"]');
-  await page.waitForURL(/\/projects\/bqst\/?$/);
+  await page.goto('/projects');
+  await page.waitForFunction(() => window.__sampleDone);
+  await page.evaluate(() => { window.__cls = 0; window.__shifts = []; });
+  await page.locator('.swiss-card[href="/projects/bqst"]').click();
+  await expect(page).toHaveURL(/\/projects\/bqst\/?$/);
   await page.waitForTimeout(2000);
-  const cls = await readCls(page);
-  expect(cls, `shifts during client-side nav:\n${fmt(await readShifts(page))}`).toBeLessThan(0.02);
+  expect(await readCls(page), fmt(await readShifts(page))).toBeLessThan(0.02);
 });

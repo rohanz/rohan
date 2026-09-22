@@ -55,7 +55,14 @@ html.theme-swiss .sw-ring-track { fill: none; stroke: var(--hair); stroke-width:
 /* pathLength=100 on the circle makes dasharray/offset percentages of the circumference;
    no vector-effect here (non-scaling-stroke would measure the dash in screen px). */
 html.theme-swiss .sw-ring-fill { fill: none; stroke: var(--ink); stroke-width: 2; stroke-linecap: butt; stroke-dasharray: 100; stroke-dashoffset: 100; }
-@media (prefers-reduced-motion: reduce) { html.theme-swiss .sw-testimonial-ring { display: none; } }
+/* Reduced motion: nothing rotates, so every quote is simply laid out in turn. */
+@media (prefers-reduced-motion: reduce) {
+  html.theme-swiss .sw-testimonial-ring { display: none; }
+  html.theme-swiss .sw-about-quotes { display: block; }
+  /* [hidden] is server-rendered on every quote but the first; laying them all out from first paint avoids a shift when the script wakes. */
+  html.theme-swiss .sw-quote, html.theme-swiss .sw-quote[aria-hidden="true"], html.theme-swiss .sw-quote[hidden] { display: block; opacity: 1; visibility: visible; pointer-events: auto; }
+  html.theme-swiss .sw-quote + .sw-quote { margin-top: 1.25rem; }
+}
 
 
 /* Bio links: one row of four boxes flush with the cell edges. */
@@ -77,10 +84,6 @@ html.theme-swiss .sw-about-bio h1 { font-size: clamp(1.5rem, 2.1vw, 2.1rem); }
   html.theme-swiss .sw-about-photo img { object-position: center 62%; }
 }
 
-html.theme-swiss .sw-testimonial-controls button { min-width: 2.75rem; min-height: 2.75rem; padding: .25rem; border: 0; background: transparent; color: var(--ink); font: inherit; font-size: .75rem; cursor: pointer; }
-html.theme-swiss .sw-testimonial-controls button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
-html.theme-swiss .sw-testimonial-controls button:disabled { cursor: default; }
-html.theme-swiss .sw-testimonial-status { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 @media (hover: none), (pointer: coarse) {
   html.theme-swiss .sw-about-caption a,
   html.theme-swiss .sw-about-links.sw-rail-socials a { min-height: 2.75rem; }

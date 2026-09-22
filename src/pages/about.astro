@@ -1,8 +1,59 @@
 ---
-import DefaultLayout from '../layouts/DefaultLayout.astro';
-import DefaultAbout from '../components/DefaultAbout.astro';
+import '../styles/swiss-about.css';
+import SwissLayout from '../layouts/SwissLayout.astro';
+import { BIO_INTRO, BIO_WORK, BIO_MUSIC, TAGLINE } from '../data/bio';
 import { ABOUT_DESCRIPTION } from '../data/page-meta';
+import { RESUME_FILENAME, RESUME_LABEL, RESUME_PATH } from '../data/resume';
+import { SOCIALS } from '../data/socials';
+import { STATS } from '../data/stats';
+import { TECH_STACK } from '../data/tech-stack';
+import { TESTIMONIALS } from '../data/testimonials';
 ---
-<DefaultLayout title="about - rohan.jk" description={ABOUT_DESCRIPTION} section="about">
-  <section id="about" class="section active about-pending"><DefaultAbout /></section>
-</DefaultLayout>
+<SwissLayout title="about — rohan.jk" description={ABOUT_DESCRIPTION} section="about" hideFooter>
+  <section class="sw-about" aria-label="About Rohan">
+    <div class="sw-about-rail">
+      <figure class="sw-about-photo">
+        <img src="/assets/images/profile.webp" alt="Rohan outdoors" width="1000" height="1334" loading="eager" decoding="async" />
+      </figure>
+      <div class="sw-about-caption">
+        <p class="sw-label">{TAGLINE}</p>
+        <a class="sw-label sw-link-ext" href={RESUME_PATH} download={RESUME_FILENAME}>{RESUME_LABEL} <span class="sw-arrow" aria-hidden="true">↗</span></a>
+      </div>
+    </div>
+    <div class="sw-about-facts">
+      <section class="sw-about-cell sw-about-bio" aria-labelledby="sw-bio-heading">
+        <p class="sw-label" id="sw-bio-heading">bio</p>
+        <h1 class="sw-display sw-display-md">{BIO_INTRO}</h1>
+        <div class="sw-about-body">
+          <p>{BIO_WORK}</p>
+          <p>{BIO_MUSIC}</p>
+        </div>
+        <div class="sw-about-links sw-rail-socials">
+          {SOCIALS.map((s) => <a class="sw-label sw-link-ext" href={s.href} target="_blank" rel="noopener noreferrer">{s.label.toLowerCase()} <span class="sw-arrow" aria-hidden="true">↗</span></a>)}
+        </div>
+      </section>
+      <section class="sw-about-cell" aria-labelledby="sw-stats-heading">
+        <h2 class="sw-label" id="sw-stats-heading">stats</h2>
+        <div class="sw-about-stats">
+          {STATS.map((s) => <div class="sw-stat"><span class="sw-display sw-display-md">{s.value}</span><span class="sw-label">{s.label}</span></div>)}
+        </div>
+      </section>
+      <section class="sw-about-cell" aria-labelledby="sw-tech-heading">
+        <h2 class="sw-label" id="sw-tech-heading">tech stack</h2>
+        <p class="sw-tech-list">{TECH_STACK.map((t) => t.name).join(' · ')}</p>
+      </section>
+      <section class="sw-about-cell sw-about-testimonials" data-testimonials aria-labelledby="sw-testimonials-heading" aria-roledescription="carousel">
+        <h2 class="sw-label" id="sw-testimonials-heading">testimonies</h2>
+        <div class="sw-about-quotes" id="sw-testimonial-quotes">
+          {TESTIMONIALS.map((t, i) => <blockquote class="sw-quote" data-testimonial hidden={i !== 0} aria-hidden={i !== 0 ? 'true' : 'false'}><p>“{t.quote}”</p><footer class="sw-label">{t.author}</footer></blockquote>)}
+        </div>
+        <div class="sw-testimonial-controls" data-testimonial-controls hidden>
+          <svg class="sw-testimonial-ring" viewBox="0 0 36 36" aria-hidden="true" data-testimonial-ring><circle class="sw-ring-track" cx="18" cy="18" r="16"/><circle class="sw-ring-fill" cx="18" cy="18" r="16" pathLength="100"/></svg>
+        </div>
+      </section>
+    </div>
+  </section>
+  <script>
+    import '../scripts/swiss/testimonials.ts';
+  </script>
+</SwissLayout>

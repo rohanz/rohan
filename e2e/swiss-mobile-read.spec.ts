@@ -7,7 +7,7 @@ async function checkWidth(page: Page) {
 for (const viewport of [{ width: 390, height: 844 }, { width: 375, height: 667 }]) {
   test.describe(`Swiss mobile reading ${viewport.width}`, () => {
     test.use({ viewport, isMobile: true, hasTouch: true });
-    for (const route of ['/swiss/about', '/swiss/projects/bqst', '/swiss/projects/quantlab-agentic']) {
+    for (const route of ['/about', '/projects/bqst', '/projects/quantlab-agentic']) {
       test(`${route} renders and supports touch reading`, async ({ page }) => {
         const errors: string[] = [];
         page.on('pageerror', (error) => errors.push(error.message));
@@ -15,7 +15,7 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 375, height: 667 }
         expect((await page.goto(route))?.ok()).toBe(true);
         await expect(page.locator('main h1')).toBeVisible();
         await checkWidth(page);
-        if (route === '/swiss/about') {
+        if (route === '/about') {
           const photo = await page.locator('.sw-about-photo').boundingBox();
           const caption = await page.locator('.sw-about-caption').boundingBox();
           expect(photo!.height).toBeLessThanOrEqual(viewport.height * .55 + 1);
@@ -68,12 +68,12 @@ for (const phone of [
     test('targets measure at least 44px and explanatory copy at least 16px', async ({ page }, testInfo) => {
       const measurements: Record<string, unknown> = {};
       for (const [route, selector, copy] of [
-        ['/swiss/music', '.sw-wordmark, .sw-track-links a', ''],
-        ['/swiss/projects', '.sw-wordmark', '.swiss-card-summary'],
-        ['/swiss/projects/bqst', '.sw-article-head-title > a, .sw-article-all, .bqst-audio-toggle button', '.bqst-lab-meta'],
-        ['/swiss/projects/quantlab-agentic', '.qla-btn', '.qla2-description'],
-        ['/swiss/projects/quantlab-analyst', '.qla-roster-select', '.qla-roster-desc, .qla-memo'],
-        ['/swiss/projects/live-chord-monitor', '.lcm-key', '.lcm-hint'],
+        ['/music', '.sw-wordmark, .sw-track-links a', ''],
+        ['/projects', '.sw-wordmark', '.swiss-card-summary'],
+        ['/projects/bqst', '.sw-article-head-title > a, .sw-article-all, .bqst-audio-toggle button', '.bqst-lab-meta'],
+        ['/projects/quantlab-agentic', '.qla-btn', '.qla2-description'],
+        ['/projects/quantlab-analyst', '.qla-roster-select', '.qla-roster-desc, .qla-memo'],
+        ['/projects/live-chord-monitor', '.lcm-key', '.lcm-hint'],
       ]) {
         await page.goto(route);
         await expect(page.locator(selector).first()).toBeVisible();

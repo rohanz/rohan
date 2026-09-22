@@ -19,7 +19,7 @@ export async function GET() {
     // the visitor-facing bio in src/data/bio.ts so the two stay in step.
     ...LLMS_SUMMARY_LINES.map((line) => `> ${line}`),
     '',
-    'The site has three visual themes serving the same content: classic (the',
+    'The site has three visual themes serving the same content: classic (Swiss design, the',
     'default, fully server-rendered — canonical for all content), transit (a',
     'metro-map theme under /transit/), and blueprint (a 3D drafting-table',
     'theme under /blueprint/, canvas-rendered). For parsing, use the classic',

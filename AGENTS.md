@@ -13,26 +13,25 @@ Before ANY work: `git fetch origin && git rebase origin/astro-site` (or branch
 from it). A stale local checkout has caused "old bugs reappeared" confusion
 before — always confirm you're on the origin tip.
 
-## Site structure — four themes, one domain
+## Site structure — three themes, one domain
 
-- **classic** (default) — Astro pages at `/`, `/music`, `/projects[/<slug>]`,
-  `/about`. Layout: `src/layouts/DefaultLayout.astro`.
+- **classic** (default, Swiss design) — Astro pages at `/`, `/music`,
+  `/projects[/<slug>]`, `/about`. Layout: `src/layouts/SwissLayout.astro`,
+  styles: `src/styles/swiss*.css`. Light typographic/editorial design, including
+  phones. `/swatches` is an unlisted, noindex accent gallery. Legacy `/swiss/*`
+  URLs redirect to their root equivalents via `astro.config.mjs`.
 - **transit** — Astro pages under `/transit/*` (`src/pages/transit/`,
   `MapApp`/`StationBoard` components).
 - **blueprint** — a self-contained three.js Vite SPA in `themes/blueprint/`,
   built separately and served under `/blueprint/*`. Desktop-only by design
   (as is transit); classic serves mobile.
-- **swiss** — Astro pages under `/swiss/*` (`src/pages/swiss/`,
-  `src/layouts/SwissLayout.astro`, `src/styles/swiss*.css`). Light
-  typographic/editorial theme; works on phones (no redirect). See the
-  "Swiss theme playbook" section below before touching it.
 
 Theme switching is the theme-paths convention (`src/lib/theme-paths.ts`,
-pref key `site:themePref` via `src/lib/theme-switch.ts`). Classic sidebar and
-transit headers carry switch links; blueprint's top-right dropdown and the
-swiss footer link back.
+pref key `site:themePref` via `src/lib/theme-switch.ts`). Classic rails/footer
+and transit headers carry switch links; blueprint's
+top-right dropdown links back. The root theme preference is `default`.
 Theme hops are full navigations with a cross-document view-transition fade
-(`@view-transition` rules in `src/styles/default.css`, `global.css`, and
+(`@view-transition` rules in `src/styles/swiss.css`, `src/styles/global.css`, and
 `themes/blueprint/index.html`). Blueprint links carry `data-astro-reload`
 (force real navigation) and `data-astro-prefetch="false"` (its deep URLs are
 SPA routes, not files — prefetching them 404s).
@@ -92,7 +91,7 @@ restores the URL. Keep that pair intact.
 - `npm test` — vitest (includes theme-paths blueprint cases).
 - `npm run test:e2e` — Playwright (theme-switch specs assert BOTH pills:
   classic+blueprint in transit headers, transit+blueprint in the classic
-  sidebar). Extend these when touching theme controls.
+  rails/footer). Extend these when touching theme controls.
 
 ## Going live (the whole procedure)
 
@@ -176,7 +175,8 @@ box()/wallFraming() duplication across scene files.
 
 ## Swiss theme playbook
 
-Read this before adding or changing anything under `/swiss`.
+Read this before changing classic root pages or the Swiss design components.
+The `swiss` source names are retained; there is no separate Swiss theme.
 
 **Grammar.** Every page is a split: a rail (title, count, filters or
 portrait) on the left in the darker `--tint` (currently `--paper-2`), and a
@@ -221,7 +221,7 @@ Canvases are sized by `sizeCanvasWithDpr`, which pins the CSS box to whole
 pixels so text stays crisp.
 
 **Accent.** `src/lib/swiss/accents.ts` (`DEFAULT_ACCENT`; 44 candidates
-with contrast at `/swiss/swatches`, unlisted + noindex). `tintOf()` derives
+with contrast at `/swatches`, unlisted + noindex). `tintOf()` derives
 a wash if fields should ever carry colour again (`--tint` in `swiss.css`).
 
 **Verify.** `npx astro check`, `npm test`, `npx playwright test

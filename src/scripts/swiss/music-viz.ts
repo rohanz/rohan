@@ -18,7 +18,10 @@ function cancelOutro(row: HTMLElement) {
 function resize(row: HTMLElement) {
   const next: Surface[] = [];
   row.querySelectorAll<HTMLCanvasElement>('canvas[data-viz]').forEach((canvas) => {
-    const w = canvas.clientWidth, h = canvas.clientHeight;
+    // Measure the cell: sizeCanvasWithDpr pins the canvas' own CSS box, so
+    // reading the canvas back would never see the cell grow or shrink.
+    const cell = canvas.parentElement ?? canvas;
+    const w = cell.clientWidth, h = cell.clientHeight;
     if (!w || !h) return;
     next.push({ canvas, ctx: sizeCanvasWithDpr(canvas, w, h, deviceDpr()), w, h });
   });

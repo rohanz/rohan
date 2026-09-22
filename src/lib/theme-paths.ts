@@ -22,11 +22,6 @@ export function blueprintPathFor(pathname: string): string {
   return path === '/' ? '/blueprint' : `/blueprint${path}`;
 }
 
-export function swissPathFor(pathname: string): string {
-  const path = stripTheme(pathname);
-  return path === '/' ? '/swiss' : `/swiss${path}`;
-}
-
 // Direct SPA entry for the blueprint theme: deep blueprint URLs are not real
 // files, so a plain link detours through the 404 page (a visible flash mid
 // theme-switch). Linking the SPA entry with the ?p payload keeps the switch a

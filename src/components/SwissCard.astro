@@ -7,7 +7,7 @@ const { slug, title, summary, technologies } = Astro.props;
 const Drawing = drawingFor(slug);
 const word = cardTextFor(slug);
 ---
-<a class="swiss-card" href={`/swiss/projects/${slug}`} data-reveal="block" data-techs={technologies.join(',')}>
+<a class="swiss-card" href={`/projects/${slug}`} data-reveal="block" data-techs={technologies.join(',')}>
   <!-- The anchor is the static hit area; only .swiss-card-inner transforms, so
        the tilt can never move the card out from under the pointer. -->
   <div class="swiss-card-inner">

@@ -1,5 +1,5 @@
 ---
-import { blueprintEntryFor, defaultPathFor, swissPathFor } from '../lib/theme-paths';
+import { blueprintEntryFor, defaultPathFor } from '../lib/theme-paths';
 
 const classicHref = defaultPathFor(Astro.url.pathname);
 const blueprintHref = blueprintEntryFor(Astro.url.pathname);
@@ -18,4 +18,3 @@ const blueprintHref = blueprintEntryFor(Astro.url.pathname);
   data-astro-prefetch="false"
   data-ride-ignore
 >Blueprint Mode</a>
-<a class="swiss-theme-switch sign-pill" href={swissPathFor(Astro.url.pathname)} data-theme-pref="swiss" data-ride-ignore>Swiss Mode</a>

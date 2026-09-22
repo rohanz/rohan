@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { blueprintEntryFor, blueprintPathFor, defaultPathFor, swissPathFor, transitPathFor } from './theme-paths';
+import { blueprintEntryFor, blueprintPathFor, defaultPathFor, transitPathFor } from './theme-paths';
 
 describe('theme route mapping', () => {
   it.each([
@@ -46,18 +46,7 @@ describe('theme route mapping', () => {
   });
 });
 
-describe('swiss route mapping', () => {
-  it.each([
-    ['/', '/swiss'],
-    ['/music', '/swiss/music'],
-    ['/projects/careersphere', '/swiss/projects/careersphere'],
-    ['/transit/about/', '/swiss/about'],
-    ['/blueprint/projects', '/swiss/projects'],
-    ['/swiss/projects/bqst', '/swiss/projects/bqst'],
-  ])('maps %s to swiss %s', (from, to) => {
-    expect(swissPathFor(from)).toBe(to);
-  });
-
+describe('legacy Swiss route normalization', () => {
   it.each([
     ['/swiss', '/'],
     ['/swiss/projects/careersphere', '/projects/careersphere'],

@@ -1,11 +1,12 @@
+import { readdirSync, readFileSync } from 'node:fs';
 import { test, expect } from '@playwright/test';
 import { ACCENTS } from '../src/lib/swiss/accents';
 
 const routes = [
-  '/swiss', '/swiss/projects', '/swiss/music', '/swiss/about', '/swiss/swatches',
-  '/swiss/projects/bqst', '/swiss/projects/quantlab-systems',
-  '/swiss/projects/quantlab-agentic', '/swiss/projects/quantlab-analyst',
-  '/swiss/projects/quantlab-research', '/swiss/projects/careersphere',
+  '/', '/projects', '/music', '/about', '/swatches',
+  '/projects/bqst', '/projects/quantlab-systems',
+  '/projects/quantlab-agentic', '/projects/quantlab-analyst',
+  '/projects/quantlab-research', '/projects/careersphere',
 ];
 
 for (const route of routes) {
@@ -16,7 +17,7 @@ for (const route of routes) {
     const response = await page.goto(route);
     expect(response?.ok()).toBe(true);
     await expect(page.locator('html')).toHaveClass(/theme-swiss/);
-    if (route === '/swiss') {
+    if (route === '/') {
       await expect(page.locator('.sw-nav')).toBeAttached();
       await expect(page.locator('.sw-nav')).toHaveCSS('opacity', '0');
     } else {
@@ -38,44 +39,44 @@ for (const route of routes) {
   });
 }
 
-test('projects grid matches listed classic projects and cards tilt on hover', async ({ page }) => {
+test('classic cards match listed content and tilt on hover', async ({ page }) => {
+  const listed = readdirSync('src/content/projects').filter(name => name.endsWith('.md'))
+    .filter(name => !/^unlisted:\s*true\s*$/m.test(readFileSync(`src/content/projects/${name}`, 'utf8')))
+    .map(name => `/projects/${name.slice(0, -3)}`).sort();
   await page.goto('/projects');
-  const listed = await page.locator('#projectsGrid .project-card:not([data-unlisted])').evaluateAll((links) =>
-    [...new Set(links.map((link) => new URL((link as HTMLAnchorElement).href).pathname.replace(/\/$/, '')))].sort());
-  expect(listed.length).toBeGreaterThan(5);
-  await page.goto('/swiss/projects');
   const cards = page.locator('.swiss-card');
-  const targets = await cards.evaluateAll((links) => links.map((link) =>
-    new URL((link as HTMLAnchorElement).href).pathname.replace(/^\/swiss/, '').replace(/\/$/, '')).sort());
+  const targets = await cards.evaluateAll(links => links.map(link => new URL((link as HTMLAnchorElement).href).pathname).sort());
   expect(targets).toEqual(listed);
   const first = cards.first();
   await expect(first).toHaveClass(/is-in/);
   await first.hover({ position: { x: 20, y: 20 } });
   await expect(first).toHaveClass(/is-hover/);
-  await expect.poll(() => first.evaluate((el) => parseFloat(getComputedStyle(el).getPropertyValue('--ry')))).not.toBe(0);
+  await expect.poll(() => first.evaluate(el => parseFloat(getComputedStyle(el).getPropertyValue('--ry')))).not.toBe(0);
   await page.mouse.move(0, 0);
   await expect(first).not.toHaveClass(/is-hover/);
 });
 
-test('theme links preserve the article and classic round-trips', async ({ page }) => {
-  await page.goto('/swiss/projects/bqst');
-  const themes = page.getByRole('navigation', { name: 'Site themes' });
-  await expect(themes.getByRole('link', { name: 'classic', exact: true })).toHaveAttribute('href', '/projects/bqst');
+test('classic theme links preserve the article through transit', async ({ page }) => {
+  await page.goto('/projects/bqst');
+  const themes = page.locator('.sw-footer').getByRole('navigation', { name: 'Site themes' });
+  await expect(themes.locator('[aria-current="true"]')).toHaveText('classic');
+  await expect(themes.getByRole('link')).toHaveCount(2);
   await expect(themes.getByRole('link', { name: 'transit', exact: true })).toHaveAttribute('href', '/transit/projects/bqst');
   await expect(themes.getByRole('link', { name: 'blueprint', exact: true })).toHaveAttribute('href', '/blueprint/?p=%2Fblueprint%2Fprojects%2Fbqst');
-  await themes.getByRole('link', { name: 'classic', exact: true }).click();
+  await themes.getByRole('link', { name: 'transit', exact: true }).click();
+  await expect(page).toHaveURL(/\/transit\/projects\/bqst\/?$/);
+  await page.getByRole('link', { name: 'Classic Mode', exact: true }).click();
   await expect(page).toHaveURL(/\/projects\/bqst\/?$/);
-  await page.getByRole('link', { name: 'swiss mode', exact: true }).click();
-  await expect(page).toHaveURL(/\/swiss\/projects\/bqst\/?$/);
-  expect(await page.evaluate(() => localStorage.getItem('site:themePref'))).toBe('swiss');
+  await expect(page.locator('html')).toHaveClass(/theme-swiss/);
+  expect(await page.evaluate(() => localStorage.getItem('site:themePref'))).toBe('default');
 });
 
 test('swatches show every accent with an isolated sample and noindex metadata', async ({ page }) => {
-  await page.goto('/swiss/swatches');
+  await page.goto('/swatches');
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex,nofollow');
   await expect(page.locator('.sw-swatch')).toHaveCount(ACCENTS.length);
-  const themes = page.getByRole('navigation', { name: 'Site themes' });
-  await expect(themes.getByRole('link', { name: 'classic', exact: true })).toHaveAttribute('href', '/');
+  const themes = page.locator('.sw-footer').getByRole('navigation', { name: 'Site themes' });
+  await expect(themes.locator('[aria-current="true"]')).toHaveText('classic');
   await expect(themes.getByRole('link', { name: 'transit', exact: true })).toHaveAttribute('href', '/transit');
   await expect(themes.getByRole('link', { name: 'blueprint', exact: true })).toHaveAttribute('href', '/blueprint/?p=%2Fblueprint');
   for (const accent of ACCENTS) {
@@ -85,9 +86,9 @@ test('swatches show every accent with an isolated sample and noindex metadata', 
     await expect(swatch.locator('.swiss-card-art svg')).toHaveCount(1);
     expect(await swatch.locator('.swiss-card').evaluate((el) => getComputedStyle(el).getPropertyValue('--accent').trim())).toBe(accent.hex);
   }
-  await page.goto('/swiss');
+  await page.goto('/');
   await expect(page.locator('meta[name="robots"]')).toHaveCount(0);
-  await expect(page.locator('a[href="/swiss/swatches"]')).toHaveCount(0);
+  await expect(page.locator('a[href="/swatches"]')).toHaveCount(0);
 });
 
 test('swiss stacks at phone width without horizontal scroll', async ({ page }) => {
@@ -102,7 +103,7 @@ test('swiss stacks at phone width without horizontal scroll', async ({ page }) =
 
 test('reduced motion leaves swatch cards visible without pointer tilt', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.goto('/swiss/swatches');
+  await page.goto('/swatches');
   const card = page.locator('.swiss-card').first();
   await card.hover({ position: { x: 20, y: 20 } });
   await expect(card).not.toHaveClass(/is-hover/);
@@ -112,7 +113,7 @@ test('reduced motion leaves swatch cards visible without pointer tilt', async ({
 
 test('home uses native mandatory scroll snap on desktop and none under reduced motion', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
-  await page.goto('/swiss/');
+  await page.goto('/');
   await expect(page.locator('.sw-nav')).toHaveCSS('opacity', '0');
   expect(await page.evaluate(() => getComputedStyle(document.documentElement).scrollSnapType)).toMatch(/y mandatory/);
   expect(await page.locator('.sw-selected-work').evaluate((el) => getComputedStyle(el).scrollSnapAlign)).toMatch(/start/);
@@ -121,10 +122,10 @@ test('home uses native mandatory scroll snap on desktop and none under reduced m
   await page.waitForTimeout(600);
   await expect(page.locator('.sw-nav')).toHaveCSS('opacity', '1');
   await page.getByRole('navigation', { name: 'Primary' }).getByRole('link', { name: 'music', exact: true }).click();
-  await expect(page).toHaveURL(/\/swiss\/music\/?$/);
+  await expect(page).toHaveURL(/\/music\/?$/);
   await expect(page.locator('.sw-nav')).toHaveCSS('position', 'sticky');
   await expect(page.locator('.sw-nav')).toHaveCSS('opacity', '1');
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.goto('/swiss/');
+  await page.goto('/');
   expect(await page.evaluate(() => getComputedStyle(document.documentElement).scrollSnapType)).toBe('none');
 });

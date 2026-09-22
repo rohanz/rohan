@@ -18,10 +18,8 @@ html.theme-swiss .bqst-knob-stage { width: 138px; height: 138px; position: relat
 html.theme-swiss .bqst-knob-stage.is-dragging { cursor: grabbing; }
 html.theme-swiss .bqst-knob-stage:focus-visible:not(.pointer-grab) { outline: 2px solid var(--w-accent); outline-offset: 4px; border-radius: 50%; }
 html.theme-swiss .bqst-knob-ticks { position: absolute; inset: 0; pointer-events: none; }
-html.theme-swiss .bqst-knob-ticks::before {
-    content: ''; position: absolute; left: 50%; top: 50%; width: 138px; height: 138px;
-    border-radius: 999px; border: 1.2px solid rgba(0,0,0,0.28); transform: translate(-50%, -50%);
-  }
+/* No outer ring around the drive knob: the tick marks alone frame it. */
+html.theme-swiss .bqst-knob-ticks::before { display: none; }
 html.theme-swiss .bqst-knob-tick {
     --tick-angle: 0deg; position: absolute; left: 50%; top: 50%; width: 1.35px; height: 9px;
     border-radius: 999px; background: rgba(0,0,0,0.3); transform-origin: 50% 69px;
@@ -372,4 +370,20 @@ html.theme-swiss .qla-visual .qla-visual-body :is(
   html.theme-swiss .lcm-demo { overflow-x: auto; }
   html.theme-swiss .lcm-piano { width: max(100%, 36rem); max-width: none; touch-action: pan-x; }
   html.theme-swiss .lcm-key.black { width: 2.75rem; min-width: 44px; }
+}
+
+/* Reserve the desktop BQST figures before article-widgets fills their mounts.
+   Canvas heights are fixed; the header, legend and controls follow root type.
+   Mirror the rendered margins so initialization does not grow the article. */
+@media (min-width: 900px) {
+  html.theme-swiss .article :is(#bqst-eq-visual, #bqst-transfer-visual, #bqst-harmonics-visual, #bqst-oversampling-visual, #bqst-audio-demo):empty {
+    margin: 1.6rem 0 2rem;
+    min-height: calc(340px + 7rem);
+  }
+  html.theme-swiss .article #bqst-eq-visual:empty { min-height: calc(340px + 7.55rem); }
+  html.theme-swiss .article #bqst-audio-demo:empty { min-height: 13.65rem; }
+}
+html.theme-swiss .article #demo-player-placeholder:empty {
+  min-height: 7.5rem;
+  margin: 1rem 0 1.5rem;
 }

@@ -2,52 +2,34 @@ import { test, expect } from '@playwright/test';
 
 const active = '[data-testimonial][aria-hidden="false"]';
 
-test('testimonies support next, previous, persistent pause and manual announcements', async ({ page }) => {
+test('testimonies rotate on their own and pause under a fine pointer, with no visible controls', async ({ page }) => {
   await page.clock.install();
-  await page.goto('/swiss/about');
+  await page.goto('/about');
   const quotes = page.locator('[data-testimonial]');
-  const status = page.locator('[data-testimonial-status]');
-  await expect(page.getByRole('button', { name: 'Next testimony' })).toBeVisible();
-  await expect(status).toBeEmpty();
-  await page.getByRole('button', { name: 'Next testimony' }).click();
+  await expect(page.locator('.sw-testimonial-controls button')).toHaveCount(0);
+  await expect(quotes.first()).toHaveAttribute('aria-hidden', 'false');
+  await page.mouse.move(5, 5);
+  await page.clock.runFor(6500);
   await expect(quotes.nth(1)).toHaveAttribute('aria-hidden', 'false');
-  await expect(status).toContainText('Testimony 2 of');
-  await page.getByRole('button', { name: 'Previous testimony' }).click();
-  await expect(quotes.first()).toHaveAttribute('aria-hidden', 'false');
-  await page.getByRole('button', { name: 'Previous testimony' }).click();
-  await expect(quotes.last()).toHaveAttribute('aria-hidden', 'false');
-  await page.getByRole('button', { name: 'Pause automatic testimonies' }).click();
-  await page.locator('h1').click();
+  await expect(page.locator(active)).toHaveCount(1);
+  await page.locator('[data-testimonials]').hover();
   await page.clock.runFor(6500);
-  await expect(quotes.last()).toHaveAttribute('aria-hidden', 'false');
-  await page.getByRole('button', { name: 'Play automatic testimonies' }).click();
-  await page.locator('h1').click();
-  const announcement = await status.textContent();
-  await page.clock.runFor(6500);
-  await expect(quotes.first()).toHaveAttribute('aria-hidden', 'false');
-  await expect(status).toHaveText(announcement!);
-  await expect(page.locator('#sw-testimonial-quotes')).not.toHaveAttribute('aria-live');
+  await expect(quotes.nth(1)).toHaveAttribute('aria-hidden', 'false');
 });
 
-test('reduced motion keeps every testimony reachable without auto advance', async ({ page }) => {
+test('reduced motion lays every testimony out with nothing rotating', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.clock.install();
-  await page.goto('/swiss/about');
+  await page.goto('/about');
   const quotes = page.locator('[data-testimonial]');
-  await expect(page.locator('[data-testimonial-toggle]')).toBeDisabled();
   await page.clock.runFor(13000);
   await expect(quotes.first()).toHaveAttribute('aria-hidden', 'false');
-  for (let index = 1; index < await quotes.count(); index++) {
-    await page.getByRole('button', { name: 'Next testimony' }).click();
-    await expect(quotes.nth(index)).toHaveAttribute('aria-hidden', 'false');
-    await expect(page.locator(active)).toHaveCount(1);
-  }
-  await page.getByRole('button', { name: 'Previous testimony' }).click();
-  await expect(quotes.nth(await quotes.count() - 2)).toHaveAttribute('aria-hidden', 'false');
+  for (const quote of await quotes.all()) await expect(quote).toBeVisible();
+  expect(await page.locator('[data-testimonial-ring]').isVisible()).toBe(false);
 });
 
 test('about starts with h1 and keeps prose legible', async ({ page }) => {
-  await page.goto('/swiss/about');
+  await page.goto('/about');
   expect(await page.locator('main :is(h1,h2,h3)').evaluateAll((els) => els.map((el) => el.tagName))).toEqual(['H1', 'H2', 'H2', 'H2']);
   for (const selector of ['.sw-about-body', '.sw-tech-list']) {
     expect(await page.locator(selector).evaluate((el) => parseFloat(getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(16);
@@ -55,7 +37,7 @@ test('about starts with h1 and keeps prose legible', async ({ page }) => {
 });
 
 test('article lightbox stays open after Enter and Space and closes with Escape', async ({ page }) => {
-  await page.goto('/swiss/projects/bqst');
+  await page.goto('/projects/bqst');
   const opener = page.locator('.article-zoom').first();
   for (const key of ['Enter', 'Space']) {
     await opener.focus();
@@ -70,9 +52,8 @@ test('article lightbox stays open after Enter and Space and closes with Escape',
 test.describe('touch accessibility', () => {
   test.use({ viewport: { width: 375, height: 667 }, isMobile: true, hasTouch: true });
   test('about actions have 44px hit areas', async ({ page }) => {
-    await page.goto('/swiss/about');
-    await expect(page.locator('[data-testimonial-next]')).toBeVisible();
-    for (const action of await page.locator('.sw-about-caption a, .sw-about-links a, .sw-testimonial-controls button').all()) {
+    await page.goto('/about');
+    for (const action of await page.locator('.sw-about-caption a, .sw-about-links a').all()) {
       const box = await action.boundingBox();
       expect(box!.height).toBeGreaterThanOrEqual(44);
       expect(box!.width).toBeGreaterThanOrEqual(44);
@@ -80,7 +61,7 @@ test.describe('touch accessibility', () => {
   });
   test('reduced motion card art navigates on the first tap', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
-    await page.goto('/swiss/projects');
+    await page.goto('/projects');
     const card = page.locator('.swiss-card').nth(2);
     const href = await card.getAttribute('href');
     await card.locator('.swiss-card-art').tap();
@@ -89,7 +70,7 @@ test.describe('touch accessibility', () => {
 });
 
 test('shared audio analytics counts once per visit, including after returning', async ({ page }) => {
-  await page.goto('/swiss/music');
+  await page.goto('/music');
   const installCounter = () => page.evaluate(() => {
     const calls: unknown[] = [];
     Object.assign(window, { testCounts: calls, goatcounter: { count: (opts: unknown) => calls.push(opts) } });
@@ -103,9 +84,9 @@ test('shared audio analytics counts once per visit, including after returning', 
   await installCounter();
   await dispatchPlays();
   expect(await counts()).toBe(1);
-  await page.locator('.sw-nav-links a[href="/swiss/about"]').click();
-  await expect(page).toHaveURL(/\/swiss\/about\/?$/);
-  await page.locator('.sw-nav-links a[href="/swiss/music"]').click();
+  await page.locator('.sw-nav-links a[href="/about"]').click();
+  await expect(page).toHaveURL(/\/about\/?$/);
+  await page.locator('.sw-nav-links a[href="/music"]').click();
   await expect(page.locator('audio')).toHaveCount(1);
   await installCounter();
   await dispatchPlays();

@@ -2108,7 +2108,19 @@ function initWidgets() {
   initBqstAudioDemo();
   initLcmDemo();
   initThemePalette();
-  initDemoPlayer();
+  // Keep the article demo's audio download off the phone's initial load.
+  const demo = document.getElementById('demo-player-placeholder');
+  if (demo && window.matchMedia('(max-width: 768px)').matches && typeof IntersectionObserver !== 'undefined') {
+    const observer = new IntersectionObserver((entries) => {
+      if (!entries.some((entry) => entry.isIntersecting)) return;
+      observer.disconnect();
+      initDemoPlayer();
+    }, { rootMargin: '200px' });
+    observer.observe(demo);
+    cleanups.push(() => observer.disconnect());
+  } else {
+    initDemoPlayer();
+  }
   initQuantlabVisuals();
   initQuantlabFinVisuals();
   initQuantlabAgenticVisuals();

@@ -5,7 +5,7 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 375, height: 667 }
     test.use({ viewport, isMobile: true, hasTouch: true });
 
     test('single column, no filter chips, readable cards and no overflow', async ({ page }) => {
-      await page.goto('/swiss/projects');
+      await page.goto('/projects');
       const grid = page.locator('.swiss-grid');
       expect(await grid.evaluate((el) => getComputedStyle(el).gridTemplateColumns.split(' ').length)).toBe(1);
       // Phones drop the filter chips entirely; every card shows.
@@ -19,7 +19,7 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 375, height: 667 }
     });
 
     test('scroll plays drawings on paper without tilt, leaving resets them', async ({ page }) => {
-      await page.goto('/swiss/projects');
+      await page.goto('/projects');
       const card = page.locator('.swiss-card').nth(2);
       await card.scrollIntoViewIfNeeded();
       await expect(card).toHaveClass(/is-hover/);
@@ -31,14 +31,14 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 375, height: 667 }
     });
 
     test('inactive art first tap plays, second tap navigates', async ({ page }) => {
-      await page.goto('/swiss/projects');
+      await page.goto('/projects');
       const card = page.locator('.swiss-card').nth(2);
       // Expose only the top of the art, below the 60% autoplay threshold.
       await card.evaluate((el) => window.scrollTo(0, el.getBoundingClientRect().top + scrollY - innerHeight + 100));
       await expect(card).not.toHaveClass(/is-hover/);
       const box = await card.boundingBox();
       await page.touchscreen.tap(box!.x + box!.width / 2, box!.y + 40);
-      await expect(page).toHaveURL(/\/swiss\/projects\/?$/);
+      await expect(page).toHaveURL(/\/projects\/?$/);
       await expect(card).toHaveClass(/is-hover/);
       const href = await card.getAttribute('href');
       await page.touchscreen.tap(box!.x + box!.width / 2, box!.y + 40);
@@ -47,7 +47,7 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 375, height: 667 }
 
     test('reduced motion disables autoplay and text remains a direct link', async ({ page }) => {
       await page.emulateMedia({ reducedMotion: 'reduce' });
-      await page.goto('/swiss/projects');
+      await page.goto('/projects');
       const card = page.locator('.swiss-card').nth(2);
       await card.scrollIntoViewIfNeeded();
       await expect(card).not.toHaveClass(/is-hover/);
@@ -60,6 +60,6 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 375, height: 667 }
 
 test('tablet keeps two columns at 600px', async ({ page }) => {
   await page.setViewportSize({ width: 600, height: 900 });
-  await page.goto('/swiss/projects');
+  await page.goto('/projects');
   expect(await page.locator('.swiss-grid').evaluate((el) => getComputedStyle(el).gridTemplateColumns.split(' ').length)).toBe(2);
 });

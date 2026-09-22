@@ -1,21 +1,50 @@
 ---
-import DefaultLayout from '../layouts/DefaultLayout.astro';
-import DefaultHomeMark from '../components/DefaultHomeMark.astro';
+import SwissLayout from '../layouts/SwissLayout.astro';
+import { getCollection } from 'astro:content';
 import { HOME_DESCRIPTION } from '../data/page-meta';
+import { SOCIALS } from '../data/socials';
+const selected = (await getCollection('projects'))
+  .filter((p) => !p.data.unlisted)
+  .sort((a, b) => a.data.order - b.data.order)
+  .slice(0, 4);
 ---
-<DefaultLayout
-  title="rohan.jk - software & ai"
-  description={HOME_DESCRIPTION}
-  mainClass="homepage-active"
->
-  <section id="homepage" class="section homepage active">
-    <div class="homepage-content">
-      <DefaultHomeMark />
-      <div class="homepage-menu">
-        <a class="homepage-menu-item magnetic-target" href="/music" data-section="music">music</a>
-        <a class="homepage-menu-item magnetic-target" href="/projects" data-section="projects">projects</a>
-        <a class="homepage-menu-item magnetic-target" href="/about" data-section="about">about me</a>
+<SwissLayout title="rohan.jk — software & ai" description={HOME_DESCRIPTION} section="home">
+  <section class="sw-hero">
+    <div class="sw-hero-copy">
+      <p class="sw-label" data-reveal="block">computer engineering at ntu, singapore</p>
+      <h1 class="sw-display sw-display-xl" data-reveal="lines">rohan<br>kulshrestha</h1>
+      <p class="sw-body-lg" data-reveal="block" style="--i:2">i design and build end-to-end products and ai solutions, and make music for fun.</p>
+    </div>
+    <div class="sw-quads" data-reveal-group data-reveal-cols="2">
+      <a class="sw-quad sw-quad-primary" href="/projects" data-reveal="block"><span class="sw-quad-title">projects</span></a>
+      <a class="sw-quad" href="/music" data-reveal="block"><span class="sw-quad-title">music</span></a>
+      <a class="sw-quad" href="/about" data-reveal="block"><span class="sw-quad-title">about</span></a>
+      <div class="sw-quad sw-quad-contact" data-reveal="block" aria-label="contact">
+        {SOCIALS.map((s) => (
+          <a class="sw-mini" href={s.href} target="_blank" rel="noopener noreferrer">
+            <span class="sw-label">{s.label}</span>
+            <span class="sw-arrow" aria-hidden="true">↗</span>
+          </a>
+        ))}
       </div>
     </div>
   </section>
-</DefaultLayout>
+  <section class="sw-wrap sw-section sw-selected-work">
+    <div class="sw-section-head">
+      <h2 class="sw-display sw-display-md">selected work</h2>
+      <a class="sw-label sw-link" href="/projects">all projects</a>
+    </div>
+    <div class="sw-rows" data-reveal-group>
+      {selected.map((p) => (
+        <a class="sw-row" href={`/projects/${p.id}`} data-reveal="block">
+          <span class="sw-row-title">{p.data.title}</span>
+          <span class="sw-row-summary">{p.data.summary}</span>
+          <span class="sw-row-tags">{p.data.technologies.slice(0, 3).map((t) => <span class="sw-label">{t}</span>)}</span>
+        </a>
+      ))}
+    </div>
+  </section>
+  <script>
+    import '../scripts/swiss/home-snap.ts';
+  </script>
+</SwissLayout>

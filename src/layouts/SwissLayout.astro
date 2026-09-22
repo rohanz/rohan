@@ -3,7 +3,6 @@ import Analytics from '../components/Analytics.astro';
 import SwissThemeSwitch from '../components/SwissThemeSwitch.astro';
 import { ClientRouter } from 'astro:transitions';
 import { SOCIALS } from '../data/socials';
-import { defaultPathFor } from '../lib/theme-paths';
 import { DEFAULT_ACCENT } from '../lib/swiss/accents';
 import '../styles/swiss.css';
 
@@ -18,19 +17,22 @@ interface Props {
   hideFooter?: boolean;
 }
 const { title, description, section, ogImage, bodyClass = '', noindex = false, hideFooter = false } = Astro.props;
-const canonical = new URL(defaultPathFor(Astro.url.pathname), Astro.site).href;
+const canonical = new URL(Astro.url.pathname, Astro.site).href;
 const ogAbs = new URL(ogImage ?? '/assets/images/og.png', Astro.site).href;
 const isDefaultOg = ogImage === undefined;
 const personLd = JSON.stringify({
   '@context': 'https://schema.org', '@type': 'Person',
   name: 'Rohan Kulshrestha', alternateName: 'rohan.jk', url: Astro.site?.href,
+  description: 'Computer engineering student building end-to-end products with AI',
+  affiliation: { '@type': 'Organization', name: 'Nanyang Technological University' },
+  mainEntityOfPage: { '@type': 'WebPage', '@id': Astro.site?.href },
   jobTitle: 'Computer Engineering Student', sameAs: SOCIALS.map((s) => s.href),
 });
 const nav = [
-  { id: 'home', label: 'home', href: '/swiss' },
-  { id: 'projects', label: 'projects', href: '/swiss/projects' },
-  { id: 'music', label: 'music', href: '/swiss/music' },
-  { id: 'about', label: 'about', href: '/swiss/about' },
+  { id: 'home', label: 'home', href: '/' },
+  { id: 'projects', label: 'projects', href: '/projects' },
+  { id: 'music', label: 'music', href: '/music' },
+  { id: 'about', label: 'about', href: '/about' },
 ] as const;
 ---
 <html lang="en" class:list={['theme-swiss', { 'sw-home': section === 'home' }]} style={`--accent:${DEFAULT_ACCENT.hex}`}>
@@ -48,6 +50,7 @@ const nav = [
     <meta property="og:description" content={description} />
     <meta property="og:site_name" content="rohan.jk" />
     <meta property="og:image" content={ogAbs} />
+    <meta property="og:image:alt" content={title} />
     {isDefaultOg && <meta property="og:image:width" content="1200" />}
     {isDefaultOg && <meta property="og:image:height" content="630" />}
     <meta name="twitter:card" content="summary_large_image" />
@@ -72,7 +75,7 @@ const nav = [
     <a href="#sw-main" class="sr-only">Skip to content</a>
     <header class="sw-nav">
       <div class="sw-wrap sw-nav-inner">
-        <a class="sw-wordmark" href="/swiss" aria-label="rohan.jk — home">rohan.jk</a>
+        <a class="sw-wordmark" href="/" aria-label="rohan.jk — home">rohan.jk</a>
         <nav class="sw-nav-links" aria-label="Primary">
           {nav.map((n) => <a class="sw-link" href={n.href} aria-current={section === n.id ? 'page' : undefined}>{n.label}</a>)}
         </nav>
@@ -146,7 +149,7 @@ const nav = [
         window.addEventListener('scroll', update, { passive: true });
         phone.addEventListener('change', update);
         // 'home' while already on the home page: back to the hero (a same-URL link does nothing by itself).
-        const homeLinks = nav.querySelectorAll<HTMLAnchorElement>('a[href="/swiss"]');
+        const homeLinks = nav.querySelectorAll<HTMLAnchorElement>('a[href="/"]');
         const onHome = (e: MouseEvent) => {
           if (document.documentElement.classList.contains('sw-home')) {
             e.preventDefault();

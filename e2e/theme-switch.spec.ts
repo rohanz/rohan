@@ -1,11 +1,12 @@
-import { expect, test } from '@playwright/test';
+import { readFileSync } from 'node:fs';
+import { expect, test, devices } from '@playwright/test';
 
 const pref = (page: import('@playwright/test').Page) =>
   page.evaluate(() => localStorage.getItem('site:themePref'));
 
 test('default to transit preserves the current article path and stores preference', async ({ page }) => {
   await page.goto('/projects/careersphere');
-  const switchLink = page.getByRole('link', { name: 'transit mode' });
+  const switchLink = page.locator('.sw-footer [data-theme-pref="transit"]');
   await expect(switchLink).toHaveAttribute('href', '/transit/projects/careersphere');
   await switchLink.click();
   await expect(page).toHaveURL(/\/transit\/projects\/careersphere\/?$/);
@@ -36,72 +37,54 @@ test('transit detail header has both theme switches before the outer back contro
   await expect(actions.locator('a').nth(2)).toHaveAccessibleName('Blueprint Mode');
 });
 
-test('theme controls hold their responsive corner poses and transit focus treatment', async ({ page }) => {
-  await page.setViewportSize({ width: 1280, height: 820 });
-  await page.goto('/');
-  const defaultDesktop = await page.locator('.site-controls').boundingBox();
-  expect(defaultDesktop).not.toBeNull();
-  expect(1280 - (defaultDesktop!.x + defaultDesktop!.width)).toBeCloseTo(32, 0);
-  expect(defaultDesktop!.y).toBeCloseTo(20, 0);
-
-  await page.goto('/transit');
-  const transitSwitch = page.locator('.top-bar .transit-theme-switch');
-  // the blueprint pill now holds the corner; the classic pill sits one gap left
-  const blueprintSwitch = page.locator('.top-bar .blueprint-theme-switch');
-  const blueprintDesktop = await blueprintSwitch.boundingBox();
-  expect(blueprintDesktop).not.toBeNull();
-  expect(1280 - (blueprintDesktop!.x + blueprintDesktop!.width)).toBeCloseTo(25.6, 0);
-  const transitDesktop = await transitSwitch.boundingBox();
-  expect(transitDesktop).not.toBeNull();
-  expect(blueprintDesktop!.x - (transitDesktop!.x + transitDesktop!.width)).toBeGreaterThanOrEqual(8);
-  await transitSwitch.focus();
-  await expect(transitSwitch).toBeFocused();
-  expect(await transitSwitch.evaluate((el) => getComputedStyle(el).outlineColor)).toBe('rgb(255, 255, 255)');
-
-  await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto('/');
-  const defaultMobile = await page.locator('.site-controls').boundingBox();
-  expect(defaultMobile).not.toBeNull();
-  expect(390 - (defaultMobile!.x + defaultMobile!.width)).toBeCloseTo(12, 0);
-  expect(844 - (defaultMobile!.y + defaultMobile!.height)).toBeCloseTo(12, 0);
-});
-
 test('stored transit preference never auto-redirects a default entry', async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('site:themePref', 'transit'));
   await page.goto('/');
   await expect(page).toHaveURL(/\/$/);
-  await expect(page.locator('html')).toHaveClass(/theme-default/);
+  await expect(page.locator('html')).toHaveClass(/theme-swiss/);
 });
 
 test('default and transit pages publish the expected canonicals', async ({ page }) => {
   await page.goto('/projects/careersphere');
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
     'href',
-    'https://www.rohanjk.xyz/projects/careersphere/',
+    /^https:\/\/www\.rohanjk\.xyz\/projects\/careersphere\/?$/,
   );
 
   await page.goto('/transit/projects/careersphere');
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
     'href',
-    'https://www.rohanjk.xyz/projects/careersphere/',
+    /^https:\/\/www\.rohanjk\.xyz\/projects\/careersphere\/?$/,
   );
 });
 
-test('sitemap contains static and listed default routes only', async ({ request }) => {
-  const index = await request.get('/sitemap-index.xml');
-  expect(index.ok()).toBeTruthy();
-  const indexXml = await index.text();
-  const sitemapUrl = indexXml.match(/<loc>([^<]+)<\/loc>/)?.[1];
-  expect(sitemapUrl).toBeTruthy();
-
-  const sitemap = await request.get(new URL(sitemapUrl!).pathname);
-  expect(sitemap.ok()).toBeTruthy();
-  const xml = await sitemap.text();
-
+test('sitemap contains canonical routes only', async () => {
+  const xml = readFileSync('dist/sitemap-0.xml', 'utf8');
   for (const path of ['/', '/music/', '/projects/', '/about/', '/projects/careersphere/']) {
     expect(xml).toContain(`<loc>https://www.rohanjk.xyz${path}</loc>`);
   }
-  expect(xml).not.toContain('/transit');
-  expect(xml).not.toContain('/projects/quantlab-systems/');
+  for (const excluded of ['/swatches', '/swiss', '/transit', '/blueprint', '/projects/quantlab-systems/']) {
+    expect(xml).not.toContain(excluded);
+  }
   expect((xml.match(/<loc>/g) ?? []).length).toBe(14);
 });
+
+for (const theme of ['transit', 'blueprint']) {
+  test(`iPhone 13 ${theme} article entry lands on classic`, async ({ browser }) => {
+    const context = await browser.newContext({ ...devices['iPhone 13'], baseURL: process.env.PW_STATIC_BASE_URL ?? process.env.PW_BASE_URL ?? 'http://localhost:4340' });
+    const page = await context.newPage();
+    await page.goto(`/${theme}/projects/bqst`);
+    await expect(page).toHaveURL(/\/projects\/bqst\/?$/);
+    await expect(page.locator('html')).toHaveClass(/theme-swiss/);
+    await expect(page.locator('.sw-article-word')).toBeVisible();
+    await context.close();
+  });
+}
+
+for (const route of ['', '/projects', '/projects/bqst', '/music', '/about', '/swatches']) {
+  test(`legacy Swiss ${route || '/'} redirects to classic`, async ({ page }) => {
+    await page.goto(`/swiss${route}`);
+    await expect.poll(() => new URL(page.url()).pathname.replace(/\/$/, '') || '/').toBe(route || '/');
+    await expect(page.locator('html')).toHaveClass(/theme-swiss/);
+  });
+}

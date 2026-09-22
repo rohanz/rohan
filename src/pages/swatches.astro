@@ -1,9 +1,9 @@
 ---
-import SwissLayout from '../../layouts/SwissLayout.astro';
-import SwissCard from '../../components/SwissCard.astro';
-import { ACCENTS, DEFAULT_ACCENT, tintOf } from '../../lib/swiss/accents';
+import SwissLayout from '../layouts/SwissLayout.astro';
+import SwissCard from '../components/SwissCard.astro';
+import { ACCENTS, DEFAULT_ACCENT, tintOf } from '../lib/swiss/accents';
 import { getEntry } from 'astro:content';
-import '../../styles/swiss-swatches.css';
+import '../styles/swiss-swatches.css';
 // WCAG relative luminance: linearize sRGB before weighting channels.
 function luminance(hex: string): number {
   const channels = [1, 3, 5].map((offset) => {
@@ -21,7 +21,7 @@ function contrastRatio(hex: string): string {
 const sample = await getEntry('projects', 'bqst');
 if (!sample) throw new Error('The Swiss swatches sample project bqst is missing.');
 ---
-<SwissLayout title="swatches — rohan.jk" description="Accent candidates for the swiss theme." noindex>
+<SwissLayout title="swatches — rohan.jk" description="Accent candidates for the classic theme." noindex>
   <section class="sw-wrap sw-section">
     <div class="sw-section-head">
       <h1 class="sw-display sw-display-lg">accent swatches</h1>
@@ -38,7 +38,7 @@ if (!sample) throw new Error('The Swiss swatches sample project bqst is missing.
           <div class="sw-swatch-hero">
             <p class="sw-label">software, ai, music</p>
             <p class="sw-display sw-display-md">rohan<br />kulshrestha</p>
-            <a class="sw-link" href="/swiss/projects">projects</a>
+            <a class="sw-link" href="/projects">projects</a>
             <div class="sw-swatch-tint"><span class="sw-label">tint</span><span>surfaces carry this wash with ink on top</span><code>{tintOf(accent.hex)}</code></div>
           </div>
           <SwissCard slug={sample.id} title={sample.data.title} summary={sample.data.summary} technologies={sample.data.technologies} />
@@ -47,6 +47,6 @@ if (!sample) throw new Error('The Swiss swatches sample project bqst is missing.
     </div>
   </section>
   <script>
-    import '../../scripts/swiss/tilt.ts';
+    import '../scripts/swiss/tilt.ts';
   </script>
 </SwissLayout>

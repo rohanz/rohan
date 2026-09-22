@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
-const routes = ['/swiss/', '/swiss/projects', '/swiss/music', '/swiss/about'];
+const routes = ['/', '/projects', '/music', '/about'];
 const phones = [
   { name: 'iPhone 13', viewport: { width: 390, height: 844 }, deviceScaleFactor: 3 },
   { name: 'small phone', viewport: { width: 375, height: 667 }, deviceScaleFactor: 2 },
@@ -27,7 +27,7 @@ for (const phone of phones) {
       page.on('pageerror', (error) => errors.push(error.message));
       page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()); });
 
-      await page.goto('/swiss/');
+      await page.goto('/');
       await expect(page.locator('.sw-nav')).toBeVisible();
       await expect(page.locator('.sw-nav')).toHaveCSS('opacity', '1');
       // One screen: copy fills the upper part, the quads the rest; nothing to scroll.
@@ -40,7 +40,7 @@ for (const phone of phones) {
       await expect(page.locator('.sw-footer')).toBeHidden();
       expect(await page.evaluate(() => getComputedStyle(document.documentElement).scrollSnapType)).toBe('none');
       expect(await page.locator('.sw-hero-copy h1').evaluate((heading) => heading.scrollWidth <= heading.clientWidth)).toBe(true);
-      await expectNoHorizontalOverflow(page, '/swiss/');
+      await expectNoHorizontalOverflow(page, '/');
       await testInfo.attach(`swiss-home-${phone.viewport.width}`, {
         body: await page.screenshot({ fullPage: true }),
         contentType: 'image/png',
@@ -78,7 +78,7 @@ test.describe('compact fine-pointer navigation', () => {
   test.use({ viewport: { width: 540, height: 720 }, hasTouch: false, isMobile: false });
 
   test('keeps the 16px primary links in one tappable row when they fit', async ({ page }) => {
-    await page.goto('/swiss/');
+    await page.goto('/');
     const primary = page.getByRole('navigation', { name: 'Primary' });
     await expect(primary).toBeVisible();
     await expect(page.getByRole('button', { name: 'menu', exact: true })).toBeHidden();
@@ -88,7 +88,7 @@ test.describe('compact fine-pointer navigation', () => {
       await expect(link).toHaveCSS('font-size', '16px');
       expect((await link.boundingBox())?.height).toBeGreaterThanOrEqual(44);
     }
-    await expectNoHorizontalOverflow(page, '/swiss/ at 540px');
+    await expectNoHorizontalOverflow(page, '/ at 540px');
   });
 });
 
@@ -119,7 +119,7 @@ for (const viewport of [{ width: 844, height: 390 }, { width: 915, height: 412 }
 
 test('fine-pointer landscape retains desktop navigation', async ({ page }) => {
   await page.setViewportSize({ width: 915, height: 412 });
-  await page.goto('/swiss/projects');
+  await page.goto('/projects');
   await expect(page.locator('.sw-nav-links')).toBeVisible();
   await expect(page.locator('.sw-menu-toggle')).toBeHidden();
   await expect(page.locator('.sw-rail-links')).toBeVisible();

@@ -113,8 +113,9 @@ html.theme-swiss .article-stat-label, html.theme-swiss .article-caption { color:
 html.theme-swiss .bqst-asset-strip { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin: 1.5rem 0; }
 html.theme-swiss .bqst-asset-card { display: flex; flex-direction: column; align-items: center; gap: .6rem; padding: 1rem; border: 1px solid var(--hair); }
 html.theme-swiss .bqst-asset-card .article-zoom { width: min(70%, 150px); margin: 0; }
-html.theme-swiss .bqst-asset-card img { width: 100%; aspect-ratio: 1; object-fit: contain; border: 0; }
-html.theme-swiss .bqst-asset-card .article-zoom::after { font-size: .6rem; right: 0; bottom: 0; }
+html.theme-swiss .bqst-asset-card img { width: min(70%, 150px); aspect-ratio: 1; object-fit: contain; border: 0; margin: 0; }
+html.theme-swiss .bqst-asset-card .article-zoom img { width: 100%; }
+html.theme-swiss .bqst-asset-card .article-zoom::after { display: none; } /* the badge would cover the part; zoom cursor + aria-label carry the affordance */
 html.theme-swiss .bqst-asset-card span { color: var(--muted); font-size: .8rem; text-align: center; }
 @media (max-width: 560px) { html.theme-swiss .bqst-asset-strip { grid-template-columns: 1fr; } }
 

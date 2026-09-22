@@ -708,7 +708,6 @@ async function goHome() {
     const p = sectionPath();
     themeBox.querySelector('[data-theme="classic"]').href = p || '/';
     themeBox.querySelector('[data-theme="transit"]').href = `/transit${p}`;
-    themeBox.querySelector('[data-theme="swiss"]').href = `/swiss${p}`;
     const open = themeBox.classList.toggle('open');
     themeBtn.setAttribute('aria-expanded', String(open));
     if (open) themeBox.querySelector('[data-theme]')?.focus();

@@ -20,6 +20,14 @@ const listedProjectPaths = new Set(
 export default defineConfig({
   site: 'https://www.rohanjk.xyz',
   output: 'static',
+  redirects: {
+    '/swiss': { destination: '/', status: 301 },
+    '/swiss/projects': { destination: '/projects', status: 301 },
+    '/swiss/projects/[slug]': { destination: '/projects/[slug]', status: 301 },
+    '/swiss/music': { destination: '/music', status: 301 },
+    '/swiss/about': { destination: '/about', status: 301 },
+    '/swiss/swatches': { destination: '/swatches', status: 301 },
+  },
   // viewport, not hover: hover only gives the fetch a click's worth of head
   // start and never fires on touch — viewport prefetches every visible link
   // during idle, so navigations land with the HTML already cached.

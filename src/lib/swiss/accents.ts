@@ -1,5 +1,5 @@
 // Accent candidates for the swiss theme. The theme paints with
-// DEFAULT_ACCENT; /swiss/swatches renders every entry so the pick can
+// DEFAULT_ACCENT; /swatches renders every entry so the pick can
 // change with a one-line edit here. Muted, non-primary hues on purpose:
 // the paper is warm and the type is ink, so the accent has to sit with
 // both rather than shout.
