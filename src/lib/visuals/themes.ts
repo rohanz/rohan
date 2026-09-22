@@ -169,3 +169,49 @@ export const blueprintPalette: VisualPalette = (() => {
     },
   };
 })();
+
+// Swiss — warm paper, ink greys, orange-red primary and cobalt comparison.
+const SWISS_ACCENT = '#e3452b';
+const SWISS_COMPARE = '#1f3fd1';
+const SWISS_MUTED = '#6b6b66';
+
+export const swissPalette: VisualPalette = (() => {
+  const ink = (a: number) => `rgba(20,20,20,${a})`;
+  return {
+    ink,
+    fonts: { ui: "'General Sans', sans-serif", title: 'Chillax, sans-serif' },
+    bqst: {
+      seriesPrimary: SWISS_ACCENT,
+      seriesComparison: SWISS_COMPARE,
+      seriesReference: SWISS_MUTED,
+      seriesReferenceAlpha: 0.48,
+      aliasAudible: SWISS_MUTED,
+      aliasOversampled: SWISS_COMPARE,
+      aliasWarn: SWISS_ACCENT,
+      aliasBandAudible: 'rgba(227,69,43,0.10)',
+      aliasBandHeadroom: 'rgba(107,107,102,0.10)',
+      legendAliasAudible: SWISS_MUTED,
+    },
+    qla: {
+      compoundCurve: SWISS_ACCENT,
+      compoundModelMarker: ink(0.85),
+      rosterSeries: SWISS_ACCENT,
+      quantImportant: SWISS_ACCENT,
+      // Opaque neutral dots keep connector lines from showing through.
+      quantDot: '#8a8a86',
+      agentComparison: SWISS_COMPARE,
+    },
+    qlf: {
+      cheat: SWISS_ACCENT,
+      honest: SWISS_COMPARE,
+      hold: ink(0.55),
+      kalman: SWISS_ACCENT,
+      ols: SWISS_COMPARE,
+      survivors: SWISS_ACCENT,
+      rsp: SWISS_COMPARE,
+      wedgeFill: 'rgba(227,69,43,0.12)',
+      wedgeGapLabelPx: 11,
+      wedgeGapLabelDx: 12,
+    },
+  };
+})();

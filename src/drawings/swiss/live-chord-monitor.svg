@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true">
+  <style>
+    .swiss-chord-key { transition: fill .35s ease; }
+    .swiss-chord-name { opacity: 0; transform: translateY(6px); transition: opacity .4s ease .15s, transform .4s ease .15s; }
+    .swiss-chord-idle { opacity: .35; transition: opacity .25s ease; }
+    @media (prefers-reduced-motion: no-preference) {
+      .swiss-card.is-hover .swiss-chord-key { fill: var(--accent); }
+      .swiss-card.is-hover .swiss-chord-name { opacity: 1; transform: none; }
+      .swiss-card.is-hover .swiss-chord-idle { opacity: 0; }
+    }
+    @media (prefers-reduced-motion: reduce) { .swiss-chord-key, .swiss-chord-name, .swiss-chord-idle { transition: none; } }
+  </style>
+  <g fill="currentColor" stroke="none" font-family="General Sans, sans-serif" font-size="10" letter-spacing="1.5" opacity=".55">
+    <text x="40" y="52">CHORD MONITOR</text><text x="360" y="253" text-anchor="end">MIDI IN</text>
+  </g>
+  <path class="swiss-chord-idle" d="M40 88h48M96 88h12"/>
+  <text class="swiss-chord-name" x="40" y="98" fill="currentColor" stroke="none" font-family="Chillax, sans-serif" font-size="34" font-weight="500">Cmaj7</text>
+  <path d="M40 112h320" stroke-opacity=".2"/>
+  <g transform="translate(40 124)">
+    <rect class="swiss-chord-key" width="40" height="104"/>
+    <rect x="40" width="40" height="104"/>
+    <rect class="swiss-chord-key" x="80" width="40" height="104"/>
+    <rect x="120" width="40" height="104"/>
+    <rect class="swiss-chord-key" x="160" width="40" height="104"/>
+    <rect x="200" width="40" height="104"/>
+    <rect class="swiss-chord-key" x="240" width="40" height="104"/>
+    <rect x="280" width="40" height="104"/>
+    <g fill="currentColor">
+      <rect x="28" width="24" height="62"/>
+      <rect x="68" width="24" height="62"/>
+      <rect x="148" width="24" height="62"/>
+      <rect x="188" width="24" height="62"/>
+      <rect x="228" width="24" height="62"/>
+    </g>
+    <path d="M16 92h8M96 92h8M176 92h8M256 92h8" stroke-opacity=".4"/>
+  </g>
+</svg>

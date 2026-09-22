@@ -8,7 +8,7 @@
 // driven by a palette object. `transitPalette` is this theme's mapping; the
 // role tokens are documented in `src/lib/visuals/palette.ts`.
 import { sizeCanvasWithDpr, deviceDpr } from '../lib/visuals/canvas';
-import { transitPalette as PALETTE } from '../lib/visuals/themes';
+import { swissPalette, transitPalette } from '../lib/visuals/themes';
 import { lcmDetectChord, lcmName, lcmPc, LCM_BLACK, LCM_KEY_OFFSETS } from '../lib/chord-engine';
 import {
   drawEq, drawTransfer, drawHarmonics, drawAliasing, bqstKnobTicks, legendForBqstVisual,
@@ -35,11 +35,12 @@ import type { WavWaveform } from '../lib/audio/bqst-wav';
 
 // ---- palette (this site) ----
 // Only the audio widgets still read raw hexes; the charts go through PALETTE.
-const BLUE = '#33b4e5'; // train-line blue — series colour inside diagrams
-const MUTED_RGB = '138,133,120';
-const PINK_RGB = '228,136,173'; // bqst processed waveform
-const BLUE_RGB = '51,180,229';
-const INK_RGB = '26,26,26';
+let PALETTE = transitPalette;
+let BLUE = '#33b4e5'; // train-line blue — series colour inside diagrams
+let MUTED_RGB = '138,133,120';
+let PINK_RGB = '228,136,173'; // bqst processed waveform
+let BLUE_RGB = '51,180,229';
+let INK_RGB = '26,26,26';
 
 // ---- shared helpers ----
 function sizeCanvas(canvas: HTMLCanvasElement, w: number, h: number): CanvasRenderingContext2D {
@@ -2074,6 +2075,14 @@ function initQuantlabAgenticVisuals() {
 // ============================================================
 function initWidgets() {
   cleanupWidgets();
+  // ClientRouter can reuse this module across theme hops; select on every load.
+  const swiss = document.documentElement.classList.contains('theme-swiss');
+  PALETTE = swiss ? swissPalette : transitPalette;
+  BLUE = swiss ? '#1f3fd1' : '#33b4e5';
+  MUTED_RGB = swiss ? '107,107,102' : '138,133,120';
+  PINK_RGB = swiss ? '227,69,43' : '228,136,173';
+  BLUE_RGB = swiss ? '31,63,209' : '51,180,229';
+  INK_RGB = swiss ? '20,20,20' : '26,26,26';
   if (!document.querySelector('.article')) return;
   initBqstDspLab();
   initBqstAudioDemo();

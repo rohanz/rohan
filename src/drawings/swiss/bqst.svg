@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  <style>
+    .swiss-bqst-curve { transition: d .9s cubic-bezier(.2,.7,.2,1); }
+    .swiss-bqst-node { transition: transform .9s cubic-bezier(.2,.7,.2,1); }
+    @media (prefers-reduced-motion: no-preference) {
+      .swiss-card.is-hover .swiss-bqst-curve { d: path("M40 168 C 92 168, 114 96, 168 96 S 236 192, 292 156 S 344 112, 360 124"); }
+      .swiss-card.is-hover .swiss-bqst-node-low { transform: translateY(-36px); }
+      .swiss-card.is-hover .swiss-bqst-node-high { transform: translateY(-12px); }
+    }
+    @media (prefers-reduced-motion: reduce) { .swiss-bqst-curve, .swiss-bqst-node { transition: none; } }
+  </style>
+  <g stroke-opacity=".18">
+    <path d="M40 72v156h320M40 108h320M40 168h320"/>
+    <path d="M104 72v156M168 72v156M232 72v156M296 72v156M360 72v156" stroke-dasharray="2 6"/>
+    <path d="M104 228v6M168 228v6M232 228v6M296 228v6M360 228v6"/>
+  </g>
+  <path d="M40 168h320" stroke-opacity=".35" stroke-dasharray="3 6"/>
+  <path class="swiss-bqst-curve" d="M40 168 C 92 168, 114 132, 168 132 S 236 192, 292 168 S 344 144, 360 148"/>
+  <circle class="swiss-bqst-node swiss-bqst-node-low" cx="168" cy="132" r="6" fill="var(--accent)" stroke="var(--accent)"/>
+  <circle class="swiss-bqst-node swiss-bqst-node-high" cx="292" cy="168" r="4" fill="currentColor"/>
+  <g font-family="General Sans, sans-serif" font-size="10" letter-spacing="1.5" stroke="none" fill="currentColor" opacity=".55">
+    <text x="40" y="52">FREQUENCY RESPONSE</text>
+    <text x="40" y="253">20 HZ</text><text x="360" y="253" text-anchor="end">20 KHZ</text>
+  </g>
+</svg>

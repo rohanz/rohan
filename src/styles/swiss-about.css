@@ -1,0 +1,22 @@
+/* about */
+html.theme-swiss .sw-about-spread { row-gap: 2rem; padding-bottom: var(--section); }
+html.theme-swiss .sw-about-lead { grid-column: 1 / -1; }
+html.theme-swiss .sw-about-body { grid-column: 1 / -1; font-size: clamp(1.1rem, 1.4vw, 1.35rem); line-height: 1.45; }
+@media (min-width: 900px) { html.theme-swiss .sw-about-lead { grid-column: 1 / 8; } html.theme-swiss .sw-about-body { grid-column: 9 / -1; align-self: end; } }
+html.theme-swiss .sw-about-links { display: flex; flex-wrap: wrap; gap: 1rem 1.5rem; margin-top: 2rem; }
+html.theme-swiss .sw-about-facts { padding-block: 3rem; row-gap: 2rem; }
+html.theme-swiss .sw-about-stats { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 2rem 3rem; }
+html.theme-swiss .sw-stat { display: flex; flex-direction: column; gap: .25rem; }
+html.theme-swiss .sw-about-tech { grid-column: 1 / -1; }
+@media (min-width: 900px) { html.theme-swiss .sw-about-stats { grid-column: 1 / 5; } html.theme-swiss .sw-about-tech { grid-column: 6 / -1; } }
+html.theme-swiss .sw-tech-list { margin: .75rem 0 0; font-size: 12px; font-weight: 500; letter-spacing: var(--track-caps); text-transform: uppercase; line-height: 2; }
+html.theme-swiss .sw-about-photo { margin: 0 0 var(--section); border: 1px solid var(--hair); }
+html.theme-swiss .sw-about-photo img { width: 100%; height: auto; aspect-ratio: 3 / 2; object-fit: cover; object-position: center 30%; }
+html.theme-swiss .sw-about-quotes { display: grid; gap: 0; border-top: 1px solid var(--hair); }
+@media (min-width: 900px) { html.theme-swiss .sw-about-quotes { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+html.theme-swiss .sw-quote { margin: 0; padding: 1.5rem 1.5rem 1.5rem 0; border-bottom: 1px solid var(--hair); }
+html.theme-swiss .sw-quote p { margin: 0 0 .75rem; font-size: 17px; line-height: 1.5; }
+
+html.theme-swiss .sw-about-lead h1 { margin: 1.5rem 0 0; overflow-wrap: anywhere; }
+html.theme-swiss .sw-about-body p:first-child { margin-top: 0; }
+html.theme-swiss .sw-about-spread > *, html.theme-swiss .sw-about-facts > * { min-width: 0; }

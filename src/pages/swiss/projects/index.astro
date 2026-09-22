@@ -1,0 +1,22 @@
+---
+import SwissLayout from '../../../layouts/SwissLayout.astro';
+import SwissCard from '../../../components/SwissCard.astro';
+import { getCollection } from 'astro:content';
+const projects = (await getCollection('projects'))
+  .filter((p) => !p.data.unlisted)
+  .sort((a, b) => a.data.order - b.data.order);
+---
+<SwissLayout title="projects — rohan.jk" description="Projects by rohan.jk — software, AI, audio, and data engineering builds." section="projects">
+  <section class="sw-wrap sw-section">
+    <div class="sw-section-head">
+      <h1 class="sw-display sw-display-lg" data-reveal="lines">projects</h1>
+      <span class="sw-label">{projects.length} builds</span>
+    </div>
+    <div class="swiss-grid" data-reveal-group>
+      {projects.map((p) => <SwissCard slug={p.id} title={p.data.title} summary={p.data.summary} technologies={p.data.technologies} />)}
+    </div>
+  </section>
+  <script>
+    import '../../../scripts/swiss/tilt.ts';
+  </script>
+</SwissLayout>

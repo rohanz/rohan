@@ -1,0 +1,19 @@
+/* music */
+html.theme-swiss .sw-tracks { border-top: 1px solid var(--hair); }
+html.theme-swiss .sw-track { display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: .75rem 1.25rem; align-items: center; padding: 1.25rem 0; border-bottom: 1px solid var(--hair); }
+@media (min-width: 900px) { html.theme-swiss .sw-track { grid-template-columns: 48px minmax(0, 4fr) minmax(0, 5fr) minmax(0, 3fr); } }
+html.theme-swiss .sw-play { width: 48px; height: 48px; padding: 0; border-radius: 0; border: 1px solid var(--ink); background: transparent; cursor: pointer; display: grid; place-items: center; transition: background .25s ease; }
+html.theme-swiss .sw-play:hover, html.theme-swiss .sw-track.is-playing .sw-play { background: var(--ink); }
+html.theme-swiss .sw-play-icon { width: 0; height: 0; border-left: 12px solid var(--ink); border-top: 7px solid transparent; border-bottom: 7px solid transparent; margin-left: 3px; }
+html.theme-swiss .sw-play:hover .sw-play-icon { border-left-color: var(--paper); }
+html.theme-swiss .sw-track.is-playing .sw-play-icon { width: 12px; height: 14px; border: 0; margin: 0; background: linear-gradient(90deg, var(--paper) 0 4px, transparent 4px 8px, var(--paper) 8px 12px); }
+html.theme-swiss .sw-track-main { display: flex; flex-direction: column; }
+html.theme-swiss .sw-track-title { margin: 0; font-weight: 500; font-family: var(--font-display); font-size: clamp(1.2rem, 1.8vw, 1.8rem); letter-spacing: -0.03em; }
+html.theme-swiss .sw-track-artist { color: var(--muted); font-size: 14px; }
+html.theme-swiss .sw-track-summary { margin: 0; color: var(--muted); font-size: 17px; grid-column: 2; }
+html.theme-swiss .sw-track-links { display: flex; flex-wrap: wrap; gap: .75rem 1.25rem; grid-column: 2; }
+@media (min-width: 900px) { html.theme-swiss .sw-track-summary, html.theme-swiss .sw-track-links { grid-column: auto; } html.theme-swiss .sw-track-links { justify-content: flex-end; } }
+
+
+html.theme-swiss .sw-music h1 { margin: 0; }
+html.theme-swiss .sw-track > * { min-width: 0; }

@@ -1,0 +1,18 @@
+---
+import '../styles/swiss-cards.css';
+import { drawingFor } from '../lib/swiss/drawings';
+interface Props { slug: string; title: string; summary: string; technologies: string[] }
+const { slug, title, summary, technologies } = Astro.props;
+const Drawing = drawingFor(slug);
+---
+<a class="swiss-card" href={`/swiss/projects/${slug}`} data-reveal="block">
+  <div class="swiss-card-art" aria-hidden="true">
+    {Drawing ? <Drawing /> : <div class="swiss-card-placeholder"></div>}
+  </div>
+  <div class="swiss-card-body">
+    <h2 class="swiss-card-title">{title}</h2>
+    <p class="swiss-card-summary">{summary}</p>
+    <div class="swiss-card-tags">{technologies.slice(0, 4).map((t) => <span class="sw-label">{t}</span>)}</div>
+  </div>
+  <span class="swiss-card-glare" aria-hidden="true"></span>
+</a>
