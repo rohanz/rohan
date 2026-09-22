@@ -18,7 +18,10 @@ html.theme-swiss .swiss-card {
   transform-style: preserve-3d;
   transition: transform .4s cubic-bezier(.2,.7,.2,1), box-shadow .4s ease, border-color .3s ease;
 }
-html.theme-swiss .swiss-card:hover, html.theme-swiss .swiss-card:focus-visible { border-color: var(--ink); box-shadow: 0 30px 60px -30px rgba(20,20,20,.35); }
+html.theme-swiss .swiss-card:hover, html.theme-swiss .swiss-card:focus-visible { border-color: var(--ink); background: var(--ink); color: var(--paper); box-shadow: 0 30px 60px -30px rgba(20,20,20,.35); }
+html.theme-swiss .swiss-card:hover .swiss-card-art, html.theme-swiss .swiss-card:focus-visible .swiss-card-art { color: var(--paper); border-bottom-color: rgba(247,245,240,.25); }
+html.theme-swiss .swiss-card:hover .swiss-card-summary, html.theme-swiss .swiss-card:hover .swiss-card-tags .sw-label, html.theme-swiss .swiss-card:focus-visible .swiss-card-summary, html.theme-swiss .swiss-card:focus-visible .swiss-card-tags .sw-label { color: rgba(247,245,240,.7); }
+html.theme-swiss .swiss-card:hover .swiss-card-glare { mix-blend-mode: normal; background: radial-gradient(60% 60% at var(--gx) var(--gy), rgba(255,255,255,.10), transparent 70%); }
 html.theme-swiss .swiss-card.is-hover { will-change: transform; transition: transform .08s linear, box-shadow .4s ease, border-color .3s ease; }
 @media (hover: none), (prefers-reduced-motion: reduce) {
   html.theme-swiss .swiss-card { transform: none; }

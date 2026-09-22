@@ -334,6 +334,8 @@ html.theme-swiss .article table { border-radius: 0 !important; }
 html.theme-swiss .article :is([class*="qla2-"], [class*="qls-"], [class*="bqst-"]) { box-shadow: none; }
 html.theme-swiss .article :is(.qla2-panel, .qls-panel, .bqst-panel, .bqst-audio-demo) { background: var(--paper); border: 1px solid var(--hair); }
 html.theme-swiss .article button { border-radius: 0; }
+/* Knobs are round by nature: exempt them from the square-corner sweep above. */
+html.theme-swiss .article :is(.bqst-knob-stage, .bqst-knob-ticks, .bqst-mini-knob, [class*="bqst-knob"]), html.theme-swiss .article .bqst-knob-ticks::before { border-radius: 50% !important; }
 html.theme-swiss .gloss-term { background: transparent; border-bottom: 1px solid var(--accent); border-radius: 0; }
 html.theme-swiss .gloss-tooltip { border-radius: 0; background: var(--paper); border: 1px solid var(--ink); box-shadow: none; }
 

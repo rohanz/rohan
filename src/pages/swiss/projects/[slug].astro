@@ -2,6 +2,7 @@
 import SwissLayout from '../../../layouts/SwissLayout.astro';
 import { getCollection, render } from 'astro:content';
 import { getProjectNav, type NavItem } from '../../../lib/projectNav';
+import { cardTextFor } from '../../../lib/swiss/card-text';
 import '../../../styles/swiss-article.css';
 import '../../../styles/swiss-widgets.css';
 
@@ -16,6 +17,7 @@ export async function getStaticPaths() {
 const { project, ordered } = Astro.props;
 const { Content, headings } = await render(project);
 const { prev, next } = getProjectNav(ordered, project.id);
+const word = cardTextFor(project.id);
 const h2h3 = headings.filter((h) => h.depth === 2 || h.depth === 3);
 const firstH2 = h2h3.findIndex((h) => h.depth === 2);
 const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
@@ -25,10 +27,11 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
     <div class="sw-wrap sw-article-head-inner">
       <div class="sw-article-head-title">
         <a class="sw-label sw-link" href="/swiss/projects">projects</a>
-        <h1 class="sw-display sw-display-lg" data-reveal="lines">{project.data.title}</h1>
+        <h1 class="sw-article-word">{word ?? project.data.title}</h1>
+        {word && <p class="sw-article-title">{project.data.title}</p>}
+        <p class="sw-article-summary">{project.data.summary}</p>
       </div>
       <div class="sw-article-head-aside">
-        <p class="sw-article-summary" data-reveal="block">{project.data.summary}</p>
         <div class="sw-article-meta">{project.data.technologies.map((t) => <span class="sw-label">{t}</span>)}</div>
       </div>
     </div>
