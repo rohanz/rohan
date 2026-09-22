@@ -5,12 +5,14 @@ import SwissRailLinks from '../../components/SwissRailLinks.astro';
 import { SONGS } from '../../data/music';
 import { MUSIC_DESCRIPTION } from '../../data/page-meta';
 ---
-<SwissLayout title="music — rohan.jk" description={MUSIC_DESCRIPTION} section="music">
+<SwissLayout title="music — rohan.jk" description={MUSIC_DESCRIPTION} section="music" hideFooter>
   <section class="sw-music">
     <header class="sw-music-rail">
       <div class="sw-music-rail-inner">
-        <h1 class="sw-display sw-display-page" data-reveal="lines">music</h1>
-        <span class="sw-label">{SONGS.length} releases</span>
+        <div class="sw-rail-heading">
+          <h1 class="sw-display sw-display-page" data-reveal="lines">music</h1>
+          <span class="sw-label">{SONGS.length} releases</span>
+        </div>
         <SwissRailLinks />
       </div>
     </header>

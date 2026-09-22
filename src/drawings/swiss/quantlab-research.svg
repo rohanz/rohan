@@ -6,7 +6,7 @@
       .swiss-research-honest { transition: clip-path .9s ease; }
       .swiss-research-wedge, .swiss-research-label { transition: opacity .5s ease; }
       .swiss-card.is-hover .swiss-research-honest { clip-path: inset(0); }
-      .swiss-card.is-hover .swiss-research-wedge { opacity: .08; }
+      .swiss-card.is-hover .swiss-research-wedge { opacity: .18; transition-delay: .9s; }
       .swiss-card.is-hover .swiss-research-label { opacity: 1; transition-delay: .35s; }
     }
   </style>
@@ -14,7 +14,7 @@
     <path d="M40 88h320M40 124h320M40 160h320M40 196h320M104 76v152M168 76v152M232 76v152M296 76v152M360 76v152"/>
   </g>
   <path d="M40 76v152h320M40 228v5M120 228v5M200 228v5M280 228v5M360 228v5" stroke-width="1.25" opacity=".5"/>
-  <path class="swiss-research-wedge" d="M40 210 68 204 88 207 112 189 134 195 158 169 180 177 205 143 226 151 252 118 273 124 296 94 317 100 360 77 360 170 317 185 296 175 273 192 252 182 226 200 205 185 180 205 158 193 134 211 112 202 88 212 68 207 40 210Z" fill="currentColor" stroke="none"/>
+  <path class="swiss-research-wedge" fill="var(--accent)" d="M40 210 68 204 88 207 112 189 134 195 158 169 180 177 205 143 226 151 252 118 273 124 296 94 317 100 360 77 360 170 317 185 296 175 273 192 252 182 226 200 205 185 180 205 158 193 134 211 112 202 88 212 68 207 40 210Z" stroke="none"/>
   <path d="M40 210 68 204 88 207 112 189 134 195 158 169 180 177 205 143 226 151 252 118 273 124 296 94 317 100 360 77"/>
   <path class="swiss-research-honest" d="M40 210 68 207 88 212 112 202 134 211 158 193 180 205 205 185 226 200 252 182 273 192 296 175 317 185 360 170" stroke-dasharray="1 5"/>
   <g font-family="'General Sans', sans-serif" fill="currentColor" stroke="none" font-size="8" letter-spacing="1" opacity=".6">

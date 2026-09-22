@@ -81,7 +81,7 @@
   <path class="swiss-bqst-dial" style="transform-origin:260px 249px; --bqst-turn:68deg; --bqst-delay:0.150s" d="M260 249v-5" stroke-width="1.25"/>
   <rect x="294" y="111" width="62" height="49" rx="2" stroke-width="1.25"/>
   <path d="M301 139Q325 112 349 139" stroke-width="1.25"/>
-  <path d="M340 130q6 3 9 9" stroke-width="3"/>
+  <path stroke="var(--accent)" d="M340 130q6 3 9 9" stroke-width="3"/>
   <path d="M308 128l2 4M318 123l1 5M329 122v5" stroke-width="1.25"/>
   <path class="swiss-bqst-needle" style="transform-origin:325px 153px; --bqst-turn:61deg; --bqst-delay:0.12s" d="M325 153l-21-19"/>
   <circle cx="325" cy="153" r="2" fill="currentColor"/>

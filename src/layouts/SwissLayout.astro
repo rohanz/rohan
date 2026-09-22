@@ -14,8 +14,10 @@ interface Props {
   ogImage?: string;
   bodyClass?: string;
   noindex?: boolean;
+  /** Pages whose rails already carry the socials and theme switch drop the footer. */
+  hideFooter?: boolean;
 }
-const { title, description, section, ogImage, bodyClass = '', noindex = false } = Astro.props;
+const { title, description, section, ogImage, bodyClass = '', noindex = false, hideFooter = false } = Astro.props;
 const canonical = new URL(defaultPathFor(Astro.url.pathname), Astro.site).href;
 const ogAbs = new URL(ogImage ?? '/assets/images/og.png', Astro.site).href;
 const isDefaultOg = ogImage === undefined;
@@ -78,14 +80,14 @@ const nav = [
       </div>
     </header>
     <main id="sw-main"><slot /></main>
-    <footer class="sw-footer">
+    {!hideFooter && <footer class="sw-footer">
       <div class="sw-wrap sw-footer-inner">
         <div class="sw-themes">
           {SOCIALS.map((s) => <a class="sw-label sw-link" href={s.href} target="_blank" rel="noopener noreferrer">{s.label}</a>)}
         </div>
         <SwissThemeSwitch />
       </div>
-    </footer>
+    </footer>}
     <script>
       import '../scripts/swiss/reveal.ts';
       import '../lib/theme-switch.ts';

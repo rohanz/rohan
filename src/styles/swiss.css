@@ -190,3 +190,11 @@ html.theme-swiss .sw-rail-links .sw-themes > *:last-child { border-right: 0; }
 html.theme-swiss .sw-rail-links .sw-themes > span[aria-current] { background: var(--ink); color: var(--paper); }
 html.theme-swiss .sw-rail-links .sw-themes > a:hover, html.theme-swiss .sw-rail-links .sw-themes > a:focus-visible { background: var(--ink); color: var(--paper); }
 html.theme-swiss .sw-rail-links .sw-themes > a.sw-link::after { content: none; }
+
+/* Sticky-rail heading shared by projects and music (projects is the reference). */
+html.theme-swiss .sw-rail-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; padding: 2rem var(--gutter); }
+html.theme-swiss .sw-rail-heading h1 { margin: 0; }
+html.theme-swiss .sw-rail-heading .sw-label { white-space: nowrap; color: var(--ink); }
+@media (min-width: 1100px) {
+  html.theme-swiss .sw-rail-heading { min-height: 9rem; flex-direction: column; align-items: flex-start; padding: 1.75rem 2rem; }
+}
