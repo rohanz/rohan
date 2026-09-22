@@ -101,7 +101,13 @@ const nav = [
           !document.documentElement.classList.contains('sw-home') || window.scrollY > 40);
         update();
         window.addEventListener('scroll', update, { passive: true });
-        cleanupNav = () => window.removeEventListener('scroll', update);
+        // 'home' while already on the home page: back to the hero (a same-URL link does nothing by itself).
+        const home = nav.querySelector<HTMLAnchorElement>('a[href="/swiss"]');
+        const onHome = (e: MouseEvent) => {
+          if (document.documentElement.classList.contains('sw-home')) { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+        };
+        home?.addEventListener('click', onHome);
+        cleanupNav = () => { window.removeEventListener('scroll', update); home?.removeEventListener('click', onHome); };
       }
       document.addEventListener('astro:page-load', initNav);
       document.addEventListener('astro:before-swap', () => { cleanupNav?.(); cleanupNav = undefined; });

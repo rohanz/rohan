@@ -68,6 +68,8 @@ export interface QlaPalette {
   /** Quant explainer: ordinary weight dots. Must be OPAQUE — a translucent
    *  dot lets its own connector line ghost through. */
   quantDot: string;
+  /** Marker shape for the quantization weights; legends should match. Default circle. */
+  quantMarker?: 'circle' | 'square';
   /** Agentic widgets: comparison model / successful commit / secondary segment. */
   agentComparison: string;
 }

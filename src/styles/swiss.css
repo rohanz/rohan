@@ -6,6 +6,7 @@ html.theme-swiss {
      "the field colour" so a coloured wash is one token flip away. */
   --tint: var(--paper-2);
   --tint-hair: var(--hair); /* dividers on field surfaces */
+  --w-good: #2f4a3a; /* pass/correct states in widgets: pine, distinct from the accent */
   --nav-height: 4rem;
   --ink: #141414;
   --muted: #6b6b66;

@@ -7,8 +7,9 @@ let cleanup: (() => void) | undefined;
 
 function init() {
   cleanup?.();
-  const root = document.querySelector<HTMLElement>('[data-testimonials]');
-  if (!root) return;
+  const rootEl = document.querySelector<HTMLElement>('[data-testimonials]');
+  if (!rootEl) return;
+  const root: HTMLElement = rootEl;
   const quotes = Array.from(root.querySelectorAll<HTMLElement>('[data-testimonial]'));
   const controls = root.querySelector<HTMLElement>('[data-testimonial-controls]');
   const ringFill = root.querySelector<SVGCircleElement>('[data-testimonial-ring] .sw-ring-fill');

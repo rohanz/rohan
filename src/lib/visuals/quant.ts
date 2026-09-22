@@ -336,7 +336,7 @@ export interface RiskEngine {
   limits: RiskLimits;
   state: RiskState;
   gross(): number;
-  checkOrder(symbol: string, notional: number): { ok: boolean; reasons: string[] };
+  checkOrder(symbol: string, notional: number): { ok: boolean; reasons: string[]; reducesRisk: boolean };
   placeOrder(symbol: string, notional: number, viaFlatten?: boolean): RiskLogEntry;
   markPnl(delta: number): RiskLogEntry[];
   /** Symbols a flatten would close, in the order the forks close them. */
@@ -349,16 +349,24 @@ export function createRiskEngine(limits: RiskLimits = DEFAULT_RISK_LIMITS): Risk
 
   const gross = () => Object.keys(state.positions).reduce((s, k) => s + Math.abs(state.positions[k]), 0);
 
+  // The two asymmetries risk.py encodes, reproduced exactly:
+  //   1. a risk-REDUCING order skips the kill switch (and only the kill
+  //      switch) — you can always get out, you can never dig deeper;
+  //   2. the caps fire only when the order makes exposure WORSE, so an order
+  //      that shrinks an already-over-cap position is still allowed through.
+  // `reducesRisk` is risk.py's `abs(current + qty) < abs(current)`, which is
+  // sign-agnostic: it covers selling a long and buying back a short alike.
   function checkOrder(symbol: string, notional: number) {
     const current = state.positions[symbol] || 0;
-    const reducing = notional < 0 && current > 0;
-    if (reducing) return { ok: true, reasons: ['reduces exposure'] };
+    const after = current + notional;
+    const reducesRisk = Math.abs(after) < Math.abs(current);
     const reasons: string[] = [];
-    if (state.killed) reasons.push(`kill switch active (day P&L ${qlfMoney(state.dayPnl)} breached ${qlfMoney(-limits.dailyLoss)})`);
+    if (state.killed && !reducesRisk) reasons.push(`kill switch active (day P&L ${qlfMoney(state.dayPnl)} breached ${qlfMoney(-limits.dailyLoss)})`);
     if (limits.allowed.indexOf(symbol) === -1) reasons.push(`${symbol} not in allowed-symbol list`);
-    if (Math.abs(current + notional) > limits.perSymbol) reasons.push(`per-symbol cap: ${symbol} would be ${qlfMoney(Math.abs(current + notional))} > ${qlfMoney(limits.perSymbol)}`);
-    if (gross() - Math.abs(current) + Math.abs(current + notional) > limits.gross) reasons.push(`gross exposure would exceed cap: ${qlfMoney(gross() - Math.abs(current) + Math.abs(current + notional))} > ${qlfMoney(limits.gross)}`);
-    return { ok: reasons.length === 0, reasons };
+    if (Math.abs(after) > limits.perSymbol && Math.abs(after) > Math.abs(current)) reasons.push(`per-symbol cap: ${symbol} would be ${qlfMoney(Math.abs(after))} > ${qlfMoney(limits.perSymbol)}`);
+    const grossAfter = gross() - Math.abs(current) + Math.abs(after);
+    if (grossAfter > limits.gross && grossAfter > gross()) reasons.push(`gross exposure would exceed cap: ${qlfMoney(grossAfter)} > ${qlfMoney(limits.gross)}`);
+    return { ok: reasons.length === 0, reasons, reducesRisk };
   }
 
   function placeOrder(symbol: string, notional: number, viaFlatten?: boolean): RiskLogEntry {
@@ -366,7 +374,12 @@ export function createRiskEngine(limits: RiskLimits = DEFAULT_RISK_LIMITS): Risk
     const res = checkOrder(symbol, notional);
     if (!res.ok) return { approved: false, text: label, reasons: res.reasons };
     state.positions[symbol] = (state.positions[symbol] || 0) + notional;
-    let reasons = notional < 0 ? res.reasons : [];
+    let reasons: string[] = [];
+    if (res.reducesRisk) {
+      reasons = [state.killed
+        ? 'reduces risk, kill switch bypassed'
+        : 'reduces exposure'];
+    }
     if (viaFlatten && state.killed) {
       reasons = ['flatten allowed under kill switch; reducing orders are always permitted'];
     }
@@ -399,7 +412,8 @@ export function createRiskEngine(limits: RiskLimits = DEFAULT_RISK_LIMITS): Risk
     return entries;
   }
 
-  const flattenSymbols = () => Object.keys(state.positions).filter((k) => state.positions[k] > 0);
+  // risk.py's flatten() closes every open position, long or short
+  const flattenSymbols = () => Object.keys(state.positions).filter((k) => state.positions[k] !== 0);
 
   function reset(): RiskLogEntry {
     state.positions = {};

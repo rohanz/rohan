@@ -184,4 +184,41 @@ describe('the risk gate rule engine matches the pre-refactor forks', () => {
     expect(reasons).toContain('kill switch active');
     expect(reasons).toContain('flatten allowed under kill switch');
   });
+
+  // These two are the asymmetries risk.py encodes and the article claims.
+  // They are behaviour assertions, not golden replays: the pre-refactor fork
+  // got both of them wrong, so there is no golden to match against.
+  it('lets a risk-reducing order through a tripped kill switch, but not a risk-adding one', () => {
+    const engine = createRiskEngine();
+    engine.placeOrder('AAPL', 30000);
+    engine.markPnl(-6000);
+    expect(engine.state.killed).toBe(true);
+    const sell = engine.placeOrder('AAPL', -25000);
+    expect(sell.approved).toBe(true);
+    expect(sell.reasons).toEqual(['reduces risk, kill switch bypassed']);
+    const buy = engine.placeOrder('AAPL', 5000);
+    expect(buy.approved).toBe(false);
+    expect(buy.reasons.join(' ')).toContain('kill switch active');
+  });
+
+  it('fires the caps only when the order makes exposure worse', () => {
+    const engine = createRiskEngine();
+    // sit right on the per-symbol cap, then shrink the position: still over
+    // nothing, and even an over-cap position may always be reduced
+    engine.placeOrder('SPY', 40000);
+    expect(engine.placeOrder('SPY', 1).approved).toBe(false);
+    const cut = engine.placeOrder('SPY', -40000);
+    expect(cut.approved).toBe(true);
+    expect(cut.reasons).toEqual(['reduces exposure']);
+    expect(engine.gross()).toBe(0);
+  });
+
+  it('treats buying back a short as risk-reducing, exactly like abs(current + qty) < abs(current)', () => {
+    const engine = createRiskEngine();
+    engine.placeOrder('MSFT', -30000);
+    engine.markPnl(-6000);
+    const cover = engine.placeOrder('MSFT', 10000);
+    expect(cover.approved).toBe(true);
+    expect(cover.reasons).toEqual(['reduces risk, kill switch bypassed']);
+  });
 });

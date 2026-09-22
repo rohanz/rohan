@@ -261,7 +261,8 @@ export function drawQuant(
   ctx.fillStyle = qlText(0.5);
   ctx.font = `600 11px ${palette.fonts.ui}`;
   ctx.textAlign = 'center';
-  ctx.fillText('weight value', w / 2, h - 12);
+  const crisp = palette.qla.quantMarker === 'square' ? Math.round : (v: number) => v;
+  ctx.fillText('weight value', crisp(w / 2), h - 12);
 
   // block dividers (subtle, dashed) and block labels
   ctx.strokeStyle = qlText(0.18);
@@ -276,7 +277,7 @@ export function drawQuant(
   ctx.setLineDash([]);
   ctx.fillStyle = qlText(0.45);
   blocks.forEach((block) => {
-    ctx.fillText(block.label, x((block.lo + block.hi) / 2), 16);
+    ctx.fillText(block.label, crisp(x((block.lo + block.hi) / 2)), 16);
   });
 
   // each block's ladder: uniformly spaced rung ticks
@@ -311,9 +312,14 @@ export function drawQuant(
   blocks.forEach((block, bi) => {
     block.weights.forEach((wt, wi) => {
       ctx.fillStyle = wt.imp ? palette.qla.quantImportant : palette.qla.quantDot;
-      ctx.beginPath();
-      ctx.arc(x(wt.v), dotY(levels[bi][wi]), 4, 0, Math.PI * 2);
-      ctx.fill();
+      const mx = x(wt.v), my = dotY(levels[bi][wi]);
+      if (palette.qla.quantMarker === 'square') {
+        ctx.fillRect(Math.round(mx) - 4, Math.round(my) - 4, 8, 8);
+      } else {
+        ctx.beginPath();
+        ctx.arc(mx, my, 4, 0, Math.PI * 2);
+        ctx.fill();
+      }
     });
   });
 }

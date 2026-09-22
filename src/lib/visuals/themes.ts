@@ -199,6 +199,7 @@ export function swissPalette(accent = '#5f66c2'): VisualPalette {
       quantImportant: accent,
       // Opaque neutral dots keep connector lines from showing through.
       quantDot: SWISS_MUTED,
+      quantMarker: 'square',
       agentComparison: SWISS_COMPARE,
     },
     qlf: {

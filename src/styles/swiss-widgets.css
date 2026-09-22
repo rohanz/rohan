@@ -2,7 +2,7 @@
 html.theme-swiss .bqst-lab, html.theme-swiss .bqst-audio-demo {
     box-sizing: border-box; max-width: 100%; margin: 1.6rem 0 2rem;
     border: 1px solid var(--w-border); border-radius: 12px;
-    background: linear-gradient(135deg, rgba(227,69,43,0.06), transparent 42%), var(--w-card);
+    background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 6%, transparent), transparent 42%), var(--w-card);
     overflow: hidden;
   }
 html.theme-swiss .bqst-lab-header, html.theme-swiss .bqst-audio-demo-header {
@@ -68,13 +68,13 @@ html.theme-swiss .bqst-audio-toggle button {
 html.theme-swiss .bqst-audio-toggle button.is-active { background: var(--w-accent); color: var(--ink); box-shadow: 0 0 18px var(--w-accent-glow); }
 html.theme-swiss .bqst-audio-wave {
     position: relative; height: 68px; border: 1px solid var(--w-border); border-radius: 8px; overflow: hidden;
-    background: linear-gradient(180deg, rgba(227,69,43,0.06), rgba(227,69,43,0.02));
+    background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 6%, transparent), color-mix(in srgb, var(--accent) 2%, transparent));
   }
 html.theme-swiss .bqst-audio-wave canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 html.theme-swiss .bqst-audio-wave span { position: absolute; inset: 50% 0 auto; height: 1px; background: rgba(0,0,0,0.16); }
 html.theme-swiss .bqst-audio-wave i {
     position: absolute; top: 0; bottom: 0; left: 0; width: 100%; display: block; pointer-events: none;
-    background: linear-gradient(90deg, rgba(227,69,43,0.22), rgba(227,69,43,0.05));
+    background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 22%, transparent), color-mix(in srgb, var(--accent) 5%, transparent));
     border-right: 2px solid var(--w-accent);
     transform: scaleX(0); transform-origin: left; will-change: transform;
   }
@@ -114,7 +114,7 @@ html.theme-swiss .palette-swatch-label { font-size: 0.72rem; text-align: center;
 html.theme-swiss .qla-visual {
     box-sizing: border-box; max-width: 100%; margin: 1.4rem 0 2rem;
     border: 1px solid var(--w-border); border-radius: 12px;
-    background: linear-gradient(135deg, rgba(227,69,43,0.06), transparent 42%), var(--w-card);
+    background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 6%, transparent), transparent 42%), var(--w-card);
     overflow: hidden;
   }
 html.theme-swiss .qla-visual-header {
@@ -145,8 +145,8 @@ html.theme-swiss .qla-memo {
     padding: 0.9rem 1rem; white-space: pre-wrap; font-size: 0.85rem; line-height: 1.55; color: rgba(20,20,20,0.78);
   }
 html.theme-swiss .qla-mark-bad, html.theme-swiss .qla-mark-good { padding: 0 0.15em; border-radius: 3px; font-weight: 700; }
-html.theme-swiss .qla-mark-bad { background: rgba(227,69,43,0.14); color: var(--accent); }
-html.theme-swiss .qla-mark-good { background: rgba(102,187,106,0.14); color: #1f3fd1; }
+html.theme-swiss .qla-mark-bad { background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); }
+html.theme-swiss .qla-mark-good { background: rgba(102,187,106,0.14); color: var(--w-good, #2f4a3a); }
 html.theme-swiss .qla-gate-report-strip {
     display: flex; align-items: center; flex-wrap: wrap; gap: 0.45rem; margin: 0.2rem 0 0.8rem;
     padding: 0.5rem 0.7rem; border: 1px dashed var(--w-border); border-radius: 6px; background: var(--paper);
@@ -156,7 +156,7 @@ html.theme-swiss .qla-gate-report-label, html.theme-swiss .qla-gate-report-tail 
   }
 html.theme-swiss .qla-gate-chip {
     font-family: 'SF Mono', 'JetBrains Mono', Menlo, monospace; font-size: 0.78rem; padding: 0.08em 0.45em;
-    border-radius: 4px; background: rgba(227,69,43,0.12); color: var(--accent); border: 1px solid rgba(227,69,43,0.35);
+    border-radius: 4px; background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent); border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
   }
 html.theme-swiss .qla-gate-report-title {
     font-family: var(--font-ui); font-weight: 700; font-size: 0.85rem;
@@ -171,7 +171,7 @@ html.theme-swiss .qla-judge-col { display: flex; flex-direction: column; align-i
 html.theme-swiss .qla-judge-col .qla-judge-panel { align-self: stretch; }
 html.theme-swiss .qla-judge-probe { visibility: hidden; }
 html.theme-swiss .qla-judge-panel { border: 1px solid var(--w-border); border-radius: 6px; background: var(--paper); overflow: hidden; }
-html.theme-swiss .qla-judge-panel.is-pick-correct { border-color: #1f3fd1; box-shadow: 0 0 0 1px #1f3fd1; }
+html.theme-swiss .qla-judge-panel.is-pick-correct { border-color: var(--w-good, #2f4a3a); box-shadow: 0 0 0 1px var(--w-good, #2f4a3a); }
 html.theme-swiss .qla-judge-panel.is-pick-wrong { border-color: var(--line-projects); box-shadow: 0 0 0 1px var(--line-projects); }
 html.theme-swiss .qla-judge-panel-label {
     font-family: var(--font-ui); font-weight: 700; font-size: 0.82rem;
@@ -182,7 +182,7 @@ html.theme-swiss .qla-judge-guess:disabled { opacity: 0.45; cursor: default; }
 html.theme-swiss .qla-judge-guess:disabled:hover { border-color: var(--w-border); background: var(--paper); }
 html.theme-swiss .qla-judge-controls { justify-content: center; min-height: 2.6em; display: flex; gap: 0.6rem; flex-wrap: wrap; margin-top: 0.2rem; }
 html.theme-swiss .qla-judge-feedback { min-height: 1.7em; line-height: 1.7; text-align: center; color: var(--w-ink); font-size: 0.92rem; font-weight: 700; margin: 0.3rem 0 0; }
-html.theme-swiss .qla-judge-feedback.is-correct { color: #1f3fd1; }
+html.theme-swiss .qla-judge-feedback.is-correct { color: var(--w-good, #2f4a3a); }
 html.theme-swiss .qla-judge-feedback.is-wrong { color: var(--accent); }
 html.theme-swiss .qla-judge-score { margin: 0; min-height: 1.7em; line-height: 1.7; text-align: center; color: var(--w-ink); font-weight: 600; font-size: 0.9rem; }
 html.theme-swiss .qla-roster-controls { display: flex; align-items: center; gap: 0.6rem; margin: 0.7rem 0 0.5rem; }
@@ -196,7 +196,7 @@ html.theme-swiss .qla-roster-desc { margin: 0 0 0.4rem; min-height: 2.6em; color
 html.theme-swiss .qla-roster-stats { display: flex; flex-wrap: wrap; gap: 0.35rem 1.1rem; margin-bottom: 0.55rem; min-height: 1.4em; }
 html.theme-swiss .qla-roster-stat { color: var(--w-muted); font-family: 'SF Mono', 'JetBrains Mono', Menlo, monospace; font-size: 0.76rem; font-variant-numeric: tabular-nums; }
 html.theme-swiss .qla-roster-verdict { font-family: 'SF Mono', 'JetBrains Mono', Menlo, monospace; font-size: 0.76rem; font-weight: 700; color: var(--accent); }
-html.theme-swiss .qla-roster-verdict.is-pass { color: #1f3fd1; }
+html.theme-swiss .qla-roster-verdict.is-pass { color: var(--w-good, #2f4a3a); }
 html.theme-swiss .qla-roster-memo { height: 300px; min-height: 160px; max-height: 75vh; overflow-y: auto; margin-top: 0.5rem; scrollbar-width: thin; scrollbar-color: rgba(0,0,0,0.18) transparent; }
 html.theme-swiss .qla-roster-memo::-webkit-scrollbar { width: 6px; }
 html.theme-swiss .qla-roster-memo::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.18); border-radius: 3px; }
@@ -211,19 +211,19 @@ html.theme-swiss .qla-roster-grip::before {
   }
 html.theme-swiss .qla-roster-grip:hover::before,
   html.theme-swiss .qla-roster-grip:focus-visible::before,
-  html.theme-swiss .qla-roster-grip.is-dragging::before { background: rgba(227,69,43,0.78); transform: scaleX(1.08); }
+  html.theme-swiss .qla-roster-grip.is-dragging::before { background: color-mix(in srgb, var(--accent) 78%, transparent); transform: scaleX(1.08); }
 html.theme-swiss .qla-roster-grip:focus-visible { outline: 2px solid var(--w-accent); outline-offset: 1px; }
 @media (prefers-reduced-motion: reduce) { html.theme-swiss .qla-roster-grip::before { transition: none; } }
 html.theme-swiss .qlf-legend { display: flex; justify-content: flex-end; gap: 0.3rem 1rem; flex-wrap: wrap; margin: 0.4rem 0 0.3rem; color: rgba(20,20,20,0.72); font-size: 0.78rem; }
 html.theme-swiss .qlf-legend-item { display: inline-flex; align-items: center; gap: 0.35rem; }
 html.theme-swiss .qlf-legend-swatch { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: currentColor; }
 html.theme-swiss .qlf-sw-series { color: var(--w-accent); }
-html.theme-swiss .qlf-sw-accent { color: #1f3fd1; }
+html.theme-swiss .qlf-sw-accent { color: var(--w-good, #2f4a3a); }
 html.theme-swiss .qlf-sw-warn { color: var(--line-projects); }
 html.theme-swiss .qlf-sw-muted { color: var(--w-muted); }
-html.theme-swiss .qlf-legend-swatch.qla-sw-good { background: #1f3fd1; }
+html.theme-swiss .qlf-legend-swatch.qla-sw-good { background: var(--w-good, #2f4a3a); }
 html.theme-swiss .qlf-legend-swatch.qla-sw-bad { background: var(--line-projects); }
-html.theme-swiss .qlf-legend-swatch.qlf-sw-gap { background: rgba(227,69,43,0.14); box-shadow: inset 0 0 0 1px rgba(227,69,43,0.45); }
+html.theme-swiss .qlf-legend-swatch.qlf-sw-gap { background: color-mix(in srgb, var(--accent) 14%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent); }
 html.theme-swiss .qlf-legend-swatch.qlf-sw-window { background: rgba(20,20,20,0.08); box-shadow: inset 0 0 0 1px rgba(20,20,20,0.3); }
 html.theme-swiss .qlf-legend-swatch.qlf-sw-rung { width: 3px; height: 12px; border-radius: 1px; color: rgba(20,20,20,0.6); }
 html.theme-swiss .qlf-crosshair-canvas { touch-action: pan-y; cursor: crosshair; }
@@ -250,7 +250,7 @@ html.theme-swiss .qlf-la-big {
     line-height: 1.1; font-variant-numeric: tabular-nums; color: var(--w-ink);
   }
 html.theme-swiss .qlf-la-stat-cheat .qlf-la-big { color: var(--line-projects); }
-html.theme-swiss .qlf-la-stat-honest .qlf-la-big { color: #1f3fd1; }
+html.theme-swiss .qlf-la-stat-honest .qlf-la-big { color: var(--w-good, #2f4a3a); }
 html.theme-swiss .qlf-la-stat-label { color: rgba(20,20,20,0.72); font-size: 0.8rem; }
 html.theme-swiss .qlf-la-window-note { margin: 0.35rem 0 0.7rem; color: var(--w-muted); font-size: 0.78rem; }
 html.theme-swiss .qlf-chip-note { margin: 0.4rem 0 0; color: var(--w-muted); font-size: 0.78rem; }
@@ -293,7 +293,7 @@ html.theme-swiss .qlf-status-strip {
     font-family: var(--font-ui); font-weight: 700; font-size: 0.82rem;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
-html.theme-swiss .qlf-status-strip.is-tripped { background: rgba(227,69,43,0.1); border-color: var(--line-projects); color: var(--accent); }
+html.theme-swiss .qlf-status-strip.is-tripped { background: color-mix(in srgb, var(--accent) 10%, transparent); border-color: var(--line-projects); color: var(--accent); }
 html.theme-swiss .qla-visual.qlf-is-killed { border-color: var(--line-projects); }
 html.theme-swiss .qlf-is-killed [data-buy] { opacity: 0.45; }
 html.theme-swiss .qlf-risk-buttons { display: flex; gap: 0.45rem; flex-wrap: wrap; }
@@ -303,7 +303,7 @@ html.theme-swiss .qlf-risk-buttons.qlf-order-row::-webkit-scrollbar-thumb { back
 html.theme-swiss .qlf-order-row .qlf-risk-btn { flex-shrink: 0; white-space: nowrap; }
 @media (max-width: 480px) { html.theme-swiss .qlf-risk-buttons.qlf-order-row { flex-wrap: wrap; overflow-x: visible; } }
 html.theme-swiss .qlf-risk-btn { font-size: 0.8rem; padding: 0.38rem 0.85rem; }
-html.theme-swiss .qlf-risk-btn-warn { color: var(--accent); border-color: rgba(227,69,43,0.5); }
+html.theme-swiss .qlf-risk-btn-warn { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 50%, transparent); }
 html.theme-swiss .qlf-audit-log {
     height: 280px; overflow-y: auto; padding: 0.5rem 0.6rem; border: 1px solid var(--w-border); border-radius: 6px;
     background: var(--paper); font-family: 'SF Mono', 'JetBrains Mono', Menlo, monospace; font-size: 0.76rem; line-height: 1.5;
@@ -316,7 +316,7 @@ html.theme-swiss .qlf-audit-log::-webkit-scrollbar-thumb { background: rgba(0,0,
 html.theme-swiss .qlf-audit-line { display: flex; gap: 0.5rem; align-items: baseline; padding: 0.1rem 0; color: rgba(20,20,20,0.78); }
 html.theme-swiss .qlf-audit-ts { color: var(--w-muted); flex-shrink: 0; }
 html.theme-swiss .qlf-audit-verdict { font-weight: 700; flex-shrink: 0; }
-html.theme-swiss .qlf-audit-line.is-approved .qlf-audit-verdict { color: #1f3fd1; }
+html.theme-swiss .qlf-audit-line.is-approved .qlf-audit-verdict { color: var(--w-good, #2f4a3a); }
 html.theme-swiss .qlf-audit-line.is-rejected .qlf-audit-verdict { color: var(--accent); }
 
 /* Swiss overrides for the shared widget CSS (qla2-widgets.css, qls-widgets.css,
