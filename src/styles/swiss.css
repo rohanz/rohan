@@ -294,12 +294,16 @@ html.theme-swiss .sw-rail-socials a:nth-child(even) { border-right: 0; }
 html.theme-swiss .sw-rail-socials a:hover, html.theme-swiss .sw-rail-socials a:focus-visible { background: var(--ink); color: var(--paper); }
 html.theme-swiss .sw-rail-socials a .sw-arrow { transition: transform .3s ease; }
 html.theme-swiss .sw-rail-socials a:hover .sw-arrow { transform: translate(2px, -2px); }
-html.theme-swiss .sw-rail-links .sw-themes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; }
-html.theme-swiss .sw-rail-links .sw-themes > * { display: flex; align-items: center; justify-content: center; padding: .85rem .25rem; min-height: 2.75rem; border-right: 1px solid var(--tint-hair); text-align: center; transition: background .25s ease, color .25s ease; }
-html.theme-swiss .sw-rail-links .sw-themes > *:last-child { border-right: 0; }
-html.theme-swiss .sw-rail-links .sw-themes > span[aria-current] { background: var(--ink); color: var(--paper); }
-html.theme-swiss .sw-rail-links .sw-themes > a:hover, html.theme-swiss .sw-rail-links .sw-themes > a:focus-visible { background: var(--ink); color: var(--paper); }
-html.theme-swiss .sw-rail-links .sw-themes > a.sw-link::after { content: none; }
+/* Theme switch as three equal cells (rail on projects/music, footer elsewhere);
+   the current theme is the inked cell. */
+html.theme-swiss :is(.sw-rail-links, .sw-footer) nav.sw-themes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; }
+html.theme-swiss :is(.sw-rail-links, .sw-footer) nav.sw-themes > * { display: flex; align-items: center; justify-content: center; padding: .85rem .25rem; min-height: 2.75rem; border-right: 1px solid var(--tint-hair); text-align: center; transition: background .25s ease, color .25s ease; }
+html.theme-swiss :is(.sw-rail-links, .sw-footer) nav.sw-themes > *:last-child { border-right: 0; }
+html.theme-swiss :is(.sw-rail-links, .sw-footer) nav.sw-themes > span[aria-current] { background: var(--ink); color: var(--paper); }
+html.theme-swiss :is(.sw-rail-links, .sw-footer) nav.sw-themes > a:hover, html.theme-swiss :is(.sw-rail-links, .sw-footer) nav.sw-themes > a:focus-visible { background: var(--ink); color: var(--paper); }
+html.theme-swiss :is(.sw-rail-links, .sw-footer) nav.sw-themes > a.sw-link::after { content: none; }
+html.theme-swiss .sw-footer nav.sw-themes { grid-template-columns: repeat(3, minmax(7.5rem, auto)); border: 1px solid var(--hair); }
+html.theme-swiss .sw-footer nav.sw-themes > * { border-right-color: var(--hair); padding-inline: 1rem; }
 
 /* Sticky-rail heading shared by projects and music (projects is the reference). */
 html.theme-swiss .sw-rail-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; padding: 2rem var(--gutter); }
