@@ -38,7 +38,8 @@
     else if (t.closest('a[download]')) count({ path: 'file-download', event: true });
   });
 
-  // First play per page visit, per player.
+  // First play per page visit, per player. Shared players attach to the DOM
+  // and clear gcCounted before a route swap so returning starts a new visit.
   document.addEventListener('play', (e) => {
     const el = e.target;
     if (el instanceof HTMLMediaElement && !el.dataset.gcCounted) {

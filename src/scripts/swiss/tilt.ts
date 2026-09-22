@@ -59,7 +59,7 @@ function bindTouchCards(cards: HTMLElement[]) {
     observer?.observe(card);
     const play = (event: MouseEvent) => {
       // Keyboard activation and text links always navigate immediately.
-      if (event.detail === 0 || event.button !== 0 || event.metaKey || event.ctrlKey ||
+      if (reduce.matches || event.detail === 0 || event.button !== 0 || event.metaKey || event.ctrlKey ||
           event.shiftKey || event.altKey || !(event.target instanceof Element) ||
           !event.target.closest('.swiss-card-art') || card.classList.contains('is-hover')) return;
       event.preventDefault();

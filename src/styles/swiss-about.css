@@ -9,20 +9,20 @@ html.theme-swiss .sw-about-caption a { justify-content: space-between; }
 html.theme-swiss .sw-about-caption .sw-arrow { font-size: 1.4rem; }
 html.theme-swiss .sw-about-facts { display: grid; grid-template-columns: minmax(0, 1fr); }
 html.theme-swiss .sw-about-cell { min-width: 0; display: flex; flex-direction: column; gap: 1.25rem; padding: 1.5rem; border-bottom: 1px solid var(--tint-hair); background: var(--paper); transition: background .3s ease, color .3s ease; }
-html.theme-swiss .sw-about-cell h2, html.theme-swiss .sw-about-bio h1 { margin: 0; }
-html.theme-swiss .sw-about-body { font-size: .9375rem; }
+html.theme-swiss .sw-about-cell > .sw-label, html.theme-swiss .sw-about-bio h1 { margin: 0; }
+html.theme-swiss .sw-about-body { font-size: 1rem; }
 html.theme-swiss .sw-about-body p { margin: 0; }
 html.theme-swiss .sw-about-body p + p { margin-top: .75rem; }
 html.theme-swiss .sw-about-links { margin: auto calc(-1 * var(--cell-pad, 1.5rem)) calc(-1 * var(--cell-pad, 1.5rem)); border-top: 1px solid var(--tint-hair); }
 html.theme-swiss .sw-about-stats { flex: 1; display: flex; flex-direction: column; justify-content: space-evenly; gap: 2rem; }
 html.theme-swiss .sw-stat { display: flex; flex-direction: column; gap: .5rem; }
 html.theme-swiss .sw-stat .sw-display { font-size: clamp(2.6rem, 5vw, 5rem); }
-html.theme-swiss .sw-tech-list { margin: 0; font-size: .75rem; font-weight: 500; letter-spacing: var(--track-caps); text-transform: uppercase; line-height: 2.2; }
+html.theme-swiss .sw-tech-list { margin: 0; font-size: 1rem; font-weight: 500; letter-spacing: var(--track-caps); text-transform: uppercase; line-height: 2.2; }
 html.theme-swiss .sw-about-quotes { display: grid; grid-template-columns: minmax(0, 1fr); overflow: hidden; font-size: 1.05rem; }
 html.theme-swiss .sw-quote { grid-area: 1 / 1; margin: 0; min-width: 0; opacity: 1; transition: opacity 200ms ease; }
 html.theme-swiss .sw-quote[aria-hidden="true"] { opacity: 0; visibility: hidden; pointer-events: none; }
 html.theme-swiss .sw-quote p { margin: 0 0 1rem; font-family: var(--font-ui); line-height: 1.5; }
-html.theme-swiss .sw-testimonial-controls { display: flex; justify-content: flex-end; gap: .5rem; margin-top: auto; }
+html.theme-swiss .sw-testimonial-controls { display: flex; align-items: center; justify-content: flex-end; gap: .5rem; margin-top: auto; }
 html.theme-swiss .sw-testimonial-controls[hidden] { display: none; }
 @media (hover: hover) {
   html.theme-swiss .sw-about-cell:hover:not(:focus-within) { background: var(--tint); }
@@ -75,4 +75,13 @@ html.theme-swiss .sw-about-bio h1 { font-size: clamp(1.5rem, 2.1vw, 2.1rem); }
 /* Keep the face in the shallow portrait crop on a rotated phone. */
 @media (max-width: 1099px) and (orientation: landscape) {
   html.theme-swiss .sw-about-photo img { object-position: center 62%; }
+}
+
+html.theme-swiss .sw-testimonial-controls button { min-width: 2.75rem; min-height: 2.75rem; padding: .25rem; border: 0; background: transparent; color: var(--ink); font: inherit; font-size: .75rem; cursor: pointer; }
+html.theme-swiss .sw-testimonial-controls button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+html.theme-swiss .sw-testimonial-controls button:disabled { cursor: default; }
+html.theme-swiss .sw-testimonial-status { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+@media (hover: none), (pointer: coarse) {
+  html.theme-swiss .sw-about-caption a,
+  html.theme-swiss .sw-about-links.sw-rail-socials a { min-height: 2.75rem; }
 }

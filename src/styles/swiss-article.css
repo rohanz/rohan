@@ -136,3 +136,11 @@ html.theme-swiss .sw-mobile-sections a:focus-visible { outline: 2px solid var(--
   html.theme-swiss .sw-article-foot-cells > [aria-hidden] { display: none; }
   html.theme-swiss .sw-article-foot .next { text-align: left; }
 }
+
+@media (hover: none), (pointer: coarse) {
+  html.theme-swiss .sw-article-head-title > a,
+  html.theme-swiss .sw-toc-nav a,
+  html.theme-swiss .sw-article-all { display: inline-flex; align-items: center; min-width: 44px; min-height: 44px; }
+  /* Reserve space for the index link so it cannot cover adjacent navigation. */
+  html.theme-swiss .sw-article-foot { padding-bottom: 3.5rem; }
+}

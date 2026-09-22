@@ -204,7 +204,7 @@ html.theme-swiss .sw-section-head > h1, html.theme-swiss .sw-section-head > h2 {
 
 /* Below this width the four 16px nav labels no longer fit beside the wordmark.
    The toggle opens shared-edge rows across the full viewport. */
-@media (max-width: 539px) {
+@media (max-width: 539px), (max-width: 1024px) and (hover: none), (max-width: 1024px) and (pointer: coarse) {
   html.theme-swiss .sw-nav-links { display: none; }
   html.theme-swiss .sw-menu-toggle {
     appearance: none;
@@ -307,10 +307,20 @@ html.theme-swiss .sw-rail-heading .sw-label { white-space: nowrap; color: var(--
 
 /* Phones: no theme switcher anywhere, and no social links except the home contact
    squares and the about bio (rail link blocks and the footer links go). */
-@media (max-width: 899px) {
+@media (max-width: 899px), (max-width: 1024px) and (hover: none), (max-width: 1024px) and (pointer: coarse) {
   html.theme-swiss .sw-themes,
   html.theme-swiss .sw-rail-links,
   html.theme-swiss .sw-footer .sw-themes,
   html.theme-swiss .sw-footer > .sw-wrap > .sw-themes:first-child,
   html.theme-swiss .sw-selected-work { display: none !important; }
+}
+
+/* Touch chrome follows capability even when a phone is rotated. Keep the hero
+   geometry above independent of this navigation breakpoint. */
+@media (max-width: 1024px) and (hover: none), (max-width: 1024px) and (pointer: coarse) {
+  html.theme-swiss.sw-home .sw-nav { opacity: 1; transform: none; }
+  html.theme-swiss .sw-mobile-menu { max-height: calc(100dvh - var(--nav-height)); overflow-y: auto; }
+}
+@media (hover: none), (pointer: coarse) {
+  html.theme-swiss .sw-wordmark { display: inline-flex; align-items: center; min-width: 44px; min-height: 44px; }
 }

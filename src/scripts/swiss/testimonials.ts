@@ -12,12 +12,15 @@ function init() {
   const root: HTMLElement = rootEl;
   const quotes = Array.from(root.querySelectorAll<HTMLElement>('[data-testimonial]'));
   const controls = root.querySelector<HTMLElement>('[data-testimonial-controls]');
+  const toggle = root.querySelector<HTMLButtonElement>('[data-testimonial-toggle]');
+  const status = root.querySelector<HTMLElement>('[data-testimonial-status]');
   const ringFill = root.querySelector<SVGCircleElement>('[data-testimonial-ring] .sw-ring-fill');
   if (quotes.length < 2 || !controls) return;
 
   const events = new AbortController();
   const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
   let current = Math.max(0, quotes.findIndex((quote) => quote.getAttribute('aria-hidden') === 'false'));
+  let paused = false;
   let elapsed = 0; // ms into the current interval
   let last = 0;
   let raf = 0;
@@ -27,7 +30,7 @@ function init() {
   quotes.forEach((quote) => { quote.hidden = false; });
   controls.hidden = false;
 
-  const running = () => !motion.matches && !hovered && !focused && !document.hidden;
+  const running = () => !paused && !motion.matches && !hovered && !focused && !document.hidden;
 
   function paint() {
     if (!ringFill) return;
@@ -61,9 +64,23 @@ function init() {
       raf = 0;
     }
     root.classList.toggle('is-paused', !running());
+    if (toggle) {
+      toggle.disabled = motion.matches;
+      toggle.textContent = motion.matches ? 'paused' : paused ? 'play' : 'pause';
+      toggle.setAttribute('aria-label', motion.matches ? 'Automatic testimonies disabled for reduced motion' : paused ? 'Play automatic testimonies' : 'Pause automatic testimonies');
+    }
   }
 
   const options = { signal: events.signal };
+  function step(direction: number) {
+    show(current + direction);
+    elapsed = 0;
+    paint();
+    if (status) status.textContent = `Testimony ${current + 1} of ${quotes.length}: ${quotes[current].textContent?.trim()}`;
+  }
+  root.querySelector('[data-testimonial-prev]')?.addEventListener('click', () => step(-1), options);
+  root.querySelector('[data-testimonial-next]')?.addEventListener('click', () => step(1), options);
+  toggle?.addEventListener('click', () => { paused = !paused; schedule(); }, options);
   root.addEventListener('mouseenter', () => { hovered = hover.matches; schedule(); }, options);
   root.addEventListener('mouseleave', () => { hovered = false; schedule(); }, options);
   root.addEventListener('focusin', () => { focused = true; schedule(); }, options);

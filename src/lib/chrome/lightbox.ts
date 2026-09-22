@@ -204,6 +204,7 @@ export function wrapZoomableImages(
       const onKeydown = (e: KeyboardEvent) => {
         if (e.key !== 'Enter' && e.key !== ' ') return;
         e.preventDefault(); // Space would otherwise scroll the page
+        e.stopPropagation(); // Do not let the opening key also dismiss the dialog.
         lightbox.open(img, trigger);
       };
       trigger.addEventListener('click', onClick);

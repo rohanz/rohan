@@ -74,8 +74,8 @@ for (const phone of phones) {
   });
 }
 
-test.describe('compact tablet navigation', () => {
-  test.use({ viewport: { width: 540, height: 720 }, hasTouch: true, isMobile: true });
+test.describe('compact fine-pointer navigation', () => {
+  test.use({ viewport: { width: 540, height: 720 }, hasTouch: false, isMobile: false });
 
   test('keeps the 16px primary links in one tappable row when they fit', async ({ page }) => {
     await page.goto('/swiss/');
@@ -90,4 +90,37 @@ test.describe('compact tablet navigation', () => {
     }
     await expectNoHorizontalOverflow(page, '/swiss/ at 540px');
   });
+});
+
+for (const viewport of [{ width: 844, height: 390 }, { width: 915, height: 412 }]) {
+  test.describe(`touch landscape chrome ${viewport.width}`, () => {
+    test.use({ viewport, hasTouch: true, isMobile: true });
+    test('keeps phone navigation and hides desktop chrome on every route', async ({ page }) => {
+      for (const route of routes) {
+        await page.goto(route);
+        await expect(page.locator('.sw-nav')).toHaveCSS('opacity', '1');
+        await expect(page.locator('.sw-nav-links')).toBeHidden();
+        const menu = page.locator('.sw-menu-toggle');
+        await menu.tap();
+        await expect(menu).toHaveAttribute('aria-expanded', 'true');
+        await expect(page.locator('.sw-mobile-primary')).toBeVisible();
+        for (const target of await page.locator('.sw-wordmark, .sw-menu-toggle, .sw-mobile-primary a').all()) {
+          const box = (await target.boundingBox())!;
+          expect(box.width).toBeGreaterThanOrEqual(44);
+          expect(box.height).toBeGreaterThanOrEqual(44);
+        }
+        for (const hidden of await page.locator('.sw-themes, .sw-rail-links').all()) await expect(hidden).toBeHidden();
+        await expectNoHorizontalOverflow(page, route);
+        await menu.tap();
+      }
+    });
+  });
+}
+
+test('fine-pointer landscape retains desktop navigation', async ({ page }) => {
+  await page.setViewportSize({ width: 915, height: 412 });
+  await page.goto('/swiss/projects');
+  await expect(page.locator('.sw-nav-links')).toBeVisible();
+  await expect(page.locator('.sw-menu-toggle')).toBeHidden();
+  await expect(page.locator('.sw-rail-links')).toBeVisible();
 });

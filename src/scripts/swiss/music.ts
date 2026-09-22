@@ -96,11 +96,14 @@ function init() {
   if (!audio) {
     audio = new Audio();
     audio.preload = 'none';
+    audio.hidden = true;
     audio.onended = () => setActive(null);
     // External pause/error (media keys, OS controls, decode failure) must clear the row too.
     audio.onpause = () => { if (audio && audio.paused && !audio.ended) setActive(null); };
     audio.onerror = () => setActive(null);
   }
+  // The shared player survives route swaps; reattach it for delegated analytics.
+  if (!audio.isConnected) document.body.appendChild(audio);
   buttons.forEach((button) => {
     if (button.dataset.bound === '1') return;
     button.dataset.bound = '1';
@@ -117,6 +120,7 @@ function init() {
 document.addEventListener('astro:page-load', init);
 document.addEventListener('astro:before-swap', () => {
   stop();
+  if (audio) delete audio.dataset.gcCounted;
   selected = null;
   const session = mediaSession();
   if (session) {

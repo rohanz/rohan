@@ -71,7 +71,7 @@ html.theme-swiss .swiss-card-art svg { width: 100%; height: 100%; display: block
 html.theme-swiss .swiss-card-placeholder { width: 100%; height: 100%; background: repeating-linear-gradient(135deg, transparent 0 10px, var(--hair) 10px 11px); }
 html.theme-swiss .swiss-card-body { flex: 1; min-height: 10rem; display: flex; flex-direction: column; gap: .5rem; padding: 1.1rem 1.25rem 1.25rem; }
 html.theme-swiss .swiss-card-title { margin: 0; font-family: var(--font-ui); font-weight: 500; font-size: clamp(1.15rem, 1.4vw, 1.45rem); letter-spacing: -0.03em; line-height: 1.1; }
-html.theme-swiss .swiss-card-summary { margin: 0; color: var(--muted); font-size: 0.875rem; line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+html.theme-swiss .swiss-card-summary { margin: 0; color: var(--muted); font-size: 1rem; line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 html.theme-swiss .swiss-card-tags { margin-top: auto; display: flex; flex-wrap: wrap; gap: .35rem .9rem; }
 
 
@@ -107,7 +107,6 @@ html.theme-swiss .swiss-card.is-hover .swiss-card-art :is([data-depth], .z1, .z2
     height: 2.75rem; min-height: 2.75rem; padding-block: 0;
     scroll-snap-align: start; white-space: nowrap;
   }
-  html.theme-swiss .swiss-card-summary { font-size: .9375rem; }
   html.theme-swiss .swiss-card-art { min-height: 0; }
   html.theme-swiss .swiss-card-art svg { position: absolute; inset: 1.25rem; width: calc(100% - 2.5rem); height: calc(100% - 2.5rem); }
 }

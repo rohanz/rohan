@@ -101,3 +101,7 @@ html.theme-swiss .sw-meter canvas { display: block; width: 100%; height: 100%; b
   html.theme-swiss .sw-meter { height: 6rem; }
   html.theme-swiss .sw-meter-freq, html.theme-swiss .sw-meter-stereo, html.theme-swiss .sw-meter-vu { display: none; }
 }
+
+@media (hover: none), (pointer: coarse) {
+  html.theme-swiss .sw-track-links a { min-width: 44px; min-height: 44px; }
+}
