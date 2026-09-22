@@ -166,17 +166,21 @@ html.theme-swiss .sw-section-head > h1, html.theme-swiss .sw-section-head > h2 {
 
   /* One phone screen, split in two like the desktop split: copy on top,
      the quadrants filling the lower half edge to edge. */
-  html.theme-swiss .sw-hero { height: 100svh; min-height: 0; grid-template-rows: minmax(0, 11fr) minmax(0, 9fr); }
+  html.theme-swiss .sw-hero { height: 100svh; min-height: 0; grid-template-rows: minmax(0, 1fr) minmax(0, 1fr); }
+  /* The phone home is one screen: no scroll, no rubber-band scrollbar. */
+  html.theme-swiss.sw-home { overflow: hidden; overscroll-behavior: none; }
   /* Short viewports (phone landscape) cannot hold the one-screen split; size to content. */
   @media (max-height: 560px) {
     html.theme-swiss .sw-hero { height: auto; min-height: 100svh; grid-template-rows: auto auto; }
+    html.theme-swiss.sw-home { overflow: auto; overscroll-behavior: auto; }
     html.theme-swiss .sw-quads { grid-auto-rows: minmax(9rem, auto); }
     html.theme-swiss .sw-mini { grid-auto-rows: minmax(4.5rem, auto); }
   }
   html.theme-swiss .sw-hero-copy {
     min-height: 0;
     justify-content: center;
-    padding: calc(var(--nav-height) + 1rem) var(--gutter) 1.5rem;
+    /* Extra bottom padding biases the copy upward so the nav does not read as dead space above it. */
+    padding: calc(var(--nav-height) + .5rem) var(--gutter) 2.5rem;
   }
   html.theme-swiss .sw-hero-copy h1 {
     font-size: clamp(2.5rem, 11vw, 3.6rem);
