@@ -5,7 +5,7 @@ interface Props { slug: string; title: string; summary: string; technologies: st
 const { slug, title, summary, technologies } = Astro.props;
 const Drawing = drawingFor(slug);
 ---
-<a class="swiss-card" href={`/swiss/projects/${slug}`} data-reveal="block">
+<a class="swiss-card" href={`/swiss/projects/${slug}`} data-reveal="block" data-techs={technologies.join(',')}>
   <div class="swiss-card-art" aria-hidden="true">
     {Drawing ? <Drawing /> : <div class="swiss-card-placeholder"></div>}
   </div>

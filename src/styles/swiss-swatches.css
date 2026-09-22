@@ -1,4 +1,7 @@
 /* Accent comparisons stay local to this unlisted gallery. */
+html.theme-swiss .sw-swatch-note { margin: -1rem 0 2rem; max-width: 70ch; color: var(--muted); font-size: 14px; }
+html.theme-swiss .sw-swatch-values { display: inline-flex; align-items: baseline; gap: .4rem; }
+html.theme-swiss .sw-swatch-contrast { color: var(--muted); font-size: 10px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 html.theme-swiss .sw-swatches { display: grid; gap: 2rem; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); }
 html.theme-swiss .sw-swatch { min-width: 0; border: 1px solid var(--hair); padding: 1.25rem; display: grid; gap: 1.25rem; }
 html.theme-swiss .sw-swatch-head { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }

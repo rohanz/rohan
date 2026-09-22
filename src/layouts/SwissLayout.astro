@@ -88,6 +88,22 @@ const nav = [
     <script>
       import '../scripts/swiss/reveal.ts';
       import '../lib/theme-switch.ts';
+
+      let cleanupNav: (() => void) | undefined;
+      function initNav() {
+        cleanupNav?.();
+        const nav = document.querySelector<HTMLElement>('.sw-nav');
+        if (!nav) return;
+        const update = () => nav.classList.toggle('is-visible',
+          !document.documentElement.classList.contains('sw-home') || window.scrollY > 40);
+        update();
+        window.addEventListener('scroll', update, { passive: true });
+        cleanupNav = () => window.removeEventListener('scroll', update);
+      }
+      document.addEventListener('astro:page-load', initNav);
+      document.addEventListener('astro:before-swap', () => { cleanupNav?.(); cleanupNav = undefined; });
+      if (document.readyState !== 'loading') initNav();
+      else document.addEventListener('DOMContentLoaded', initNav, { once: true });
     </script>
   </body>
 </html>

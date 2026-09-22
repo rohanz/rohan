@@ -30,6 +30,32 @@ export const ACCENTS: Accent[] = [
   { id: 'warm-grey', label: 'warm grey', hex: '#7a746c' },
   { id: 'charcoal', label: 'charcoal', hex: '#3a3a38' },
   { id: 'ink', label: 'ink only', hex: '#141414' },
+
+  // Pastels
+  { id: 'blush', label: 'blush', hex: '#e8b4b8' },
+  { id: 'peach', label: 'peach', hex: '#f0c9a8' },
+  { id: 'butter', label: 'butter', hex: '#efe0a3' },
+  { id: 'mint', label: 'mint', hex: '#bfe0cc' },
+  { id: 'sky', label: 'sky', hex: '#b9d4e8' },
+  { id: 'lilac', label: 'lilac', hex: '#cdbfe6' },
+  { id: 'powder', label: 'powder', hex: '#d8d0e8' },
+  { id: 'sand', label: 'sand', hex: '#e3d5bf' },
+
+  // Dusty mids
+  { id: 'coral', label: 'coral', hex: '#d97b6c' },
+  { id: 'apricot', label: 'apricot', hex: '#e39a6c' },
+  { id: 'marigold', label: 'marigold', hex: '#dfae4a' },
+  { id: 'fern', label: 'fern', hex: '#7fa87a' },
+  { id: 'seafoam', label: 'seafoam', hex: '#7fb7a8' },
+  { id: 'steel', label: 'steel', hex: '#7d93a8' },
+  { id: 'periwinkle', label: 'periwinkle', hex: '#8a8fd0' },
+  { id: 'orchid', label: 'orchid', hex: '#b07aa8' },
+  { id: 'rosewood', label: 'rosewood', hex: '#a45d6a' },
+  { id: 'copper', label: 'copper', hex: '#b8733c' },
+
+  // Deep neutrals
+  { id: 'espresso', label: 'espresso', hex: '#3f2f2a' },
+  { id: 'midnight', label: 'midnight', hex: '#1f2a3a' },
 ];
 
 export const DEFAULT_ACCENT: Accent = ACCENTS[0];

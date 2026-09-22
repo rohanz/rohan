@@ -1,76 +1,86 @@
-// Home-page section snap with "resistance then glide": wheel intent has to
-// cross a small threshold before the page eases to the next section over a
-// fixed duration. Desktop fine-pointer only, off under reduced motion, and
-// native scrolling takes over once the reader is past the snap sections.
-const THRESHOLD = 70; // accumulated wheel px before we commit
-const DURATION = 800; // ms for the eased travel
-const SETTLE = 350; // ms of wheel input ignored after landing (momentum tail)
-
+// Native scrolling first; settle between the hero and selected work after idle.
+const IDLE = 110;
+const DURATION = 550;
 let cleanup: (() => void) | undefined;
-
-const easeInOutCubic = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 
 function init() {
   cleanup?.();
-  const hero = document.querySelector<HTMLElement>('.sw-hero');
+  cleanup = undefined;
   const next = document.querySelector<HTMLElement>('.sw-selected-work');
-  if (!hero || !next) return;
+  if (!document.querySelector('.sw-hero') || !next) return;
   const fine = window.matchMedia('(min-width: 900px) and (hover: hover) and (pointer: fine)');
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
-  if (!fine.matches || reduce.matches) return;
-  const heroEl: HTMLElement = hero;
-  const nextEl: HTMLElement = next;
-
-  const navH = () => document.querySelector<HTMLElement>('.sw-nav')?.offsetHeight ?? 0;
-  const topOf = (el: HTMLElement) => el.getBoundingClientRect().top + window.scrollY - navH();
-  let acc = 0;
-  let lastWheel = 0;
-  let animating = false;
-  let settleUntil = 0;
+  let timer = 0;
   let raf = 0;
+  let animating = false;
+  let touching = false;
+  let lastY = window.scrollY;
+  let direction = 0;
+  const enabled = () => fine.matches && !reduce.matches;
 
-  function glide(target: number) {
-    const start = window.scrollY;
-    const delta = target - start;
-    if (Math.abs(delta) < 2) return;
-    const t0 = performance.now();
-    animating = true;
-    const step = (now: number) => {
-      const p = Math.min(1, (now - t0) / DURATION);
-      window.scrollTo(0, start + delta * easeInOutCubic(p));
-      if (p < 1) raf = requestAnimationFrame(step);
-      else { animating = false; settleUntil = performance.now() + SETTLE; acc = 0; }
-    };
-    raf = requestAnimationFrame(step);
-  }
-
-  function onWheel(e: WheelEvent) {
-    const now = performance.now();
-    if (animating || now < settleUntil) { e.preventDefault(); return; }
-    const heroTop = topOf(heroEl);
-    const nextTop = topOf(nextEl);
-    const y = window.scrollY;
-    const inHero = y < nextTop - 4;
-    const atNext = Math.abs(y - nextTop) < 4;
-    const down = e.deltaY > 0;
-    // Only intercept the two transitions we own; elsewhere scroll natively.
-    const owns = (inHero && down) || (atNext && !down);
-    if (!owns) { acc = 0; return; }
-    e.preventDefault();
-    if (now - lastWheel > 250) acc = 0;
-    lastWheel = now;
-    acc += e.deltaY;
-    if (Math.abs(acc) >= THRESHOLD) {
-      acc = 0;
-      glide(down ? nextTop : heroTop);
-    }
-  }
-
-  window.addEventListener('wheel', onWheel, { passive: false });
-  cleanup = () => {
-    window.removeEventListener('wheel', onWheel);
+  function cancel() {
+    clearTimeout(timer);
     cancelAnimationFrame(raf);
     animating = false;
+    lastY = window.scrollY;
+  }
+  function settle() {
+    if (!enabled() || touching || !direction) return;
+    const navHeight = document.querySelector<HTMLElement>('.sw-nav')?.offsetHeight ?? 0;
+    const end = next!.getBoundingClientRect().top + window.scrollY - navHeight;
+    const start = window.scrollY;
+    if (end <= 0 || start <= 0 || start >= end) return;
+    const progress = start / end;
+    const target = progress <= .15 ? 0 : progress >= .85 ? end : direction > 0 ? end : 0;
+    const started = performance.now();
+    animating = true;
+    function step(now: number) {
+      const t = Math.min(1, (now - started) / DURATION);
+      window.scrollTo({ top: start + (target - start) * (1 - Math.pow(1 - t, 3)), behavior: 'instant' });
+      lastY = window.scrollY;
+      if (t < 1) raf = requestAnimationFrame(step);
+      else animating = false;
+    }
+    raf = requestAnimationFrame(step);
+  }
+  function schedule() {
+    clearTimeout(timer);
+    if (enabled() && !touching) timer = window.setTimeout(settle, IDLE);
+  }
+  function onScroll() {
+    const y = window.scrollY;
+    if (animating) { lastY = y; return; }
+    if (y !== lastY) { direction = Math.sign(y - lastY); lastY = y; schedule(); }
+  }
+  function onWheel(event: WheelEvent) {
+    cancel();
+    if (event.deltaY) direction = Math.sign(event.deltaY);
+    schedule();
+  }
+  function onTouchStart() { cancel(); touching = true; }
+  function onTouchMove() { cancel(); }
+  function onTouchEnd() { touching = false; schedule(); }
+  function onKey() { cancel(); direction = 0; }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('wheel', onWheel, { passive: true });
+  window.addEventListener('touchstart', onTouchStart, { passive: true });
+  window.addEventListener('touchmove', onTouchMove, { passive: true });
+  window.addEventListener('touchend', onTouchEnd, { passive: true });
+  window.addEventListener('touchcancel', onTouchEnd, { passive: true });
+  window.addEventListener('keydown', onKey);
+  fine.addEventListener('change', cancel);
+  reduce.addEventListener('change', cancel);
+  cleanup = () => {
+    cancel();
+    window.removeEventListener('scroll', onScroll);
+    window.removeEventListener('wheel', onWheel);
+    window.removeEventListener('touchstart', onTouchStart);
+    window.removeEventListener('touchmove', onTouchMove);
+    window.removeEventListener('touchend', onTouchEnd);
+    window.removeEventListener('touchcancel', onTouchEnd);
+    window.removeEventListener('keydown', onKey);
+    fine.removeEventListener('change', cancel);
+    reduce.removeEventListener('change', cancel);
   };
 }
 

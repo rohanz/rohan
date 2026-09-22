@@ -19,7 +19,9 @@ function init() {
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const targets = Array.from(document.querySelectorAll<HTMLElement>('[data-reveal]'));
   document.querySelectorAll<HTMLElement>('[data-reveal-group]').forEach((group) => {
-    Array.from(group.children).forEach((child, i) => (child as HTMLElement).style.setProperty('--i', String(i)));
+    const requestedCols = Number(group.dataset.revealCols);
+    const cols = Number.isInteger(requestedCols) && requestedCols > 0 ? requestedCols : 3;
+    Array.from(group.children).forEach((child, i) => (child as HTMLElement).style.setProperty('--i', String(i % cols)));
   });
   targets.forEach((t) => { if (t.dataset.reveal === 'lines') splitLines(t); });
   if (reduce || !('IntersectionObserver' in window)) {
@@ -32,7 +34,7 @@ function init() {
       e.target.classList.add('is-in');
       observer?.unobserve(e.target);
     }
-  }, { rootMargin: '0px 0px -10% 0px', threshold: 0.1 });
+  }, { rootMargin: '0px 0px -5% 0px', threshold: 0 });
   targets.forEach((t) => observer!.observe(t));
 }
 

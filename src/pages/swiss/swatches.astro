@@ -4,6 +4,20 @@ import SwissCard from '../../components/SwissCard.astro';
 import { ACCENTS, DEFAULT_ACCENT } from '../../lib/swiss/accents';
 import { getEntry } from 'astro:content';
 import '../../styles/swiss-swatches.css';
+// WCAG relative luminance: linearize sRGB before weighting channels.
+function luminance(hex: string): number {
+  const channels = [1, 3, 5].map((offset) => {
+    const channel = parseInt(hex.slice(offset, offset + 2), 16) / 255;
+    return channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+  });
+  return channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
+}
+const paperLuminance = luminance('#f7f5f0');
+function contrastRatio(hex: string): string {
+  const accentLuminance = luminance(hex);
+  return ((Math.max(accentLuminance, paperLuminance) + 0.05) /
+    (Math.min(accentLuminance, paperLuminance) + 0.05)).toFixed(2);
+}
 const sample = await getEntry('projects', 'bqst');
 if (!sample) throw new Error('The Swiss swatches sample project bqst is missing.');
 ---
@@ -13,12 +27,13 @@ if (!sample) throw new Error('The Swiss swatches sample project bqst is missing.
       <h1 class="sw-display sw-display-lg">accent swatches</h1>
       <span class="sw-label">default: {DEFAULT_ACCENT.hex}</span>
     </div>
+    <p class="sw-swatch-note">Pastel accents fail text contrast on paper and suit fills and hovers only. Ratios compare each accent with paper (#f7f5f0).</p>
     <div class="sw-swatches">
       {ACCENTS.map((accent) => (
         <section class="sw-swatch" data-accent={accent.id} aria-labelledby={`swatch-${accent.id}`} style={`--accent:${accent.hex}; --w-accent:${accent.hex}; --line-projects:${accent.hex}`}>
           <div class="sw-swatch-head">
             <h2 class="sw-label" id={`swatch-${accent.id}`}>{accent.label}</h2>
-            <code>{accent.hex}</code>
+            <span class="sw-swatch-values"><code>{accent.hex}</code> <small class="sw-swatch-contrast" aria-label={`${contrastRatio(accent.hex)} to 1 contrast against paper`}>{contrastRatio(accent.hex)}:1</small></span>
           </div>
           <div class="sw-swatch-hero">
             <p class="sw-label">software, ai, music</p>

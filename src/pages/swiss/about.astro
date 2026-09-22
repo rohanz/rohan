@@ -30,30 +30,28 @@ import { TESTIMONIALS } from '../../data/testimonials';
         <img src="/assets/images/profile.webp" alt="Rohan outdoors" width="1000" height="1334" loading="eager" decoding="async" />
       </figure>
     </div>
-    <hr class="sw-rule" />
-    <div class="sw-grid sw-about-facts">
-      <div class="sw-about-stats" data-reveal-group>
-        {STATS.map((s) => <div class="sw-stat" data-reveal="block"><span class="sw-display sw-display-md">{s.value}</span><span class="sw-label">{s.label}</span></div>)}
-      </div>
-      <div class="sw-about-tech" data-reveal="block">
-        <span class="sw-label">tech stack</span>
-        <p class="sw-tech-list">{TECH_STACK.map((t) => t.name).join(' · ')}</p>
-      </div>
-    </div>
-    <section class="sw-about-testimonials" data-testimonials aria-label="Testimonials" aria-roledescription="carousel">
-      <h2 class="sw-label">a few words from friends &amp; family</h2>
-      <div class="sw-about-quotes" id="sw-testimonial-quotes" aria-live="polite" aria-atomic="true">
-        {TESTIMONIALS.map((t, i) => <blockquote class="sw-quote" data-testimonial hidden={i !== 0} aria-hidden={i !== 0 ? 'true' : 'false'}><p>“{t.quote}”</p><footer class="sw-label">{t.author}</footer></blockquote>)}
-      </div>
-      <div class="sw-testimonial-controls" data-testimonial-controls hidden>
-        <button class="sw-testimonial-arrow" type="button" data-testimonial-prev aria-label="Previous testimonial" aria-controls="sw-testimonial-quotes">←</button>
-        <div class="sw-testimonial-dots" aria-label="Choose a testimonial">
-          {TESTIMONIALS.map((t, i) => <button class="sw-testimonial-dot" type="button" data-testimonial-dot aria-label={`Show testimonial by ${t.author}`} aria-current={i === 0 ? 'true' : undefined} aria-controls="sw-testimonial-quotes"><span aria-hidden="true"></span></button>)}
+    <div class="sw-about-facts">
+      <section class="sw-about-cell" aria-labelledby="sw-stats-heading">
+        <h2 class="sw-label" id="sw-stats-heading">stats</h2>
+        <div class="sw-about-stats">
+          {STATS.map((s) => <div class="sw-stat"><span class="sw-display sw-display-md">{s.value}</span><span class="sw-label">{s.label}</span></div>)}
         </div>
-        <button class="sw-testimonial-arrow" type="button" data-testimonial-next aria-label="Next testimonial" aria-controls="sw-testimonial-quotes">→</button>
-        <button class="sw-label sw-testimonial-pause" type="button" data-testimonial-pause>Pause</button>
-      </div>
-    </section>
+      </section>
+      <section class="sw-about-cell" aria-labelledby="sw-tech-heading">
+        <h2 class="sw-label" id="sw-tech-heading">tech stack</h2>
+        <p class="sw-tech-list">{TECH_STACK.map((t) => t.name).join(' · ')}</p>
+      </section>
+      <section class="sw-about-cell sw-about-testimonials" data-testimonials aria-labelledby="sw-testimonials-heading" aria-roledescription="carousel">
+        <h2 class="sw-label" id="sw-testimonials-heading">a few words</h2>
+        <div class="sw-about-quotes" id="sw-testimonial-quotes" aria-live="polite" aria-atomic="true">
+          {TESTIMONIALS.map((t, i) => <blockquote class="sw-quote" data-testimonial hidden={i !== 0} aria-hidden={i !== 0 ? 'true' : 'false'}><p>“{t.quote}”</p><footer class="sw-label">{t.author}</footer></blockquote>)}
+        </div>
+        <div class="sw-testimonial-controls" data-testimonial-controls hidden>
+          <button class="sw-testimonial-arrow" type="button" data-testimonial-prev aria-label="Previous testimonial" aria-controls="sw-testimonial-quotes">←</button>
+          <button class="sw-testimonial-arrow" type="button" data-testimonial-next aria-label="Next testimonial" aria-controls="sw-testimonial-quotes">→</button>
+        </div>
+      </section>
+    </div>
   </section>
   <script>
     import '../../scripts/swiss/testimonials.ts';

@@ -16,7 +16,12 @@ for (const route of routes) {
     const response = await page.goto(route);
     expect(response?.ok()).toBe(true);
     await expect(page.locator('html')).toHaveClass(/theme-swiss/);
-    await expect(page.locator('.sw-nav')).toBeVisible();
+    if (route === '/swiss') {
+      await expect(page.locator('.sw-nav')).toBeAttached();
+      await expect(page.locator('.sw-nav')).toHaveCSS('opacity', '0');
+    } else {
+      await expect(page.locator('.sw-nav')).toBeVisible();
+    }
     await expect(page.locator('main h1')).toBeVisible();
     // Visit each viewport so lazy widgets initialize and reveal entrances settle.
     await page.evaluate(async () => {
@@ -103,4 +108,41 @@ test('reduced motion leaves swatch cards visible without pointer tilt', async ({
   await expect(card).not.toHaveClass(/is-hover/);
   await expect(card).toHaveCSS('opacity', '1');
   await expect(card).toHaveCSS('transform', 'none');
+});
+
+test('home scrolls natively then settles at selected work', async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/swiss/');
+  await expect(page.locator('.sw-nav')).toHaveCSS('opacity', '0');
+  await expect(page.locator('.sw-hero h1')).toHaveClass(/is-in/);
+  const target = await page.locator('.sw-selected-work').evaluate((el) =>
+    el.getBoundingClientRect().top + window.scrollY - document.querySelector<HTMLElement>('.sw-nav')!.offsetHeight);
+  const trace: { ms: number; y: number }[] = [];
+  const started = Date.now();
+  for (let i = 0; i < 3; i++) {
+    await page.mouse.wheel(0, 60);
+    await page.waitForTimeout(30);
+    const y = await page.evaluate(() => window.scrollY);
+    trace.push({ ms: Date.now() - started, y });
+    expect(y).toBeGreaterThan(i * 60);
+  }
+  for (let i = 0; i < 15; i++) {
+    await page.waitForTimeout(100);
+    trace.push({ ms: Date.now() - started, y: await page.evaluate(() => window.scrollY) });
+  }
+  expect(trace.at(-1)!.y).toBe(target);
+  await expect(page.locator('.sw-nav')).toHaveCSS('opacity', '1');
+  await testInfo.attach('home-scroll-trace', { body: JSON.stringify({ target, trace }, null, 2), contentType: 'application/json' });
+  await testInfo.attach('home-settled', { body: await page.screenshot(), contentType: 'image/png' });
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('link', { name: 'music', exact: true }).click();
+  await expect(page).toHaveURL(/\/swiss\/music\/?$/);
+  await expect(page.locator('.sw-nav')).toHaveCSS('position', 'sticky');
+  await expect(page.locator('.sw-nav')).toHaveCSS('opacity', '1');
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('link', { name: 'home', exact: true }).click();
+  await expect(page).toHaveURL(/\/swiss\/?$/);
+  await expect(page.locator('.sw-nav')).toHaveCSS('opacity', '0');
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.mouse.wheel(0, 180);
+  await page.waitForTimeout(800);
+  expect(await page.evaluate(() => window.scrollY)).toBe(180);
 });

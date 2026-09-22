@@ -18,26 +18,29 @@ function resize(row: HTMLElement) {
   surfaces.set(row, next);
 }
 
-function baseline(surface: Surface, hair: string) {
+function drawGrid(surface: Surface, hair: string) {
   const { ctx, w, h, canvas } = surface;
   ctx.clearRect(0, 0, w, h);
+  if (canvas.dataset.viz === 'freq') return;
   ctx.strokeStyle = hair;
   ctx.lineWidth = 1;
-  const y = canvas.dataset.viz === 'freq' ? h - 5 : h / 2;
   ctx.beginPath();
-  ctx.moveTo(4, y); ctx.lineTo(w - 4, y);
+  ctx.moveTo(4, h / 2); ctx.lineTo(w - 4, h / 2);
   if (canvas.dataset.viz === 'stereo') {
     ctx.moveTo(w / 2, 4); ctx.lineTo(w / 2, h - 4);
+    const radius = Math.min(w, h) / 2 - 4;
+    ctx.moveTo(w / 2 + radius, h / 2);
+    ctx.arc(w / 2, h / 2, radius, 0, Math.PI * 2);
   }
   ctx.stroke();
 }
 
 function idle(row: HTMLElement) {
   const hair = getComputedStyle(row).getPropertyValue('--hair').trim();
-  surfaces.get(row)?.forEach((surface) => baseline(surface, hair));
+  surfaces.get(row)?.forEach((surface) => drawGrid(surface, hair));
 }
 
-/** Initialise static baselines without creating an audio context. */
+/** Initialise quiet grids without creating an audio context. */
 export function observeViz(row: HTMLElement): () => void {
   resize(row);
   idle(row);
@@ -49,7 +52,7 @@ export function observeViz(row: HTMLElement): () => void {
   return () => { observer.disconnect(); surfaces.delete(row); };
 }
 
-/** Attach only the playing row; cleanup restores its quiet baselines. */
+/** Attach only the playing row; cleanup restores its quiet grids. */
 export function attachViz(row: HTMLElement, audio: HTMLAudioElement): () => void {
   try {
     context = ensureAudioContext(context);
@@ -87,13 +90,13 @@ export function attachViz(row: HTMLElement, audio: HTMLAudioElement): () => void
       computeBands(freq, bands);
       smoothCurve(bands.freqSmoothed, curve);
       for (const surface of surfaces.get(row) ?? []) {
-        baseline(surface, hair);
+        drawGrid(surface, hair);
         const { ctx, canvas, w, h } = surface;
         ctx.strokeStyle = ink;
         ctx.lineWidth = 1.5;
         ctx.beginPath();
         if (canvas.dataset.viz === 'wave') {
-          for (let i = 0; i < wave.length; i += 4) {
+          for (let i = 0; i < wave.length; i++) {
             const x = 4 + i / (wave.length - 1) * (w - 8);
             const y = h / 2 + (wave[i] / 128 - 1) * (h / 2 - 4);
             if (!i) ctx.moveTo(x, y); else ctx.lineTo(x, y);
@@ -113,13 +116,23 @@ export function attachViz(row: HTMLElement, audio: HTMLAudioElement): () => void
           continue;
         } else {
           const radius = Math.min(w, h) / 2 - 4;
-          for (let i = 0; i < left.length; i += 8) {
+          const bufLen = Math.min(left.length, right.length);
+          const step = Math.max(1, Math.floor(bufLen / 512));
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(w / 2, h / 2, radius, 0, Math.PI * 2);
+          ctx.clip();
+          ctx.fillStyle = ink;
+          ctx.globalAlpha = .7;
+          for (let i = 0; i < bufLen; i += step) {
             const mid = (left[i] + right[i]) * .5;
             const side = (left[i] - right[i]) * .5;
-            const x = w / 2 + side * radius;
-            const y = h / 2 - mid * radius;
-            if (!i) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+            const x = w / 2 + side * radius * 2;
+            const y = h / 2 - mid * radius * 2;
+            ctx.fillRect(x, y, 1.5, 1.5);
           }
+          ctx.restore();
+          continue;
         }
         ctx.stroke();
       }
