@@ -167,6 +167,12 @@ html.theme-swiss .sw-section-head > h1, html.theme-swiss .sw-section-head > h2 {
   /* One phone screen, split in two like the desktop split: copy on top,
      the quadrants filling the lower half edge to edge. */
   html.theme-swiss .sw-hero { height: 100svh; min-height: 0; grid-template-rows: minmax(0, 11fr) minmax(0, 9fr); }
+  /* Short viewports (phone landscape) cannot hold the one-screen split; size to content. */
+  @media (max-height: 560px) {
+    html.theme-swiss .sw-hero { height: auto; min-height: 100svh; grid-template-rows: auto auto; }
+    html.theme-swiss .sw-quads { grid-auto-rows: minmax(9rem, auto); }
+    html.theme-swiss .sw-mini { grid-auto-rows: minmax(4.5rem, auto); }
+  }
   html.theme-swiss .sw-hero-copy {
     min-height: 0;
     justify-content: center;
