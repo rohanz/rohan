@@ -199,21 +199,24 @@ export function attachViz(row: HTMLElement, audio: HTMLAudioElement): () => void
         drawVu(surface, vuDb, ink, hair, accent);
         continue;
       } else {
+        // Uniform scale on both axes (a true goniometer); the wide cell just gives
+        // wide signals room sideways instead of stretching the figure.
         const rx = Math.max(1, w / 2 - METER_PADDING);
         const ry = Math.max(1, h / 2 - METER_PADDING);
+        const scale = Math.min(rx, ry);
         const bufLen = Math.min(left.length, right.length);
         const step = Math.max(1, Math.floor(bufLen / 512));
         ctx.save();
         ctx.beginPath();
-        ctx.ellipse(w / 2, h / 2, rx, ry, 0, 0, Math.PI * 2);
+        ctx.rect(METER_PADDING, METER_PADDING, w - 2 * METER_PADDING, h - 2 * METER_PADDING);
         ctx.clip();
         ctx.fillStyle = ink;
         // Batch each size at one opacity; no per-dot state changes or shadows.
         if (!reduced.matches) {
           ctx.globalAlpha = .25 * alpha;
           for (let i = 0; i < bufLen; i += step) {
-            const x = w / 2 + (left[i] - right[i]) * rx;
-            const y = h / 2 - (left[i] + right[i]) * ry;
+            const x = w / 2 + (left[i] - right[i]) * scale;
+            const y = h / 2 - (left[i] + right[i]) * scale;
             ctx.fillRect(x - 2, y - 2, 4, 4);
           }
         }
@@ -221,8 +224,8 @@ export function attachViz(row: HTMLElement, audio: HTMLAudioElement): () => void
         for (let i = 0; i < bufLen; i += step) {
           const mid = (left[i] + right[i]) * .5;
           const side = (left[i] - right[i]) * .5;
-          const x = w / 2 + side * rx * 2;
-          const y = h / 2 - mid * ry * 2;
+          const x = w / 2 + side * scale * 2;
+          const y = h / 2 - mid * scale * 2;
           ctx.fillRect(x - 1, y - 1, 2, 2);
         }
         ctx.restore();
