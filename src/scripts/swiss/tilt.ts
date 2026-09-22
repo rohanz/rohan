@@ -14,8 +14,8 @@ function bindCard(card: HTMLElement) {
   let rect: DOMRect | null = null;
   const apply = () => {
     raf = 0;
-    card.style.setProperty('--rx', `${(-ny * MAX_DEG).toFixed(2)}deg`);
-    card.style.setProperty('--ry', `${(nx * MAX_DEG).toFixed(2)}deg`);
+    card.style.setProperty('--rx', (-ny * MAX_DEG).toFixed(2));
+    card.style.setProperty('--ry', (nx * MAX_DEG).toFixed(2));
     card.style.setProperty('--gx', `${(50 + nx * 50).toFixed(1)}%`);
     card.style.setProperty('--gy', `${(50 + ny * 50).toFixed(1)}%`);
   };

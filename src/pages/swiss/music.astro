@@ -5,11 +5,16 @@ import { SONGS } from '../../data/music';
 import { MUSIC_DESCRIPTION } from '../../data/page-meta';
 ---
 <SwissLayout title="music — rohan.jk" description={MUSIC_DESCRIPTION} section="music">
-  <section class="sw-wrap sw-section sw-music">
-    <div class="sw-section-head">
-      <h1 class="sw-display sw-display-page" data-reveal="lines">music</h1>
-      <span class="sw-label">{SONGS.length} releases</span>
-    </div>
+  <section class="sw-music">
+    <header class="sw-music-rail">
+      <div class="sw-music-rail-inner">
+        <h1 class="sw-display sw-display-page" data-reveal="lines">music</h1>
+        <span class="sw-label">{SONGS.length} releases</span>
+        <div class="sw-music-legend sw-label" aria-label="Available on">
+          <span>spotify</span><span>apple music</span><span>youtube</span>
+        </div>
+      </div>
+    </header>
     <div class="sw-tracks" data-reveal-group>
       {SONGS.map((s) => (
         <div class="sw-track" data-reveal="block">

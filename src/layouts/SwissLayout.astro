@@ -4,7 +4,7 @@ import SwissThemeSwitch from '../components/SwissThemeSwitch.astro';
 import { ClientRouter } from 'astro:transitions';
 import { SOCIALS } from '../data/socials';
 import { defaultPathFor } from '../lib/theme-paths';
-import { DEFAULT_ACCENT, DEFAULT_TINT } from '../lib/swiss/accents';
+import { DEFAULT_ACCENT } from '../lib/swiss/accents';
 import '../styles/swiss.css';
 
 interface Props {
@@ -31,7 +31,7 @@ const nav = [
   { id: 'about', label: 'about', href: '/swiss/about' },
 ] as const;
 ---
-<html lang="en" class:list={['theme-swiss', { 'sw-home': section === 'home' }]} style={`--accent:${DEFAULT_ACCENT.hex}; --tint:${DEFAULT_TINT}`}>
+<html lang="en" class:list={['theme-swiss', { 'sw-home': section === 'home' }]} style={`--accent:${DEFAULT_ACCENT.hex}`}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />

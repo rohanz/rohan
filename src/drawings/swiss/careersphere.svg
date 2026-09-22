@@ -13,11 +13,13 @@
   </g>
   <path d="M40 150h38m244 0h38M200 62v10m0 156v10" stroke-opacity=".2"/>
   <g class="swiss-careersphere-orbit">
+    <g class="z1">
     <circle cx="200" cy="150" r="94" stroke-opacity=".18"/>
     <ellipse cx="200" cy="150" rx="94" ry="43" stroke-opacity=".35"/>
-    <ellipse cx="200" cy="150" rx="94" ry="43" transform="rotate(60 200 150)" stroke-opacity=".55"/>
+
     <ellipse cx="200" cy="150" rx="94" ry="43" transform="rotate(120 200 150)" stroke-opacity=".18"/>
-    <g fill="currentColor">
+    </g>
+    <g class="z2" fill="currentColor">
       <circle cx="294.00" cy="150.00" r="2.5"/>
       <circle cx="290.80" cy="161.13" r="2.5"/>
       <circle cx="224.33" cy="191.53" r="2.5"/>
@@ -40,6 +42,9 @@
       <circle cx="281.41" cy="128.50" r="2.5"/>
       <circle cx="290.80" cy="138.87" r="2.5"/>
       <path class="swiss-careersphere-match" d="M278.41 171.50a3 3 0 1 0 6 0a3 3 0 1 0 -6 0 M263.47 180.41a3 3 0 1 0 6 0a3 3 0 1 0 -6 0 M244.00 187.24a3 3 0 1 0 6 0a3 3 0 1 0 -6 0"/>
+    </g>
+    <g class="z3">
+      <ellipse cx="200" cy="150" rx="94" ry="43" transform="rotate(60 200 150)" stroke-opacity=".55"/>
     </g>
   </g>
   <circle cx="200" cy="150" r="5"/>

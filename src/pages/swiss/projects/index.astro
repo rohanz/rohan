@@ -9,15 +9,19 @@ const projects = (await getCollection('projects'))
 const filters = visibleProjectFilters(projects.flatMap((p) => p.data.technologies));
 ---
 <SwissLayout title="projects — rohan.jk" description="Projects by rohan.jk — software, AI, audio, and data engineering builds." section="projects">
-  <section class="sw-wrap sw-section">
-    <div class="sw-section-head">
-      <h1 class="sw-display sw-display-page" data-reveal="lines">projects</h1>
-      <span class="sw-label">{projects.length} builds</span>
-    </div>
-    <div class="sw-filters" role="group" aria-label="Filter projects by technology">
-      <button type="button" class="sw-filter sw-label" data-filter="all" aria-pressed="true" aria-controls="sw-project-grid">all</button>
-      {filters.map((filter) => <button type="button" class="sw-filter sw-label" data-filter={encodeFilter(filter.match)} aria-pressed="false" aria-controls="sw-project-grid">{filter.label}</button>)}
-    </div>
+  <section class="sw-projects" aria-label="Projects">
+    <aside class="sw-project-rail">
+      <div class="sw-project-rail-inner">
+        <div class="sw-project-heading">
+          <h1 class="sw-display sw-display-page" data-reveal="lines">projects</h1>
+          <span class="sw-label">{projects.length} builds</span>
+        </div>
+        <div class="sw-filters" role="group" aria-label="Filter projects by technology">
+          <button type="button" class="sw-filter sw-label" data-filter="all" aria-pressed="true" aria-controls="sw-project-grid">all</button>
+          {filters.map((filter) => <button type="button" class="sw-filter sw-label" data-filter={encodeFilter(filter.match)} aria-pressed="false" aria-controls="sw-project-grid">{filter.label}</button>)}
+        </div>
+      </div>
+    </aside>
     <div class="swiss-grid" id="sw-project-grid" data-reveal-group>
       {projects.map((p) => <SwissCard slug={p.id} title={p.data.title} summary={p.data.summary} technologies={p.data.technologies} />)}
     </div>

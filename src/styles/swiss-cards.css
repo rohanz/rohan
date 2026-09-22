@@ -1,37 +1,58 @@
-/* cards */
-html.theme-swiss .sw-filters { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: 2rem; }
-html.theme-swiss .sw-filter { border: 1px solid var(--hair); border-radius: 0; padding: .45rem .8rem; font-family: inherit; background: transparent; cursor: pointer; transition: border-color .2s ease, background .2s ease, color .2s ease; }
-html.theme-swiss .sw-filter:hover { border-color: var(--ink); background: var(--tint); }
-html.theme-swiss .sw-filter[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+/* Parallax drawing contract:
+   Inside .swiss-card-art, use .z1/.z2/.z3 or data-depth="1"/"2"/"3"
+   for --depth: 0.6/1.2/2.0. Any other [data-depth] defaults to 0.6;
+   set inline --depth for a custom factor. --rx/--ry are unitless degrees.
+   Layers translate by (ry * depth, -rx * depth) CSS pixels, with .08s linear
+   transitions while .is-hover and .4s ease otherwise. SVG layers use
+   transform-box: fill-box and transform-origin: center. Wrap existing SVG
+   transforms/animations in a depth <g> so both transforms compose.
+   Reduced motion and hover:none disable layer transforms. */
+html.theme-swiss .sw-projects { display: grid; grid-template-columns: minmax(0, 1fr); min-height: calc(100svh - var(--nav-height)); }
+html.theme-swiss .sw-project-rail { min-width: 0; background: var(--tint); }
+html.theme-swiss .sw-project-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; padding: 2rem var(--gutter); }
+html.theme-swiss .sw-project-heading h1 { margin: 0; }
+html.theme-swiss .sw-project-heading .sw-label { white-space: nowrap; color: var(--ink); }
+html.theme-swiss .sw-filters { display: flex; overflow-x: auto; border-top: 1px solid var(--tint-hair); }
+html.theme-swiss .sw-filter { flex: 0 0 auto; border: 0; border-right: 1px solid var(--tint-hair); border-radius: 0; min-height: 2.75rem; padding: .9rem 1.25rem; text-align: left; color: var(--ink); background: transparent; cursor: pointer; transition: background .2s ease, color .2s ease; }
+html.theme-swiss .sw-filter:hover { background: var(--paper); }
+html.theme-swiss .sw-filter[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+html.theme-swiss .sw-filter:focus-visible { outline-offset: -3px; }
+@media (min-width: 1100px) {
+  html.theme-swiss .sw-projects { grid-template-columns: minmax(0, 3fr) minmax(0, 9fr); }
+  html.theme-swiss .sw-project-rail { border-right: 1px solid var(--tint-hair); }
+  html.theme-swiss .sw-project-rail-inner { position: sticky; top: var(--nav-height); max-height: calc(100svh - var(--nav-height)); overflow-y: auto; }
+  html.theme-swiss .sw-project-heading { min-height: 13rem; flex-direction: column; align-items: flex-start; padding: 2rem; }
+  html.theme-swiss .sw-filters { flex-direction: column; overflow-x: visible; }
+  html.theme-swiss .sw-filter { width: 100%; border-right: 0; border-bottom: 1px solid var(--tint-hair); padding: .9rem 2rem; }
+  /* The rail's right rule also forms the field's left edge. */
+  html.theme-swiss .sw-projects .swiss-grid { border-left: 0; }
+}
 html.theme-swiss #sw-project-grid { transition: opacity .2s ease; }
 html.theme-swiss #sw-project-grid.is-filtering { opacity: 0; pointer-events: none; }
 html.theme-swiss .swiss-card[hidden] { display: none; }
-html.theme-swiss .swiss-grid { display: grid; grid-template-columns: 1fr; gap: 1.5rem; }
+html.theme-swiss .swiss-grid { display: grid; grid-template-columns: 1fr; gap: 0; align-content: start; min-width: 0; border-top: 1px solid var(--tint-hair); border-left: 1px solid var(--tint-hair); background: var(--tint); }
 @media (min-width: 700px) { html.theme-swiss .swiss-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (min-width: 1100px) { html.theme-swiss .swiss-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2rem; } }
+@media (min-width: 1100px) { html.theme-swiss .swiss-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (min-width: 1800px) { html.theme-swiss .swiss-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 html.theme-swiss .swiss-card {
-  --rx: 0deg; --ry: 0deg; --gx: 50%; --gy: 50%;
-  position: relative; display: flex; flex-direction: column;
-  border: 1px solid var(--hair); background: var(--paper); overflow: hidden;
-  transform: perspective(900px) rotateX(var(--rx)) rotateY(var(--ry));
+  --rx: 0; --ry: 0; --gx: 50%; --gy: 50%;
+  position: relative; display: flex; flex-direction: column; container-type: inline-size;
+  min-width: 0; border: 0; border-right: 1px solid var(--tint-hair); border-bottom: 1px solid var(--tint-hair); background: var(--tint); overflow: hidden;
+  transform: perspective(900px) rotateX(calc(var(--rx) * 1deg)) rotateY(calc(var(--ry) * 1deg));
   transform-style: preserve-3d;
   transition: transform .4s cubic-bezier(.2,.7,.2,1), box-shadow .4s ease, border-color .3s ease;
 }
-html.theme-swiss .swiss-card:hover, html.theme-swiss .swiss-card:focus-visible { border-color: var(--ink); background: var(--ink); color: var(--paper); box-shadow: 0 30px 60px -30px rgba(20,20,20,.35); }
-html.theme-swiss .swiss-card:hover .swiss-card-art, html.theme-swiss .swiss-card:focus-visible .swiss-card-art { color: var(--paper); border-bottom-color: rgba(247,245,240,.25); }
-html.theme-swiss .swiss-card:hover .swiss-card-summary, html.theme-swiss .swiss-card:hover .swiss-card-tags .sw-label, html.theme-swiss .swiss-card:focus-visible .swiss-card-summary, html.theme-swiss .swiss-card:focus-visible .swiss-card-tags .sw-label { color: rgba(247,245,240,.7); }
-html.theme-swiss .swiss-card:hover .swiss-card-glare { mix-blend-mode: normal; background: radial-gradient(60% 60% at var(--gx) var(--gy), rgba(255,255,255,.10), transparent 70%); }
+html.theme-swiss .swiss-card:hover, html.theme-swiss .swiss-card:focus-visible { z-index: 2; background: var(--ink); color: var(--paper); box-shadow: 0 30px 60px -30px rgba(20,20,20,.35); }
 html.theme-swiss .swiss-card.is-hover { will-change: transform; transition: transform .08s linear, box-shadow .4s ease, border-color .3s ease; }
 @media (hover: none), (prefers-reduced-motion: reduce) {
   html.theme-swiss .swiss-card { transform: none; }
-  html.theme-swiss .swiss-card:focus-visible, html.theme-swiss .swiss-card:active { transform: translateY(-4px); }
+
 }
-html.theme-swiss .swiss-card-art { position: relative; flex: 0 0 auto; aspect-ratio: 4 / 3; padding: 1.25rem; border-bottom: 1px solid var(--hair); color: var(--ink); }
+html.theme-swiss .swiss-card-art { position: relative; flex: 0 0 auto; aspect-ratio: 4 / 3; padding: 1.25rem; border-bottom: 1px solid var(--tint-hair); color: inherit; }
 html.theme-swiss .swiss-card-art svg { position: relative; z-index: 1; }
 /* The old cover-image wordmark, set behind the drawing so the line work can
    cross it; grey but heavy so it stays clearly legible. */
-html.theme-swiss .swiss-card-word { position: absolute; left: 1.25rem; right: 1.25rem; top: 1rem; z-index: 0; font-family: var(--font-ui); font-weight: 600; font-size: clamp(1.5rem, 2.2vw, 2.1rem); line-height: 1; letter-spacing: -0.03em; color: #9c9890; overflow-wrap: anywhere; transition: color .25s ease; }
+html.theme-swiss .swiss-card-word { position: absolute; left: 1.25rem; right: 1.25rem; top: 1rem; z-index: 0; font-family: var(--font-ui); font-weight: 600; font-size: clamp(1.2rem, 7cqw, 2.1rem); line-height: 1; letter-spacing: -0.03em; color: #9c9890; overflow-wrap: anywhere; transition: color .25s ease; }
 html.theme-swiss .swiss-card:hover .swiss-card-word, html.theme-swiss .swiss-card:focus-visible .swiss-card-word { color: var(--accent); }
 html.theme-swiss .swiss-card-art svg { width: 100%; height: 100%; display: block; }
 html.theme-swiss .swiss-card-placeholder { width: 100%; height: 100%; background: repeating-linear-gradient(135deg, transparent 0 10px, var(--hair) 10px 11px); }
@@ -39,14 +60,12 @@ html.theme-swiss .swiss-card-body { flex: 1; min-height: 10rem; display: flex; f
 html.theme-swiss .swiss-card-title { margin: 0; font-family: var(--font-ui); font-weight: 500; font-size: clamp(1.15rem, 1.4vw, 1.45rem); letter-spacing: -0.03em; line-height: 1.1; }
 html.theme-swiss .swiss-card-summary { margin: 0; color: var(--muted); font-size: 0.875rem; line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 html.theme-swiss .swiss-card-tags { margin-top: auto; display: flex; flex-wrap: wrap; gap: .35rem .9rem; }
-html.theme-swiss .swiss-card-glare { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity .3s ease; background: radial-gradient(60% 60% at var(--gx) var(--gy), rgba(255,255,255,.55), transparent 70%); mix-blend-mode: soft-light; }
-html.theme-swiss .swiss-card.is-hover .swiss-card-glare { opacity: 1; }
 
 /* Reveal owns the entrance; once visible, the card owns its pointer transform.
    Match reveal's specificity so its final transform:none cannot suppress tilt. */
 @media (prefers-reduced-motion: no-preference) {
   html.theme-swiss.js .swiss-card[data-reveal="block"].is-in {
-    transform: perspective(900px) rotateX(var(--rx)) rotateY(var(--ry));
+    transform: perspective(900px) rotateX(calc(var(--rx) * 1deg)) rotateY(calc(var(--ry) * 1deg));
     transition: opacity .7s ease var(--d), transform .4s cubic-bezier(.2,.7,.2,1), box-shadow .4s ease, border-color .3s ease;
   }
   html.theme-swiss.js .swiss-card[data-reveal="block"].is-in.is-hover {
@@ -54,5 +73,21 @@ html.theme-swiss .swiss-card.is-hover .swiss-card-glare { opacity: 1; }
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  html.theme-swiss .swiss-card-glare { display: none; }
+}
+
+html.theme-swiss .swiss-card:hover .swiss-card-art, html.theme-swiss .swiss-card:focus-visible .swiss-card-art { color: var(--paper); border-bottom-color: rgba(247,245,240,.25); }
+html.theme-swiss .swiss-card:hover .swiss-card-summary, html.theme-swiss .swiss-card:hover .swiss-card-tags .sw-label, html.theme-swiss .swiss-card:focus-visible .swiss-card-summary, html.theme-swiss .swiss-card:focus-visible .swiss-card-tags .sw-label { color: rgba(247,245,240,.7); }
+html.theme-swiss .swiss-card-art :is([data-depth], .z1, .z2, .z3) {
+  --depth: .6;
+  transform: translate(calc(var(--ry) * var(--depth) * 1px), calc(var(--rx) * var(--depth) * -1px));
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform .4s ease;
+}
+html.theme-swiss .swiss-card-art :is(.z2, [data-depth="2"]) { --depth: 1.2; }
+html.theme-swiss .swiss-card-art :is(.z3, [data-depth="3"]) { --depth: 2.0; }
+html.theme-swiss .swiss-card.is-hover .swiss-card-art :is([data-depth], .z1, .z2, .z3) { transition: transform .08s linear; }
+@media (hover: none), (prefers-reduced-motion: reduce) {
+  html.theme-swiss .swiss-card-art :is([data-depth], .z1, .z2, .z3),
+  html.theme-swiss.js .swiss-card[data-reveal="block"].is-in { transform: none; }
 }

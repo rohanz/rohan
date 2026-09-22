@@ -9,15 +9,19 @@
     }
     @media (prefers-reduced-motion: reduce) { .swiss-bqst-curve, .swiss-bqst-node { transition: none; } }
   </style>
-  <g stroke-opacity=".18">
+  <g class="z1" stroke-opacity=".18">
     <path d="M40 72v156h320M40 108h320M40 168h320"/>
     <path d="M104 72v156M168 72v156M232 72v156M296 72v156M360 72v156" stroke-dasharray="2 6"/>
     <path d="M104 228v6M168 228v6M232 228v6M296 228v6M360 228v6"/>
   </g>
   <path d="M40 168h320" stroke-opacity=".35" stroke-dasharray="3 6"/>
+  <g class="z2">
   <path class="swiss-bqst-curve" d="M40 168 C 92 168, 114 132, 168 132 S 236 192, 292 168 S 344 144, 360 148"/>
+  </g>
+  <g class="z3">
   <circle class="swiss-bqst-node swiss-bqst-node-low" cx="168" cy="132" r="6" fill="var(--accent)" stroke="var(--accent)"/>
   <circle class="swiss-bqst-node swiss-bqst-node-high" cx="292" cy="168" r="4" fill="currentColor"/>
+  </g>
   <g font-family="General Sans, sans-serif" font-size="10" letter-spacing="1.5" stroke="none" fill="currentColor" opacity=".55">
     
     

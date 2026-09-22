@@ -2,8 +2,10 @@
 html.theme-swiss {
   --paper: #f7f5f0;
   --paper-2: #efece5;
-  --tint: #dedff3; /* pale wash of the accent; surfaces only, ink text on top */
-  --tint-hair: color-mix(in srgb, var(--accent) 32%, var(--paper)); /* dividers on tinted surfaces */
+  /* Surfaces stay neutral (ink, paper, one accent). --tint keeps its role as
+     "the field colour" so a coloured wash is one token flip away. */
+  --tint: var(--paper-2);
+  --tint-hair: var(--hair); /* dividers on field surfaces */
   --nav-height: 4rem;
   --ink: #141414;
   --muted: #6b6b66;

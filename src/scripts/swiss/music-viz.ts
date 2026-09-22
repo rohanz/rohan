@@ -115,7 +115,7 @@ export function observeViz(row: HTMLElement): () => void {
     idle(row);
   });
   observer.observe(row);
-  return () => { observer.disconnect(); surfaces.delete(row); };
+  return () => { observer.disconnect(); cancelOutro(row); surfaces.delete(row); };
 }
 
 /** Attach only the playing row; cleanup restores its quiet grids. */
@@ -138,10 +138,6 @@ export function attachViz(row: HTMLElement, audio: HTMLAudioElement): () => void
   const right = new Float32Array(analyserR?.fftSize ?? 2048);
   const bands = { freqSmoothed: new Float32Array(FREQ_BANDS), freqHighlightTargets: new Float32Array(FREQ_BANDS) };
   const curve = new Float32Array(FREQ_BANDS);
-  const style = getComputedStyle(row);
-  const ink = style.getPropertyValue('--ink').trim();
-  const hair = style.getPropertyValue('--hair').trim();
-  const accent = style.getPropertyValue('--accent').trim();
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   let frame = 0;
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -151,6 +147,11 @@ export function attachViz(row: HTMLElement, audio: HTMLAudioElement): () => void
   // Paints one frame from the current buffers. `alpha` scales the signal ink
   // (the outro fades it over the grid); `vuDb` drives the needle.
   function paint(alpha: number, vuDb: number) {
+    // Playback and its outro cross row states; never retain the old palette.
+    const style = getComputedStyle(row);
+    const ink = style.getPropertyValue('--ink').trim();
+    const hair = style.getPropertyValue('--hair').trim();
+    const accent = style.getPropertyValue('--accent').trim();
     computeBands(freq, bands);
     smoothCurve(bands.freqSmoothed, curve);
     for (const surface of surfaces.get(row) ?? []) {

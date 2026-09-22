@@ -10,27 +10,28 @@ import { TECH_STACK } from '../../data/tech-stack';
 import { TESTIMONIALS } from '../../data/testimonials';
 ---
 <SwissLayout title="about — rohan.jk" description={ABOUT_DESCRIPTION} section="about">
-  <section class="sw-wrap sw-section sw-about">
-    <div class="sw-grid sw-about-spread">
-      <div class="sw-about-copy">
-        <div class="sw-about-lead">
-          <p class="sw-label" data-reveal="block">{TAGLINE}</p>
-          <h1 class="sw-display sw-display-md" data-reveal="lines">{BIO_INTRO}</h1>
-        </div>
-        <div class="sw-about-body" data-reveal="block">
-          <p>{BIO_WORK}</p>
-          <p>{BIO_MUSIC}</p>
-          <div class="sw-about-links">
-            {SOCIALS.map((s) => <a class="sw-label sw-link-ext" href={s.href} target="_blank" rel="noopener noreferrer">{s.label.toLowerCase()} <span class="sw-arrow" aria-hidden="true">↗</span></a>)}
-          </div>
-          <p class="sw-about-resume"><a class="sw-label sw-link-ext" href={RESUME_PATH} download={RESUME_FILENAME}>{RESUME_LABEL} <span class="sw-arrow" aria-hidden="true">↗</span></a></p>
-        </div>
-      </div>
+  <section class="sw-about" aria-label="About Rohan">
+    <div class="sw-about-rail">
       <figure class="sw-about-photo">
         <img src="/assets/images/profile.webp" alt="Rohan outdoors" width="1000" height="1334" loading="eager" decoding="async" />
       </figure>
+      <div class="sw-about-caption">
+        <p class="sw-label">{TAGLINE}</p>
+        <a class="sw-label sw-link-ext" href={RESUME_PATH} download={RESUME_FILENAME}>{RESUME_LABEL} <span class="sw-arrow" aria-hidden="true">↗</span></a>
+      </div>
     </div>
     <div class="sw-about-facts">
+      <section class="sw-about-cell sw-about-bio" aria-labelledby="sw-bio-heading">
+        <h2 class="sw-label" id="sw-bio-heading">bio</h2>
+        <h1 class="sw-display sw-display-md">{BIO_INTRO}</h1>
+        <div class="sw-about-body">
+          <p>{BIO_WORK}</p>
+          <p>{BIO_MUSIC}</p>
+        </div>
+        <div class="sw-about-links">
+          {SOCIALS.map((s) => <a class="sw-label sw-link-ext" href={s.href} target="_blank" rel="noopener noreferrer">{s.label.toLowerCase()} <span class="sw-arrow" aria-hidden="true">↗</span></a>)}
+        </div>
+      </section>
       <section class="sw-about-cell" aria-labelledby="sw-stats-heading">
         <h2 class="sw-label" id="sw-stats-heading">stats</h2>
         <div class="sw-about-stats">
@@ -47,8 +48,7 @@ import { TESTIMONIALS } from '../../data/testimonials';
           {TESTIMONIALS.map((t, i) => <blockquote class="sw-quote" data-testimonial hidden={i !== 0} aria-hidden={i !== 0 ? 'true' : 'false'}><p>“{t.quote}”</p><footer class="sw-label">{t.author}</footer></blockquote>)}
         </div>
         <div class="sw-testimonial-controls" data-testimonial-controls hidden>
-          <button class="sw-testimonial-arrow" type="button" data-testimonial-prev aria-label="Previous testimony" aria-controls="sw-testimonial-quotes">←</button>
-          <button class="sw-testimonial-arrow" type="button" data-testimonial-next aria-label="Next testimony" aria-controls="sw-testimonial-quotes">→</button>
+          <svg class="sw-testimonial-ring" viewBox="0 0 36 36" aria-hidden="true" data-testimonial-ring><circle class="sw-ring-track" cx="18" cy="18" r="16"/><circle class="sw-ring-fill" cx="18" cy="18" r="16" pathLength="100"/></svg>
         </div>
       </section>
     </div>
