@@ -25,10 +25,21 @@ function resize(row: HTMLElement) {
   surfaces.set(row, next);
 }
 
-function drawGrid(surface: Surface, hair: string) {
+// Phosphor persistence for the scope: instead of clearing, wash the previous
+// frame with the surface colour at this alpha so old dots decay over ~8 frames.
+const PHOSPHOR_WASH = 0.22;
+
+function drawGrid(surface: Surface, hair: string, wash?: string) {
   const { ctx, w, h, canvas } = surface;
   ctx.globalAlpha = 1; // the outro leaves this canvas faded; the grid never is
-  ctx.clearRect(0, 0, w, h);
+  if (wash && canvas.dataset.viz === 'stereo') {
+    ctx.globalAlpha = PHOSPHOR_WASH;
+    ctx.fillStyle = wash;
+    ctx.fillRect(0, 0, w, h);
+    ctx.globalAlpha = 1;
+  } else {
+    ctx.clearRect(0, 0, w, h);
+  }
   if (canvas.dataset.viz === 'freq' || canvas.dataset.viz === 'vu') return;
   ctx.strokeStyle = hair;
   ctx.lineWidth = 1;
@@ -152,12 +163,14 @@ export function attachViz(row: HTMLElement, audio: HTMLAudioElement): () => void
     const ink = style.getPropertyValue('--ink').trim();
     const hair = style.getPropertyValue('--hair').trim();
     const accent = style.getPropertyValue('--accent').trim();
+    // The row's own background is the phosphor wash (paper normally, ink while playing).
+    const surfaceColour = style.backgroundColor;
     computeBands(freq, bands);
     smoothCurve(bands.freqSmoothed, curve);
     for (const surface of surfaces.get(row) ?? []) {
       const { ctx, canvas, w, h } = surface;
       ctx.globalAlpha = 1;
-      drawGrid(surface, hair);
+      drawGrid(surface, hair, reduced.matches ? undefined : surfaceColour);
       ctx.globalAlpha = alpha;
       ctx.strokeStyle = ink;
       ctx.lineWidth = 1.5;

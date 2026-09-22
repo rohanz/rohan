@@ -37,7 +37,7 @@ html.theme-swiss {
   --track-display: -0.045em;
 }
 html.theme-swiss, html.theme-swiss *, html.theme-swiss *::before, html.theme-swiss *::after { box-sizing: border-box; }
-html.theme-swiss { background: var(--paper); color: var(--ink); scroll-behavior: smooth;
+html.theme-swiss { background: var(--paper); color: var(--ink);
   /* Reserve the scrollbar's width on every page so short pages and long pages
      share the same layout width (no nav shift when a scrollbar appears). */
   scrollbar-gutter: stable;
@@ -120,6 +120,9 @@ html.theme-swiss .sw-hero-copy h1 { font-size: clamp(2.125rem, 9.8vw, 6rem); mar
 html.theme-swiss .sw-hero-copy .sw-body-lg { margin: 2rem 0 0; }
 html.theme-swiss .sw-quads { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; border-left: 1px solid var(--tint-hair); }
 html.theme-swiss .sw-quad { display: flex; flex-direction: column; justify-content: space-between; padding: 1.5rem; border-right: 1px solid var(--tint-hair); border-bottom: 1px solid var(--tint-hair); min-height: 12rem; background: var(--tint); transition: background .3s ease, color .3s ease; }
+/* One accent cell: the primary destination. */
+html.theme-swiss .sw-quad-primary { background: var(--accent); color: var(--paper); border-right-color: transparent; border-bottom-color: transparent; }
+html.theme-swiss .sw-quad-primary .sw-label { color: inherit; }
 html.theme-swiss .sw-quad:hover, html.theme-swiss .sw-quad:focus-within { background: var(--ink); color: var(--paper); }
 html.theme-swiss .sw-quad:hover .sw-label, html.theme-swiss .sw-quad:focus-within .sw-label { color: inherit; }
 html.theme-swiss .sw-quad-title { font-family: var(--font-ui); font-weight: 500; font-size: clamp(1.6rem, 2.6vw, 2.8rem); letter-spacing: -0.02em; }

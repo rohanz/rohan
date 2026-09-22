@@ -33,10 +33,10 @@ html.theme-swiss .sw-about-caption:focus-within { background: var(--ink); color:
 html.theme-swiss .sw-about-caption:focus-within .sw-label { color: inherit; }
 @media (min-width: 1100px) {
   /* The composition is exactly one viewport tall; the portrait absorbs the slack. */
-  html.theme-swiss .sw-about { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); height: calc(100svh - var(--nav-height)); min-height: 0; }
+  html.theme-swiss .sw-about { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); min-height: calc(100svh - var(--nav-height)); }
   html.theme-swiss .sw-about-rail { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; border-right: 1px solid var(--tint-hair); min-height: 0; }
   html.theme-swiss .sw-about-facts { min-height: 0; }
-  html.theme-swiss .sw-about-cell { min-height: 0; overflow: hidden; }
+  html.theme-swiss .sw-about-cell { min-height: 0; overflow: clip; }
   html.theme-swiss .sw-about-photo { min-height: 0; border-right: 0; border-bottom: 1px solid var(--tint-hair); }
   html.theme-swiss .sw-about-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: minmax(0, 3fr) minmax(0, 2fr); }
   html.theme-swiss .sw-about-cell:nth-child(odd) { border-right: 1px solid var(--tint-hair); }

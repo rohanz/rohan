@@ -24,12 +24,8 @@ before — always confirm you're on the origin tip.
   (as is transit); classic serves mobile.
 - **swiss** — Astro pages under `/swiss/*` (`src/pages/swiss/`,
   `src/layouts/SwissLayout.astro`, `src/styles/swiss*.css`). Light
-  typographic/editorial theme; works on phones (no redirect). Project cards
-  carry hand-drawn SVGs in `src/drawings/swiss/<slug>.svg` (add one per new
-  project; a missing drawing shows a hatched placeholder). Accent candidates
-  live in `src/lib/swiss/accents.ts`, previewed at `/swiss/swatches`
-  (unlisted, noindex). Canvas widgets use `swissPalette` in
-  `src/lib/visuals/themes.ts`.
+  typographic/editorial theme; works on phones (no redirect). See the
+  "Swiss theme playbook" section below before touching it.
 
 Theme switching is the theme-paths convention (`src/lib/theme-paths.ts`,
 pref key `site:themePref` via `src/lib/theme-switch.ts`). Classic sidebar and
@@ -176,3 +172,58 @@ architecture, canvas-resolution rules, and transition specs. Known deferred
 debts (tracked in docs/superpowers/specs/2026-07-21-blueprint-theme-fold-in-design.md):
 ~600KB chunk (code-split candidate), hardcoded ARTICLES import map,
 box()/wallFraming() duplication across scene files.
+
+
+## Swiss theme playbook
+
+Read this before adding or changing anything under `/swiss`.
+
+**Grammar.** Every page is a split: a rail (title, count, filters or
+portrait) on the left in the darker `--tint` (currently `--paper-2`), and a
+field of shared-edge cells on paper. Cells share hairlines (`--tint-hair`),
+labels sit top-left in `.sw-label` tracked caps, one accent (`--accent`,
+periwinkle) is used only for meaning: active nav, links, hover wordmarks,
+the primary home cell, and one mark per drawing. No radius anywhere. Fluid
+root font-size (`swiss.css` on `html.theme-swiss`); all sizes in rem.
+
+**Files.** `swiss.css` = tokens, nav, footer, home, rail heading, rail link
+cells. Page CSS lives beside the page: `swiss-cards.css` (projects grid +
+card + tilt/depth contract), `swiss-music.css`, `swiss-about.css`,
+`swiss-article.css` (+ `swiss-widgets.css` for shared widget overrides),
+`swiss-swatches.css`. Scripts in `src/scripts/swiss/`: `tilt.ts` (pointer
+tilt: static `.swiss-card` hit area, transform on `.swiss-card-inner`),
+`home-snap.ts` (mouse-wheel glide; trackpads use native CSS snap),
+`music.ts` + `music-viz.ts` (one shared Audio, analyser canvases, outro
+fade, Media Session), `testimonials.ts` (rAF loop owns countdown + ring),
+`filters.ts`, `clock.ts`, `reveal.ts` (line wrappers only; no fades).
+Every script must init on `astro:page-load` and clean up on
+`astro:before-swap`.
+
+**Adding a project.** 1) content md as usual. 2) `src/lib/swiss/card-text.ts`:
+the wordmark shown on the card and as the article H1. 3)
+`src/drawings/swiss/<slug>.svg`: viewBox `0 0 400 300`, fill none, stroke
+currentColor 2px (1.25 for fine detail), ONLY `currentColor` and
+`var(--accent)`; cards invert to ink on hover so fills that mean "the
+surface" must use `var(--card-surface, var(--paper))` in the SVG's own
+`<style>` (not as an attribute). Keep the top ~65 units clear (wordmark
+sits there). Hover rules key on `.swiss-card.is-hover`, gated by
+`prefers-reduced-motion: no-preference`, transitions ≤ 0.9s. Text must not
+move on hover (opacity via `fill-opacity`/`stroke-opacity`, not `opacity`).
+A vitest (`src/lib/swiss/drawings.test.ts`) fails if a project has no
+drawing. The article header shows the same drawing large; it plays once on
+arrival and again on hover.
+
+**Widgets in articles.** Canvas colours come from `swissPalette(accent)` in
+`src/lib/visuals/themes.ts`, rebuilt from the live `--accent` on every
+page load; legends must read the same palette values (never hardcode a
+hex in `swiss-widgets.css`; use `--accent`, `--w-good`, `color-mix`).
+Canvases are sized by `sizeCanvasWithDpr`, which pins the CSS box to whole
+pixels so text stays crisp.
+
+**Accent.** `src/lib/swiss/accents.ts` (`DEFAULT_ACCENT`; 44 candidates
+with contrast at `/swiss/swatches`, unlisted + noindex). `tintOf()` derives
+a wash if fields should ever carry colour again (`--tint` in `swiss.css`).
+
+**Verify.** `npx astro check`, `npm test`, `npx playwright test
+e2e/swiss.spec.ts` (17 checks incl. 375px overflow, reduced motion, theme
+round-trips). Screenshot at 1440 and 2000+ before calling layout done.

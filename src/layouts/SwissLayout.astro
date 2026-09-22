@@ -57,7 +57,6 @@ const nav = [
     <link rel="stylesheet" href="/fonts/fonts.css" />
     <link rel="preload" as="font" type="font/woff2" href="/fonts/GeneralSans-Variable.woff2" crossorigin />
     <!-- Chillax is font-display: optional; without a preload a cold load paints the nearest cached weight instead of these. -->
-    <link rel="preload" as="font" type="font/woff2" href="/fonts/chillax-XESIRBQU62YFBC7YQZI6D2NT.woff2" crossorigin />
     <link rel="preload" as="font" type="font/woff2" href="/fonts/chillax-WZY5PMNTII6NKOB2TTIAX7QV.woff2" crossorigin />
     <link rel="preload" as="font" type="font/woff2" href="/fonts/chillax-THF5L6EHVL4N4NNE3GYDZNZS.woff2" crossorigin />
     <meta name="theme-color" content="#f7f5f0" />
@@ -104,7 +103,7 @@ const nav = [
         // 'home' while already on the home page: back to the hero (a same-URL link does nothing by itself).
         const home = nav.querySelector<HTMLAnchorElement>('a[href="/swiss"]');
         const onHome = (e: MouseEvent) => {
-          if (document.documentElement.classList.contains('sw-home')) { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+          if (document.documentElement.classList.contains('sw-home')) { e.preventDefault(); window.scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }); }
         };
         home?.addEventListener('click', onHome);
         cleanupNav = () => { window.removeEventListener('scroll', update); home?.removeEventListener('click', onHome); };

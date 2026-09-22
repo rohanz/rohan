@@ -88,6 +88,9 @@ function init() {
     audio = new Audio();
     audio.preload = 'none';
     audio.onended = () => setActive(null);
+    // External pause/error (media keys, OS controls, decode failure) must clear the row too.
+    audio.onpause = () => { if (audio && audio.paused && !audio.ended) setActive(null); };
+    audio.onerror = () => setActive(null);
   }
   buttons.forEach((button) => {
     if (button.dataset.bound === '1') return;

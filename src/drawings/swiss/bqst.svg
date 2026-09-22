@@ -59,12 +59,12 @@
   <path class="swiss-bqst-dial" style="transform-origin:152px 174px; --bqst-turn:67deg; --bqst-delay:0.090s" d="M152 174l2-5" stroke-width="1.25"/>
   <circle cx="152" cy="194" r="7" stroke-width="1.25"/>
   <path class="swiss-bqst-dial" style="transform-origin:152px 194px; --bqst-turn:80deg; --bqst-delay:0.105s" d="M152 194l2-5" stroke-width="1.25"/>
-  <rect x="215" y="111" width="62" height="49" rx="2" stroke-width="1.25"/>
-  <path d="M222 139Q246 112 270 139" stroke-width="1.25"/>
-  <path stroke="var(--accent)" d="M261 130q6 3 9 9" stroke-width="3"/>
-  <path d="M229 128l2 4M239 123l1 5M250 122v5" stroke-width="1.25"/>
-  <path class="swiss-bqst-needle" style="transform-origin:246px 153px; --bqst-turn:48deg; --bqst-delay:0.05s" d="M246 153l-21-19"/>
-  <circle cx="246" cy="153" r="2" fill="currentColor"/>
+  <rect x="215" y="111" width="62" height="49" stroke-width="1.25"/>
+  <path d="M221.4 140.8A30 30 0 0 1 261.4 132.2" stroke-width="1.5"/>
+  <path stroke="var(--accent)" d="M261.4 132.2A30 30 0 0 1 270.6 140.8" stroke-width="1.5"/>
+  <path d="M222.2 141.4L225.5 143.7M228.7 134.7L229.9 136.3M236.9 130.5L237.5 132.4M246.0 129.0L246.0 133.0M255.1 130.5L254.5 132.4M263.3 134.7L262.1 136.3M269.8 141.4L266.5 143.7" stroke-width="1.25"/>
+  <path class="swiss-bqst-needle" style="transform-origin:246px 158px; --bqst-turn:48deg; --bqst-delay:0.05s" d="M246 158L236.3 133.9"/>
+  <circle cx="246" cy="158" r="2" fill="currentColor"/>
   <circle cx="246" cy="199" r="23"/>
   <path d="M227.6 220.8 A28.75 28.75 0 1 1 264.4 220.8" stroke-width="1.25" opacity=".4"/>
   <path d="M225.3 219.7l-2.1 2.1" stroke-width="1.25" opacity=".4"/>
@@ -79,12 +79,12 @@
   <path class="swiss-bqst-dial" style="transform-origin:232px 249px; --bqst-turn:55deg; --bqst-delay:0.135s" d="M232 249v-5" stroke-width="1.25"/>
   <circle cx="260" cy="249" r="8" stroke-width="1.25"/>
   <path class="swiss-bqst-dial" style="transform-origin:260px 249px; --bqst-turn:68deg; --bqst-delay:0.150s" d="M260 249v-5" stroke-width="1.25"/>
-  <rect x="294" y="111" width="62" height="49" rx="2" stroke-width="1.25"/>
-  <path d="M301 139Q325 112 349 139" stroke-width="1.25"/>
-  <path stroke="var(--accent)" d="M340 130q6 3 9 9" stroke-width="3"/>
-  <path d="M308 128l2 4M318 123l1 5M329 122v5" stroke-width="1.25"/>
-  <path class="swiss-bqst-needle" style="transform-origin:325px 153px; --bqst-turn:61deg; --bqst-delay:0.12s" d="M325 153l-21-19"/>
-  <circle cx="325" cy="153" r="2" fill="currentColor"/>
+  <rect x="294" y="111" width="62" height="49" stroke-width="1.25"/>
+  <path d="M300.4 140.8A30 30 0 0 1 340.4 132.2" stroke-width="1.5"/>
+  <path stroke="var(--accent)" d="M340.4 132.2A30 30 0 0 1 349.6 140.8" stroke-width="1.5"/>
+  <path d="M301.2 141.4L304.5 143.7M307.7 134.7L308.9 136.3M315.9 130.5L316.5 132.4M325.0 129.0L325.0 133.0M334.1 130.5L333.5 132.4M342.3 134.7L341.1 136.3M348.8 141.4L345.5 143.7" stroke-width="1.25"/>
+  <path class="swiss-bqst-needle" style="transform-origin:325px 158px; --bqst-turn:61deg; --bqst-delay:0.12s" d="M325 158L315.3 133.9"/>
+  <circle cx="325" cy="158" r="2" fill="currentColor"/>
   <circle cx="325" cy="199" r="23"/>
   <path d="M306.6 220.8 A28.75 28.75 0 1 1 343.4 220.8" stroke-width="1.25" opacity=".4"/>
   <path d="M304.3 219.7l-2.1 2.1" stroke-width="1.25" opacity=".4"/>

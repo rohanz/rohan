@@ -13,8 +13,15 @@ export function sizeCanvasWithDpr(
   h: number,
   dpr: number,
 ): CanvasRenderingContext2D {
-  canvas.width = w * dpr;
-  canvas.height = h * dpr;
+  // Whole CSS pixels, and the CSS box pinned to exactly that size: a backing
+  // store of round(w)*dpr shown in a fractional box (e.g. 716.14px) is
+  // resampled by the browser and every stroke and glyph on it goes soft.
+  const cw = Math.max(1, Math.round(w));
+  const ch = Math.max(1, Math.round(h));
+  canvas.width = Math.round(cw * dpr);
+  canvas.height = Math.round(ch * dpr);
+  canvas.style.width = `${cw}px`;
+  canvas.style.height = `${ch}px`;
   const ctx = canvas.getContext('2d')!;
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   return ctx;

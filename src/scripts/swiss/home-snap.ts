@@ -75,10 +75,16 @@ function init() {
   }
 
   window.addEventListener('wheel', onWheel, { passive: false });
+  const onCapability = () => { if (!fine.matches || reduce.matches) cleanup?.(); };
+  fine.addEventListener('change', onCapability);
+  reduce.addEventListener('change', onCapability);
   cleanup = () => {
     window.removeEventListener('wheel', onWheel);
+    fine.removeEventListener('change', onCapability);
+    reduce.removeEventListener('change', onCapability);
     cancelAnimationFrame(raf);
     animating = false;
+    document.documentElement.style.scrollSnapType = ''; // never leave snap suspended
   };
 }
 

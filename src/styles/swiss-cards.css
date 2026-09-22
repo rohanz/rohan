@@ -36,7 +36,7 @@ html.theme-swiss .swiss-grid { display: grid; grid-template-columns: 1fr; gap: 0
 @media (min-width: 1800px) { html.theme-swiss .swiss-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 /* Static cell = hit area (never transforms). The inner box tilts, lifts and inverts. */
 html.theme-swiss .swiss-card {
-  --rx: 0; --ry: 0; --gx: 50%; --gy: 50%;
+  --rx: 0; --ry: 0;
   position: relative; display: block; container-type: inline-size;
   min-width: 0; border: 0; border-right: 1px solid var(--tint-hair); border-bottom: 1px solid var(--tint-hair); background: var(--paper); /* field = paper, rail = tint */
 }
