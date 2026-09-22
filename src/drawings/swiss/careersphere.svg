@@ -1,13 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
   <style>
     .swiss-sphere-route { stroke-dasharray: 100; stroke-dashoffset: 100; }
-    .swiss-sphere-tip, .swiss-sphere-ring { opacity: 0; }
+    /* Fade via paint opacity, not `opacity`: an opacity transition makes Chrome
+       re-rasterise the text when it ends, which reads as a tiny jump. */
+    .swiss-sphere-tip, .swiss-sphere-tip * , .swiss-sphere-ring { fill-opacity: 0; stroke-opacity: 0; }
     @media (prefers-reduced-motion: no-preference) {
       .swiss-sphere-route { transition: stroke-dashoffset .65s ease; }
-      .swiss-sphere-tip, .swiss-sphere-ring { transition: opacity .3s ease; }
+      .swiss-sphere-tip, .swiss-sphere-tip *, .swiss-sphere-ring { transition: fill-opacity .3s ease, stroke-opacity .3s ease; }
       .swiss-card.is-hover .swiss-sphere-route { stroke-dashoffset: 0; }
-      .swiss-card.is-hover .swiss-sphere-ring { opacity: 1; transition-delay: .25s; }
-      .swiss-card.is-hover .swiss-sphere-tip { opacity: 1; transition-delay: .35s; }
+      .swiss-card.is-hover .swiss-sphere-ring { stroke-opacity: 1; transition-delay: .25s; }
+      .swiss-card.is-hover .swiss-sphere-tip, .swiss-card.is-hover .swiss-sphere-tip * { fill-opacity: 1; stroke-opacity: 1; transition-delay: .35s; }
     }
   </style>
   <!-- Static geographic wireframe; text never belongs to a moving layer. -->
