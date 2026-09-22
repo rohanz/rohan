@@ -36,7 +36,7 @@ function init() {
     pause!.textContent = paused ? 'Play' : 'Pause';
     pause!.setAttribute('aria-label', paused ? 'Start automatic testimonials' : 'Pause automatic testimonials');
     if (!motion.matches && !paused && !hovered && !focused && !document.hidden) {
-      timer = setInterval(() => show(current + 1), 7000);
+      timer = setInterval(() => show(current + 1), 5000);
     }
   }
 
