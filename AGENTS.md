@@ -193,11 +193,23 @@ card + tilt/depth contract), `swiss-music.css`, `swiss-about.css`,
 `swiss-swatches.css`. Scripts in `src/scripts/swiss/`: `tilt.ts` (pointer
 tilt: static `.swiss-card` hit area, transform on `.swiss-card-inner`),
 `home-snap.ts` (mouse-wheel glide; trackpads use native CSS snap),
-`music.ts` + `music-viz.ts` (one shared Audio, analyser canvases, outro
-fade, Media Session), `testimonials.ts` (rAF loop owns countdown + ring),
-`filters.ts`, `clock.ts`, `reveal.ts` (line wrappers only; no fades).
-Every script must init on `astro:page-load` and clean up on
-`astro:before-swap`.
+`music.ts` + `music-viz.ts` (one shared Audio attached to the document so
+analytics sees plays; analyser canvases measure their `.sw-meter` cell, not
+the pinned canvas box; outro fade, Media Session), `testimonials.ts` (rAF
+loop owns countdown + ring; no visible controls by design: pointer hover
+or keyboard focus pauses, a tap does not; reduced motion rotates nothing
+and `swiss-about.css` lays every quote out stacked), `filters.ts`,
+`clock.ts`, `reveal.ts` (line wrappers only; no fades). Every script must
+init on `astro:page-load` and clean up on `astro:before-swap`.
+
+**Phones (touch, or ≤899px).** Home is one non-scrolling screen (copy in
+the top half, quadrants in the bottom half; `100svh` so the browser bar is
+excluded; short landscape viewports fall back to content height and
+scroll). No theme switch, no filter chips, no card tags, no selected work,
+no footer on home; socials only on home and about. Touch targets ≥ 44px
+and copy ≥ 16px are asserted by the mobile specs. The theme switch
+elsewhere is three equal cells (rail on projects/music, boxed in the
+footer), current one inked; the top nav keeps the underline.
 
 **Adding a project.** 1) content md as usual. 2) `src/lib/swiss/card-text.ts`:
 the wordmark shown on the card and as the article H1. 3)
@@ -207,8 +219,14 @@ currentColor 2px (1.25 for fine detail), ONLY `currentColor` and
 surface" must use `var(--card-surface, var(--paper))` in the SVG's own
 `<style>` (not as an attribute). Keep the top ~65 units clear (wordmark
 sits there). Hover rules key on `.swiss-card.is-hover`, gated by
-`prefers-reduced-motion: no-preference`, transitions ≤ 0.9s. Text must not
-move on hover (opacity via `fill-opacity`/`stroke-opacity`, not `opacity`).
+`prefers-reduced-motion: no-preference`, transitions ≤ 0.9s on the house
+ease `cubic-bezier(.2,.7,.2,1)` (patentease bar, careersphere routes,
+analyst ticks). Line draws use `stroke-dasharray: 100` with
+`pathLength="100"` on each path so the whole ease plays out. Parts that
+rotate (bqst) transition a registered custom property (`@property
+--bqst-angle` in `swiss-cards.css`) instead of `transform` so they never
+soften mid-motion; on hover they also take the accent. Text must not move
+on hover (opacity via `fill-opacity`/`stroke-opacity`, not `opacity`).
 A vitest (`src/lib/swiss/drawings.test.ts`) fails if a project has no
 drawing. The article header shows the same drawing large; it plays once on
 arrival and again on hover.
@@ -224,6 +242,15 @@ pixels so text stays crisp.
 with contrast at `/swatches`, unlisted + noindex). `tintOf()` derives
 a wash if fields should ever carry colour again (`--tint` in `swiss.css`).
 
-**Verify.** `npx astro check`, `npm test`, `npx playwright test
-e2e/swiss.spec.ts` (17 checks incl. 375px overflow, reduced motion, theme
-round-trips). Screenshot at 1440 and 2000+ before calling layout done.
+**Icons.** `public/favicon.svg` is the R mark from `public/logo.svg` (ink,
+paper in dark mode); the PNG/ICO set is the same mark rendered black on
+paper. Re-render all of them together if the mark changes.
+
+**Verify.** `npx astro check`, `npm test`, `PW_BASE_URL=http://localhost:4321
+npx playwright test e2e/swiss*.spec.ts e2e/default-theme.spec.ts
+e2e/mobile-classic.spec.ts e2e/theme-switch.spec.ts e2e/layout-shift.spec.ts`
+(the sitemap and blueprint phone-bounce cases need a built `dist/` served
+statically with `PW_STATIC_BASE_URL`). If the working tree carries untracked
+WIP that breaks `astro check`, verify the build from a clean worktree of
+HEAD with `npm ci`, as the deploy will. Screenshot at 1440 and 2000+ plus
+iPhone 13 portrait and landscape before calling layout done.
