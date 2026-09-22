@@ -112,15 +112,12 @@ html.theme-swiss .swiss-card.is-hover .swiss-card-art :is([data-depth], .z1, .z2
   html.theme-swiss .swiss-card-art svg { position: absolute; inset: 1.25rem; width: calc(100% - 2.5rem); height: calc(100% - 2.5rem); }
 }
 @media (hover: none) {
-  html.theme-swiss .swiss-card.is-hover { color: var(--paper); }
-  html.theme-swiss .swiss-card.is-hover .swiss-card-inner {
-    --card-surface: var(--ink); --accent: var(--accent-on-ink, #9aa0dc);
-    background: var(--ink);
-  }
+  /* Touch: scroll-in plays the drawing (is-hover from touch-play) but cards stay
+     paper; inversion is a pointer affordance, not a scroll effect. */
+  html.theme-swiss .swiss-card.is-hover .swiss-card-inner { background: var(--paper); box-shadow: none; }
   html.theme-swiss .swiss-card.is-hover .swiss-card-word { color: var(--accent); }
-  html.theme-swiss .swiss-card.is-hover .swiss-card-art { color: var(--paper); border-bottom-color: rgba(247,245,240,.25); }
-  html.theme-swiss .swiss-card.is-hover .swiss-card-summary,
-  html.theme-swiss .swiss-card.is-hover .swiss-card-tags .sw-label { color: rgba(247,245,240,.7); }
+  /* No technology tags on phones. */
+  html.theme-swiss .swiss-card-tags { display: none; }
 }
 
 /* Registered animation properties for the drawings. Transitioning a registered

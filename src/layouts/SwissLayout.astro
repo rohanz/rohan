@@ -76,6 +76,16 @@ const nav = [
         <nav class="sw-nav-links" aria-label="Primary">
           {nav.map((n) => <a class="sw-link" href={n.href} aria-current={section === n.id ? 'page' : undefined}>{n.label}</a>)}
         </nav>
+        <button class="sw-menu-toggle" type="button" aria-expanded="false" aria-controls="sw-mobile-menu">
+          <span class="sw-menu-toggle-label">menu</span>
+          <span class="sw-menu-toggle-mark" aria-hidden="true"></span>
+        </button>
+      </div>
+      <div class="sw-mobile-menu" id="sw-mobile-menu" hidden>
+        <nav class="sw-mobile-primary" aria-label="Mobile primary">
+          {nav.map((n) => <a href={n.href} aria-current={section === n.id ? 'page' : undefined}>{n.label}</a>)}
+        </nav>
+        <SwissThemeSwitch />
       </div>
     </header>
     <main id="sw-main"><slot /></main>
@@ -96,6 +106,30 @@ const nav = [
         cleanupNav?.();
         const nav = document.querySelector<HTMLElement>('.sw-nav');
         if (!nav) return;
+        const menuButton = nav.querySelector<HTMLButtonElement>('.sw-menu-toggle');
+        const menu = nav.querySelector<HTMLElement>('.sw-mobile-menu');
+        const compact = window.matchMedia('(max-width: 539px)');
+        const setMenu = (open: boolean) => {
+          if (!menuButton || !menu) return;
+          menuButton.setAttribute('aria-expanded', String(open));
+          menu.hidden = !open;
+          nav.classList.toggle('is-menu-open', open);
+        };
+        const onMenuButton = () => setMenu(menuButton?.getAttribute('aria-expanded') !== 'true');
+        const onMenuClick = (event: Event) => {
+          if ((event.target as Element).closest('a')) setMenu(false);
+        };
+        const onKeydown = (event: KeyboardEvent) => {
+          if (event.key === 'Escape' && menuButton?.getAttribute('aria-expanded') === 'true') {
+            setMenu(false);
+            menuButton.focus();
+          }
+        };
+        const onCompactChange = () => { if (!compact.matches) setMenu(false); };
+        menuButton?.addEventListener('click', onMenuButton);
+        menu?.addEventListener('click', onMenuClick);
+        document.addEventListener('keydown', onKeydown);
+        compact.addEventListener('change', onCompactChange);
         // Arriving on the home page: land on the hero. The router's scroll reset and
         // the mandatory snap can race, which sometimes settled on selected work.
         const root = document.documentElement;
@@ -105,17 +139,32 @@ const nav = [
           window.scrollTo({ top: 0, behavior: 'instant' });
           requestAnimationFrame(() => { root.style.scrollSnapType = prev; });
         }
+        const phone = window.matchMedia('(max-width: 899px)');
         const update = () => nav.classList.toggle('is-visible',
-          !document.documentElement.classList.contains('sw-home') || window.scrollY > 40);
+          phone.matches || !document.documentElement.classList.contains('sw-home') || window.scrollY > 40);
         update();
         window.addEventListener('scroll', update, { passive: true });
+        phone.addEventListener('change', update);
         // 'home' while already on the home page: back to the hero (a same-URL link does nothing by itself).
-        const home = nav.querySelector<HTMLAnchorElement>('a[href="/swiss"]');
+        const homeLinks = nav.querySelectorAll<HTMLAnchorElement>('a[href="/swiss"]');
         const onHome = (e: MouseEvent) => {
-          if (document.documentElement.classList.contains('sw-home')) { e.preventDefault(); window.scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }); }
+          if (document.documentElement.classList.contains('sw-home')) {
+            e.preventDefault();
+            setMenu(false);
+            window.scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+          }
         };
-        home?.addEventListener('click', onHome);
-        cleanupNav = () => { window.removeEventListener('scroll', update); home?.removeEventListener('click', onHome); };
+        homeLinks.forEach((home) => home.addEventListener('click', onHome));
+        cleanupNav = () => {
+          setMenu(false);
+          window.removeEventListener('scroll', update);
+          phone.removeEventListener('change', update);
+          menuButton?.removeEventListener('click', onMenuButton);
+          menu?.removeEventListener('click', onMenuClick);
+          document.removeEventListener('keydown', onKeydown);
+          compact.removeEventListener('change', onCompactChange);
+          homeLinks.forEach((home) => home.removeEventListener('click', onHome));
+        };
       }
       document.addEventListener('astro:page-load', initNav);
       document.addEventListener('astro:before-swap', () => { cleanupNav?.(); cleanupNav = undefined; });

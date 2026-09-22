@@ -23,16 +23,14 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 375, height: 667 }
       expect(art!.width / art!.height).toBeCloseTo(4 / 3, 1);
     });
 
-    test('scroll plays and inverts drawings without tilt, leaving resets them', async ({ page }) => {
+    test('scroll plays drawings on paper without tilt, leaving resets them', async ({ page }) => {
       await page.goto('/swiss/projects');
       const card = page.locator('.swiss-card').nth(2);
       await card.scrollIntoViewIfNeeded();
       await expect(card).toHaveClass(/is-hover/);
       await expect(card.locator('.swiss-card-inner')).toHaveCSS('transform', 'none');
-      expect(await card.locator('.swiss-card-inner').evaluate((el) => {
-        const style = getComputedStyle(el);
-        return style.getPropertyValue('--card-surface').trim() === style.getPropertyValue('--ink').trim();
-      })).toBe(true);
+      // Touch cards stay paper while the drawing plays (inversion is a pointer affordance).
+      await expect(card.locator('.swiss-card-inner')).toHaveCSS('background-color', 'rgb(247, 245, 240)');
       await page.evaluate(() => window.scrollTo(0, 0));
       await expect(card).not.toHaveClass(/is-hover/);
     });

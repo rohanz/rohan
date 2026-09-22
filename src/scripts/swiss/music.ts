@@ -10,8 +10,13 @@ let selected: HTMLButtonElement | null = null;
 let request = 0;
 const mediaActions = ['play', 'pause', 'previoustrack', 'nexttrack'] as const;
 
+function mediaSession(): MediaSession | null {
+  return 'mediaSession' in navigator && navigator.mediaSession ? navigator.mediaSession : null;
+}
+
 function mediaState(state: MediaSessionPlaybackState) {
-  if ('mediaSession' in navigator) navigator.mediaSession.playbackState = state;
+  const session = mediaSession();
+  try { if (session) session.playbackState = state; } catch {}
 }
 
 function setActive(button: HTMLButtonElement | null) {
@@ -48,12 +53,15 @@ function play(button: HTMLButtonElement, resume = false) {
   if (!resume || !sameTrack || player.ended) player.currentTime = 0;
   selected = button;
   setActive(button);
-  if ('mediaSession' in navigator && 'MediaMetadata' in window) {
-    navigator.mediaSession.metadata = new MediaMetadata({
-      title: button.dataset.title,
-      artist: button.dataset.artist,
-      artwork: button.dataset.cover ? [{ src: new URL(button.dataset.cover, location.href).href }] : [],
-    });
+  const session = mediaSession();
+  if (session && 'MediaMetadata' in window) {
+    try {
+      session.metadata = new MediaMetadata({
+        title: button.dataset.title,
+        artist: button.dataset.artist,
+        artwork: button.dataset.cover ? [{ src: new URL(button.dataset.cover, location.href).href }] : [],
+      });
+    } catch {}
   }
   stopViz = attachViz(button.closest<HTMLElement>('.sw-track')!, player);
   void player.play().catch(() => {
@@ -62,7 +70,8 @@ function play(button: HTMLButtonElement, resume = false) {
 }
 
 function bindMediaSession(buttons: HTMLButtonElement[]) {
-  if (!('mediaSession' in navigator)) return;
+  const session = mediaSession();
+  if (!session) return;
   const adjacent = (direction: number) => {
     const index = selected ? buttons.indexOf(selected) : -1;
     const button = buttons[index + direction];
@@ -76,7 +85,7 @@ function bindMediaSession(buttons: HTMLButtonElement[]) {
   };
   for (const action of mediaActions) {
     // Browsers can expose Media Session without supporting every action.
-    try { navigator.mediaSession.setActionHandler(action, handlers[action]); } catch {}
+    try { session.setActionHandler(action, handlers[action]); } catch {}
   }
 }
 
@@ -109,11 +118,12 @@ document.addEventListener('astro:page-load', init);
 document.addEventListener('astro:before-swap', () => {
   stop();
   selected = null;
-  if ('mediaSession' in navigator) {
+  const session = mediaSession();
+  if (session) {
     for (const action of mediaActions) {
-      try { navigator.mediaSession.setActionHandler(action, null); } catch {}
+      try { session.setActionHandler(action, null); } catch {}
     }
-    navigator.mediaSession.metadata = null;
+    try { session.metadata = null; } catch {}
     mediaState('none');
   }
   idleCleanups.forEach((cleanup) => cleanup());
