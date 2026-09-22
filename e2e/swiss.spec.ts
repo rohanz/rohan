@@ -110,22 +110,20 @@ test('reduced motion leaves swatch cards visible without pointer tilt', async ({
   await expect(card).toHaveCSS('transform', 'none');
 });
 
-test('home scrolls natively then settles at selected work', async ({ page }, testInfo) => {
+test('home glides to selected work on the first wheel tick', async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/swiss/');
   await expect(page.locator('.sw-nav')).toHaveCSS('opacity', '0');
   await expect(page.locator('.sw-hero h1')).toHaveClass(/is-in/);
   const target = await page.locator('.sw-selected-work').evaluate((el) =>
-    el.getBoundingClientRect().top + window.scrollY - document.querySelector<HTMLElement>('.sw-nav')!.offsetHeight);
+    el.getBoundingClientRect().top + window.scrollY);
   const trace: { ms: number; y: number }[] = [];
   const started = Date.now();
-  for (let i = 0; i < 3; i++) {
-    await page.mouse.wheel(0, 60);
-    await page.waitForTimeout(30);
-    const y = await page.evaluate(() => window.scrollY);
-    trace.push({ ms: Date.now() - started, y });
-    expect(y).toBeGreaterThan(i * 60);
-  }
+  await page.mouse.wheel(0, 40);
+  await page.waitForTimeout(250);
+  const midway = await page.evaluate(() => window.scrollY);
+  trace.push({ ms: Date.now() - started, y: midway });
+  expect(midway).toBeGreaterThan(0);
   for (let i = 0; i < 15; i++) {
     await page.waitForTimeout(100);
     trace.push({ ms: Date.now() - started, y: await page.evaluate(() => window.scrollY) });
