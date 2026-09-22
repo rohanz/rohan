@@ -96,6 +96,15 @@ const nav = [
         cleanupNav?.();
         const nav = document.querySelector<HTMLElement>('.sw-nav');
         if (!nav) return;
+        // Arriving on the home page: land on the hero. The router's scroll reset and
+        // the mandatory snap can race, which sometimes settled on selected work.
+        const root = document.documentElement;
+        if (root.classList.contains('sw-home') && !location.hash) {
+          const prev = root.style.scrollSnapType;
+          root.style.scrollSnapType = 'none';
+          window.scrollTo({ top: 0, behavior: 'instant' });
+          requestAnimationFrame(() => { root.style.scrollSnapType = prev; });
+        }
         const update = () => nav.classList.toggle('is-visible',
           !document.documentElement.classList.contains('sw-home') || window.scrollY > 40);
         update();
