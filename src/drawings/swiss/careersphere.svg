@@ -9,7 +9,7 @@
     @media (prefers-reduced-motion: reduce) { .swiss-careersphere-orbit, .swiss-careersphere-match { transition: none; } }
   </style>
   <g font-family="General Sans, sans-serif" font-size="10" letter-spacing="1.5" stroke="none" fill="currentColor" opacity=".55">
-    <text x="40" y="52">ROLE LANDSCAPE</text><text x="360" y="253" text-anchor="end">SKILLS → POSSIBILITIES</text>
+    
   </g>
   <path d="M40 150h38m244 0h38M200 62v10m0 156v10" stroke-opacity=".2"/>
   <g class="swiss-careersphere-orbit">

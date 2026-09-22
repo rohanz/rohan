@@ -1,7 +1,7 @@
 /* cards */
 html.theme-swiss .sw-filters { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: 2rem; }
 html.theme-swiss .sw-filter { border: 1px solid var(--hair); border-radius: 0; padding: .45rem .8rem; font-family: inherit; background: transparent; cursor: pointer; transition: border-color .2s ease, background .2s ease, color .2s ease; }
-html.theme-swiss .sw-filter:hover { border-color: var(--ink); }
+html.theme-swiss .sw-filter:hover { border-color: var(--ink); background: var(--tint); }
 html.theme-swiss .sw-filter[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
 html.theme-swiss #sw-project-grid { transition: opacity .2s ease; }
 html.theme-swiss #sw-project-grid.is-filtering { opacity: 0; pointer-events: none; }
@@ -23,11 +23,15 @@ html.theme-swiss .swiss-card.is-hover { will-change: transform; transition: tran
   html.theme-swiss .swiss-card { transform: none; }
   html.theme-swiss .swiss-card:focus-visible, html.theme-swiss .swiss-card:active { transform: translateY(-4px); }
 }
-html.theme-swiss .swiss-card-art { flex: 0 0 auto; aspect-ratio: 4 / 3; padding: 1.25rem; border-bottom: 1px solid var(--hair); color: var(--ink); }
+html.theme-swiss .swiss-card-art { position: relative; flex: 0 0 auto; aspect-ratio: 4 / 3; padding: 1.25rem; border-bottom: 1px solid var(--hair); color: var(--ink); }
+html.theme-swiss .swiss-card-art svg { position: relative; z-index: 1; }
+/* The old cover-image wordmark, set behind the drawing so the line work can
+   cross it; grey but heavy so it stays clearly legible. */
+html.theme-swiss .swiss-card-word { position: absolute; left: 1.25rem; right: 1.25rem; bottom: 1rem; z-index: 0; font-family: var(--font-ui); font-weight: 700; font-size: clamp(1.5rem, 2.2vw, 2.1rem); line-height: 1; letter-spacing: -0.03em; color: #9c9890; overflow-wrap: anywhere; }
 html.theme-swiss .swiss-card-art svg { width: 100%; height: 100%; display: block; }
 html.theme-swiss .swiss-card-placeholder { width: 100%; height: 100%; background: repeating-linear-gradient(135deg, transparent 0 10px, var(--hair) 10px 11px); }
 html.theme-swiss .swiss-card-body { flex: 1; min-height: 10rem; display: flex; flex-direction: column; gap: .5rem; padding: 1.1rem 1.25rem 1.25rem; }
-html.theme-swiss .swiss-card-title { margin: 0; font-family: var(--font-display); font-weight: 500; font-size: clamp(1.15rem, 1.4vw, 1.45rem); letter-spacing: -0.03em; line-height: 1.1; }
+html.theme-swiss .swiss-card-title { margin: 0; font-family: var(--font-ui); font-weight: 500; font-size: clamp(1.15rem, 1.4vw, 1.45rem); letter-spacing: -0.03em; line-height: 1.1; }
 html.theme-swiss .swiss-card-summary { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 html.theme-swiss .swiss-card-tags { margin-top: auto; display: flex; flex-wrap: wrap; gap: .35rem .9rem; }
 html.theme-swiss .swiss-card-glare { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity .3s ease; background: radial-gradient(60% 60% at var(--gx) var(--gy), rgba(255,255,255,.55), transparent 70%); mix-blend-mode: soft-light; }

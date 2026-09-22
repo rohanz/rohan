@@ -19,7 +19,7 @@
   <circle class="swiss-bqst-node swiss-bqst-node-low" cx="168" cy="132" r="6" fill="var(--accent)" stroke="var(--accent)"/>
   <circle class="swiss-bqst-node swiss-bqst-node-high" cx="292" cy="168" r="4" fill="currentColor"/>
   <g font-family="General Sans, sans-serif" font-size="10" letter-spacing="1.5" stroke="none" fill="currentColor" opacity=".55">
-    <text x="40" y="52">FREQUENCY RESPONSE</text>
-    <text x="40" y="253">20 HZ</text><text x="360" y="253" text-anchor="end">20 KHZ</text>
+    
+    
   </g>
 </svg>

@@ -11,8 +11,8 @@
     @media (prefers-reduced-motion: reduce) { .swiss-website-frame, .swiss-website-border { transition: none; } }
   </style>
   <g fill="currentColor" stroke="none" font-family="General Sans, sans-serif" font-size="10" letter-spacing="1.5" opacity=".55">
-    <text x="40" y="52">ONE SITE / MANY VIEWS</text>
-    <text x="360" y="253" text-anchor="end">LAYOUT STUDIES</text>
+    
+    
   </g>
   <g class="swiss-website-frame swiss-website-back" stroke-opacity=".2">
     <rect x="72" y="78" width="200" height="112"/>

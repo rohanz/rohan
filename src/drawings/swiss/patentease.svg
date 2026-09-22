@@ -9,15 +9,15 @@
     @media (prefers-reduced-motion: reduce) { .swiss-patent-fill, .swiss-patent-score { transition: none; } }
   </style>
   <g fill="currentColor" stroke="none" font-family="General Sans, sans-serif" font-size="10" letter-spacing="1.5" opacity=".55">
-    <text x="40" y="52">PATENT SIMILARITY</text>
-    <text x="360" y="253" text-anchor="end">IPOS / MATCH ANALYSIS</text>
+    
+    
   </g>
   <path d="M104 78h112l32 32v66M104 78v154h144v-8"/>
   <path d="M216 78v32h32"/>
   <path d="M124 106h62M124 130h102M124 142h82M124 154h94" stroke-opacity=".35"/>
   <path d="M92 90H80v142h12" stroke-opacity=".2"/>
   <g fill="currentColor" stroke="none" font-family="General Sans, sans-serif" font-size="10" letter-spacing="1.5">
-    <text x="120" y="190" opacity=".55">SIMILARITY</text>
+    
     <text class="swiss-patent-score" x="320" y="190" text-anchor="end">78%</text>
   </g>
   <rect x="120" y="202" width="200" height="16" stroke-opacity=".35"/>

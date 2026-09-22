@@ -9,7 +9,7 @@
     @media (prefers-reduced-motion: reduce) { .swiss-research-promise, .swiss-research-honest { transition: none; } }
   </style>
   <g font-family="General Sans, sans-serif" font-size="10" letter-spacing="1.5" stroke="none" fill="currentColor" opacity=".55">
-    <text x="40" y="52">BACKTEST / REALITY</text><text x="360" y="253" text-anchor="end">COSTS &amp; BIASES INCLUDED</text>
+    
   </g>
   <g stroke-opacity=".18">
     <path d="M40 76v152h320M40 112h320M40 166h320"/>

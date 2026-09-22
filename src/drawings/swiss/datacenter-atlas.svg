@@ -7,7 +7,7 @@
     @media (prefers-reduced-motion: reduce) { .swiss-atlas-pin { transition: none; } }
   </style>
   <g font-family="General Sans, sans-serif" font-size="10" letter-spacing="1.5" stroke="none" fill="currentColor" opacity=".55">
-    <text x="40" y="52">FACILITY ATLAS</text><text x="360" y="253" text-anchor="end">DISCOVER · LOCATE · DEDUPLICATE</text>
+    
   </g>
   <path d="M50 78v144 M110 78v144 M170 78v144 M230 78v144 M290 78v144 M350 78v144 M50 78h300 M50 126h300 M50 174h300 M50 222h300" stroke-opacity=".2" stroke-dasharray="1 6"/>
   <g stroke-opacity=".7">

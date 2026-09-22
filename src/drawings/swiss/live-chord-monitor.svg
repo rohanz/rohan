@@ -11,7 +11,7 @@
     @media (prefers-reduced-motion: reduce) { .swiss-chord-key, .swiss-chord-name, .swiss-chord-idle { transition: none; } }
   </style>
   <g fill="currentColor" stroke="none" font-family="General Sans, sans-serif" font-size="10" letter-spacing="1.5" opacity=".55">
-    <text x="40" y="52">CHORD MONITOR</text><text x="360" y="253" text-anchor="end">MIDI IN</text>
+    
   </g>
   <path class="swiss-chord-idle" d="M40 88h48M96 88h12"/>
   <text class="swiss-chord-name" x="40" y="98" fill="currentColor" stroke="none" font-family="Chillax, sans-serif" font-size="34" font-weight="500">Cmaj7</text>

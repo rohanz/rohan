@@ -9,7 +9,7 @@
     @media (prefers-reduced-motion: reduce) { .swiss-yourcast-playhead, .swiss-yourcast-played { transition: none; } }
   </style>
   <g font-family="General Sans, sans-serif" font-size="10" letter-spacing="1.5" stroke="none" fill="currentColor" opacity=".55">
-    <text x="40" y="52">YOUR DAILY BRIEF</text><text x="360" y="253" text-anchor="end">PERSONALIZED AUDIO</text>
+    
   </g>
   <path d="M30 150h340M30 228h340" stroke-opacity=".18"/>
   <path d="M30 225v6m85-6v6m85-6v6m85-6v6m85-6v6" stroke-opacity=".35"/>

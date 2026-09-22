@@ -1,12 +1,15 @@
 ---
 import '../styles/swiss-cards.css';
 import { drawingFor } from '../lib/swiss/drawings';
+import { cardTextFor } from '../lib/swiss/card-text';
 interface Props { slug: string; title: string; summary: string; technologies: string[] }
 const { slug, title, summary, technologies } = Astro.props;
 const Drawing = drawingFor(slug);
+const word = cardTextFor(slug);
 ---
 <a class="swiss-card" href={`/swiss/projects/${slug}`} data-reveal="block" data-techs={technologies.join(',')}>
   <div class="swiss-card-art" aria-hidden="true">
+    {word && <span class="swiss-card-word">{word}</span>}
     {Drawing ? <Drawing /> : <div class="swiss-card-placeholder"></div>}
   </div>
   <div class="swiss-card-body">

@@ -9,7 +9,7 @@
     @media (prefers-reduced-motion: reduce) { .swiss-agentic-step, .swiss-agentic-proof { transition: none; } }
   </style>
   <g font-family="General Sans, sans-serif" font-size="10" letter-spacing="1.5" stroke="none" fill="currentColor" opacity=".55">
-    <text x="40" y="52">TOOL-GROUNDED RESEARCH</text><text x="360" y="253" text-anchor="end">QUERY → EVIDENCE → ANSWER</text>
+    
   </g>
   <path d="M66 177v34h268v-34M200 211v10" stroke-opacity=".18" stroke-dasharray="3 6"/>
   <g class="swiss-agentic-step" style="--swiss-agentic-delay: 0.00s"><rect x="40" y="117" width="52" height="60"/><path d="M92 147h15m-5-4 5 4-5 4"/></g>

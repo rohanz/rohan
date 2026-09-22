@@ -6,6 +6,7 @@
 export interface Accent { id: string; label: string; hex: string }
 
 export const ACCENTS: Accent[] = [
+  { id: 'periwinkle-deep', label: 'periwinkle (deep)', hex: '#5f66c2' },
   { id: 'vermilion', label: 'vermilion', hex: '#e3452b' },
   { id: 'terracotta', label: 'terracotta', hex: '#c4633f' },
   { id: 'rust', label: 'rust', hex: '#b04a2a' },
@@ -59,3 +60,15 @@ export const ACCENTS: Accent[] = [
 ];
 
 export const DEFAULT_ACCENT: Accent = ACCENTS[0];
+
+const PAPER = '#f7f5f0';
+
+/** Mix an accent with paper so it becomes a surface wash (ink text sits on it). */
+export function tintOf(hex: string, amount = 0.18): string {
+  const c = (h: string, i: number) => parseInt(h.slice(i, i + 2), 16);
+  const mix = (a: number, b: number) => Math.round(a * amount + b * (1 - amount));
+  const [r, g, b] = [1, 3, 5].map((i) => mix(c(hex, i), c(PAPER, i)));
+  return '#' + [r, g, b].map((v) => v.toString(16).padStart(2, '0')).join('');
+}
+
+export const DEFAULT_TINT = tintOf(DEFAULT_ACCENT.hex);

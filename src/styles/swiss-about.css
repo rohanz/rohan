@@ -12,7 +12,7 @@ html.theme-swiss .sw-about-body .sw-about-resume { margin: 1.5rem 0 0; }
 html.theme-swiss .sw-about-photo { grid-column: 1 / -1; grid-row: 1; justify-self: end; width: min(100%, 272px); aspect-ratio: 4 / 5; margin: 0; border: 1px solid var(--hair); }
 html.theme-swiss .sw-about-photo img { width: 100%; height: 100%; object-fit: cover; object-position: center 30%; }
 html.theme-swiss .sw-about-facts { display: grid; grid-template-columns: minmax(0, 1fr); border-top: 1px solid var(--hair); border-left: 1px solid var(--hair); }
-html.theme-swiss .sw-about-cell { display: flex; flex-direction: column; gap: 1.25rem; padding: 1.5rem; border-right: 1px solid var(--hair); border-bottom: 1px solid var(--hair); background: var(--paper-2); }
+html.theme-swiss .sw-about-cell { display: flex; flex-direction: column; gap: 1.25rem; padding: 1.5rem; border-right: 1px solid var(--hair); border-bottom: 1px solid var(--hair); background: var(--tint); }
 html.theme-swiss .sw-about-cell h2 { margin: 0; }
 html.theme-swiss .sw-about-stats { display: flex; flex-wrap: wrap; gap: 1.5rem 2.5rem; }
 html.theme-swiss .sw-stat { display: flex; flex-direction: column; gap: .5rem; }

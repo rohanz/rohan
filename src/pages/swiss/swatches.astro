@@ -1,7 +1,7 @@
 ---
 import SwissLayout from '../../layouts/SwissLayout.astro';
 import SwissCard from '../../components/SwissCard.astro';
-import { ACCENTS, DEFAULT_ACCENT } from '../../lib/swiss/accents';
+import { ACCENTS, DEFAULT_ACCENT, tintOf } from '../../lib/swiss/accents';
 import { getEntry } from 'astro:content';
 import '../../styles/swiss-swatches.css';
 // WCAG relative luminance: linearize sRGB before weighting channels.
@@ -30,7 +30,7 @@ if (!sample) throw new Error('The Swiss swatches sample project bqst is missing.
     <p class="sw-swatch-note">Pastel accents fail text contrast on paper and suit fills and hovers only. Ratios compare each accent with paper (#f7f5f0).</p>
     <div class="sw-swatches">
       {ACCENTS.map((accent) => (
-        <section class="sw-swatch" data-accent={accent.id} aria-labelledby={`swatch-${accent.id}`} style={`--accent:${accent.hex}; --w-accent:${accent.hex}; --line-projects:${accent.hex}`}>
+        <section class="sw-swatch" data-accent={accent.id} aria-labelledby={`swatch-${accent.id}`} style={`--accent:${accent.hex}; --tint:${tintOf(accent.hex)}; --w-accent:${accent.hex}; --line-projects:${accent.hex}`}>
           <div class="sw-swatch-head">
             <h2 class="sw-label" id={`swatch-${accent.id}`}>{accent.label}</h2>
             <span class="sw-swatch-values"><code>{accent.hex}</code> <small class="sw-swatch-contrast" aria-label={`${contrastRatio(accent.hex)} to 1 contrast against paper`}>{contrastRatio(accent.hex)}:1</small></span>
@@ -39,6 +39,7 @@ if (!sample) throw new Error('The Swiss swatches sample project bqst is missing.
             <p class="sw-label">software, ai, music</p>
             <p class="sw-display sw-display-md">rohan<br />kulshrestha</p>
             <a class="sw-link" href="/swiss/projects">projects</a>
+            <div class="sw-swatch-tint"><span class="sw-label">tint</span><span>surfaces carry this wash with ink on top</span><code>{tintOf(accent.hex)}</code></div>
           </div>
           <SwissCard slug={sample.id} title={sample.data.title} summary={sample.data.summary} technologies={sample.data.technologies} />
         </section>

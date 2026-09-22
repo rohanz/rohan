@@ -7,7 +7,7 @@
     @media (prefers-reduced-motion: reduce) { .swiss-analyst-tick { transition: none; } }
   </style>
   <g font-family="General Sans, sans-serif" font-size="10" letter-spacing="1.5" stroke="none" fill="currentColor" opacity=".55">
-    <text x="40" y="52">FINANCIAL MEMO</text><text x="360" y="253" text-anchor="end">EVERY NUMBER VERIFIED</text>
+    
   </g>
   <path d="M104 75h163l29 29v124H104Z"/>
   <path d="M267 75v29h29M124 96h71M124 106h42" stroke-opacity=".35"/>
