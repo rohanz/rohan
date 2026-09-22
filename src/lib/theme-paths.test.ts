@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { blueprintEntryFor, blueprintPathFor, defaultPathFor, transitPathFor } from './theme-paths';
+import { blueprintEntryFor, blueprintPathFor, defaultPathFor, swissPathFor, transitPathFor } from './theme-paths';
 
 describe('theme route mapping', () => {
   it.each([
@@ -43,5 +43,31 @@ describe('theme route mapping', () => {
     ['/transit/projects/careersphere', '/blueprint/?p=%2Fblueprint%2Fprojects%2Fcareersphere'],
   ])('entry link for %s targets the SPA directly (%s)', (from, to) => {
     expect(blueprintEntryFor(from)).toBe(to);
+  });
+});
+
+describe('swiss route mapping', () => {
+  it.each([
+    ['/', '/swiss'],
+    ['/music', '/swiss/music'],
+    ['/projects/careersphere', '/swiss/projects/careersphere'],
+    ['/transit/about/', '/swiss/about'],
+    ['/blueprint/projects', '/swiss/projects'],
+    ['/swiss/projects/bqst', '/swiss/projects/bqst'],
+  ])('maps %s to swiss %s', (from, to) => {
+    expect(swissPathFor(from)).toBe(to);
+  });
+
+  it.each([
+    ['/swiss', '/'],
+    ['/swiss/projects/careersphere', '/projects/careersphere'],
+  ])('maps swiss %s to default %s', (from, to) => {
+    expect(defaultPathFor(from)).toBe(to);
+  });
+
+  it('strips the swiss prefix for transit and blueprint', () => {
+    expect(transitPathFor('/swiss/music')).toBe('/transit/music');
+    expect(blueprintPathFor('/swiss/about')).toBe('/blueprint/about');
+    expect(blueprintEntryFor('/swiss')).toBe('/blueprint/?p=%2Fblueprint');
   });
 });

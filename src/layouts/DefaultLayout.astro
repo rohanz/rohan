@@ -4,7 +4,7 @@ import '../styles/default.css';
 import '../styles/default-phase2.css';
 import '../styles/fa-icons.css';
 import { ClientRouter } from 'astro:transitions';
-import { blueprintEntryFor, transitPathFor } from '../lib/theme-paths';
+import { blueprintEntryFor, swissPathFor, transitPathFor } from '../lib/theme-paths';
 import { BENTO_SOCIALS, socialByName } from '../data/socials';
 
 interface Props {
@@ -31,6 +31,7 @@ const ogAbs = new URL(ogImage, Astro.site).href;
 const activeSection = section === 'homepage' ? undefined : section;
 const transitHref = transitPathFor(Astro.url.pathname);
 const blueprintHref = blueprintEntryFor(Astro.url.pathname);
+const swissHref = swissPathFor(Astro.url.pathname);
 const personLd = JSON.stringify({
   '@context': 'https://schema.org',
   '@type': 'Person',
@@ -133,6 +134,12 @@ const personLd = JSON.stringify({
             <path d="M3 13V3h22v10H3Zm7-10v10m8-10v10M3 8h22"></path>
           </svg>
           <span>blueprint mode</span>
+        </a>
+        <a class="site-switch-link" href={swissHref} data-theme-pref="swiss">
+          <svg class="site-switch-glyph" viewBox="0 0 28 16" aria-hidden="true">
+            <path d="M3 3h22M3 8h14M3 13h22"></path>
+          </svg>
+          <span>swiss mode</span>
         </a>
       </nav>
 

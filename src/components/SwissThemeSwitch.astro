@@ -1,0 +1,10 @@
+---
+import { blueprintEntryFor, defaultPathFor, transitPathFor } from '../lib/theme-paths';
+const path = Astro.url.pathname;
+---
+<nav class="sw-themes" aria-label="Site themes">
+  <span class="sw-label" aria-current="true">swiss</span>
+  <a class="sw-label sw-link" href={defaultPathFor(path)} data-theme-pref="default">classic</a>
+  <a class="sw-label sw-link" href={transitPathFor(path)} data-theme-pref="transit">transit</a>
+  <a class="sw-label sw-link" href={blueprintEntryFor(path)} data-theme-pref="blueprint" data-astro-reload data-astro-prefetch="false">blueprint</a>
+</nav>

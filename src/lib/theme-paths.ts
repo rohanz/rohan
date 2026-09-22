@@ -6,14 +6,25 @@ function cleanPath(pathname: string): string {
   return `/${path.replace(/^\/+|\/+$/g, '')}`;
 }
 
+const THEME_PREFIX = /^\/(?:transit|blueprint|swiss)(?=\/|$)/;
+
+function stripTheme(pathname: string): string {
+  return cleanPath(pathname).replace(THEME_PREFIX, '') || '/';
+}
+
 export function transitPathFor(pathname: string): string {
-  const path = cleanPath(pathname).replace(/^\/blueprint(?=\/|$)/, '') || '/';
+  const path = stripTheme(pathname);
   return path === '/' ? '/transit' : `/transit${path}`;
 }
 
 export function blueprintPathFor(pathname: string): string {
-  const path = cleanPath(pathname).replace(/^\/(?:transit|blueprint)(?=\/|$)/, '') || '/';
+  const path = stripTheme(pathname);
   return path === '/' ? '/blueprint' : `/blueprint${path}`;
+}
+
+export function swissPathFor(pathname: string): string {
+  const path = stripTheme(pathname);
+  return path === '/' ? '/swiss' : `/swiss${path}`;
 }
 
 // Direct SPA entry for the blueprint theme: deep blueprint URLs are not real
@@ -26,7 +37,5 @@ export function blueprintEntryFor(pathname: string): string {
 }
 
 export function defaultPathFor(pathname: string): string {
-  const path = cleanPath(pathname);
-  if (path === '/transit' || path === '/blueprint') return '/';
-  return path.replace(/^\/(?:transit|blueprint)(?=\/|$)/, '') || '/';
+  return stripTheme(pathname);
 }

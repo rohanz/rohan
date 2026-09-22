@@ -1,0 +1,41 @@
+---
+import SwissLayout from '../../layouts/SwissLayout.astro';
+import { getCollection } from 'astro:content';
+import { HOME_DESCRIPTION } from '../../data/page-meta';
+import { socialByName } from '../../data/socials';
+const selected = (await getCollection('projects'))
+  .filter((p) => !p.data.unlisted)
+  .sort((a, b) => a.data.order - b.data.order)
+  .slice(0, 4);
+const github = socialByName('github');
+---
+<SwissLayout title="rohan.jk — software & ai" description={HOME_DESCRIPTION}>
+  <section class="sw-hero">
+    <div class="sw-hero-copy">
+      <p class="sw-label" data-reveal="block">software, ai, music</p>
+      <h1 class="sw-display sw-display-xl" data-reveal="lines">rohan<br>kulshrestha</h1>
+      <p class="sw-body-lg" data-reveal="block" style="--i:2">computer engineering at ntu singapore. i build end-to-end products with ai, and i make records.</p>
+    </div>
+    <div class="sw-quads" data-reveal-group>
+      <a class="sw-quad" href="/swiss/projects" data-reveal="block"><span class="sw-label">work</span><span class="sw-quad-title">projects</span></a>
+      <a class="sw-quad" href="/swiss/music" data-reveal="block"><span class="sw-label">listen</span><span class="sw-quad-title">music</span></a>
+      <a class="sw-quad" href="/swiss/about" data-reveal="block"><span class="sw-label">read</span><span class="sw-quad-title">about</span></a>
+      <a class="sw-quad" href={github.href} target="_blank" rel="noopener noreferrer" data-reveal="block"><span class="sw-label">contact</span><span class="sw-quad-title sw-link-ext">github <span class="sw-arrow">↗</span></span></a>
+    </div>
+  </section>
+  <section class="sw-wrap sw-section">
+    <div class="sw-section-head">
+      <h2 class="sw-display sw-display-md">selected work</h2>
+      <a class="sw-label sw-link" href="/swiss/projects">all projects</a>
+    </div>
+    <div class="sw-rows" data-reveal-group>
+      {selected.map((p) => (
+        <a class="sw-row" href={`/swiss/projects/${p.id}`} data-reveal="block">
+          <span class="sw-row-title">{p.data.title}</span>
+          <span class="sw-row-summary">{p.data.summary}</span>
+          <span class="sw-row-tags">{p.data.technologies.slice(0, 3).map((t) => <span class="sw-label">{t}</span>)}</span>
+        </a>
+      ))}
+    </div>
+  </section>
+</SwissLayout>
