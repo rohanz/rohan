@@ -8,7 +8,8 @@
    transforms/animations in a depth <g> so both transforms compose.
    Reduced motion and hover:none disable layer transforms. */
 html.theme-swiss .sw-projects { display: grid; grid-template-columns: minmax(0, 1fr); min-height: calc(100svh - var(--nav-height)); }
-html.theme-swiss .sw-project-rail { min-width: 0; background: var(--tint); }
+/* z-index above hovered cards (2) so a tilted card slides under the rail like it does under the nav. */
+html.theme-swiss .sw-project-rail { min-width: 0; background: var(--tint); position: relative; z-index: 3; }
 html.theme-swiss .sw-project-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; padding: 2rem var(--gutter); }
 html.theme-swiss .sw-project-heading h1 { margin: 0; }
 html.theme-swiss .sw-project-heading .sw-label { white-space: nowrap; color: var(--ink); }
@@ -20,8 +21,11 @@ html.theme-swiss .sw-filter:focus-visible { outline-offset: -3px; }
 @media (min-width: 1100px) {
   html.theme-swiss .sw-projects { grid-template-columns: minmax(0, 3fr) minmax(0, 9fr); }
   html.theme-swiss .sw-project-rail { border-right: 1px solid var(--tint-hair); }
-  html.theme-swiss .sw-project-rail-inner { position: sticky; top: var(--nav-height); max-height: calc(100svh - var(--nav-height)); overflow-y: auto; }
-  html.theme-swiss .sw-project-heading { min-height: 13rem; flex-direction: column; align-items: flex-start; padding: 2rem; }
+  html.theme-swiss .sw-project-rail-inner { position: sticky; top: var(--nav-height); min-height: calc(100svh - var(--nav-height)); max-height: calc(100svh - var(--nav-height)); overflow-y: auto; display: flex; flex-direction: column; }
+  html.theme-swiss .sw-project-rail-inner .sw-rail-links { margin-top: auto; }
+  html.theme-swiss .sw-project-heading { min-height: 9rem; flex-direction: column; align-items: flex-start; padding: 1.75rem 2rem; }
+  html.theme-swiss .sw-filters .sw-filter { min-height: 2.25rem; padding: .55rem 2rem; }
+  html.theme-swiss .sw-project-rail-inner .sw-rail-links { padding: 1.25rem 2rem; }
   html.theme-swiss .sw-filters { flex-direction: column; overflow-x: visible; }
   html.theme-swiss .sw-filter { width: 100%; border-right: 0; border-bottom: 1px solid var(--tint-hair); padding: .9rem 2rem; }
   /* The rail's right rule also forms the field's left edge. */
@@ -38,11 +42,11 @@ html.theme-swiss .swiss-card {
   --rx: 0; --ry: 0; --gx: 50%; --gy: 50%;
   position: relative; display: flex; flex-direction: column; container-type: inline-size;
   min-width: 0; border: 0; border-right: 1px solid var(--tint-hair); border-bottom: 1px solid var(--tint-hair); background: var(--tint); overflow: hidden;
-  transform: perspective(900px) rotateX(calc(var(--rx) * 1deg)) rotateY(calc(var(--ry) * 1deg));
+  transform: perspective(900px) rotateX(calc(var(--rx) * 1deg)) rotateY(calc(var(--ry) * 1deg)) scale(var(--lift, 1));
   transform-style: preserve-3d;
   transition: transform .4s cubic-bezier(.2,.7,.2,1), box-shadow .4s ease, border-color .3s ease;
 }
-html.theme-swiss .swiss-card:hover, html.theme-swiss .swiss-card:focus-visible { z-index: 2; background: var(--ink); color: var(--paper); box-shadow: 0 30px 60px -30px rgba(20,20,20,.35); }
+html.theme-swiss .swiss-card:hover, html.theme-swiss .swiss-card:focus-visible { --lift: 1.025; z-index: 2; background: var(--ink); color: var(--paper); box-shadow: 0 30px 60px -30px rgba(20,20,20,.35); }
 html.theme-swiss .swiss-card.is-hover { will-change: transform; transition: transform .08s linear, box-shadow .4s ease, border-color .3s ease; }
 @media (hover: none), (prefers-reduced-motion: reduce) {
   html.theme-swiss .swiss-card { transform: none; }
@@ -65,7 +69,7 @@ html.theme-swiss .swiss-card-tags { margin-top: auto; display: flex; flex-wrap: 
    Match reveal's specificity so its final transform:none cannot suppress tilt. */
 @media (prefers-reduced-motion: no-preference) {
   html.theme-swiss.js .swiss-card[data-reveal="block"].is-in {
-    transform: perspective(900px) rotateX(calc(var(--rx) * 1deg)) rotateY(calc(var(--ry) * 1deg));
+    transform: perspective(900px) rotateX(calc(var(--rx) * 1deg)) rotateY(calc(var(--ry) * 1deg)) scale(var(--lift, 1));
     transition: opacity .7s ease var(--d), transform .4s cubic-bezier(.2,.7,.2,1), box-shadow .4s ease, border-color .3s ease;
   }
   html.theme-swiss.js .swiss-card[data-reveal="block"].is-in.is-hover {

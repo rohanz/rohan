@@ -1,0 +1,12 @@
+---
+// Socials + theme switch for the sticky rails, so the links are reachable
+// without scrolling past the content on every page.
+import SwissThemeSwitch from './SwissThemeSwitch.astro';
+import { SOCIALS } from '../data/socials';
+---
+<div class="sw-rail-links">
+  <nav class="sw-rail-socials" aria-label="Social links">
+    {SOCIALS.map((s) => <a class="sw-label sw-link-ext" href={s.href} target="_blank" rel="noopener noreferrer">{s.label.toLowerCase()} <span class="sw-arrow" aria-hidden="true">↗</span></a>)}
+  </nav>
+  <SwissThemeSwitch />
+</div>

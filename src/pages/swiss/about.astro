@@ -1,6 +1,7 @@
 ---
 import '../../styles/swiss-about.css';
 import SwissLayout from '../../layouts/SwissLayout.astro';
+import SwissRailLinks from '../../components/SwissRailLinks.astro';
 import { BIO_INTRO, BIO_WORK, BIO_MUSIC, TAGLINE } from '../../data/bio';
 import { ABOUT_DESCRIPTION } from '../../data/page-meta';
 import { RESUME_FILENAME, RESUME_LABEL, RESUME_PATH } from '../../data/resume';
@@ -18,6 +19,7 @@ import { TESTIMONIALS } from '../../data/testimonials';
       <div class="sw-about-caption">
         <p class="sw-label">{TAGLINE}</p>
         <a class="sw-label sw-link-ext" href={RESUME_PATH} download={RESUME_FILENAME}>{RESUME_LABEL} <span class="sw-arrow" aria-hidden="true">↗</span></a>
+        <SwissRailLinks />
       </div>
     </div>
     <div class="sw-about-facts">

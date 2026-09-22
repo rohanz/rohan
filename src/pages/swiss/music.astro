@@ -1,6 +1,7 @@
 ---
 import '../../styles/swiss-music.css';
 import SwissLayout from '../../layouts/SwissLayout.astro';
+import SwissRailLinks from '../../components/SwissRailLinks.astro';
 import { SONGS } from '../../data/music';
 import { MUSIC_DESCRIPTION } from '../../data/page-meta';
 ---
@@ -10,9 +11,7 @@ import { MUSIC_DESCRIPTION } from '../../data/page-meta';
       <div class="sw-music-rail-inner">
         <h1 class="sw-display sw-display-page" data-reveal="lines">music</h1>
         <span class="sw-label">{SONGS.length} releases</span>
-        <div class="sw-music-legend sw-label" aria-label="Available on">
-          <span>spotify</span><span>apple music</span><span>youtube</span>
-        </div>
+        <SwissRailLinks />
       </div>
     </header>
     <div class="sw-tracks" data-reveal-group>
@@ -25,11 +24,10 @@ import { MUSIC_DESCRIPTION } from '../../data/page-meta';
             <h2 class="sw-track-title">{s.title}</h2>
             <span class="sw-track-artist">{s.artist}</span>
           </div>
-          <div class="sw-track-viz" aria-hidden="true">
+          <div class="sw-track-viz">
             {['wave', 'freq', 'stereo', 'vu'].map((kind) => (
               <div class={`sw-meter sw-meter-${kind}`}>
-                <canvas data-viz={kind}></canvas>
-                <span class="sw-label">{kind}</span>
+                <canvas data-viz={kind} role="img" aria-label={`${s.title} ${kind === 'wave' ? 'waveform' : kind === 'freq' ? 'frequency spectrum' : kind === 'stereo' ? 'stereo scope' : 'VU meter'}`}></canvas>
               </div>
             ))}
           </div>

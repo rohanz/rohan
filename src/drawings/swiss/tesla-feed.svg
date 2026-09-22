@@ -1,38 +1,40 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
   <style>
-    .swiss-tesla-ring, .swiss-tesla-diff { opacity: 0; }
-    .swiss-tesla-diff { transition: opacity 0.25s ease; }
-    @keyframes swiss-tesla-audit {
-      0% { opacity: 0; transform: translate(0, 0); }
-      15%, 42% { opacity: 1; transform: translate(0, 0); }
-      52% { opacity: 0; transform: translate(0, 0); }
-      53%, 60% { opacity: 0; transform: translate(132px, 44px); }
-      75%, 100% { opacity: 1; transform: translate(132px, 44px); }
-    }
+    .swiss-tesla-new { clip-path: inset(0 100% 0 0); }
     @media (prefers-reduced-motion: no-preference) {
-      .swiss-card.is-hover .swiss-tesla-ring { animation: swiss-tesla-audit 0.9s ease both; }
-      .swiss-card.is-hover .swiss-tesla-added { opacity: 1; transition-delay: 0.2s; }
-      .swiss-card.is-hover .swiss-tesla-removed { opacity: 1; transition-delay: 0.9s; }
+      .swiss-tesla-new { transition: clip-path .85s steps(30, end); }
+      .swiss-card.is-hover .swiss-tesla-new { clip-path: inset(0); }
+      .swiss-card.is-hover .swiss-tesla-arrow { fill: var(--accent); }
+      .swiss-card.is-hover .swiss-tesla-pulse { animation: swiss-tesla-pulse .8s ease-out 1; }
     }
-    @media (prefers-reduced-motion: reduce) { .swiss-tesla-diff { transition: none; } }
+    @keyframes swiss-tesla-pulse { 0% { r: 7; opacity: .7; } 100% { r: 20; opacity: 0; } }
   </style>
-  <g fill="currentColor" stroke="none" font-family="General Sans, sans-serif" font-size="10" letter-spacing="1.5" opacity=".55">
-    
-    
+  <g stroke-width="1.25" opacity=".35">
+    <path d="m45 81 38 7 37-10 41 9v52l-39-8-39 12-38-8Z"/>
+    <path d="m83 88 0 55M120 78l2 53M45 113l39-11 36 10 41-9M67 85l8 25 29 9 12 15"/>
   </g>
-  <path d="M54 188l42-52 46-26 48 30 44 40 40-26 40-48 32 18" stroke-opacity=".35"/>
-  <path d="M190 140l-26 60" stroke-opacity=".35"/>
-  <g stroke-opacity=".18">
-    <path d="M54 216h292M96 216v-8M142 216v-8M190 216v-8M234 216v-8M274 216v-8M314 216v-8"/>
-  </g>
+  <path d="M119 103c0 10-12 22-12 22s-12-12-12-22a12 12 0 0 1 24 0Z"/>
+  <circle cx="107" cy="103" r="3"/>
+  <circle class="swiss-tesla-pulse" cx="107" cy="103" r="7" opacity="0" stroke="var(--accent)"/>
+  <path d="M170 111h39m-6-5 6 5-6 5M222 91h128M222 102h79M222 114h107" stroke-width="1.25" opacity=".4"/>
+  <rect x="72" y="153" width="293" height="120" rx="2"/>
+  <path d="M72 172h293" stroke-width="1.25" opacity=".4"/>
   <g fill="currentColor" stroke="none">
-    <circle cx="54" cy="188" r="4"/><circle cx="96" cy="136" r="4"/>
-    <circle cx="142" cy="110" r="4"/><circle cx="190" cy="140" r="4"/>
-    <circle cx="234" cy="180" r="4"/><circle cx="274" cy="154" r="4"/>
-    <circle cx="314" cy="106" r="4"/><circle cx="346" cy="124" r="4"/>
-    <circle cx="164" cy="200" r="4"/>
+  <circle cx="82" cy="162" r="2"/>
+  <circle cx="90" cy="162" r="2" opacity=".55"/>
+  <circle cx="98" cy="162" r="2" opacity=".25"/>
   </g>
-  <circle class="swiss-tesla-ring" cx="142" cy="110" r="12" stroke="var(--accent)"/>
-  <path class="swiss-tesla-diff swiss-tesla-added" d="M163 91h10M168 86v10"/>
-  <path class="swiss-tesla-diff swiss-tesla-removed" d="M295 175h10"/>
+  <g stroke-width="1.25">
+  <path d="M30 211v-33q0-4 4-4h17q4 0 4 4v33M26 214h33M36 180h13v14H36Z"/>
+  <path d="M55 183h6l4 6v15q0 5-5 5t-5-5M44 197l-5 6h6l-4 6"/>
+  </g>
+  <g font-family="'General Sans', sans-serif" fill="currentColor" stroke="none" font-size="10" letter-spacing=".6">
+    <text x="85" y="185">power_kw: 250 → 325</text>
+    <text x="85" y="200">status: PERMIT → OPEN</text>
+    <text x="85" y="215">stalls: 8 → 12</text>
+    <text x="85" y="230">other_evs: False → True</text>
+    <text x="85" y="245">status_days: 116 → 0</text>
+    <text x="85" y="260" opacity=".45">›</text>
+    <text class="swiss-tesla-new" x="97" y="260">status: BUILD <tspan class="swiss-tesla-arrow">→</tspan> OPEN</text>
+  </g>
 </svg>

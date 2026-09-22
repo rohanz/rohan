@@ -173,3 +173,8 @@ html.theme-swiss .sw-selected-work h2 { font-weight: 600; }
   html.theme-swiss.sw-home .sw-selected-work { scroll-snap-align: start; scroll-snap-stop: always; }
   html.theme-swiss.sw-home .sw-footer { scroll-snap-align: end; }
 }
+
+/* Sticky-rail links: socials + theme switch, reachable without scrolling. */
+html.theme-swiss .sw-rail-links { display: grid; gap: 1.25rem; padding: 1.5rem var(--gutter); border-top: 1px solid var(--tint-hair); }
+html.theme-swiss .sw-rail-socials { display: flex; flex-wrap: wrap; gap: .5rem 1.25rem; }
+html.theme-swiss .sw-rail-links .sw-themes { flex-wrap: wrap; gap: .5rem 1.25rem; }

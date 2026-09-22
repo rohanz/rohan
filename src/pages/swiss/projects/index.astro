@@ -1,6 +1,7 @@
 ---
 import SwissLayout from '../../../layouts/SwissLayout.astro';
 import SwissCard from '../../../components/SwissCard.astro';
+import SwissRailLinks from '../../../components/SwissRailLinks.astro';
 import { getCollection } from 'astro:content';
 import { encodeFilter, visibleProjectFilters } from '../../../data/project-filters';
 const projects = (await getCollection('projects'))
@@ -20,6 +21,7 @@ const filters = visibleProjectFilters(projects.flatMap((p) => p.data.technologie
           <button type="button" class="sw-filter sw-label" data-filter="all" aria-pressed="true" aria-controls="sw-project-grid">all</button>
           {filters.map((filter) => <button type="button" class="sw-filter sw-label" data-filter={encodeFilter(filter.match)} aria-pressed="false" aria-controls="sw-project-grid">{filter.label}</button>)}
         </div>
+        <SwissRailLinks />
       </div>
     </aside>
     <div class="swiss-grid" id="sw-project-grid" data-reveal-group>

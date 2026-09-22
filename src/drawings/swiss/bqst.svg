@@ -1,29 +1,105 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
   <style>
-    .swiss-bqst-curve { transition: d 0.9s cubic-bezier(.2,.7,.2,1); }
-    .swiss-bqst-node { transition: transform 0.9s cubic-bezier(.2,.7,.2,1); }
     @media (prefers-reduced-motion: no-preference) {
-      .swiss-card.is-hover .swiss-bqst-curve { d: path("M40 168 C 92 168, 114 96, 168 96 S 236 192, 292 156 S 344 112, 360 124"); }
-      .swiss-card.is-hover .swiss-bqst-node-low { transform: translateY(-36px); }
-      .swiss-card.is-hover .swiss-bqst-node-high { transform: translateY(-12px); }
+      .swiss-bqst-needle, .swiss-bqst-drive { transition: transform .65s cubic-bezier(.2,.8,.3,1); }
+      .swiss-bqst-hot { transition: stroke .35s ease; }
+      .swiss-card.is-hover .swiss-bqst-needle { transform: rotate(40deg); }
+      .swiss-card.is-hover .swiss-bqst-drive { transform: rotate(60deg); }
+      .swiss-card.is-hover .swiss-bqst-hot { stroke: var(--accent); }
     }
-    @media (prefers-reduced-motion: reduce) { .swiss-bqst-curve, .swiss-bqst-node { transition: none; } }
   </style>
-  <g class="z1" stroke-opacity=".18">
-    <path d="M40 72v156h320M40 108h320M40 168h320"/>
-    <path d="M104 72v156M168 72v156M232 72v156M296 72v156M360 72v156" stroke-dasharray="2 6"/>
-    <path d="M104 228v6M168 228v6M232 228v6M296 228v6M360 228v6"/>
+  <rect x="29" y="77" width="342" height="198" rx="3"/>
+  <path d="M29 98h342M200 98v177"/>
+  <g stroke-width="1.25" opacity=".5">
+  <path d="M42 87h26M82 87h7M102 87h80M330 87h27"/>
+  <circle cx="312" cy="87" r="3"/>
   </g>
-  <path d="M40 168h320" stroke-opacity=".35" stroke-dasharray="3 6"/>
-  <g class="z2">
-  <path class="swiss-bqst-curve" d="M40 168 C 92 168, 114 132, 168 132 S 236 192, 292 168 S 344 144, 360 148"/>
-  </g>
-  <g class="z3">
-  <circle class="swiss-bqst-node swiss-bqst-node-low" cx="168" cy="132" r="6" fill="var(--accent)" stroke="var(--accent)"/>
-  <circle class="swiss-bqst-node swiss-bqst-node-high" cx="292" cy="168" r="4" fill="currentColor"/>
-  </g>
-  <g font-family="General Sans, sans-serif" font-size="10" letter-spacing="1.5" stroke="none" fill="currentColor" opacity=".55">
-    
-    
-  </g>
+<circle cx="77" cy="133" r="22"/>
+  <path d="M59.4 153.9 A27.5 27.5 0 1 1 94.6 153.9" stroke-width="1.25" opacity=".4"/>
+  <path d="M57.2 152.8l-2.1 2.1" stroke-width="1.25" opacity=".4"/>
+  <path d="M49.1 133.0l-3.0 -0.0" stroke-width="1.25" opacity=".4"/>
+  <path d="M57.2 113.2l-2.1 -2.1" stroke-width="1.25" opacity=".4"/>
+  <path d="M77.0 105.1l0.0 -3.0" stroke-width="1.25" opacity=".4"/>
+  <path d="M96.8 113.2l2.1 -2.1" stroke-width="1.25" opacity=".4"/>
+  <path d="M104.9 133.0l3.0 0.0" stroke-width="1.25" opacity=".4"/>
+  <path d="M96.8 152.8l2.1 2.1" stroke-width="1.25" opacity=".4"/>
+  <path d="M77 130v-16"/>
+  <circle cx="77" cy="234" r="22"/>
+  <path d="M59.4 254.9 A27.5 27.5 0 1 1 94.6 254.9" stroke-width="1.25" opacity=".4"/>
+  <path d="M57.2 253.8l-2.1 2.1" stroke-width="1.25" opacity=".4"/>
+  <path d="M49.1 234.0l-3.0 -0.0" stroke-width="1.25" opacity=".4"/>
+  <path d="M57.2 214.2l-2.1 -2.1" stroke-width="1.25" opacity=".4"/>
+  <path d="M77.0 206.1l0.0 -3.0" stroke-width="1.25" opacity=".4"/>
+  <path d="M96.8 214.2l2.1 -2.1" stroke-width="1.25" opacity=".4"/>
+  <path d="M104.9 234.0l3.0 0.0" stroke-width="1.25" opacity=".4"/>
+  <path d="M96.8 253.8l2.1 2.1" stroke-width="1.25" opacity=".4"/>
+  <path d="M77 231v-16"/>
+  <circle cx="77" cy="174" r="7" stroke-width="1.25"/>
+  <path d="M77 174l2-5" stroke-width="1.25"/>
+  <circle cx="77" cy="194" r="7" stroke-width="1.25"/>
+  <path d="M77 194l2-5" stroke-width="1.25"/>
+  <circle cx="152" cy="133" r="22"/>
+  <path d="M134.4 153.9 A27.5 27.5 0 1 1 169.6 153.9" stroke-width="1.25" opacity=".4"/>
+  <path d="M132.2 152.8l-2.1 2.1" stroke-width="1.25" opacity=".4"/>
+  <path d="M124.1 133.0l-3.0 -0.0" stroke-width="1.25" opacity=".4"/>
+  <path d="M132.2 113.2l-2.1 -2.1" stroke-width="1.25" opacity=".4"/>
+  <path d="M152.0 105.1l0.0 -3.0" stroke-width="1.25" opacity=".4"/>
+  <path d="M171.8 113.2l2.1 -2.1" stroke-width="1.25" opacity=".4"/>
+  <path d="M179.9 133.0l3.0 0.0" stroke-width="1.25" opacity=".4"/>
+  <path d="M171.8 152.8l2.1 2.1" stroke-width="1.25" opacity=".4"/>
+  <path d="M152 130v-16"/>
+  <circle cx="152" cy="234" r="22"/>
+  <path d="M134.4 254.9 A27.5 27.5 0 1 1 169.6 254.9" stroke-width="1.25" opacity=".4"/>
+  <path d="M132.2 253.8l-2.1 2.1" stroke-width="1.25" opacity=".4"/>
+  <path d="M124.1 234.0l-3.0 -0.0" stroke-width="1.25" opacity=".4"/>
+  <path d="M132.2 214.2l-2.1 -2.1" stroke-width="1.25" opacity=".4"/>
+  <path d="M152.0 206.1l0.0 -3.0" stroke-width="1.25" opacity=".4"/>
+  <path d="M171.8 214.2l2.1 -2.1" stroke-width="1.25" opacity=".4"/>
+  <path d="M179.9 234.0l3.0 0.0" stroke-width="1.25" opacity=".4"/>
+  <path d="M171.8 253.8l2.1 2.1" stroke-width="1.25" opacity=".4"/>
+  <path d="M152 231v-16"/>
+  <circle cx="152" cy="174" r="7" stroke-width="1.25"/>
+  <path d="M152 174l2-5" stroke-width="1.25"/>
+  <circle cx="152" cy="194" r="7" stroke-width="1.25"/>
+  <path d="M152 194l2-5" stroke-width="1.25"/>
+  <rect x="215" y="111" width="62" height="49" rx="2" stroke-width="1.25"/>
+  <path d="M222 139Q246 112 270 139" stroke-width="1.25"/>
+  <path class="swiss-bqst-hot" d="M261 130q6 3 9 9" stroke-width="3"/>
+  <path d="M229 128l2 4M239 123l1 5M250 122v5" stroke-width="1.25"/>
+  <path class="swiss-bqst-needle" style="transform-origin:246px 153px" d="M246 153l-21-19"/>
+  <circle cx="246" cy="153" r="2" fill="currentColor"/>
+  <circle cx="246" cy="199" r="23"/>
+  <path d="M227.6 220.8 A28.75 28.75 0 1 1 264.4 220.8" stroke-width="1.25" opacity=".4"/>
+  <path d="M225.3 219.7l-2.1 2.1" stroke-width="1.25" opacity=".4"/>
+  <path d="M216.8 199.0l-3.0 -0.0" stroke-width="1.25" opacity=".4"/>
+  <path d="M225.3 178.3l-2.1 -2.1" stroke-width="1.25" opacity=".4"/>
+  <path d="M246.0 169.8l0.0 -3.0" stroke-width="1.25" opacity=".4"/>
+  <path d="M266.7 178.3l2.1 -2.1" stroke-width="1.25" opacity=".4"/>
+  <path d="M275.2 199.0l3.0 0.0" stroke-width="1.25" opacity=".4"/>
+  <path d="M266.7 219.7l2.1 2.1" stroke-width="1.25" opacity=".4"/>
+  <path class="swiss-bqst-drive" style="transform-origin:246px 199px" d="M236 211l8-10"/>
+  <circle cx="232" cy="249" r="8" stroke-width="1.25"/>
+  <path d="M232 249v-5" stroke-width="1.25"/>
+  <circle cx="260" cy="249" r="8" stroke-width="1.25"/>
+  <path d="M260 249v-5" stroke-width="1.25"/>
+  <rect x="294" y="111" width="62" height="49" rx="2" stroke-width="1.25"/>
+  <path d="M301 139Q325 112 349 139" stroke-width="1.25"/>
+  <path class="swiss-bqst-hot" d="M340 130q6 3 9 9" stroke-width="3"/>
+  <path d="M308 128l2 4M318 123l1 5M329 122v5" stroke-width="1.25"/>
+  <path class="swiss-bqst-needle" style="transform-origin:325px 153px" d="M325 153l-21-19"/>
+  <circle cx="325" cy="153" r="2" fill="currentColor"/>
+  <circle cx="325" cy="199" r="23"/>
+  <path d="M306.6 220.8 A28.75 28.75 0 1 1 343.4 220.8" stroke-width="1.25" opacity=".4"/>
+  <path d="M304.3 219.7l-2.1 2.1" stroke-width="1.25" opacity=".4"/>
+  <path d="M295.8 199.0l-3.0 -0.0" stroke-width="1.25" opacity=".4"/>
+  <path d="M304.3 178.3l-2.1 -2.1" stroke-width="1.25" opacity=".4"/>
+  <path d="M325.0 169.8l0.0 -3.0" stroke-width="1.25" opacity=".4"/>
+  <path d="M345.7 178.3l2.1 -2.1" stroke-width="1.25" opacity=".4"/>
+  <path d="M354.2 199.0l3.0 0.0" stroke-width="1.25" opacity=".4"/>
+  <path d="M345.7 219.7l2.1 2.1" stroke-width="1.25" opacity=".4"/>
+  <path class="swiss-bqst-drive" style="transform-origin:325px 199px" d="M315 211l8-10"/>
+  <circle cx="311" cy="249" r="8" stroke-width="1.25"/>
+  <path d="M311 249v-5" stroke-width="1.25"/>
+  <circle cx="339" cy="249" r="8" stroke-width="1.25"/>
+  <path d="M339 249v-5" stroke-width="1.25"/>
 </svg>

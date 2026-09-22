@@ -12,7 +12,7 @@ export const CARD_TEXT: Record<string, string> = {
   'datacenter-atlas': 'datacenter pipeline',
   'live-chord-monitor': 'live chord monitor',
   patentease: 'PatentEase',
-  'tesla-feed': 'tesla charger tracker.',
+  'tesla-feed': 'tesla charger tracker',
   'this-website': 'rohan.jk',
 };
 

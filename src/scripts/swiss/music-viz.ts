@@ -8,6 +8,7 @@ const graphs = new WeakMap<HTMLAudioElement, AnalyserGraph | null>();
 type Surface = { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D; w: number; h: number };
 const surfaces = new WeakMap<HTMLElement, Surface[]>();
 const OUTRO_MS = 450;
+const METER_PADDING = 12;
 const outros = new Map<HTMLElement, number>();
 function cancelOutro(row: HTMLElement) {
   const id = outros.get(row);
@@ -32,20 +33,24 @@ function drawGrid(surface: Surface, hair: string) {
   ctx.strokeStyle = hair;
   ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.moveTo(4, h / 2); ctx.lineTo(w - 4, h / 2);
+  ctx.moveTo(METER_PADDING, h / 2); ctx.lineTo(w - METER_PADDING, h / 2);
   if (canvas.dataset.viz === 'stereo') {
-    ctx.moveTo(w / 2, 4); ctx.lineTo(w / 2, h - 4);
-    const radius = Math.min(w, h) / 2 - 4;
-    ctx.moveTo(w / 2 + radius, h / 2);
-    ctx.arc(w / 2, h / 2, radius, 0, Math.PI * 2);
+    ctx.moveTo(w / 2, METER_PADDING); ctx.lineTo(w / 2, h - METER_PADDING);
+    const rx = Math.max(1, w / 2 - METER_PADDING);
+    const ry = Math.max(1, h / 2 - METER_PADDING);
+    ctx.moveTo(w / 2 + rx, h / 2);
+    ctx.ellipse(w / 2, h / 2, rx, ry, 0, 0, Math.PI * 2);
   }
   ctx.stroke();
 }
 
 function drawVu(surface: Surface, db: number, ink: string, hair: string, accent: string, quiet = false) {
   const { ctx, w, h } = surface;
-  const cx = w / 2, cy = h - 6;
-  const radius = Math.max(1, Math.min(w / 2 - 17, h - 21));
+  // Centre the complete face (outer labels through needle pivot) in the cell.
+  const labelPx = Math.round(parseFloat(getComputedStyle(document.documentElement).fontSize) * 0.5) || 8;
+  const labelInset = 11 + labelPx / 2;
+  const radius = Math.max(1, Math.min(w / 2 - METER_PADDING - labelInset, h - 2 * METER_PADDING - labelInset - 2));
+  const cx = w / 2, cy = (h + radius + labelInset - 2) / 2;
   const angleFor = (value: number) => -Math.PI * .85 + dbToFrac(value) * Math.PI * .7;
   ctx.save();
   ctx.globalAlpha = quiet ? .4 : 1;
@@ -62,7 +67,6 @@ function drawVu(surface: Surface, db: number, ink: string, hair: string, accent:
   // Sparse labels keep the small face legible; minor ticks retain the hot scale.
   const marks = [-40, -20, -10, 0];
   // Scale the tiny labels with the root font size so they track the fluid type.
-  const labelPx = Math.round(parseFloat(getComputedStyle(document.documentElement).fontSize) * 0.5) || 8;
   ctx.font = `500 ${labelPx}px 'General Sans', 'General Sans Fallback', system-ui, sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
@@ -164,42 +168,43 @@ export function attachViz(row: HTMLElement, audio: HTMLAudioElement): () => void
       ctx.beginPath();
       if (canvas.dataset.viz === 'wave') {
         for (let i = 0; i < wave.length; i++) {
-          const x = 4 + i / (wave.length - 1) * (w - 8);
-          const y = h / 2 + (wave[i] / 128 - 1) * (h / 2 - 4);
+          const x = METER_PADDING + i / (wave.length - 1) * (w - 2 * METER_PADDING);
+          const y = h / 2 + (wave[i] / 128 - 1) * (h / 2 - METER_PADDING);
           if (!i) ctx.moveTo(x, y); else ctx.lineTo(x, y);
         }
       } else if (canvas.dataset.viz === 'freq') {
         let peak = 0;
         for (let i = 0; i < curve.length; i++) {
-          const x = 4 + i / (curve.length - 1) * (w - 8);
-          const y = h - 5 - curve[i] * (h - 10);
+          const x = METER_PADDING + i / (curve.length - 1) * (w - 2 * METER_PADDING);
+          const y = h - METER_PADDING - curve[i] * (h - 2 * METER_PADDING);
           if (!i) ctx.moveTo(x, y); else ctx.lineTo(x, y);
           if (curve[i] > curve[peak]) peak = i;
         }
         ctx.stroke();
         // The only coloured mark is the current spectral peak.
         ctx.fillStyle = accent;
-        ctx.fillRect(3 + peak / (curve.length - 1) * (w - 8), h - 6 - curve[peak] * (h - 10), 2, 2);
+        ctx.fillRect(METER_PADDING - 1 + peak / (curve.length - 1) * (w - 2 * METER_PADDING), h - METER_PADDING - 1 - curve[peak] * (h - 2 * METER_PADDING), 2, 2);
         continue;
       } else if (canvas.dataset.viz === 'vu') {
         ctx.globalAlpha = 1;
         drawVu(surface, vuDb, ink, hair, accent);
         continue;
       } else {
-        const radius = Math.min(w, h) / 2 - 4;
+        const rx = Math.max(1, w / 2 - METER_PADDING);
+        const ry = Math.max(1, h / 2 - METER_PADDING);
         const bufLen = Math.min(left.length, right.length);
         const step = Math.max(1, Math.floor(bufLen / 512));
         ctx.save();
         ctx.beginPath();
-        ctx.arc(w / 2, h / 2, radius, 0, Math.PI * 2);
+        ctx.ellipse(w / 2, h / 2, rx, ry, 0, 0, Math.PI * 2);
         ctx.clip();
         ctx.fillStyle = ink;
         ctx.globalAlpha = .7 * alpha;
         for (let i = 0; i < bufLen; i += step) {
           const mid = (left[i] + right[i]) * .5;
           const side = (left[i] - right[i]) * .5;
-          const x = w / 2 + side * radius * 2;
-          const y = h / 2 - mid * radius * 2;
+          const x = w / 2 + side * rx * 2;
+          const y = h / 2 - mid * ry * 2;
           ctx.fillRect(x, y, 1.5, 1.5);
         }
         ctx.restore();

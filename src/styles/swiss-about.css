@@ -32,10 +32,13 @@ html.theme-swiss .sw-testimonial-controls[hidden] { display: none; }
 html.theme-swiss .sw-about-caption:focus-within { background: var(--ink); color: var(--paper); }
 html.theme-swiss .sw-about-caption:focus-within .sw-label { color: inherit; }
 @media (min-width: 1100px) {
-  html.theme-swiss .sw-about { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); min-height: calc(100svh - var(--nav-height)); }
-  html.theme-swiss .sw-about-rail { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 3fr) minmax(10rem, 1fr); border-right: 1px solid var(--tint-hair); }
+  /* The composition is exactly one viewport tall; the portrait absorbs the slack. */
+  html.theme-swiss .sw-about { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); height: calc(100svh - var(--nav-height)); min-height: 0; }
+  html.theme-swiss .sw-about-rail { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; border-right: 1px solid var(--tint-hair); min-height: 0; }
+  html.theme-swiss .sw-about-facts { min-height: 0; }
+  html.theme-swiss .sw-about-cell { min-height: 0; overflow: hidden; }
   html.theme-swiss .sw-about-photo { min-height: 0; border-right: 0; border-bottom: 1px solid var(--tint-hair); }
-  html.theme-swiss .sw-about-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: minmax(min-content, 3fr) minmax(min-content, 2fr); }
+  html.theme-swiss .sw-about-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: minmax(0, 3fr) minmax(0, 2fr); }
   html.theme-swiss .sw-about-cell:nth-child(odd) { border-right: 1px solid var(--tint-hair); }
 }
 @media (max-width: 599px) {
@@ -47,10 +50,12 @@ html.theme-swiss .sw-about-caption:focus-within .sw-label { color: inherit; }
 }
 
 /* Testimony timer: a ring that draws itself over the interval, restarting on each quote. */
-html.theme-swiss .sw-testimonial-ring { width: 1.75rem; height: 1.75rem; transform: rotate(-90deg); }
-html.theme-swiss .sw-ring-track { fill: none; stroke: var(--tint-hair); stroke-width: 1.5; }
-html.theme-swiss .sw-ring-fill { fill: none; stroke: var(--ink); stroke-width: 1.5; stroke-dasharray: 100; stroke-dashoffset: 100; }
+html.theme-swiss .sw-testimonial-ring { width: 2rem; height: 2rem; transform: rotate(-90deg); shape-rendering: geometricPrecision; overflow: visible; }
+html.theme-swiss .sw-ring-track { fill: none; stroke: var(--hair); stroke-width: 1.25; vector-effect: non-scaling-stroke; }
+html.theme-swiss .sw-ring-fill { fill: none; stroke: var(--ink); stroke-width: 1.25; stroke-linecap: round; vector-effect: non-scaling-stroke; stroke-dasharray: 100; stroke-dashoffset: 100; }
 html.theme-swiss .sw-testimonial-ring.is-running .sw-ring-fill { animation: sw-ring var(--ring-ms, 6000ms) linear forwards; }
 html.theme-swiss .sw-testimonial-ring.is-paused .sw-ring-fill { animation-play-state: paused; }
 @keyframes sw-ring { from { stroke-dashoffset: 100; } to { stroke-dashoffset: 0; } }
 @media (prefers-reduced-motion: reduce) { html.theme-swiss .sw-testimonial-ring { display: none; } }
+
+html.theme-swiss .sw-about-caption .sw-rail-links { padding: 1rem 0 0; margin-top: auto; gap: .75rem; }
