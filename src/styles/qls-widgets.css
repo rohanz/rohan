@@ -1,0 +1,219 @@
+/* quantlab-systems widgets. Layout only — colour comes from each theme's own
+   qla-visual tokens (--bg-card, --text-primary, --accent, --border-subtle),
+   exactly as qla2-widgets.css does, so all three themes style these for free.
+   The two series colours (resting buys / resting sells) come from the shared
+   palette via the --qls-* custom properties set in qls-widgets.ts. */
+
+/* Active state is deliberately colour-free: blueprint already paints
+   `.qla-btn.is-active` as a filled navy pill, and a `color` here would win on
+   specificity and put its own ink on that fill. Ring + weight reads as
+   "selected" in every theme without fighting any of them. */
+.qla-visual .qla-visual-body .qls-mode-btn.is-active {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1.5px var(--accent);
+  font-weight: 700;
+}
+
+.qla-visual .qla-visual-body .qls-controls { align-items: center; }
+.qla-visual .qla-visual-body .qls-step-btn[disabled] { opacity: 0.4; cursor: default; }
+.qla-visual .qla-visual-body .qls-counter {
+  margin-left: auto;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.qla-visual .qla-visual-body .qls-legend { justify-content: flex-start; margin-bottom: 0.2rem; }
+.qla-visual .qla-visual-body .qls-legend-buy { color: var(--qls-buy, var(--text-secondary)); }
+.qla-visual .qla-visual-body .qls-legend-sell { color: var(--qls-sell, var(--text-secondary)); }
+/* the two event swatches: a faded ghost for consumed quantity, an outlined
+   box for the order that arrived this step. Both borrow the row's own ink. */
+.qla-visual .qla-visual-body .qls-sw-filled {
+  background: currentColor;
+  opacity: 0.3;
+}
+.qla-visual .qla-visual-body .qls-sw-incoming {
+  background: transparent;
+  border-radius: 2px;
+  box-shadow: inset 0 0 0 1.5px currentColor;
+}
+
+.qla-visual .qla-visual-body .qls-op {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem 0.75rem;
+  margin: 0.85rem 0 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.qla-visual .qla-visual-body .qls-op-rule {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent);
+  padding: 0.14rem 0.55rem;
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px currentColor;
+  white-space: nowrap;
+}
+.qla-visual .qla-visual-body .qls-op-text {
+  font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+  font-size: 0.88rem;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+.qla-visual .qla-visual-body .qls-note { margin-bottom: 0.2rem; min-height: 3.4em; }
+
+/* --- the audit log ------------------------------------------------------ */
+.qla-visual .qla-visual-body .qls-audit {
+  list-style: none;
+  margin: 0.4rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.45rem;
+  max-height: 26rem;
+  overflow-y: auto;
+}
+.qla-visual .qla-visual-body .qls-audit-row {
+  margin: 0;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--border-subtle);
+  border-left: 3px solid var(--border-subtle);
+  border-radius: 8px;
+  background: var(--bg-card);
+  display: grid;
+  gap: 0.28rem;
+}
+.qla-visual .qla-visual-body .qls-audit-row.is-rejected { border-left-color: var(--qls-reject, var(--accent)); }
+.qla-visual .qla-visual-body .qls-audit-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.4rem 0.75rem;
+}
+.qla-visual .qla-visual-body .qls-audit-ts,
+.qla-visual .qla-visual-body .qls-audit-file {
+  font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+}
+.qla-visual .qla-visual-body .qls-audit-order {
+  font-weight: 700;
+  font-size: 0.94rem;
+  color: var(--text-primary);
+}
+.qla-visual .qla-visual-body .qls-audit-head .qla2-verdict { margin-left: auto; }
+.qla-visual .qla-visual-body .qls-audit-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 0.7rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+.qla-visual .qla-visual-body .qls-audit-book { font-weight: 700; color: var(--accent); }
+.qla-visual .qla-visual-body .qls-audit-reason {
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--text-primary);
+  opacity: 0.88;
+}
+.qla-visual .qla-visual-body .qls-audit-caption { margin: 0.75rem 0 0; }
+
+/* --- the four books ----------------------------------------------------- */
+.qla-visual .qla-visual-body .qls-books {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+@media (max-width: 640px) {
+  .qla-visual .qla-visual-body .qls-books { grid-template-columns: 1fr; }
+}
+.qla-visual .qla-visual-body .qls-book {
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 0.75rem 0.85rem;
+  background: var(--bg-card);
+  display: grid;
+  gap: 0.5rem;
+  align-content: start;
+  min-width: 0;
+}
+.qla-visual .qla-visual-body .qls-netted { grid-column: 1 / -1; }
+.qla-visual .qla-visual-body .qls-book-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.3rem 0.6rem;
+}
+.qla-visual .qla-visual-body .qls-book-name {
+  font-weight: 700;
+  font-size: 0.98rem;
+  color: var(--text-primary);
+}
+.qla-visual .qla-visual-body .qls-book-cadence {
+  margin-left: auto;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+.qla-visual .qla-visual-body .qls-book-limits { display: grid; gap: 0.18rem; }
+.qla-visual .qla-visual-body .qls-limit {
+  display: flex;
+  gap: 0.6rem;
+  font-size: 0.84rem;
+  color: var(--text-secondary);
+}
+.qla-visual .qla-visual-body .qls-limit-v {
+  margin-left: auto;
+  text-align: right;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+.qla-visual .qla-visual-body .qls-holdings { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+.qla-visual .qla-visual-body .qls-holding {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  padding: 0.14rem 0.45rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+}
+.qla-visual .qla-visual-body .qls-holding strong { color: var(--text-primary); }
+.qla-visual .qla-visual-body .qls-book-foot {
+  padding-top: 0.35rem;
+  border-top: 1px dashed var(--border-subtle);
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+.qla-visual .qla-visual-body .qls-netted-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(10.5rem, 1fr));
+  gap: 0.28rem 0.9rem;
+}
+.qla-visual .qla-visual-body .qls-netted-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+.qla-visual .qla-visual-body .qls-netted-side {
+  font-weight: 700;
+  color: var(--qls-buy, var(--accent));
+  text-transform: uppercase;
+  font-size: 0.68rem;
+}
+.qla-visual .qla-visual-body .qls-netted-sym { color: var(--text-primary); }
+.qla-visual .qla-visual-body .qls-netted-qty { margin-left: auto; color: var(--text-primary); }

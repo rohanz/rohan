@@ -61,7 +61,9 @@ function drawVu(surface: Surface, db: number, ink: string, hair: string, accent:
   ctx.stroke();
   // Sparse labels keep the small face legible; minor ticks retain the hot scale.
   const marks = [-40, -20, -10, 0];
-  ctx.font = "500 8px 'General Sans', 'General Sans Fallback', system-ui, sans-serif";
+  // Scale the tiny labels with the root font size so they track the fluid type.
+  const labelPx = Math.round(parseFloat(getComputedStyle(document.documentElement).fontSize) * 0.5) || 8;
+  ctx.font = `500 ${labelPx}px 'General Sans', 'General Sans Fallback', system-ui, sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   for (let value = -40; value <= 0; value++) {

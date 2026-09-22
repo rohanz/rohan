@@ -21,11 +21,17 @@ const firstH2 = h2h3.findIndex((h) => h.depth === 2);
 const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
 ---
 <SwissLayout title={`${project.data.title} — rohan.jk`} description={project.data.summary} section="projects" ogImage={`/assets/images/og/${project.id}.png`}>
-  <header class="sw-wrap sw-article-head">
-    <a class="sw-label sw-link" href="/swiss/projects">projects</a>
-    <h1 class="sw-display sw-display-lg" data-reveal="lines">{project.data.title}</h1>
-    <p class="sw-article-summary" data-reveal="block">{project.data.summary}</p>
-    <div class="sw-article-meta">{project.data.technologies.map((t) => <span class="sw-label">{t}</span>)}</div>
+  <header class="sw-article-head">
+    <div class="sw-wrap sw-article-head-inner">
+      <div class="sw-article-head-title">
+        <a class="sw-label sw-link" href="/swiss/projects">projects</a>
+        <h1 class="sw-display sw-display-lg" data-reveal="lines">{project.data.title}</h1>
+      </div>
+      <div class="sw-article-head-aside">
+        <p class="sw-article-summary" data-reveal="block">{project.data.summary}</p>
+        <div class="sw-article-meta">{project.data.technologies.map((t) => <span class="sw-label">{t}</span>)}</div>
+      </div>
+    </div>
   </header>
   <div class="sw-wrap sw-article-layout">
     <nav class="sw-toc train-toc" aria-label="section navigation">

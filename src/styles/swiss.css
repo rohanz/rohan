@@ -4,7 +4,7 @@ html.theme-swiss {
   --paper-2: #efece5;
   --tint: #dedff3; /* pale wash of the accent; surfaces only, ink text on top */
   --tint-hair: color-mix(in srgb, var(--accent) 32%, var(--paper)); /* dividers on tinted surfaces */
-  --nav-height: 64px;
+  --nav-height: 4rem;
   --ink: #141414;
   --muted: #6b6b66;
   --hair: #d6d3cc;
@@ -34,19 +34,21 @@ html.theme-swiss {
   --track-display: -0.045em;
 }
 html.theme-swiss, html.theme-swiss *, html.theme-swiss *::before, html.theme-swiss *::after { box-sizing: border-box; }
-html.theme-swiss { background: var(--paper); color: var(--ink); scroll-behavior: smooth; }
+html.theme-swiss { background: var(--paper); color: var(--ink); scroll-behavior: smooth;
+  /* Fluid root: ~17px on a laptop, ~22px on a 2560px monitor. Every size in the
+     theme is rem, so type, spacing, meters and photos scale together. */
+  font-size: clamp(16px, 12px + 0.4vw, 23px); }
 html.theme-swiss body {
   margin: 0;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   font-family: var(--font-ui);
-  font-size: 17px;
+  font-size: 1rem;
   font-weight: 450;
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
 }
-@media (min-width: 1024px) { html.theme-swiss body { font-size: 18px; } }
 html.theme-swiss a { color: inherit; text-decoration: none; }
 html.theme-swiss img { max-width: 100%; display: block; }
 html.theme-swiss :where(a, button):focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
@@ -63,7 +65,7 @@ html.theme-swiss .sw-selected-work { padding-top: calc(var(--nav-height) + 2.5re
 @media (min-width: 900px) { html.theme-swiss .sw-selected-work { min-height: calc(100vh - 6.5rem); padding-bottom: 2.5rem; box-sizing: border-box; display: flex; flex-direction: column; } html.theme-swiss .sw-selected-work .sw-rows { flex: 1; } }
 
 /* type utilities */
-html.theme-swiss .sw-label { font-size: 12px; letter-spacing: var(--track-caps); text-transform: uppercase; color: var(--muted); font-weight: 550; }
+html.theme-swiss .sw-label { font-size: 0.75rem; letter-spacing: var(--track-caps); text-transform: uppercase; color: var(--muted); font-weight: 550; }
 html.theme-swiss .sw-display { font-family: var(--font-display); font-weight: 500; letter-spacing: var(--track-display); line-height: 1.05; }
 html.theme-swiss .sw-display-xl { font-weight: 600; font-size: clamp(2.5rem, 4.8vw, 6rem); letter-spacing: -0.03em; }
 html.theme-swiss .sw-display-lg { font-size: clamp(2.4rem, 5.5vw, 5.5rem); }
@@ -84,10 +86,10 @@ html.theme-swiss.sw-home .sw-nav { position: fixed; inset-inline: 0; opacity: 0;
 html.theme-swiss.sw-home .sw-nav.is-visible, html.theme-swiss.sw-home .sw-nav:focus-within { opacity: 1; transform: none; }
 html.theme-swiss .sw-nav-inner { display: flex; align-items: center; justify-content: space-between; height: calc(var(--nav-height) - 1px); }
 html.theme-swiss .sw-wordmark { font-family: var(--font-display); font-weight: 600; font-size: 1.3rem; letter-spacing: -0.02em; }
-html.theme-swiss .sw-nav-links { display: flex; gap: clamp(1rem, 2.5vw, 2.5rem); font-size: 16px; font-weight: 500; }
+html.theme-swiss .sw-nav-links { display: flex; gap: clamp(1rem, 2.5vw, 2.5rem); font-size: 1rem; font-weight: 500; }
 html.theme-swiss .sw-nav-links a[aria-current="page"] { color: var(--accent); }
 html.theme-swiss #sw-main { flex: 1 0 auto; }
-html.theme-swiss .sw-footer { --footer-h: 6.5rem; margin-top: auto; border-top: 1px solid var(--hair); height: var(--footer-h); box-sizing: border-box; display: flex; align-items: center; font-size: 14px; color: var(--muted); }
+html.theme-swiss .sw-footer { --footer-h: 6.5rem; margin-top: auto; border-top: 1px solid var(--hair); height: var(--footer-h); box-sizing: border-box; display: flex; align-items: center; font-size: 0.875rem; color: var(--muted); }
 html.theme-swiss .sw-footer > .sw-wrap { width: 100%; }
 html.theme-swiss .sw-footer-inner { display: flex; flex-wrap: wrap; gap: 1rem 2rem; justify-content: space-between; }
 html.theme-swiss .sw-themes { display: flex; flex-wrap: wrap; gap: .75rem 1.25rem; }
@@ -118,7 +120,7 @@ html.theme-swiss .sw-quad-contact:hover, html.theme-swiss .sw-quad-contact:focus
 html.theme-swiss .sw-mini { display: flex; flex-direction: column; justify-content: space-between; padding: 1.25rem 1.5rem; min-height: 6rem; transition: background .25s ease, color .25s ease; }
 html.theme-swiss .sw-mini:nth-child(odd) { border-right: 1px solid var(--tint-hair); }
 html.theme-swiss .sw-mini:nth-child(-n+2) { border-bottom: 1px solid var(--tint-hair); }
-html.theme-swiss .sw-mini .sw-label { font-size: 13px; }
+html.theme-swiss .sw-mini .sw-label { font-size: 0.8125rem; }
 html.theme-swiss .sw-mini .sw-arrow { align-self: flex-end; font-size: 1.4rem; line-height: 1; transition: transform .3s ease; }
 html.theme-swiss .sw-mini:hover, html.theme-swiss .sw-mini:focus-visible { background: var(--ink); color: var(--paper); }
 html.theme-swiss .sw-mini:hover .sw-label, html.theme-swiss .sw-mini:focus-visible .sw-label { color: inherit; }
@@ -133,7 +135,7 @@ html.theme-swiss .sw-row { display: grid; grid-template-columns: 1fr; gap: .4rem
 html.theme-swiss .sw-row:first-child { border-top: 1px solid var(--hair); }
 html.theme-swiss .sw-row-title { font-family: var(--font-ui); font-weight: 500; font-size: clamp(1.05rem, 1.35vw, 1.35rem); letter-spacing: -0.02em; line-height: 1.25; transition: color .25s ease; }
 html.theme-swiss .sw-row:hover .sw-row-title { color: var(--accent); }
-html.theme-swiss .sw-row-summary { color: var(--muted); max-width: 60ch; font-size: 15px; line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+html.theme-swiss .sw-row-summary { color: var(--muted); max-width: 60ch; font-size: 0.9375rem; line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 html.theme-swiss .sw-row-tags { display: flex; flex-wrap: wrap; gap: .5rem 1rem; }
 @media (min-width: 900px) { html.theme-swiss .sw-row { grid-template-columns: 5fr 5fr 2fr; align-items: center; } }
 html.theme-swiss .sw-section-head { display: flex; flex-wrap: wrap; gap: 1rem; justify-content: space-between; align-items: baseline; margin-bottom: 1.5rem; }
