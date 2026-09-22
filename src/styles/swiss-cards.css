@@ -38,10 +38,10 @@ html.theme-swiss .swiss-grid { display: grid; grid-template-columns: 1fr; gap: 0
 html.theme-swiss .swiss-card {
   --rx: 0; --ry: 0; --gx: 50%; --gy: 50%;
   position: relative; display: block; container-type: inline-size;
-  min-width: 0; border: 0; border-right: 1px solid var(--tint-hair); border-bottom: 1px solid var(--tint-hair); background: var(--tint);
+  min-width: 0; border: 0; border-right: 1px solid var(--tint-hair); border-bottom: 1px solid var(--tint-hair); background: var(--paper); /* field = paper, rail = tint */
 }
 html.theme-swiss .swiss-card-inner {
-  display: flex; flex-direction: column; height: 100%; background: var(--tint); overflow: hidden;
+  display: flex; flex-direction: column; height: 100%; background: var(--paper); overflow: hidden;
   /* Permanent compositor layer: contents rasterise once and the GPU transforms the
      texture, so SVG/text glyphs do not re-snap to pixels every frame (no shimmer). */
   will-change: transform; backface-visibility: hidden;

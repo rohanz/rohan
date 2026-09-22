@@ -20,7 +20,7 @@
   <rect class="swiss-chord-key" x="280" y="137" width="40" height="100"/>
   <rect x="320" y="137" width="40" height="100"/>
   <!-- black keys: same ink outline, filled with the card surface so they read as raised -->
-  <g class="swiss-chord-black" fill="var(--tint)">
+  <g class="swiss-chord-black" fill="var(--paper)">
     <rect x="66" y="137" width="26" height="62"/>
     <rect x="106" y="137" width="26" height="62"/>
     <rect x="186" y="137" width="26" height="62"/>
