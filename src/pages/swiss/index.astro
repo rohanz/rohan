@@ -19,13 +19,13 @@ const selected = (await getCollection('projects'))
       <a class="sw-quad" href="/swiss/projects" data-reveal="block"><span class="sw-label">work</span><span class="sw-quad-title">projects</span></a>
       <a class="sw-quad" href="/swiss/music" data-reveal="block"><span class="sw-label">listen</span><span class="sw-quad-title">music</span></a>
       <a class="sw-quad" href="/swiss/about" data-reveal="block"><span class="sw-label">read</span><span class="sw-quad-title">about</span></a>
-      <div class="sw-quad" data-reveal="block">
-        <span class="sw-label">contact</span>
-        <ul class="sw-contact-links">
-          {SOCIALS.map((s) => (
-            <li><a class="sw-label sw-link-ext" href={s.href} target="_blank" rel="noopener noreferrer">{s.label} <span class="sw-arrow" aria-hidden="true">↗</span></a></li>
-          ))}
-        </ul>
+      <div class="sw-quad sw-quad-contact" data-reveal="block" aria-label="contact">
+        {SOCIALS.map((s) => (
+          <a class="sw-mini" href={s.href} target="_blank" rel="noopener noreferrer">
+            <span class="sw-label">{s.label}</span>
+            <span class="sw-arrow" aria-hidden="true">↗</span>
+          </a>
+        ))}
       </div>
     </div>
   </section>

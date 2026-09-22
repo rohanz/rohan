@@ -103,8 +103,17 @@ html.theme-swiss .sw-quad { display: flex; flex-direction: column; justify-conte
 html.theme-swiss .sw-quad:hover, html.theme-swiss .sw-quad:focus-within { background: var(--ink); color: var(--paper); }
 html.theme-swiss .sw-quad:hover .sw-label, html.theme-swiss .sw-quad:focus-within .sw-label { color: inherit; }
 html.theme-swiss .sw-quad-title { font-family: var(--font-ui); font-weight: 600; font-size: clamp(1.6rem, 2.6vw, 2.8rem); letter-spacing: -0.02em; }
-html.theme-swiss .sw-contact-links { list-style: none; padding: 0; margin: 1.5rem 0 0; display: grid; gap: .5rem; }
-html.theme-swiss .sw-contact-links .sw-label { color: inherit; }
+/* contact quadrant: a 2x2 grid of small squares echoing the outer grid */
+html.theme-swiss .sw-quad-contact { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; padding: 0; }
+html.theme-swiss .sw-quad-contact:hover, html.theme-swiss .sw-quad-contact:focus-within { background: var(--paper-2); color: var(--ink); }
+html.theme-swiss .sw-mini { display: flex; flex-direction: column; justify-content: space-between; padding: 1.25rem 1.5rem; min-height: 6rem; transition: background .25s ease, color .25s ease; }
+html.theme-swiss .sw-mini:nth-child(odd) { border-right: 1px solid var(--hair); }
+html.theme-swiss .sw-mini:nth-child(-n+2) { border-bottom: 1px solid var(--hair); }
+html.theme-swiss .sw-mini .sw-label { font-size: 13px; }
+html.theme-swiss .sw-mini .sw-arrow { align-self: flex-end; font-size: 1.4rem; line-height: 1; transition: transform .3s ease; }
+html.theme-swiss .sw-mini:hover, html.theme-swiss .sw-mini:focus-visible { background: var(--ink); color: var(--paper); }
+html.theme-swiss .sw-mini:hover .sw-label, html.theme-swiss .sw-mini:focus-visible .sw-label { color: inherit; }
+html.theme-swiss .sw-mini:hover .sw-arrow { transform: translate(2px, -2px); }
 @media (min-width: 900px) and (prefers-reduced-motion: no-preference) {
   html.theme-swiss.sw-home { scroll-snap-type: y proximity; scroll-padding-top: var(--nav-height); }
   html.theme-swiss.sw-home .sw-hero, html.theme-swiss.sw-home .sw-selected-work { scroll-snap-align: start; }
