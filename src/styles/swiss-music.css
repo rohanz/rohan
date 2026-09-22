@@ -14,10 +14,12 @@ html.theme-swiss .sw-music-rail-inner {
   padding: 2rem var(--gutter);
 }
 html.theme-swiss .sw-music h1 { margin: 0; }
-html.theme-swiss .sw-music-rail-inner .sw-rail-links { margin-top: auto; padding-inline: 0; align-self: stretch; }
+html.theme-swiss .sw-music-rail-inner > :last-child { margin-top: auto; }
+html.theme-swiss .sw-music-rail-inner .sw-rail-links { margin: auto calc(-1 * var(--gutter)) -2.5rem; align-self: stretch; }
 html.theme-swiss .sw-tracks { min-width: 0; }
 html.theme-swiss .sw-track {
   --cell-hair: var(--hair);
+  cursor: pointer;
   display: grid;
   grid-template-columns: 6rem minmax(0, 1fr) 9rem;
   color: var(--ink);
@@ -30,7 +32,6 @@ html.theme-swiss .sw-track.is-playing {
   --ink: var(--music-paper);
   --paper: var(--music-ink);
   --hair: color-mix(in srgb, var(--music-paper) 30%, var(--music-ink));
-  --accent: var(--music-paper);
   --muted: var(--music-paper);
   --cell-hair: var(--hair);
   background: var(--paper);
@@ -49,6 +50,7 @@ html.theme-swiss .sw-play {
   display: grid;
   place-items: center;
 }
+html.theme-swiss .sw-track.is-playing .sw-play:not(:hover) { background: var(--accent); color: var(--music-paper); }
 html.theme-swiss .sw-play:hover { background: var(--ink); color: var(--paper); }
 html.theme-swiss .sw-play:focus-visible,
 html.theme-swiss .sw-track-links a:focus-visible { outline-offset: -4px; }

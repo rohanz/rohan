@@ -25,7 +25,6 @@ html.theme-swiss .sw-filter:focus-visible { outline-offset: -3px; }
   html.theme-swiss .sw-project-rail-inner .sw-rail-links { margin-top: auto; }
   html.theme-swiss .sw-project-heading { min-height: 9rem; flex-direction: column; align-items: flex-start; padding: 1.75rem 2rem; }
   html.theme-swiss .sw-filters .sw-filter { min-height: 2.25rem; padding: .55rem 2rem; }
-  html.theme-swiss .sw-project-rail-inner .sw-rail-links { padding: 1.25rem 2rem; }
   html.theme-swiss .sw-filters { flex-direction: column; overflow-x: visible; }
   html.theme-swiss .sw-filter { width: 100%; border-right: 0; border-bottom: 1px solid var(--tint-hair); padding: .9rem 2rem; }
   /* The rail's right rule also forms the field's left edge. */
@@ -38,19 +37,23 @@ html.theme-swiss .swiss-grid { display: grid; grid-template-columns: 1fr; gap: 0
 @media (min-width: 700px) { html.theme-swiss .swiss-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (min-width: 1100px) { html.theme-swiss .swiss-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (min-width: 1800px) { html.theme-swiss .swiss-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+/* Static cell = hit area (never transforms). The inner box tilts, lifts and inverts. */
 html.theme-swiss .swiss-card {
   --rx: 0; --ry: 0; --gx: 50%; --gy: 50%;
-  position: relative; display: flex; flex-direction: column; container-type: inline-size;
-  min-width: 0; border: 0; border-right: 1px solid var(--tint-hair); border-bottom: 1px solid var(--tint-hair); background: var(--tint); overflow: hidden;
+  position: relative; display: block; container-type: inline-size;
+  min-width: 0; border: 0; border-right: 1px solid var(--tint-hair); border-bottom: 1px solid var(--tint-hair); background: var(--tint);
+}
+html.theme-swiss .swiss-card-inner {
+  display: flex; flex-direction: column; height: 100%; background: var(--tint); overflow: hidden;
   transform: perspective(900px) rotateX(calc(var(--rx) * 1deg)) rotateY(calc(var(--ry) * 1deg)) scale(var(--lift, 1));
   transform-style: preserve-3d;
-  transition: transform .4s cubic-bezier(.2,.7,.2,1), box-shadow .4s ease, border-color .3s ease;
+  transition: transform .4s cubic-bezier(.2,.7,.2,1), box-shadow .4s ease, background .35s ease, color .35s ease;
 }
-html.theme-swiss .swiss-card:hover, html.theme-swiss .swiss-card:focus-visible { --lift: 1.025; z-index: 2; background: var(--ink); color: var(--paper); box-shadow: 0 30px 60px -30px rgba(20,20,20,.35); }
-html.theme-swiss .swiss-card.is-hover { will-change: transform; transition: transform .08s linear, box-shadow .4s ease, border-color .3s ease; }
+html.theme-swiss .swiss-card:hover, html.theme-swiss .swiss-card:focus-visible { --lift: 1.025; z-index: 2; color: var(--paper); }
+html.theme-swiss .swiss-card:hover .swiss-card-inner, html.theme-swiss .swiss-card:focus-visible .swiss-card-inner { background: var(--ink); box-shadow: 0 30px 60px -30px rgba(20,20,20,.35); }
+html.theme-swiss .swiss-card.is-hover .swiss-card-inner { will-change: transform; transition: transform .08s linear, box-shadow .4s ease, background .35s ease, color .35s ease; }
 @media (hover: none), (prefers-reduced-motion: reduce) {
-  html.theme-swiss .swiss-card { transform: none; }
-
+  html.theme-swiss .swiss-card-inner { transform: none; }
 }
 html.theme-swiss .swiss-card-art { position: relative; flex: 0 0 auto; aspect-ratio: 4 / 3; padding: 1.25rem; border-bottom: 1px solid var(--tint-hair); color: inherit; }
 html.theme-swiss .swiss-card-art svg { position: relative; z-index: 1; }
@@ -65,19 +68,6 @@ html.theme-swiss .swiss-card-title { margin: 0; font-family: var(--font-ui); fon
 html.theme-swiss .swiss-card-summary { margin: 0; color: var(--muted); font-size: 0.875rem; line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 html.theme-swiss .swiss-card-tags { margin-top: auto; display: flex; flex-wrap: wrap; gap: .35rem .9rem; }
 
-/* Reveal owns the entrance; once visible, the card owns its pointer transform.
-   Match reveal's specificity so its final transform:none cannot suppress tilt. */
-@media (prefers-reduced-motion: no-preference) {
-  html.theme-swiss.js .swiss-card[data-reveal="block"].is-in {
-    transform: perspective(900px) rotateX(calc(var(--rx) * 1deg)) rotateY(calc(var(--ry) * 1deg)) scale(var(--lift, 1));
-    transition: opacity .7s ease var(--d), transform .4s cubic-bezier(.2,.7,.2,1), box-shadow .4s ease, border-color .3s ease;
-  }
-  html.theme-swiss.js .swiss-card[data-reveal="block"].is-in.is-hover {
-    transition: opacity .7s ease var(--d), transform .08s linear, box-shadow .4s ease, border-color .3s ease;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-}
 
 html.theme-swiss .swiss-card:hover .swiss-card-art, html.theme-swiss .swiss-card:focus-visible .swiss-card-art { color: var(--paper); border-bottom-color: rgba(247,245,240,.25); }
 html.theme-swiss .swiss-card:hover .swiss-card-summary, html.theme-swiss .swiss-card:hover .swiss-card-tags .sw-label, html.theme-swiss .swiss-card:focus-visible .swiss-card-summary, html.theme-swiss .swiss-card:focus-visible .swiss-card-tags .sw-label { color: rgba(247,245,240,.7); }
@@ -92,6 +82,5 @@ html.theme-swiss .swiss-card-art :is(.z2, [data-depth="2"]) { --depth: 1.2; }
 html.theme-swiss .swiss-card-art :is(.z3, [data-depth="3"]) { --depth: 2.0; }
 html.theme-swiss .swiss-card.is-hover .swiss-card-art :is([data-depth], .z1, .z2, .z3) { transition: transform .08s linear; }
 @media (hover: none), (prefers-reduced-motion: reduce) {
-  html.theme-swiss .swiss-card-art :is([data-depth], .z1, .z2, .z3),
-  html.theme-swiss.js .swiss-card[data-reveal="block"].is-in { transform: none; }
+  html.theme-swiss .swiss-card-art :is([data-depth], .z1, .z2, .z3) { transform: none; }
 }

@@ -1,12 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
   <style>
-    .swiss-atlas-pin { transform: scale(0); transition: transform 0.4s cubic-bezier(.2,.7,.2,1); }
+    .swiss-atlas-pin { transform: scale(0); transition: transform 0.6s cubic-bezier(.2,.7,.2,1); }
     @media (prefers-reduced-motion: no-preference) {
       .swiss-card.is-hover .swiss-atlas-pin { transform: scale(1); transition-delay: var(--swiss-atlas-delay); }
     }
     @media (prefers-reduced-motion: reduce) { .swiss-atlas-pin { transition: none; } }
   </style>
-  <g font-family="General Sans, sans-serif" font-size="10" letter-spacing="1.5" stroke="none" fill="currentColor" opacity=".55">
+  <g font-family="'General Sans', sans-serif" font-size="10" letter-spacing="1.5" stroke="none" fill="currentColor" opacity=".55">
     
   </g>
   <path d="M50 78v144 M110 78v144 M170 78v144 M230 78v144 M290 78v144 M350 78v144 M50 78h300 M50 126h300 M50 174h300 M50 222h300" stroke-opacity=".2" stroke-dasharray="1 6"/>
@@ -15,29 +15,28 @@
     <path d="M276 78l-13 12 4 12-14 5-5 12-17 3-4 14 13 4 2 10-15 11 4 19 15 6 7 17 17 13 12-4 6-18 16-11 8-17 29-3"/>
     <path d="M229 96l-6 9 3 9 7-3 2-9zM216 111l-4 8 5 4 4-8zM172 83l13-7 14 6-8 19-12 4-8-11z"/>
   </g>
-  <g stroke-opacity=".3"><circle cx="94" cy="117" r="2"/><circle cx="247" cy="153" r="2"/><circle cx="307" cy="197" r="2"/></g>
   <g transform="translate(94 117)">
-    <path class="swiss-atlas-pin" style="--swiss-atlas-delay: 0ms" d="M0 0v-8m-4-4a4 4 0 1 0 8 0a4 4 0 1 0 -8 0"/>
+    <path class="swiss-atlas-pin" style="--swiss-atlas-delay: 0ms" d="M0 0v-12m-6-6a6 6 0 1 0 12 0a6 6 0 1 0 -12 0"/>
   </g>
-  <g transform="translate(112 140)">
-    <path class="swiss-atlas-pin" style="--swiss-atlas-delay: 60ms" d="M0 0v-8m-4-4a4 4 0 1 0 8 0a4 4 0 1 0 -8 0"/>
+  <g transform="translate(98 140)">
+    <path class="swiss-atlas-pin" style="--swiss-atlas-delay: 120ms" d="M0 0v-12m-6-6a6 6 0 1 0 12 0a6 6 0 1 0 -12 0"/>
   </g>
-  <g transform="translate(99 173)">
-    <path class="swiss-atlas-pin" style="--swiss-atlas-delay: 120ms" d="M0 0v-8m-4-4a4 4 0 1 0 8 0a4 4 0 1 0 -8 0"/>
+  <g transform="translate(83 165)">
+    <path class="swiss-atlas-pin" style="--swiss-atlas-delay: 240ms" d="M0 0v-12m-6-6a6 6 0 1 0 12 0a6 6 0 1 0 -12 0"/>
   </g>
-  <g transform="translate(250 100)">
-    <path class="swiss-atlas-pin" style="--swiss-atlas-delay: 180ms" d="M0 0v-8m-4-4a4 4 0 1 0 8 0a4 4 0 1 0 -8 0"/>
+  <g transform="translate(282 110)">
+    <path class="swiss-atlas-pin" style="--swiss-atlas-delay: 360ms" d="M0 0v-12m-6-6a6 6 0 1 0 12 0a6 6 0 1 0 -12 0"/>
   </g>
   <g transform="translate(268 126)">
-    <path class="swiss-atlas-pin swiss-atlas-featured" stroke="var(--accent)" style="--swiss-atlas-delay: 240ms" d="M0 0v-8m-4-4a4 4 0 1 0 8 0a4 4 0 1 0 -8 0"/>
+    <path class="swiss-atlas-pin swiss-atlas-featured" stroke="var(--accent)" style="--swiss-atlas-delay: 480ms" d="M0 0v-12m-6-6a6 6 0 1 0 12 0a6 6 0 1 0 -12 0"/>
   </g>
   <g transform="translate(247 153)">
-    <path class="swiss-atlas-pin" style="--swiss-atlas-delay: 300ms" d="M0 0v-8m-4-4a4 4 0 1 0 8 0a4 4 0 1 0 -8 0"/>
+    <path class="swiss-atlas-pin" style="--swiss-atlas-delay: 600ms" d="M0 0v-12m-6-6a6 6 0 1 0 12 0a6 6 0 1 0 -12 0"/>
   </g>
   <g transform="translate(261 183)">
-    <path class="swiss-atlas-pin" style="--swiss-atlas-delay: 360ms" d="M0 0v-8m-4-4a4 4 0 1 0 8 0a4 4 0 1 0 -8 0"/>
+    <path class="swiss-atlas-pin" style="--swiss-atlas-delay: 720ms" d="M0 0v-12m-6-6a6 6 0 1 0 12 0a6 6 0 1 0 -12 0"/>
   </g>
-  <g transform="translate(307 197)">
-    <path class="swiss-atlas-pin" style="--swiss-atlas-delay: 420ms" d="M0 0v-8m-4-4a4 4 0 1 0 8 0a4 4 0 1 0 -8 0"/>
+  <g transform="translate(294 157)">
+    <path class="swiss-atlas-pin" style="--swiss-atlas-delay: 840ms" d="M0 0v-12m-6-6a6 6 0 1 0 12 0a6 6 0 1 0 -12 0"/>
   </g>
 </svg>

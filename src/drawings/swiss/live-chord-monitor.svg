@@ -1,37 +1,30 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
   <style>
-    .swiss-chord-key { transition: fill 0.35s ease; }
-    .swiss-chord-name { opacity: 0; transform: translateY(6px); transition: opacity 0.4s ease 0.15s, transform 0.4s ease 0.15s; }
-    .swiss-chord-idle { opacity: .35; transition: opacity 0.25s ease; }
+    .swiss-chord-name { opacity: 0; }
+    .swiss-card:hover .swiss-chord-black, .swiss-card:focus-visible .swiss-chord-black { fill: var(--ink); }
     @media (prefers-reduced-motion: no-preference) {
+      .swiss-chord-key { transition: fill .3s ease; }
+      .swiss-chord-name { transition: opacity .4s ease; }
       .swiss-card.is-hover .swiss-chord-key { fill: var(--accent); }
-      .swiss-card.is-hover .swiss-chord-name { opacity: 1; transform: none; }
-      .swiss-card.is-hover .swiss-chord-idle { opacity: 0; }
+      .swiss-card.is-hover .swiss-chord-name { opacity: 1; transition-delay: .15s; }
     }
-    @media (prefers-reduced-motion: reduce) { .swiss-chord-key, .swiss-chord-name, .swiss-chord-idle { transition: none; } }
   </style>
-  <g fill="currentColor" stroke="none" font-family="General Sans, sans-serif" font-size="10" letter-spacing="1.5" opacity=".55">
-    
-  </g>
-  <path class="swiss-chord-idle" d="M40 88h48M96 88h12"/>
-  <text class="swiss-chord-name" x="40" y="98" fill="currentColor" stroke="none" font-family="Chillax, sans-serif" font-size="34" font-weight="500">Cmaj7</text>
-  <path d="M40 112h320" stroke-opacity=".2"/>
-  <g transform="translate(40 124)">
-    <rect class="swiss-chord-key" width="40" height="104"/>
-    <rect x="40" width="40" height="104"/>
-    <rect class="swiss-chord-key" x="80" width="40" height="104"/>
-    <rect x="120" width="40" height="104"/>
-    <rect class="swiss-chord-key" x="160" width="40" height="104"/>
-    <rect x="200" width="40" height="104"/>
-    <rect class="swiss-chord-key" x="240" width="40" height="104"/>
-    <rect x="280" width="40" height="104"/>
-    <g fill="currentColor">
-      <rect x="28" width="24" height="62"/>
-      <rect x="68" width="24" height="62"/>
-      <rect x="148" width="24" height="62"/>
-      <rect x="188" width="24" height="62"/>
-      <rect x="228" width="24" height="62"/>
-    </g>
-    <path d="M16 92h8M96 92h8M176 92h8M256 92h8" stroke-opacity=".4"/>
+  <text class="swiss-chord-name" x="40" y="108" font-family="'General Sans', sans-serif" fill="currentColor" stroke="none" font-size="32" font-weight="500">Cmaj7</text>
+  <path d="M40 129h320M40 245h320" stroke-width="1.25"/>
+  <rect class="swiss-chord-key" x="40" y="137" width="40" height="100"/>
+  <rect x="80" y="137" width="40" height="100"/>
+  <rect class="swiss-chord-key" x="120" y="137" width="40" height="100"/>
+  <rect x="160" y="137" width="40" height="100"/>
+  <rect x="200" y="137" width="40" height="100"/>
+  <rect x="240" y="137" width="40" height="100"/>
+  <rect class="swiss-chord-key" x="280" y="137" width="40" height="100"/>
+  <rect x="320" y="137" width="40" height="100"/>
+  <!-- black keys: same ink outline, filled with the card surface so they read as raised -->
+  <g class="swiss-chord-black" fill="var(--tint)">
+    <rect x="66" y="137" width="26" height="62"/>
+    <rect x="106" y="137" width="26" height="62"/>
+    <rect x="186" y="137" width="26" height="62"/>
+    <rect x="226" y="137" width="26" height="62"/>
+    <rect x="266" y="137" width="26" height="62"/>
   </g>
 </svg>

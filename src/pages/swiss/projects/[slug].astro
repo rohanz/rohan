@@ -3,6 +3,8 @@ import SwissLayout from '../../../layouts/SwissLayout.astro';
 import { getCollection, render } from 'astro:content';
 import { getProjectNav, type NavItem } from '../../../lib/projectNav';
 import { cardTextFor } from '../../../lib/swiss/card-text';
+import { drawingFor } from '../../../lib/swiss/drawings';
+import '../../../styles/swiss-cards.css';
 import '../../../styles/swiss-article.css';
 import '../../../styles/swiss-widgets.css';
 
@@ -18,21 +20,25 @@ const { project, ordered } = Astro.props;
 const { Content, headings } = await render(project);
 const { prev, next } = getProjectNav(ordered, project.id);
 const word = cardTextFor(project.id);
+const Drawing = drawingFor(project.id);
 const h2h3 = headings.filter((h) => h.depth === 2 || h.depth === 3);
 const firstH2 = h2h3.findIndex((h) => h.depth === 2);
 const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
 ---
 <SwissLayout title={`${project.data.title} — rohan.jk`} description={project.data.summary} section="projects" ogImage={`/assets/images/og/${project.id}.png`}>
   <header class="sw-article-head">
-    <div class="sw-wrap sw-article-head-inner">
+    <div class="sw-article-head-inner">
       <div class="sw-article-head-title">
         <a class="sw-label sw-link" href="/swiss/projects">projects</a>
         <h1 class="sw-article-word">{word ?? project.data.title}</h1>
         {word && <p class="sw-article-title">{project.data.title}</p>}
         <p class="sw-article-summary">{project.data.summary}</p>
-      </div>
-      <div class="sw-article-head-aside">
         <div class="sw-article-meta">{project.data.technologies.map((t) => <span class="sw-label">{t}</span>)}</div>
+      </div>
+      <div class="swiss-card sw-article-art" aria-hidden="true">
+        <div class="swiss-card-art">
+          {Drawing ? <Drawing /> : <div class="swiss-card-placeholder"></div>}
+        </div>
       </div>
     </div>
   </header>
@@ -57,14 +63,43 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
     <article class="article">
       <Content />
       <nav class="sw-article-foot" aria-label="project navigation">
-        {prev ? <a class="prev sw-link" href={`/swiss/projects/${prev.slug}`}>← previous<span>{prev.title}</span></a> : <span></span>}
-        <a class="sw-label sw-link" href="/swiss/projects">all projects</a>
-        {next ? <a class="next sw-link" href={`/swiss/projects/${next.slug}`}>next →<span>{next.title}</span></a> : <span></span>}
+        <div class="sw-article-foot-cells">
+          {prev ? <a class="prev" href={`/swiss/projects/${prev.slug}`}><span class="sw-label">← previous</span><span class="sw-article-foot-title">{prev.title}</span></a> : <div aria-hidden="true"></div>}
+          {next ? <a class="next" href={`/swiss/projects/${next.slug}`}><span class="sw-label">next →</span><span class="sw-article-foot-title">{next.title}</span></a> : <div aria-hidden="true"></div>}
+        </div>
+        <a class="sw-article-all sw-label sw-link" href="/swiss/projects">all projects</a>
       </nav>
     </article>
   </div>
   <script>
     import '../../../scripts/article.ts';
     import '../../../scripts/article-widgets.ts';
+
+    let cleanupArt: (() => void) | undefined;
+    function initArt() {
+      cleanupArt?.();
+      const art = document.querySelector<HTMLElement>('.sw-article-art');
+      if (!art) return;
+      const start = window.setTimeout(() => art.classList.add('is-hover'), 500);
+      const stop = window.setTimeout(() => {
+        if (!art.matches(':hover')) art.classList.remove('is-hover');
+      }, 3000);
+      const enter = () => art.classList.add('is-hover');
+      const leave = () => {
+        window.clearTimeout(start);
+        art.classList.remove('is-hover');
+      };
+      art.addEventListener('pointerenter', enter);
+      art.addEventListener('pointerleave', leave);
+      cleanupArt = () => {
+        window.clearTimeout(start);
+        window.clearTimeout(stop);
+        art.removeEventListener('pointerenter', enter);
+        art.removeEventListener('pointerleave', leave);
+        art.classList.remove('is-hover');
+      };
+    }
+    document.addEventListener('astro:page-load', initArt);
+    document.addEventListener('astro:before-swap', () => { cleanupArt?.(); cleanupArt = undefined; });
   </script>
 </SwissLayout>

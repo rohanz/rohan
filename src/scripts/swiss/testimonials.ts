@@ -1,3 +1,8 @@
+// Testimony carousel: auto-advances on a fixed interval, pauses while the
+// pointer or focus is inside, resumes from where it was. One frame loop owns
+// both the countdown and the ring's progress, so there is no CSS-animation
+// state to get out of sync with the timer.
+const INTERVAL = 6000;
 let cleanup: (() => void) | undefined;
 
 function init() {
@@ -6,29 +11,26 @@ function init() {
   if (!root) return;
   const quotes = Array.from(root.querySelectorAll<HTMLElement>('[data-testimonial]'));
   const controls = root.querySelector<HTMLElement>('[data-testimonial-controls]');
-  const ring = root.querySelector<SVGElement>('[data-testimonial-ring]');
-  const INTERVAL = 6000;
+  const ringFill = root.querySelector<SVGCircleElement>('[data-testimonial-ring] .sw-ring-fill');
   if (quotes.length < 2 || !controls) return;
-  ring?.style.setProperty('--ring-ms', `${INTERVAL}ms`);
 
   const events = new AbortController();
   const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
   let current = Math.max(0, quotes.findIndex((quote) => quote.getAttribute('aria-hidden') === 'false'));
-  let timer: ReturnType<typeof setTimeout> | undefined;
+  let elapsed = 0; // ms into the current interval
+  let last = 0;
+  let raf = 0;
   let hovered = root.matches(':hover');
   let focused = root.contains(document.activeElement);
   quotes.forEach((quote) => { quote.hidden = false; });
   controls.hidden = false;
 
-  // Timing is elapsed-based so a hover pauses the countdown and a leave
-  // resumes it from the same point; the ring is paused/resumed in step.
-  let startedAt = 0;
-  let remaining = INTERVAL;
-  function restartRing() {
-    if (!ring) return;
-    ring.classList.remove('is-running', 'is-paused');
-    void ring.getBoundingClientRect(); // restart the CSS animation from zero
-    ring.classList.add('is-running');
+  const running = () => !motion.matches && !hovered && !focused && !document.hidden;
+
+  function paint() {
+    if (!ringFill) return;
+    const progress = Math.min(1, elapsed / INTERVAL);
+    ringFill.style.strokeDashoffset = String(100 - progress * 100);
   }
 
   function show(index: number) {
@@ -36,29 +38,27 @@ function init() {
     quotes.forEach((quote, i) => quote.setAttribute('aria-hidden', String(i !== current)));
   }
 
-  function advance() {
-    show(current + 1);
-    remaining = INTERVAL;
-    startedAt = performance.now();
-    restartRing();
-    timer = setTimeout(advance, remaining);
-  }
-  function schedule() {
-    const running = !motion.matches && !hovered && !focused && !document.hidden;
-    if (running) {
-      if (timer !== undefined) return; // already counting
-      if (remaining <= 0 || remaining > INTERVAL) remaining = INTERVAL;
-      startedAt = performance.now();
-      if (remaining === INTERVAL) restartRing(); else ring?.classList.remove('is-paused');
-      timer = setTimeout(advance, remaining);
-    } else if (timer !== undefined) {
-      clearTimeout(timer);
-      timer = undefined;
-      remaining = Math.max(0, remaining - (performance.now() - startedAt));
-      ring?.classList.add('is-paused');
-    } else {
-      ring?.classList.add('is-paused');
+  function frame(now: number) {
+    raf = 0;
+    if (!running()) return; // stopped: keep elapsed, the ring holds its position
+    elapsed += now - last;
+    last = now;
+    if (elapsed >= INTERVAL) {
+      elapsed = 0;
+      show(current + 1);
     }
+    paint();
+    raf = requestAnimationFrame(frame);
+  }
+
+  function schedule() {
+    if (running()) {
+      if (!raf) { last = performance.now(); raf = requestAnimationFrame(frame); }
+    } else if (raf) {
+      cancelAnimationFrame(raf);
+      raf = 0;
+    }
+    root.classList.toggle('is-paused', !running());
   }
 
   const options = { signal: events.signal };
@@ -71,8 +71,9 @@ function init() {
   }, options);
   motion.addEventListener('change', schedule, options);
   document.addEventListener('visibilitychange', schedule, options);
+  paint();
   schedule();
-  cleanup = () => { clearTimeout(timer); events.abort(); };
+  cleanup = () => { cancelAnimationFrame(raf); raf = 0; events.abort(); };
 }
 
 document.addEventListener('astro:before-swap', () => { cleanup?.(); cleanup = undefined; });

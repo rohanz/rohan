@@ -8,6 +8,9 @@ const Drawing = drawingFor(slug);
 const word = cardTextFor(slug);
 ---
 <a class="swiss-card" href={`/swiss/projects/${slug}`} data-reveal="block" data-techs={technologies.join(',')}>
+  <!-- The anchor is the static hit area; only .swiss-card-inner transforms, so
+       the tilt can never move the card out from under the pointer. -->
+  <div class="swiss-card-inner">
   <div class="swiss-card-art" aria-hidden="true">
     {word && <span class="swiss-card-word">{word}</span>}
     {Drawing ? <Drawing /> : <div class="swiss-card-placeholder"></div>}
@@ -16,5 +19,6 @@ const word = cardTextFor(slug);
     <h2 class="swiss-card-title">{title}</h2>
     <p class="swiss-card-summary">{summary}</p>
     <div class="swiss-card-tags">{technologies.slice(0, 4).map((t) => <span class="sw-label">{t}</span>)}</div>
+  </div>
   </div>
 </a>

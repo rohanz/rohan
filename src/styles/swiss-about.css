@@ -3,7 +3,7 @@ html.theme-swiss .sw-about { display: grid; grid-template-columns: minmax(0, 1fr
 html.theme-swiss .sw-about-rail { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); background: var(--tint); border-bottom: 1px solid var(--tint-hair); }
 html.theme-swiss .sw-about-photo { position: relative; min-width: 0; min-height: 16rem; margin: 0; border-right: 1px solid var(--tint-hair); }
 html.theme-swiss .sw-about-photo img { position: absolute; width: 100%; height: 100%; object-fit: cover; object-position: center 30%; }
-html.theme-swiss .sw-about-caption { display: flex; flex-direction: column; justify-content: space-between; gap: 2rem; min-width: 0; padding: 1.5rem; }
+html.theme-swiss .sw-about-caption { --cap-pad: 1.5rem; display: flex; flex-direction: column; justify-content: space-between; gap: 2rem; min-width: 0; padding: var(--cap-pad); }
 html.theme-swiss .sw-about-caption p { margin: 0; }
 html.theme-swiss .sw-about-caption a { justify-content: space-between; }
 html.theme-swiss .sw-about-caption .sw-arrow { font-size: 1.4rem; }
@@ -13,16 +13,16 @@ html.theme-swiss .sw-about-cell h2, html.theme-swiss .sw-about-bio h1 { margin: 
 html.theme-swiss .sw-about-body { font-size: .9375rem; }
 html.theme-swiss .sw-about-body p { margin: 0; }
 html.theme-swiss .sw-about-body p + p { margin-top: .75rem; }
-html.theme-swiss .sw-about-links { display: flex; flex-wrap: wrap; gap: .5rem 1rem; margin-top: auto; }
+html.theme-swiss .sw-about-links { margin: auto calc(-1 * var(--cell-pad, 1.5rem)) calc(-1 * var(--cell-pad, 1.5rem)); border-top: 1px solid var(--tint-hair); }
 html.theme-swiss .sw-about-stats { flex: 1; display: flex; flex-direction: column; justify-content: space-evenly; gap: 2rem; }
 html.theme-swiss .sw-stat { display: flex; flex-direction: column; gap: .5rem; }
 html.theme-swiss .sw-stat .sw-display { font-size: clamp(2.6rem, 5vw, 5rem); }
-html.theme-swiss .sw-tech-list { margin: auto 0 0; font-size: .75rem; font-weight: 500; letter-spacing: var(--track-caps); text-transform: uppercase; line-height: 2.2; }
+html.theme-swiss .sw-tech-list { margin: 0; font-size: .75rem; font-weight: 500; letter-spacing: var(--track-caps); text-transform: uppercase; line-height: 2.2; }
 html.theme-swiss .sw-about-quotes { display: grid; grid-template-columns: minmax(0, 1fr); overflow: hidden; font-size: 1.05rem; }
 html.theme-swiss .sw-quote { grid-area: 1 / 1; margin: 0; min-width: 0; opacity: 1; transition: opacity 200ms ease; }
 html.theme-swiss .sw-quote[aria-hidden="true"] { opacity: 0; visibility: hidden; pointer-events: none; }
 html.theme-swiss .sw-quote p { margin: 0 0 1rem; font-family: var(--font-ui); line-height: 1.5; }
-html.theme-swiss .sw-testimonial-controls { display: flex; justify-content: space-between; gap: .5rem; margin-top: auto; }
+html.theme-swiss .sw-testimonial-controls { display: flex; justify-content: flex-end; gap: .5rem; margin-top: auto; }
 html.theme-swiss .sw-testimonial-controls[hidden] { display: none; }
 @media (hover: hover) {
   html.theme-swiss .sw-about-cell:hover:not(:focus-within) { background: var(--tint); }
@@ -42,20 +42,22 @@ html.theme-swiss .sw-about-caption:focus-within .sw-label { color: inherit; }
   html.theme-swiss .sw-about-cell:nth-child(odd) { border-right: 1px solid var(--tint-hair); }
 }
 @media (max-width: 599px) {
-  html.theme-swiss .sw-about-caption { padding: 1rem; }
-  html.theme-swiss .sw-about-cell { padding: 1.5rem 1rem; }
+  html.theme-swiss .sw-about-caption { --cap-pad: 1rem; }
+  html.theme-swiss .sw-about-cell { --cell-pad: 1rem; padding: 1.5rem var(--cell-pad); }
 }
 @media (prefers-reduced-motion: reduce) {
   html.theme-swiss .sw-quote { transition: none; }
 }
 
 /* Testimony timer: a ring that draws itself over the interval, restarting on each quote. */
-html.theme-swiss .sw-testimonial-ring { width: 2rem; height: 2rem; transform: rotate(-90deg); shape-rendering: geometricPrecision; overflow: visible; }
-html.theme-swiss .sw-ring-track { fill: none; stroke: var(--hair); stroke-width: 1.25; vector-effect: non-scaling-stroke; }
-html.theme-swiss .sw-ring-fill { fill: none; stroke: var(--ink); stroke-width: 1.25; stroke-linecap: round; vector-effect: non-scaling-stroke; stroke-dasharray: 100; stroke-dashoffset: 100; }
-html.theme-swiss .sw-testimonial-ring.is-running .sw-ring-fill { animation: sw-ring var(--ring-ms, 6000ms) linear forwards; }
-html.theme-swiss .sw-testimonial-ring.is-paused .sw-ring-fill { animation-play-state: paused; }
-@keyframes sw-ring { from { stroke-dashoffset: 100; } to { stroke-dashoffset: 0; } }
+html.theme-swiss .sw-testimonial-ring { width: 2.25rem; height: 2.25rem; transform: rotate(-90deg); shape-rendering: geometricPrecision; overflow: visible; }
+html.theme-swiss .sw-ring-track { fill: none; stroke: var(--hair); stroke-width: 2.5; vector-effect: non-scaling-stroke; }
+html.theme-swiss .sw-ring-fill { fill: none; stroke: var(--ink); stroke-width: 2.5; stroke-linecap: butt; vector-effect: non-scaling-stroke; stroke-dasharray: 100; stroke-dashoffset: 100; }
 @media (prefers-reduced-motion: reduce) { html.theme-swiss .sw-testimonial-ring { display: none; } }
 
-html.theme-swiss .sw-about-caption .sw-rail-links { padding: 1rem 0 0; margin-top: auto; gap: .75rem; }
+
+/* Bio links: one row of four boxes flush with the cell edges. */
+html.theme-swiss .sw-about-links.sw-rail-socials { grid-template-columns: repeat(2, 1fr); }
+html.theme-swiss .sw-about-links.sw-rail-socials a { min-height: 2.6rem; padding: .55rem 1rem; }
+html.theme-swiss .sw-about-links.sw-rail-socials a:nth-last-child(-n+2) { border-bottom: 0; }
+html.theme-swiss .sw-about-bio h1 { font-size: clamp(1.5rem, 2.1vw, 2.1rem); }

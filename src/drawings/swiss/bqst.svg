@@ -1,11 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
   <style>
     @media (prefers-reduced-motion: no-preference) {
-      .swiss-bqst-needle, .swiss-bqst-drive { transition: transform .65s cubic-bezier(.2,.8,.3,1); }
-      .swiss-bqst-hot { transition: stroke .35s ease; }
-      .swiss-card.is-hover .swiss-bqst-needle { transform: rotate(40deg); }
-      .swiss-card.is-hover .swiss-bqst-drive { transform: rotate(60deg); }
-      .swiss-card.is-hover .swiss-bqst-hot { stroke: var(--accent); }
+      .swiss-bqst-dial, .swiss-bqst-needle { transition: transform .6s cubic-bezier(.2,.8,.3,1); }
+      .swiss-card.is-hover .swiss-bqst-dial, .swiss-card.is-hover .swiss-bqst-needle { transform: rotate(var(--bqst-turn)); transition-delay: var(--bqst-delay); }
     }
   </style>
   <rect x="29" y="77" width="342" height="198" rx="3"/>
@@ -23,7 +20,7 @@
   <path d="M96.8 113.2l2.1 -2.1" stroke-width="1.25" opacity=".4"/>
   <path d="M104.9 133.0l3.0 0.0" stroke-width="1.25" opacity=".4"/>
   <path d="M96.8 152.8l2.1 2.1" stroke-width="1.25" opacity=".4"/>
-  <path d="M77 130v-16"/>
+  <path class="swiss-bqst-dial" style="transform-origin:77px 133px; --bqst-turn:40deg; --bqst-delay:0.000s" d="M77 130v-16"/>
   <circle cx="77" cy="234" r="22"/>
   <path d="M59.4 254.9 A27.5 27.5 0 1 1 94.6 254.9" stroke-width="1.25" opacity=".4"/>
   <path d="M57.2 253.8l-2.1 2.1" stroke-width="1.25" opacity=".4"/>
@@ -33,11 +30,11 @@
   <path d="M96.8 214.2l2.1 -2.1" stroke-width="1.25" opacity=".4"/>
   <path d="M104.9 234.0l3.0 0.0" stroke-width="1.25" opacity=".4"/>
   <path d="M96.8 253.8l2.1 2.1" stroke-width="1.25" opacity=".4"/>
-  <path d="M77 231v-16"/>
+  <path class="swiss-bqst-dial" style="transform-origin:77px 234px; --bqst-turn:53deg; --bqst-delay:0.015s" d="M77 231v-16"/>
   <circle cx="77" cy="174" r="7" stroke-width="1.25"/>
-  <path d="M77 174l2-5" stroke-width="1.25"/>
+  <path class="swiss-bqst-dial" style="transform-origin:77px 174px; --bqst-turn:66deg; --bqst-delay:0.030s" d="M77 174l2-5" stroke-width="1.25"/>
   <circle cx="77" cy="194" r="7" stroke-width="1.25"/>
-  <path d="M77 194l2-5" stroke-width="1.25"/>
+  <path class="swiss-bqst-dial" style="transform-origin:77px 194px; --bqst-turn:79deg; --bqst-delay:0.045s" d="M77 194l2-5" stroke-width="1.25"/>
   <circle cx="152" cy="133" r="22"/>
   <path d="M134.4 153.9 A27.5 27.5 0 1 1 169.6 153.9" stroke-width="1.25" opacity=".4"/>
   <path d="M132.2 152.8l-2.1 2.1" stroke-width="1.25" opacity=".4"/>
@@ -47,7 +44,7 @@
   <path d="M171.8 113.2l2.1 -2.1" stroke-width="1.25" opacity=".4"/>
   <path d="M179.9 133.0l3.0 0.0" stroke-width="1.25" opacity=".4"/>
   <path d="M171.8 152.8l2.1 2.1" stroke-width="1.25" opacity=".4"/>
-  <path d="M152 130v-16"/>
+  <path class="swiss-bqst-dial" style="transform-origin:152px 133px; --bqst-turn:41deg; --bqst-delay:0.060s" d="M152 130v-16"/>
   <circle cx="152" cy="234" r="22"/>
   <path d="M134.4 254.9 A27.5 27.5 0 1 1 169.6 254.9" stroke-width="1.25" opacity=".4"/>
   <path d="M132.2 253.8l-2.1 2.1" stroke-width="1.25" opacity=".4"/>
@@ -57,16 +54,16 @@
   <path d="M171.8 214.2l2.1 -2.1" stroke-width="1.25" opacity=".4"/>
   <path d="M179.9 234.0l3.0 0.0" stroke-width="1.25" opacity=".4"/>
   <path d="M171.8 253.8l2.1 2.1" stroke-width="1.25" opacity=".4"/>
-  <path d="M152 231v-16"/>
+  <path class="swiss-bqst-dial" style="transform-origin:152px 234px; --bqst-turn:54deg; --bqst-delay:0.075s" d="M152 231v-16"/>
   <circle cx="152" cy="174" r="7" stroke-width="1.25"/>
-  <path d="M152 174l2-5" stroke-width="1.25"/>
+  <path class="swiss-bqst-dial" style="transform-origin:152px 174px; --bqst-turn:67deg; --bqst-delay:0.090s" d="M152 174l2-5" stroke-width="1.25"/>
   <circle cx="152" cy="194" r="7" stroke-width="1.25"/>
-  <path d="M152 194l2-5" stroke-width="1.25"/>
+  <path class="swiss-bqst-dial" style="transform-origin:152px 194px; --bqst-turn:80deg; --bqst-delay:0.105s" d="M152 194l2-5" stroke-width="1.25"/>
   <rect x="215" y="111" width="62" height="49" rx="2" stroke-width="1.25"/>
   <path d="M222 139Q246 112 270 139" stroke-width="1.25"/>
-  <path class="swiss-bqst-hot" d="M261 130q6 3 9 9" stroke-width="3"/>
+  <path stroke="var(--accent)" d="M261 130q6 3 9 9" stroke-width="3"/>
   <path d="M229 128l2 4M239 123l1 5M250 122v5" stroke-width="1.25"/>
-  <path class="swiss-bqst-needle" style="transform-origin:246px 153px" d="M246 153l-21-19"/>
+  <path class="swiss-bqst-needle" style="transform-origin:246px 153px; --bqst-turn:48deg; --bqst-delay:0.05s" d="M246 153l-21-19"/>
   <circle cx="246" cy="153" r="2" fill="currentColor"/>
   <circle cx="246" cy="199" r="23"/>
   <path d="M227.6 220.8 A28.75 28.75 0 1 1 264.4 220.8" stroke-width="1.25" opacity=".4"/>
@@ -77,16 +74,16 @@
   <path d="M266.7 178.3l2.1 -2.1" stroke-width="1.25" opacity=".4"/>
   <path d="M275.2 199.0l3.0 0.0" stroke-width="1.25" opacity=".4"/>
   <path d="M266.7 219.7l2.1 2.1" stroke-width="1.25" opacity=".4"/>
-  <path class="swiss-bqst-drive" style="transform-origin:246px 199px" d="M236 211l8-10"/>
+  <path class="swiss-bqst-dial" style="transform-origin:246px 199px; --bqst-turn:42deg; --bqst-delay:0.120s" d="M236 211l8-10"/>
   <circle cx="232" cy="249" r="8" stroke-width="1.25"/>
-  <path d="M232 249v-5" stroke-width="1.25"/>
+  <path class="swiss-bqst-dial" style="transform-origin:232px 249px; --bqst-turn:55deg; --bqst-delay:0.135s" d="M232 249v-5" stroke-width="1.25"/>
   <circle cx="260" cy="249" r="8" stroke-width="1.25"/>
-  <path d="M260 249v-5" stroke-width="1.25"/>
+  <path class="swiss-bqst-dial" style="transform-origin:260px 249px; --bqst-turn:68deg; --bqst-delay:0.150s" d="M260 249v-5" stroke-width="1.25"/>
   <rect x="294" y="111" width="62" height="49" rx="2" stroke-width="1.25"/>
   <path d="M301 139Q325 112 349 139" stroke-width="1.25"/>
-  <path class="swiss-bqst-hot" d="M340 130q6 3 9 9" stroke-width="3"/>
+  <path d="M340 130q6 3 9 9" stroke-width="3"/>
   <path d="M308 128l2 4M318 123l1 5M329 122v5" stroke-width="1.25"/>
-  <path class="swiss-bqst-needle" style="transform-origin:325px 153px" d="M325 153l-21-19"/>
+  <path class="swiss-bqst-needle" style="transform-origin:325px 153px; --bqst-turn:61deg; --bqst-delay:0.12s" d="M325 153l-21-19"/>
   <circle cx="325" cy="153" r="2" fill="currentColor"/>
   <circle cx="325" cy="199" r="23"/>
   <path d="M306.6 220.8 A28.75 28.75 0 1 1 343.4 220.8" stroke-width="1.25" opacity=".4"/>
@@ -97,9 +94,9 @@
   <path d="M345.7 178.3l2.1 -2.1" stroke-width="1.25" opacity=".4"/>
   <path d="M354.2 199.0l3.0 0.0" stroke-width="1.25" opacity=".4"/>
   <path d="M345.7 219.7l2.1 2.1" stroke-width="1.25" opacity=".4"/>
-  <path class="swiss-bqst-drive" style="transform-origin:325px 199px" d="M315 211l8-10"/>
+  <path class="swiss-bqst-dial" style="transform-origin:325px 199px; --bqst-turn:81deg; --bqst-delay:0.165s" d="M315 211l8-10"/>
   <circle cx="311" cy="249" r="8" stroke-width="1.25"/>
-  <path d="M311 249v-5" stroke-width="1.25"/>
+  <path class="swiss-bqst-dial" style="transform-origin:311px 249px; --bqst-turn:43deg; --bqst-delay:0.180s" d="M311 249v-5" stroke-width="1.25"/>
   <circle cx="339" cy="249" r="8" stroke-width="1.25"/>
-  <path d="M339 249v-5" stroke-width="1.25"/>
+  <path class="swiss-bqst-dial" style="transform-origin:339px 249px; --bqst-turn:56deg; --bqst-delay:0.195s" d="M339 249v-5" stroke-width="1.25"/>
 </svg>

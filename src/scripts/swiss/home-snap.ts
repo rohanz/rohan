@@ -3,7 +3,10 @@
 // eased glide instead; momentum during/after the glide is swallowed.
 // Desktop fine-pointer only, off under reduced motion, and native scrolling
 // takes over once the reader is past the snap sections.
-const NOTCH = 60; // |deltaY| at or above this reads as a wheel notch; trackpads start far smaller
+// A mouse notch is an ISOLATED wheel event (silence before it) with a real
+// delta; a trackpad is a dense stream of small deltas. Only notches glide.
+const NOTCH_GAP = 120; // ms of wheel silence before an event counts as a notch
+const NOTCH_MIN = 12; // px: ignore sub-notch noise
 const DURATION = 650; // ms for the eased travel (ease-out: moves at once, lands softly)
 const SETTLE = 450; // ms of wheel input ignored after landing (momentum tail)
 
@@ -25,6 +28,7 @@ function init() {
   // The nav overlays the section's own top padding, so no nav offset here.
   const topOf = (el: HTMLElement) => el.getBoundingClientRect().top + window.scrollY;
   let animating = false;
+  let lastWheel = 0;
   let settleUntil = 0;
   let raf = 0;
 
@@ -34,13 +38,18 @@ function init() {
     if (Math.abs(delta) < 2) return;
     const t0 = performance.now();
     animating = true;
+    // Mandatory CSS snap would re-snap every intermediate position (a teleport);
+    // suspend it for the glide and restore it on landing.
+    const rootStyle = document.documentElement.style;
+    const prevSnap = rootStyle.scrollSnapType;
+    rootStyle.scrollSnapType = 'none';
     const step = (now: number) => {
       const p = Math.min(1, (now - t0) / DURATION);
       // 'instant' beats the page's scroll-behavior: smooth, which would otherwise
       // re-smooth every frame of this animation into a crawl.
       window.scrollTo({ top: start + delta * easeOutCubic(p), behavior: 'instant' });
       if (p < 1) raf = requestAnimationFrame(step);
-      else { animating = false; settleUntil = performance.now() + SETTLE; }
+      else { animating = false; settleUntil = performance.now() + SETTLE; rootStyle.scrollSnapType = prevSnap; }
     };
     raf = requestAnimationFrame(step);
   }
@@ -49,7 +58,9 @@ function init() {
     const now = performance.now();
     if (reduce.matches) return;
     if (animating || now < settleUntil) { e.preventDefault(); return; }
-    if (Math.abs(e.deltaY) < NOTCH) return; // trackpad: leave it to native CSS snap
+    const isolated = now - lastWheel > NOTCH_GAP;
+    lastWheel = now;
+    if (!isolated || Math.abs(e.deltaY) < NOTCH_MIN) return; // trackpad stream: native CSS snap
     const heroTop = topOf(heroEl);
     const nextTop = topOf(nextEl);
     const y = window.scrollY;

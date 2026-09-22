@@ -1,40 +1,27 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
   <style>
-    .swiss-tesla-new { clip-path: inset(0 100% 0 0); }
+    .swiss-tesla-new { clip-path: inset(0 100% 0 0); transform-box: fill-box; }
+    .swiss-tesla-cursor { opacity: 0; }
     @media (prefers-reduced-motion: no-preference) {
-      .swiss-tesla-new { transition: clip-path .85s steps(30, end); }
-      .swiss-card.is-hover .swiss-tesla-new { clip-path: inset(0); }
-      .swiss-card.is-hover .swiss-tesla-arrow { fill: var(--accent); }
-      .swiss-card.is-hover .swiss-tesla-pulse { animation: swiss-tesla-pulse .8s ease-out 1; }
+      .swiss-tesla-new { transition: clip-path .25s steps(24, end); }
+      .swiss-card.is-hover .swiss-tesla-new { clip-path: inset(0); transition-delay: var(--tesla-delay); }
+      .swiss-card.is-hover .swiss-tesla-cursor { animation: swiss-tesla-blink .8s steps(1, end) .85s infinite; }
     }
-    @keyframes swiss-tesla-pulse { 0% { r: 7; opacity: .7; } 100% { r: 20; opacity: 0; } }
+    @keyframes swiss-tesla-blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
   </style>
-  <g stroke-width="1.25" opacity=".35">
-    <path d="m45 81 38 7 37-10 41 9v52l-39-8-39 12-38-8Z"/>
-    <path d="m83 88 0 55M120 78l2 53M45 113l39-11 36 10 41-9M67 85l8 25 29 9 12 15"/>
-  </g>
-  <path d="M119 103c0 10-12 22-12 22s-12-12-12-22a12 12 0 0 1 24 0Z"/>
-  <circle cx="107" cy="103" r="3"/>
-  <circle class="swiss-tesla-pulse" cx="107" cy="103" r="7" opacity="0" stroke="var(--accent)"/>
-  <path d="M170 111h39m-6-5 6 5-6 5M222 91h128M222 102h79M222 114h107" stroke-width="1.25" opacity=".4"/>
-  <rect x="72" y="153" width="293" height="120" rx="2"/>
-  <path d="M72 172h293" stroke-width="1.25" opacity=".4"/>
-  <g fill="currentColor" stroke="none">
-  <circle cx="82" cy="162" r="2"/>
-  <circle cx="90" cy="162" r="2" opacity=".55"/>
-  <circle cx="98" cy="162" r="2" opacity=".25"/>
-  </g>
-  <g stroke-width="1.25">
-  <path d="M30 211v-33q0-4 4-4h17q4 0 4 4v33M26 214h33M36 180h13v14H36Z"/>
-  <path d="M55 183h6l4 6v15q0 5-5 5t-5-5M44 197l-5 6h6l-4 6"/>
-  </g>
-  <g font-family="'General Sans', sans-serif" fill="currentColor" stroke="none" font-size="10" letter-spacing=".6">
-    <text x="85" y="185">power_kw: 250 → 325</text>
-    <text x="85" y="200">status: PERMIT → OPEN</text>
-    <text x="85" y="215">stalls: 8 → 12</text>
-    <text x="85" y="230">other_evs: False → True</text>
-    <text x="85" y="245">status_days: 116 → 0</text>
-    <text x="85" y="260" opacity=".45">›</text>
-    <text class="swiss-tesla-new" x="97" y="260">status: BUILD <tspan class="swiss-tesla-arrow">→</tspan> OPEN</text>
+  <rect x="37" y="78" width="326" height="203" rx="2" stroke-width="1.25"/>
+  <path d="M37 102h326" stroke-width="1.25"/>
+  <g fill="currentColor" stroke="none"><circle cx="49" cy="90" r="2"/><circle cx="58" cy="90" r="2" opacity=".6"/><circle cx="67" cy="90" r="2" opacity=".3"/></g>
+  <text x="350" y="93" text-anchor="end" font-family="'General Sans', sans-serif" fill="currentColor" stroke="none" font-size="8" letter-spacing="1.5">SUPERCHARGER / AUDIT</text>
+  <g font-family="'General Sans', sans-serif" fill="currentColor" stroke="none" font-size="10.5" letter-spacing=".8" style="font-variant-numeric: tabular-nums">
+    <text x="51" y="121">power_kw: 250 → 325</text>
+    <text x="51" y="138">status: PERMIT → OPEN</text>
+    <text x="51" y="155">stalls: 8 → 12</text>
+    <text x="51" y="172">other_evs: false → true</text>
+    <text class="swiss-tesla-new" style="--tesla-delay:0.00s" x="51" y="189">status_days: 116 <tspan fill="var(--accent)">→</tspan> 0</text>
+    <text class="swiss-tesla-new" style="--tesla-delay:0.15s" x="51" y="206">connector: NACS <tspan fill="var(--accent)">→</tspan> NACS+CCS</text>
+    <text class="swiss-tesla-new" style="--tesla-delay:0.30s" x="51" y="223">access: private <tspan fill="var(--accent)">→</tspan> public</text>
+    <text class="swiss-tesla-new" style="--tesla-delay:0.45s" x="51" y="240">uptime_pct: 98.2 <tspan fill="var(--accent)">→</tspan> 99.7</text>
+    <text class="swiss-tesla-new" style="--tesla-delay:0.60s" x="51" y="257">revision: 041 <tspan fill="var(--accent)">→</tspan> 042<tspan class="swiss-tesla-cursor"> ▏</tspan></text>
   </g>
 </svg>

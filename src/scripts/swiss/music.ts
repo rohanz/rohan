@@ -6,7 +6,13 @@ let idleCleanups: (() => void)[] = [];
 
 let audio: HTMLAudioElement | null = null;
 let active: HTMLButtonElement | null = null;
+let selected: HTMLButtonElement | null = null;
 let request = 0;
+const mediaActions = ['play', 'pause', 'previoustrack', 'nexttrack'] as const;
+
+function mediaState(state: MediaSessionPlaybackState) {
+  if ('mediaSession' in navigator) navigator.mediaSession.playbackState = state;
+}
 
 function setActive(button: HTMLButtonElement | null) {
   stopViz?.();
@@ -17,6 +23,7 @@ function setActive(button: HTMLButtonElement | null) {
     active.closest('.sw-track')?.classList.remove('is-playing');
   }
   active = button;
+  mediaState(active ? 'playing' : 'paused');
   if (active) {
     active.setAttribute('aria-pressed', 'true');
     active.setAttribute('aria-label', `Pause preview of ${active.dataset.title}`);
@@ -30,9 +37,53 @@ function stop() {
   setActive(null);
 }
 
+function play(button: HTMLButtonElement, resume = false) {
+  const src = button.dataset.audio;
+  if (!src || !audio) return;
+  stop();
+  const currentRequest = request;
+  const player = audio;
+  const sameTrack = player.src === new URL(src, location.href).href;
+  if (!sameTrack) player.src = src;
+  if (!resume || !sameTrack || player.ended) player.currentTime = 0;
+  selected = button;
+  setActive(button);
+  if ('mediaSession' in navigator && 'MediaMetadata' in window) {
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: button.dataset.title,
+      artist: button.dataset.artist,
+      artwork: button.dataset.cover ? [{ src: new URL(button.dataset.cover, location.href).href }] : [],
+    });
+  }
+  stopViz = attachViz(button.closest<HTMLElement>('.sw-track')!, player);
+  void player.play().catch(() => {
+    if (request === currentRequest) setActive(null);
+  });
+}
+
+function bindMediaSession(buttons: HTMLButtonElement[]) {
+  if (!('mediaSession' in navigator)) return;
+  const adjacent = (direction: number) => {
+    const index = selected ? buttons.indexOf(selected) : -1;
+    const button = buttons[index + direction];
+    if (button) play(button);
+  };
+  const handlers = {
+    play: () => { if (!active) play(selected ?? buttons[0], true); },
+    pause: stop,
+    previoustrack: () => adjacent(-1),
+    nexttrack: () => adjacent(1),
+  };
+  for (const action of mediaActions) {
+    // Browsers can expose Media Session without supporting every action.
+    try { navigator.mediaSession.setActionHandler(action, handlers[action]); } catch {}
+  }
+}
+
 function init() {
   const buttons = document.querySelectorAll<HTMLButtonElement>('.sw-play');
   if (!buttons.length) return;
+  bindMediaSession(Array.from(buttons));
   if (!audio) {
     audio = new Audio();
     audio.preload = 'none';
@@ -43,20 +94,10 @@ function init() {
     button.dataset.bound = '1';
     const row = button.closest<HTMLElement>('.sw-track')!;
     idleCleanups.push(observeViz(row));
-    button.addEventListener('click', () => {
+    row.addEventListener('click', (event) => {
+      if (event.target instanceof Element && event.target.closest('a')) return;
       if (active === button) { stop(); return; }
-      const src = button.dataset.audio;
-      if (!src || !audio) return;
-      stop();
-      const currentRequest = request;
-      const player = audio;
-      if (player.src !== new URL(src, location.href).href) player.src = src;
-      player.currentTime = 0;
-      setActive(button);
-      stopViz = attachViz(row, player);
-      void player.play().catch(() => {
-        if (request === currentRequest) setActive(null);
-      });
+      play(button);
     });
   });
 }
@@ -64,6 +105,14 @@ function init() {
 document.addEventListener('astro:page-load', init);
 document.addEventListener('astro:before-swap', () => {
   stop();
+  selected = null;
+  if ('mediaSession' in navigator) {
+    for (const action of mediaActions) {
+      try { navigator.mediaSession.setActionHandler(action, null); } catch {}
+    }
+    navigator.mediaSession.metadata = null;
+    mediaState('none');
+  }
   idleCleanups.forEach((cleanup) => cleanup());
   idleCleanups = [];
 });

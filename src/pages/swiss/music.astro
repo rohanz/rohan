@@ -17,7 +17,7 @@ import { MUSIC_DESCRIPTION } from '../../data/page-meta';
     <div class="sw-tracks" data-reveal-group>
       {SONGS.map((s) => (
         <div class="sw-track" data-reveal="block">
-          <button class="sw-play" type="button" data-audio={s.audio} data-title={s.title} aria-pressed="false" aria-label={`Play preview of ${s.title}`}>
+          <button class="sw-play" type="button" data-audio={s.audio} data-title={s.title} data-artist={s.artist} data-cover={s.cover} aria-pressed="false" aria-label={`Play preview of ${s.title}`}>
             <span class="sw-play-icon" aria-hidden="true"></span>
           </button>
           <div class="sw-track-main">

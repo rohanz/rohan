@@ -36,10 +36,6 @@ function drawGrid(surface: Surface, hair: string) {
   ctx.moveTo(METER_PADDING, h / 2); ctx.lineTo(w - METER_PADDING, h / 2);
   if (canvas.dataset.viz === 'stereo') {
     ctx.moveTo(w / 2, METER_PADDING); ctx.lineTo(w / 2, h - METER_PADDING);
-    const rx = Math.max(1, w / 2 - METER_PADDING);
-    const ry = Math.max(1, h / 2 - METER_PADDING);
-    ctx.moveTo(w / 2 + rx, h / 2);
-    ctx.ellipse(w / 2, h / 2, rx, ry, 0, 0, Math.PI * 2);
   }
   ctx.stroke();
 }
@@ -49,7 +45,7 @@ function drawVu(surface: Surface, db: number, ink: string, hair: string, accent:
   // Centre the complete face (outer labels through needle pivot) in the cell.
   const labelPx = Math.round(parseFloat(getComputedStyle(document.documentElement).fontSize) * 0.5) || 8;
   const labelInset = 11 + labelPx / 2;
-  const radius = Math.max(1, Math.min(w / 2 - METER_PADDING - labelInset, h - 2 * METER_PADDING - labelInset - 2));
+  const radius = .88 * Math.max(1, Math.min(w / 2 - METER_PADDING - labelInset, h - 2 * METER_PADDING - labelInset - 2));
   const cx = w / 2, cy = (h + radius + labelInset - 2) / 2;
   const angleFor = (value: number) => -Math.PI * .85 + dbToFrac(value) * Math.PI * .7;
   ctx.save();
@@ -199,13 +195,22 @@ export function attachViz(row: HTMLElement, audio: HTMLAudioElement): () => void
         ctx.ellipse(w / 2, h / 2, rx, ry, 0, 0, Math.PI * 2);
         ctx.clip();
         ctx.fillStyle = ink;
-        ctx.globalAlpha = .7 * alpha;
+        // Batch each size at one opacity; no per-dot state changes or shadows.
+        if (!reduced.matches) {
+          ctx.globalAlpha = .25 * alpha;
+          for (let i = 0; i < bufLen; i += step) {
+            const x = w / 2 + (left[i] - right[i]) * rx;
+            const y = h / 2 - (left[i] + right[i]) * ry;
+            ctx.fillRect(x - 2, y - 2, 4, 4);
+          }
+        }
+        ctx.globalAlpha = alpha;
         for (let i = 0; i < bufLen; i += step) {
           const mid = (left[i] + right[i]) * .5;
           const side = (left[i] - right[i]) * .5;
           const x = w / 2 + side * rx * 2;
           const y = h / 2 - mid * ry * 2;
-          ctx.fillRect(x, y, 1.5, 1.5);
+          ctx.fillRect(x - 1, y - 1, 2, 2);
         }
         ctx.restore();
         continue;
