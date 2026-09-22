@@ -50,9 +50,11 @@ html.theme-swiss .sw-about-caption:focus-within .sw-label { color: inherit; }
 }
 
 /* Testimony timer: a ring that draws itself over the interval, restarting on each quote. */
-html.theme-swiss .sw-testimonial-ring { width: 2.25rem; height: 2.25rem; transform: rotate(-90deg); shape-rendering: geometricPrecision; overflow: visible; }
-html.theme-swiss .sw-ring-track { fill: none; stroke: var(--hair); stroke-width: 2.5; vector-effect: non-scaling-stroke; }
-html.theme-swiss .sw-ring-fill { fill: none; stroke: var(--ink); stroke-width: 2.5; stroke-linecap: butt; vector-effect: non-scaling-stroke; stroke-dasharray: 100; stroke-dashoffset: 100; }
+html.theme-swiss .sw-testimonial-ring { width: 2.75rem; height: 2.75rem; transform: rotate(-90deg); shape-rendering: geometricPrecision; overflow: visible; }
+html.theme-swiss .sw-ring-track { fill: none; stroke: var(--hair); stroke-width: 2; }
+/* pathLength=100 on the circle makes dasharray/offset percentages of the circumference;
+   no vector-effect here (non-scaling-stroke would measure the dash in screen px). */
+html.theme-swiss .sw-ring-fill { fill: none; stroke: var(--ink); stroke-width: 2; stroke-linecap: butt; stroke-dasharray: 100; stroke-dashoffset: 100; }
 @media (prefers-reduced-motion: reduce) { html.theme-swiss .sw-testimonial-ring { display: none; } }
 
 
