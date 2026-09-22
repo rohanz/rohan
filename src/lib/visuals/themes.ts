@@ -170,48 +170,48 @@ export const blueprintPalette: VisualPalette = (() => {
   };
 })();
 
-// Swiss — warm paper, ink greys, orange-red primary and cobalt comparison.
-const SWISS_ACCENT = '#e3452b';
-const SWISS_COMPARE = '#1f3fd1';
+// Swiss — live periwinkle accent, warm rust comparison, pine third series.
+// The DOM adapter reads --accent on each page load; renderers remain pure.
+const SWISS_COMPARE = '#8f351c';
 const SWISS_MUTED = '#6b6b66';
 
-export const swissPalette: VisualPalette = (() => {
+export function swissPalette(accent = '#5f66c2'): VisualPalette {
   const ink = (a: number) => `rgba(20,20,20,${a})`;
   return {
     ink,
     fonts: { ui: "'General Sans', sans-serif", title: 'Chillax, sans-serif' },
     bqst: {
-      seriesPrimary: SWISS_ACCENT,
+      seriesPrimary: accent,
       seriesComparison: SWISS_COMPARE,
       seriesReference: SWISS_MUTED,
-      seriesReferenceAlpha: 0.48,
-      aliasAudible: SWISS_MUTED,
-      aliasOversampled: SWISS_COMPARE,
-      aliasWarn: SWISS_ACCENT,
-      aliasBandAudible: 'rgba(227,69,43,0.10)',
+      seriesReferenceAlpha: 1,
+      aliasAudible: '#2f4a3a',
+      aliasOversampled: accent,
+      aliasWarn: SWISS_COMPARE,
+      aliasBandAudible: 'rgba(47,74,58,0.08)',
       aliasBandHeadroom: 'rgba(107,107,102,0.10)',
-      legendAliasAudible: SWISS_MUTED,
+      legendAliasAudible: '#2f4a3a',
     },
     qla: {
-      compoundCurve: SWISS_ACCENT,
+      compoundCurve: accent,
       compoundModelMarker: ink(0.85),
-      rosterSeries: SWISS_ACCENT,
-      quantImportant: SWISS_ACCENT,
+      rosterSeries: accent,
+      quantImportant: accent,
       // Opaque neutral dots keep connector lines from showing through.
-      quantDot: '#8a8a86',
+      quantDot: SWISS_MUTED,
       agentComparison: SWISS_COMPARE,
     },
     qlf: {
-      cheat: SWISS_ACCENT,
-      honest: SWISS_COMPARE,
-      hold: ink(0.55),
-      kalman: SWISS_ACCENT,
+      cheat: SWISS_COMPARE,
+      honest: accent,
+      hold: SWISS_MUTED,
+      kalman: accent,
       ols: SWISS_COMPARE,
-      survivors: SWISS_ACCENT,
-      rsp: SWISS_COMPARE,
-      wedgeFill: 'rgba(227,69,43,0.12)',
+      survivors: SWISS_COMPARE,
+      rsp: accent,
+      wedgeFill: 'rgba(143,53,28,0.12)',
       wedgeGapLabelPx: 11,
       wedgeGapLabelDx: 12,
     },
   };
-})();
+}

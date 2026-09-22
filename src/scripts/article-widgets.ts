@@ -1004,11 +1004,13 @@ function qlaShell(node: HTMLElement, kicker: string, meta: string): HTMLElement 
 }
 
 // Legend row: colored dots + labels, right-aligned above the canvas.
-function qlfLegend(items: Array<{ cls: string; label: string }>): HTMLElement {
+function qlfLegend(items: Array<{ cls: string; label: string; color?: string }>): HTMLElement {
   const row = qlaEl('div', 'qlf-legend');
   items.forEach((it) => {
     const item = qlaEl('span', 'qlf-legend-item');
-    item.appendChild(qlaEl('i', `qlf-legend-swatch ${it.cls}`));
+    const swatch = qlaEl('i', `qlf-legend-swatch ${it.cls}`);
+    if (it.color) swatch.style.background = it.color;
+    item.appendChild(swatch);
     item.appendChild(qlaEl('span', undefined, it.label));
     row.appendChild(item);
   });
@@ -1120,8 +1122,8 @@ function initQlaCompound(node: HTMLElement) {
   canvas.setAttribute('role', 'img');
   canvas.setAttribute('aria-label', 'Curve of memo survival rate versus per-number accuracy at 40 claims per memo, with markers for v2.1 at the 95.4% wall and the teacher at 99.8%');
   body.appendChild(qlfLegend([
-    { cls: 'qlf-sw-series', label: 'survival curve' },
-    { cls: 'qlf-sw-muted', label: 'measured models' },
+    { cls: 'qlf-sw-series', label: 'survival curve', color: PALETTE.qla.compoundCurve },
+    { cls: 'qlf-sw-muted', label: 'measured models', color: PALETTE.qla.compoundModelMarker },
   ]));
   canvasWrap.appendChild(canvas);
   const CROSS_N = COMPOUND_CROSS_N;
@@ -1524,9 +1526,9 @@ function initQlaQuant(node: HTMLElement) {
   body.appendChild(toggle);
 
   body.appendChild(qlfLegend([
-    { cls: 'qlf-sw-muted', label: 'weight' },
-    { cls: 'qlf-sw-series', label: 'important weight' },
-    { cls: 'qlf-sw-rung', label: 'rung (quantization level)' },
+    { cls: 'qlf-sw-muted', label: 'weight', color: PALETTE.qla.quantDot },
+    { cls: 'qlf-sw-series', label: 'important weight', color: PALETTE.qla.quantImportant },
+    { cls: 'qlf-sw-rung', label: 'rung (quantization level)', color: PALETTE.ink(0.4) },
   ]));
 
   const canvasWrap = qlaEl('div', 'qla-compound-canvas-wrap');
@@ -1611,9 +1613,9 @@ function initQlfLookahead(node: HTMLElement, la: any) {
   canvas.setAttribute('role', 'img');
   canvas.setAttribute('aria-label', `Equity curves for the same momentum strategy: ${fmtPct(finalPct(cheatEq))} when cheating by trading at the signal close, ${fmtPct(finalPct(honestEq))} when honestly trading at the next open, with buy-and-hold at ${fmtPct(finalPct(holdEq))} for reference`);
   body.appendChild(qlfLegend([
-    { cls: 'qlf-sw-warn', label: 'cheat' },
-    { cls: 'qlf-sw-accent', label: 'honest' },
-    { cls: 'qlf-sw-muted', label: 'buy & hold' },
+    { cls: 'qlf-sw-warn', label: 'cheat', color: PALETTE.qlf.cheat },
+    { cls: 'qlf-sw-accent', label: 'honest', color: PALETTE.qlf.honest },
+    { cls: 'qlf-sw-muted', label: 'buy & hold', color: PALETTE.qlf.hold },
   ]));
   canvasWrap.appendChild(canvas);
   const crossInput = qlfCrosshairInput(n, 'Step through dates to inspect all three equity curves');
@@ -1678,9 +1680,9 @@ function initQlfKalman(node: HTMLElement, km: any) {
   const olsVals = ols.filter((v): v is number => v !== null);
   canvas.setAttribute('aria-label', `Hedge ratio over time: a 250-day rolling OLS estimate that whipsaws between ${Math.min(...olsVals).toFixed(1)} and ${Math.max(...olsVals).toFixed(1)}, versus a Kalman-filtered estimate that stays between ${Math.min(...km.kalman_beta).toFixed(2)} and ${Math.max(...km.kalman_beta).toFixed(2)} while tracking the same underlying level, with the 2016-2020 selection window shaded`);
   body.appendChild(qlfLegend([
-    { cls: 'qlf-sw-series', label: 'kalman filter' },
-    { cls: 'qlf-sw-accent', label: '250-day rolling OLS (textbook method)' },
-    { cls: 'qlf-sw-window', label: 'selection window (pair chosen here)' },
+    { cls: 'qlf-sw-series', label: 'kalman filter', color: PALETTE.qlf.kalman },
+    { cls: 'qlf-sw-accent', label: '250-day rolling OLS (textbook method)', color: PALETTE.qlf.ols },
+    { cls: 'qlf-sw-window', label: 'selection window (pair chosen here)', color: PALETTE.ink(0.09) },
   ]));
   canvasWrap.appendChild(canvas);
   const crossInput = qlfCrosshairInput(n, 'Step through dates to compare the rolling OLS and Kalman hedge ratios');
@@ -1741,9 +1743,9 @@ function initQlfSurvivorship(node: HTMLElement, sv: any) {
   canvas.setAttribute('role', 'img');
   canvas.setAttribute('aria-label', `Cumulative growth of one dollar: today's S&P survivors reach $${sv.survivors[n - 1].toFixed(2)} while the real equal-weight ETF reaches $${sv.rsp[n - 1].toFixed(2)}, a widening wedge of pure survivorship bias`);
   body.appendChild(qlfLegend([
-    { cls: 'qlf-sw-warn', label: 'survivors only' },
-    { cls: 'qlf-sw-accent', label: 'RSP (held the losers)' },
-    { cls: 'qlf-sw-gap', label: 'survivorship wedge' },
+    { cls: 'qlf-sw-warn', label: 'survivors only', color: PALETTE.qlf.survivors },
+    { cls: 'qlf-sw-accent', label: 'RSP (held the losers)', color: PALETTE.qlf.rsp },
+    { cls: 'qlf-sw-gap', label: 'survivorship wedge', color: PALETTE.qlf.wedgeFill },
   ]));
   canvasWrap.appendChild(canvas);
   const crossInput = qlfCrosshairInput(n, 'Step through dates to inspect both curves and the survivorship gap');
@@ -2077,11 +2079,29 @@ function initWidgets() {
   cleanupWidgets();
   // ClientRouter can reuse this module across theme hops; select on every load.
   const swiss = document.documentElement.classList.contains('theme-swiss');
-  PALETTE = swiss ? swissPalette : transitPalette;
-  BLUE = swiss ? '#1f3fd1' : '#33b4e5';
+  PALETTE = swiss
+    ? swissPalette(getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#5f66c2')
+    : transitPalette;
+  if (swiss) {
+    const root = document.documentElement;
+    root.style.setProperty('--widget-primary', PALETTE.qla.compoundCurve);
+    root.style.setProperty('--widget-comparison', PALETTE.qla.agentComparison);
+    root.style.setProperty('--widget-reference', PALETTE.bqst.seriesReference);
+    root.style.setProperty('--widget-good', PALETTE.bqst.aliasAudible);
+    root.style.setProperty('--widget-wedge', PALETTE.qlf.wedgeFill);
+  }
+  BLUE = swiss ? PALETTE.bqst.seriesPrimary : '#33b4e5';
   MUTED_RGB = swiss ? '107,107,102' : '138,133,120';
-  PINK_RGB = swiss ? '227,69,43' : '228,136,173';
-  BLUE_RGB = swiss ? '31,63,209' : '51,180,229';
+  const rgbChannels = (color: string) => {
+    const probe = document.createElement('span');
+    probe.style.color = color;
+    document.documentElement.append(probe);
+    const rgb = getComputedStyle(probe).color.match(/[\d.]+/g)!.slice(0, 3).join(',');
+    probe.remove();
+    return rgb;
+  };
+  PINK_RGB = swiss ? rgbChannels(PALETTE.bqst.seriesPrimary) : '228,136,173';
+  BLUE_RGB = swiss ? rgbChannels(PALETTE.bqst.seriesPrimary) : '51,180,229';
   INK_RGB = swiss ? '20,20,20' : '26,26,26';
   if (!document.querySelector('.article')) return;
   initBqstDspLab();
