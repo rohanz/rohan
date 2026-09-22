@@ -4,18 +4,13 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 375, height: 667 }
   test.describe(`projects touch ${viewport.width}`, () => {
     test.use({ viewport, isMobile: true, hasTouch: true });
 
-    test('single column, scrolling chips, readable cards and no overflow', async ({ page }) => {
+    test('single column, no filter chips, readable cards and no overflow', async ({ page }) => {
       await page.goto('/swiss/projects');
       const grid = page.locator('.swiss-grid');
       expect(await grid.evaluate((el) => getComputedStyle(el).gridTemplateColumns.split(' ').length)).toBe(1);
-      const bar = page.locator('.sw-filters');
-      expect(await bar.evaluate((el) => el.scrollWidth > el.clientWidth)).toBe(true);
-      await expect(bar).toHaveCSS('scroll-snap-type', 'x mandatory');
-      await expect(page.locator('.sw-filter').first()).toHaveCSS('height', '44px');
-      await bar.evaluate((el) => { el.scrollLeft = el.scrollWidth; });
-      await expect.poll(() => bar.evaluate((el) => el.scrollLeft)).toBeGreaterThan(0);
-      await page.locator('.sw-filter').last().click();
-      await expect(page.locator('.sw-filter').last()).toHaveAttribute('aria-pressed', 'true');
+      // Phones drop the filter chips entirely; every card shows.
+      await expect(page.locator('.sw-filters')).toBeHidden();
+      await expect(page.locator('.swiss-card[hidden]')).toHaveCount(0);
       expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(0);
       const summary = page.locator('.swiss-card:not([hidden]) .swiss-card-summary').first();
       expect(await summary.evaluate((el) => parseFloat(getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(14);

@@ -108,6 +108,11 @@ html.theme-swiss .swiss-card.is-hover .swiss-card-art :is([data-depth], .z1, .z2
     scroll-snap-align: start; white-space: nowrap;
   }
   html.theme-swiss .swiss-card-art { min-height: 0; }
+}
+/* Phones drop the filter chips: one column of cards reads cleaner without a
+   scrolling band of tags above it, and the article tags still carry the stack. */
+@media (max-width: 899px) {
+  html.theme-swiss .sw-filters { display: none; }
   html.theme-swiss .swiss-card-art svg { position: absolute; inset: 1.25rem; width: calc(100% - 2.5rem); height: calc(100% - 2.5rem); }
 }
 @media (hover: none) {
