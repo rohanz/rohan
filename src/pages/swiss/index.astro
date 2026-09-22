@@ -2,14 +2,13 @@
 import SwissLayout from '../../layouts/SwissLayout.astro';
 import { getCollection } from 'astro:content';
 import { HOME_DESCRIPTION } from '../../data/page-meta';
-import { socialByName } from '../../data/socials';
+import { SOCIALS } from '../../data/socials';
 const selected = (await getCollection('projects'))
   .filter((p) => !p.data.unlisted)
   .sort((a, b) => a.data.order - b.data.order)
   .slice(0, 4);
-const github = socialByName('github');
 ---
-<SwissLayout title="rohan.jk — software & ai" description={HOME_DESCRIPTION}>
+<SwissLayout title="rohan.jk — software & ai" description={HOME_DESCRIPTION} section="home">
   <section class="sw-hero">
     <div class="sw-hero-copy">
       <p class="sw-label" data-reveal="block">software, ai, music</p>
@@ -20,10 +19,17 @@ const github = socialByName('github');
       <a class="sw-quad" href="/swiss/projects" data-reveal="block"><span class="sw-label">work</span><span class="sw-quad-title">projects</span></a>
       <a class="sw-quad" href="/swiss/music" data-reveal="block"><span class="sw-label">listen</span><span class="sw-quad-title">music</span></a>
       <a class="sw-quad" href="/swiss/about" data-reveal="block"><span class="sw-label">read</span><span class="sw-quad-title">about</span></a>
-      <a class="sw-quad" href={github.href} target="_blank" rel="noopener noreferrer" data-reveal="block"><span class="sw-label">contact</span><span class="sw-quad-title sw-link-ext">github <span class="sw-arrow">↗</span></span></a>
+      <div class="sw-quad" data-reveal="block">
+        <span class="sw-label">contact</span>
+        <ul class="sw-contact-links">
+          {SOCIALS.map((s) => (
+            <li><a class="sw-label sw-link-ext" href={s.href} target="_blank" rel="noopener noreferrer">{s.label} <span class="sw-arrow" aria-hidden="true">↗</span></a></li>
+          ))}
+        </ul>
+      </div>
     </div>
   </section>
-  <section class="sw-wrap sw-section">
+  <section class="sw-wrap sw-section sw-selected-work">
     <div class="sw-section-head">
       <h2 class="sw-display sw-display-md">selected work</h2>
       <a class="sw-label sw-link" href="/swiss/projects">all projects</a>

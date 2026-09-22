@@ -1,7 +1,7 @@
 /* music */
 html.theme-swiss .sw-tracks { border-top: 1px solid var(--hair); }
 html.theme-swiss .sw-track { display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: .75rem 1.25rem; align-items: center; padding: 1.25rem 0; border-bottom: 1px solid var(--hair); }
-@media (min-width: 900px) { html.theme-swiss .sw-track { grid-template-columns: 48px minmax(0, 4fr) minmax(0, 5fr) minmax(0, 3fr); } }
+
 html.theme-swiss .sw-play { width: 48px; height: 48px; padding: 0; border-radius: 0; border: 1px solid var(--ink); background: transparent; cursor: pointer; display: grid; place-items: center; transition: background .25s ease; }
 html.theme-swiss .sw-play:hover, html.theme-swiss .sw-track.is-playing .sw-play { background: var(--ink); }
 html.theme-swiss .sw-play-icon { width: 0; height: 0; border-left: 12px solid var(--ink); border-top: 7px solid transparent; border-bottom: 7px solid transparent; margin-left: 3px; }
@@ -12,8 +12,24 @@ html.theme-swiss .sw-track-title { margin: 0; font-weight: 500; font-family: var
 html.theme-swiss .sw-track-artist { color: var(--muted); font-size: 14px; }
 html.theme-swiss .sw-track-summary { margin: 0; color: var(--muted); font-size: 17px; grid-column: 2; }
 html.theme-swiss .sw-track-links { display: flex; flex-wrap: wrap; gap: .75rem 1.25rem; grid-column: 2; }
-@media (min-width: 900px) { html.theme-swiss .sw-track-summary, html.theme-swiss .sw-track-links { grid-column: auto; } html.theme-swiss .sw-track-links { justify-content: flex-end; } }
+
 
 
 html.theme-swiss .sw-music h1 { margin: 0; }
 html.theme-swiss .sw-track > * { min-width: 0; }
+
+/* Quiet instruments, aligned with the track's title and metadata. */
+html.theme-swiss .sw-track-viz { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .75rem; }
+html.theme-swiss .sw-meter { min-width: 0; }
+html.theme-swiss .sw-meter canvas { display: block; width: 100%; height: 64px; border: 1px solid var(--hair); border-radius: 0; background: var(--paper); }
+html.theme-swiss .sw-meter .sw-label { display: block; margin-top: .3rem; font-size: 10px; }
+@media (min-width: 900px) {
+  html.theme-swiss .sw-track { grid-template-columns: 48px minmax(0, 4fr) minmax(0, 6fr); }
+  html.theme-swiss .sw-track-viz { grid-column: 3; grid-row: 1 / 3; }
+  html.theme-swiss .sw-track-summary { grid-column: 2; }
+  html.theme-swiss .sw-track-links { grid-column: 2 / -1; }
+}
+@media (max-width: 599px) {
+  html.theme-swiss .sw-track-viz { grid-template-columns: minmax(0, 1fr); }
+  html.theme-swiss .sw-meter-freq, html.theme-swiss .sw-meter-stereo { display: none; }
+}

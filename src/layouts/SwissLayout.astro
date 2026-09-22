@@ -10,7 +10,7 @@ import '../styles/swiss.css';
 interface Props {
   title: string;
   description: string;
-  section?: 'music' | 'projects' | 'about';
+  section?: 'home' | 'music' | 'projects' | 'about';
   ogImage?: string;
   bodyClass?: string;
   noindex?: boolean;
@@ -25,12 +25,13 @@ const personLd = JSON.stringify({
   jobTitle: 'Computer Engineering Student', sameAs: SOCIALS.map((s) => s.href),
 });
 const nav = [
+  { id: 'home', label: 'home', href: '/swiss' },
   { id: 'projects', label: 'projects', href: '/swiss/projects' },
   { id: 'music', label: 'music', href: '/swiss/music' },
   { id: 'about', label: 'about', href: '/swiss/about' },
 ] as const;
 ---
-<html lang="en" class="theme-swiss" style={`--accent:${DEFAULT_ACCENT.hex}`}>
+<html lang="en" class:list={['theme-swiss', { 'sw-home': section === 'home' }]} style={`--accent:${DEFAULT_ACCENT.hex}`}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />

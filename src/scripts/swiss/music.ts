@@ -1,11 +1,16 @@
 // One player for the whole list; stale play promises cannot clear a newer row.
-export {};
+import { attachViz, observeViz } from './music-viz';
+
+let stopViz: (() => void) | null = null;
+let idleCleanups: (() => void)[] = [];
 
 let audio: HTMLAudioElement | null = null;
 let active: HTMLButtonElement | null = null;
 let request = 0;
 
 function setActive(button: HTMLButtonElement | null) {
+  stopViz?.();
+  stopViz = null;
   if (active) {
     active.setAttribute('aria-pressed', 'false');
     active.setAttribute('aria-label', `Play preview of ${active.dataset.title}`);
@@ -36,6 +41,8 @@ function init() {
   buttons.forEach((button) => {
     if (button.dataset.bound === '1') return;
     button.dataset.bound = '1';
+    const row = button.closest<HTMLElement>('.sw-track')!;
+    idleCleanups.push(observeViz(row));
     button.addEventListener('click', () => {
       if (active === button) { stop(); return; }
       const src = button.dataset.audio;
@@ -46,6 +53,7 @@ function init() {
       if (player.src !== new URL(src, location.href).href) player.src = src;
       player.currentTime = 0;
       setActive(button);
+      stopViz = attachViz(row, player);
       void player.play().catch(() => {
         if (request === currentRequest) setActive(null);
       });
@@ -54,7 +62,11 @@ function init() {
 }
 
 document.addEventListener('astro:page-load', init);
-document.addEventListener('astro:before-swap', stop);
+document.addEventListener('astro:before-swap', () => {
+  stop();
+  idleCleanups.forEach((cleanup) => cleanup());
+  idleCleanups = [];
+});
 window.addEventListener('pagehide', stop);
 if (document.readyState !== 'loading') init();
 else document.addEventListener('DOMContentLoaded', init, { once: true });
