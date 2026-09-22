@@ -158,9 +158,22 @@ export function attachViz(row: HTMLElement, audio: HTMLAudioElement): () => void
   let timer: ReturnType<typeof setTimeout> | undefined;
   let stopped = false;
   let vuSmoothed = -40;
+  let corrSmoothed = 1; // Pearson correlation of L and R (+1 mono, 0 wide, -1 out of phase)
 
   // Paints one frame from the current buffers. `alpha` scales the signal ink
   // (the outro fades it over the grid); `vuDb` drives the needle.
+  // Correlation of the current buffers; NaN-safe for silence.
+  function correlation(): number {
+    const n = Math.min(left.length, right.length);
+    let sl = 0, sr = 0;
+    for (let i = 0; i < n; i++) { sl += left[i]; sr += right[i]; }
+    const ml = sl / n, mr = sr / n;
+    let num = 0, dl = 0, dr = 0;
+    for (let i = 0; i < n; i++) { const a = left[i] - ml, b = right[i] - mr; num += a * b; dl += a * a; dr += b * b; }
+    const den = Math.sqrt(dl * dr);
+    return den > 1e-9 ? num / den : 1;
+  }
+
   function paint(alpha: number, vuDb: number) {
     // Playback and its outro cross row states; never retain the old palette.
     const style = getComputedStyle(row);
@@ -235,6 +248,20 @@ export function attachViz(row: HTMLElement, audio: HTMLAudioElement): () => void
           ctx.fillRect(x - 1, y - 1, 2, 2);
         }
         ctx.restore();
+        // Correlation meter along the bottom edge: -1 left, +1 right, marker at the reading.
+        const bx0 = METER_PADDING + 4, bx1 = w - METER_PADDING - 4, by = h - METER_PADDING - 3;
+        ctx.globalAlpha = 1;
+        ctx.strokeStyle = hair;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(bx0, by); ctx.lineTo(bx1, by);
+        ctx.moveTo((bx0 + bx1) / 2, by - 3); ctx.lineTo((bx0 + bx1) / 2, by + 3);
+        ctx.stroke();
+        const mx = bx0 + (bx1 - bx0) * (corrSmoothed + 1) / 2;
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = corrSmoothed < 0 ? accent : ink;
+        ctx.fillRect(Math.round(mx) - 1.5, by - 5, 3, 10);
+        ctx.globalAlpha = 1;
         continue;
       }
       ctx.stroke();
@@ -250,6 +277,7 @@ export function attachViz(row: HTMLElement, audio: HTMLAudioElement): () => void
       analyserL?.getFloatTimeDomainData(left);
       analyserR?.getFloatTimeDomainData(right);
       vuSmoothed = onePole(vuSmoothed, vuDbFromStereo(left, right, Math.min(left.length, right.length)), .18);
+      corrSmoothed = onePole(corrSmoothed, correlation(), .12);
       paint(1, vuSmoothed);
     }
     // Reduced motion samples twice per second, with no intervening RAF loop.
