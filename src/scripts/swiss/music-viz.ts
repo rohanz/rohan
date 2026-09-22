@@ -47,6 +47,10 @@ function drawGrid(surface: Surface, hair: string, wash?: string) {
   ctx.moveTo(METER_PADDING, h / 2); ctx.lineTo(w - METER_PADDING, h / 2);
   if (canvas.dataset.viz === 'stereo') {
     ctx.moveTo(w / 2, METER_PADDING); ctx.lineTo(w / 2, h - METER_PADDING);
+    // L and R axes at 45°, as on a real goniometer; they give the wide cell its structure.
+    const d = Math.min(w, h) / 2 - METER_PADDING;
+    ctx.moveTo(w / 2 - d, h / 2 - d); ctx.lineTo(w / 2 + d, h / 2 + d);
+    ctx.moveTo(w / 2 - d, h / 2 + d); ctx.lineTo(w / 2 + d, h / 2 - d);
   }
   ctx.stroke();
 }
@@ -203,7 +207,9 @@ export function attachViz(row: HTMLElement, audio: HTMLAudioElement): () => void
         // wide signals room sideways instead of stretching the figure.
         const rx = Math.max(1, w / 2 - METER_PADDING);
         const ry = Math.max(1, h / 2 - METER_PADDING);
-        const scale = Math.min(rx, ry);
+        // Gain chosen so loud peaks reach the cell edge rather than shooting past it.
+        const GAIN = 1.25;
+        const scale = Math.min(rx, ry) * GAIN;
         const bufLen = Math.min(left.length, right.length);
         const step = Math.max(1, Math.floor(bufLen / 512));
         ctx.save();
@@ -215,8 +221,8 @@ export function attachViz(row: HTMLElement, audio: HTMLAudioElement): () => void
         if (!reduced.matches) {
           ctx.globalAlpha = .25 * alpha;
           for (let i = 0; i < bufLen; i += step) {
-            const x = w / 2 + (left[i] - right[i]) * scale;
-            const y = h / 2 - (left[i] + right[i]) * scale;
+            const x = w / 2 + (left[i] - right[i]) * .5 * scale;
+            const y = h / 2 - (left[i] + right[i]) * .5 * scale;
             ctx.fillRect(x - 2, y - 2, 4, 4);
           }
         }
@@ -224,8 +230,8 @@ export function attachViz(row: HTMLElement, audio: HTMLAudioElement): () => void
         for (let i = 0; i < bufLen; i += step) {
           const mid = (left[i] + right[i]) * .5;
           const side = (left[i] - right[i]) * .5;
-          const x = w / 2 + side * scale * 2;
-          const y = h / 2 - mid * scale * 2;
+          const x = w / 2 + side * scale;
+          const y = h / 2 - mid * scale;
           ctx.fillRect(x - 1, y - 1, 2, 2);
         }
         ctx.restore();

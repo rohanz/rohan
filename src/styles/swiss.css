@@ -7,6 +7,7 @@ html.theme-swiss {
   --tint: var(--paper-2);
   --tint-hair: var(--hair); /* dividers on field surfaces */
   --w-good: #2f4a3a; /* pass/correct states in widgets: pine, distinct from the accent */
+  --accent-on-ink: #9aa0dc; /* lighter periwinkle for accent marks on inverted (ink) surfaces */
   --nav-height: 4rem;
   --ink: #141414;
   --muted: #6b6b66;

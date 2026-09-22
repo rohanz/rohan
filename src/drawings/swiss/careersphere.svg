@@ -5,7 +5,7 @@
        re-rasterise the text when it ends, which reads as a tiny jump. */
     .swiss-sphere-tip, .swiss-sphere-tip * , .swiss-sphere-ring { fill-opacity: 0; stroke-opacity: 0; }
     @media (prefers-reduced-motion: no-preference) {
-      .swiss-sphere-route { transition: stroke-dashoffset .65s ease; }
+      .swiss-sphere-route { transition: stroke-dashoffset .9s ease; }
       .swiss-sphere-tip, .swiss-sphere-tip *, .swiss-sphere-ring { transition: fill-opacity .3s ease, stroke-opacity .3s ease; }
       .swiss-card.is-hover .swiss-sphere-route { stroke-dashoffset: 0; }
       .swiss-card.is-hover .swiss-sphere-ring { stroke-opacity: 1; transition-delay: .25s; }

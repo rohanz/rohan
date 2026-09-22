@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
   <style>
     @media (prefers-reduced-motion: no-preference) {
-      .swiss-bqst-dial, .swiss-bqst-needle { transition: transform .6s cubic-bezier(.2,.8,.3,1); will-change: transform; }
+      .swiss-bqst-dial, .swiss-bqst-needle { transition: transform .6s cubic-bezier(.2,.8,.3,1); }
       .swiss-card.is-hover .swiss-bqst-dial, .swiss-card.is-hover .swiss-bqst-needle { transform: rotate(var(--bqst-turn)); transition-delay: var(--bqst-delay); }
     }
   </style>

@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
   <style>
-    .swiss-patent-fill { transform: scaleX(0); transform-origin: 120px 210px; transition: transform 0.9s cubic-bezier(.2,.7,.2,1); will-change: transform; }
+    .swiss-patent-fill { transform: scaleX(0); transform-origin: 120px 210px; transition: transform 0.9s cubic-bezier(.2,.7,.2,1); }
     .swiss-patent-score { opacity: 0; transition: opacity 0.4s ease; }
     .swiss-patent-tick { stroke-dasharray: 100; stroke-dashoffset: 100; }
     @media (prefers-reduced-motion: no-preference) {

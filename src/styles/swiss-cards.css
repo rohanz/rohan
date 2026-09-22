@@ -50,13 +50,16 @@ html.theme-swiss .swiss-card-inner {
   transition: transform .4s cubic-bezier(.2,.7,.2,1), box-shadow .4s ease, background .35s ease, color .35s ease;
 }
 html.theme-swiss .swiss-card:hover, html.theme-swiss .swiss-card:focus-visible { --lift: 1.025; z-index: 2; color: var(--paper); }
-html.theme-swiss .swiss-card:hover .swiss-card-inner, html.theme-swiss .swiss-card:focus-visible .swiss-card-inner { --card-surface: var(--ink); background: var(--ink); box-shadow: 0 30px 60px -30px rgba(20,20,20,.35); }
+html.theme-swiss .swiss-card:hover .swiss-card-inner, html.theme-swiss .swiss-card:focus-visible .swiss-card-inner { --card-surface: var(--ink); --accent: var(--accent-on-ink, #9aa0dc); background: var(--ink); box-shadow: 0 30px 60px -30px rgba(20,20,20,.35); }
 html.theme-swiss .swiss-card.is-hover .swiss-card-inner { transition: transform .08s linear, box-shadow .4s ease, background .35s ease, color .35s ease; }
 @media (hover: none), (prefers-reduced-motion: reduce) {
   html.theme-swiss .swiss-card-inner { transform: none; }
 }
 html.theme-swiss .swiss-card-art { position: relative; flex: 0 0 auto; aspect-ratio: 4 / 3; padding: 1.25rem; border-bottom: 1px solid var(--tint-hair); color: inherit; }
-html.theme-swiss .swiss-card-art svg { position: relative; z-index: 1; text-rendering: geometricPrecision; }
+/* The SVG itself is the persistent layer: its animated children then repaint inside
+   one texture instead of triggering whole-drawing re-rasterisation (the 'sharpen' at
+   the end of an animation). */
+html.theme-swiss .swiss-card-art svg { position: relative; z-index: 1; text-rendering: geometricPrecision; will-change: transform; backface-visibility: hidden; }
 /* The old cover-image wordmark, set behind the drawing so the line work can
    cross it; grey but heavy so it stays clearly legible. */
 html.theme-swiss .swiss-card-word { position: absolute; left: 1.25rem; right: 1.25rem; top: 1rem; z-index: 0; font-family: var(--font-ui); font-weight: 600; font-size: clamp(1.2rem, 7cqw, 2.1rem); line-height: 1; letter-spacing: -0.03em; color: #9c9890; overflow-wrap: anywhere; transition: color .25s ease; }
