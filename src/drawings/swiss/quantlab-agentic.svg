@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  <style>
+    .swiss-agentic-step { stroke-opacity: .35; transition: stroke-opacity .3s ease; }
+    .swiss-agentic-proof { stroke-dasharray: 24; stroke-dashoffset: 24; transition: stroke-dashoffset .35s ease; }
+    @media (prefers-reduced-motion: no-preference) {
+      .swiss-card.is-hover .swiss-agentic-step { stroke-opacity: 1; transition-delay: var(--swiss-agentic-delay); }
+      .swiss-card.is-hover .swiss-agentic-proof { stroke-dashoffset: 0; transition-delay: .75s; }
+    }
+    @media (prefers-reduced-motion: reduce) { .swiss-agentic-step, .swiss-agentic-proof { transition: none; } }
+  </style>
+  <g font-family="General Sans, sans-serif" font-size="10" letter-spacing="1.5" stroke="none" fill="currentColor" opacity=".55">
+    <text x="40" y="52">TOOL-GROUNDED RESEARCH</text><text x="360" y="253" text-anchor="end">QUERY → EVIDENCE → ANSWER</text>
+  </g>
+  <path d="M66 177v34h268v-34M200 211v10" stroke-opacity=".18" stroke-dasharray="3 6"/>
+  <g class="swiss-agentic-step" style="--swiss-agentic-delay: 0.00s"><rect x="40" y="117" width="52" height="60"/><path d="M92 147h15m-5-4 5 4-5 4"/></g>
+  <g class="swiss-agentic-step" style="--swiss-agentic-delay: 0.15s"><rect x="107" y="117" width="52" height="60"/><path d="M159 147h15m-5-4 5 4-5 4"/></g>
+  <g class="swiss-agentic-step" style="--swiss-agentic-delay: 0.30s"><rect x="174" y="117" width="52" height="60"/><path d="M226 147h15m-5-4 5 4-5 4"/></g>
+  <g class="swiss-agentic-step" style="--swiss-agentic-delay: 0.45s"><rect x="241" y="117" width="52" height="60"/><path d="M293 147h15m-5-4 5 4-5 4"/></g>
+  <g class="swiss-agentic-step" style="--swiss-agentic-delay: 0.60s"><rect x="308" y="117" width="52" height="60"/></g>
+  <path d="M59 138c0-9 15-9 15 0 0 5-8 5-8 11m0 7v1"/>
+  <path d="M121 132h24m-24 9h24m-24 9h16m-16 9h20"/>
+  <path d="m190 136-7 11 7 11m20-22 7 11-7 11m-8-24-4 26"/>
+  <path d="M253 137h28m-28 10h20m-20 10h24"/>
+  <path d="M322 134h24m-24 10h18m-18 10h12"/>
+  <path class="swiss-agentic-proof" d="m335 160 5 5 10-12" stroke="var(--accent)"/>
+</svg>

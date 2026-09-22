@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  <style>
+    .swiss-careersphere-orbit { transform-origin: 200px 150px; transition: transform 1.2s cubic-bezier(.2,.7,.2,1); }
+    .swiss-careersphere-match { transition: fill .6s ease .25s, stroke .6s ease .25s; }
+    @media (prefers-reduced-motion: no-preference) {
+      .swiss-card.is-hover .swiss-careersphere-orbit { transform: rotate(30deg); }
+      .swiss-card.is-hover .swiss-careersphere-match { fill: var(--accent); stroke: var(--accent); }
+    }
+    @media (prefers-reduced-motion: reduce) { .swiss-careersphere-orbit, .swiss-careersphere-match { transition: none; } }
+  </style>
+  <g font-family="General Sans, sans-serif" font-size="10" letter-spacing="1.5" stroke="none" fill="currentColor" opacity=".55">
+    <text x="40" y="52">ROLE LANDSCAPE</text><text x="360" y="253" text-anchor="end">SKILLS → POSSIBILITIES</text>
+  </g>
+  <path d="M40 150h38m244 0h38M200 62v10m0 156v10" stroke-opacity=".2"/>
+  <g class="swiss-careersphere-orbit">
+    <circle cx="200" cy="150" r="94" stroke-opacity=".18"/>
+    <ellipse cx="200" cy="150" rx="94" ry="43" stroke-opacity=".35"/>
+    <ellipse cx="200" cy="150" rx="94" ry="43" transform="rotate(60 200 150)" stroke-opacity=".55"/>
+    <ellipse cx="200" cy="150" rx="94" ry="43" transform="rotate(120 200 150)" stroke-opacity=".18"/>
+    <g fill="currentColor">
+      <circle cx="294.00" cy="150.00" r="2.5"/>
+      <circle cx="290.80" cy="161.13" r="2.5"/>
+      <circle cx="224.33" cy="191.53" r="2.5"/>
+      <circle cx="200.00" cy="193.00" r="2.5"/>
+      <circle cx="175.67" cy="191.53" r="2.5"/>
+      <circle cx="153.00" cy="187.24" r="2.5"/>
+      <circle cx="133.53" cy="180.41" r="2.5"/>
+      <circle cx="118.59" cy="171.50" r="2.5"/>
+      <circle cx="109.20" cy="161.13" r="2.5"/>
+      <circle cx="106.00" cy="150.00" r="2.5"/>
+      <circle cx="109.20" cy="138.87" r="2.5"/>
+      <circle cx="118.59" cy="128.50" r="2.5"/>
+      <circle cx="133.53" cy="119.59" r="2.5"/>
+      <circle cx="153.00" cy="112.76" r="2.5"/>
+      <circle cx="175.67" cy="108.47" r="2.5"/>
+      <circle cx="200.00" cy="107.00" r="2.5"/>
+      <circle cx="224.33" cy="108.47" r="2.5"/>
+      <circle cx="247.00" cy="112.76" r="2.5"/>
+      <circle cx="266.47" cy="119.59" r="2.5"/>
+      <circle cx="281.41" cy="128.50" r="2.5"/>
+      <circle cx="290.80" cy="138.87" r="2.5"/>
+      <path class="swiss-careersphere-match" d="M278.41 171.50a3 3 0 1 0 6 0a3 3 0 1 0 -6 0 M263.47 180.41a3 3 0 1 0 6 0a3 3 0 1 0 -6 0 M244.00 187.24a3 3 0 1 0 6 0a3 3 0 1 0 -6 0"/>
+    </g>
+  </g>
+  <circle cx="200" cy="150" r="5"/>
+  <path d="M196 150h8m-4-4v8" stroke-opacity=".55"/>
+</svg>

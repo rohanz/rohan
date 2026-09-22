@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  <style>
+    .swiss-analyst-tick { stroke-dasharray: 24; stroke-dashoffset: 24; transition: stroke-dashoffset .4s ease; }
+    @media (prefers-reduced-motion: no-preference) {
+      .swiss-card.is-hover .swiss-analyst-tick { stroke-dashoffset: 0; transition-delay: var(--swiss-analyst-delay); }
+    }
+    @media (prefers-reduced-motion: reduce) { .swiss-analyst-tick { transition: none; } }
+  </style>
+  <g font-family="General Sans, sans-serif" font-size="10" letter-spacing="1.5" stroke="none" fill="currentColor" opacity=".55">
+    <text x="40" y="52">FINANCIAL MEMO</text><text x="360" y="253" text-anchor="end">EVERY NUMBER VERIFIED</text>
+  </g>
+  <path d="M104 75h163l29 29v124H104Z"/>
+  <path d="M267 75v29h29M124 96h71M124 106h42" stroke-opacity=".35"/>
+  <path d="M124 126h92v3h-92zM124 139h62v3h-62zM124 159h83v3h-83zM124 172h56v3h-56zM124 192h92v3h-92zM124 205h70v3h-70z" stroke-opacity=".25"/>
+  <g font-family="General Sans, sans-serif" font-size="13" fill="currentColor" stroke="none" text-anchor="end">
+    <text x="259" y="137">8.4</text><text x="259" y="170">12.6</text><text x="259" y="203">0.97</text>
+  </g>
+  <path class="swiss-analyst-tick" style="--swiss-analyst-delay: 0s" d="m268 132 4 5 10-12"/>
+  <path class="swiss-analyst-tick" style="--swiss-analyst-delay: .2s" d="m268 165 4 5 10-12"/>
+  <path class="swiss-analyst-tick" style="--swiss-analyst-delay: .4s" d="m268 198 4 5 10-12" stroke="var(--accent)"/>
+</svg>

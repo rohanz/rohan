@@ -1,0 +1,36 @@
+---
+import SwissLayout from '../../layouts/SwissLayout.astro';
+import SwissCard from '../../components/SwissCard.astro';
+import { ACCENTS, DEFAULT_ACCENT } from '../../lib/swiss/accents';
+import { getEntry } from 'astro:content';
+import '../../styles/swiss-swatches.css';
+const sample = await getEntry('projects', 'bqst');
+if (!sample) throw new Error('The Swiss swatches sample project bqst is missing.');
+---
+<SwissLayout title="swatches — rohan.jk" description="Accent candidates for the swiss theme." noindex>
+  <section class="sw-wrap sw-section">
+    <div class="sw-section-head">
+      <h1 class="sw-display sw-display-lg">accent swatches</h1>
+      <span class="sw-label">default: {DEFAULT_ACCENT.hex}</span>
+    </div>
+    <div class="sw-swatches">
+      {ACCENTS.map((accent) => (
+        <section class="sw-swatch" data-accent={accent.id} aria-labelledby={`swatch-${accent.id}`} style={`--accent:${accent.hex}; --w-accent:${accent.hex}; --line-projects:${accent.hex}`}>
+          <div class="sw-swatch-head">
+            <h2 class="sw-label" id={`swatch-${accent.id}`}>{accent.label}</h2>
+            <code>{accent.hex}</code>
+          </div>
+          <div class="sw-swatch-hero">
+            <p class="sw-label">software, ai, music</p>
+            <p class="sw-display sw-display-md">rohan<br />kulshrestha</p>
+            <a class="sw-link" href="/swiss/projects">projects</a>
+          </div>
+          <SwissCard slug={sample.id} title={sample.data.title} summary={sample.data.summary} technologies={sample.data.technologies} />
+        </section>
+      ))}
+    </div>
+  </section>
+  <script>
+    import '../../scripts/swiss/tilt.ts';
+  </script>
+</SwissLayout>

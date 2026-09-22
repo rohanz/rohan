@@ -1,6 +1,7 @@
 ---
 import { blueprintEntryFor, defaultPathFor, transitPathFor } from '../lib/theme-paths';
-const path = Astro.url.pathname;
+// The unlisted accent gallery has no counterpart in the other themes.
+const path = Astro.url.pathname.replace(/\/$/, '') === '/swiss/swatches' ? '/' : Astro.url.pathname;
 ---
 <nav class="sw-themes" aria-label="Site themes">
   <span class="sw-label" aria-current="true">swiss</span>

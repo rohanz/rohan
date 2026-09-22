@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  <style>
+    .swiss-research-promise { transition: opacity .7s ease; }
+    .swiss-research-honest { clip-path: inset(0 100% 0 0); transition: clip-path 1.3s cubic-bezier(.2,.7,.2,1); }
+    @media (prefers-reduced-motion: no-preference) {
+      .swiss-card.is-hover .swiss-research-promise { opacity: .35; }
+      .swiss-card.is-hover .swiss-research-honest { clip-path: inset(0 0 0 0); }
+    }
+    @media (prefers-reduced-motion: reduce) { .swiss-research-promise, .swiss-research-honest { transition: none; } }
+  </style>
+  <g font-family="General Sans, sans-serif" font-size="10" letter-spacing="1.5" stroke="none" fill="currentColor" opacity=".55">
+    <text x="40" y="52">BACKTEST / REALITY</text><text x="360" y="253" text-anchor="end">COSTS &amp; BIASES INCLUDED</text>
+  </g>
+  <g stroke-opacity=".18">
+    <path d="M40 76v152h320M40 112h320M40 166h320"/>
+    <path d="M104 76v152M168 76v152M232 76v152M296 76v152M360 76v152" stroke-dasharray="2 6"/>
+    <path d="M104 228v6M168 228v6M232 228v6M296 228v6M360 228v6"/>
+  </g>
+  <path class="swiss-research-promise" d="m40 204 28-6 20 3 24-20 22 6 24-26 22 9 25-34 21 9 26-31 21 5 23-29 21 5 23-24"/>
+  <path class="swiss-research-honest" d="m40 204 28-3 20 6 24-12 22 13 24-20 22 14 25-21 21 18 26-23 21 11 23-20 21 12 23-12" stroke="var(--accent)" stroke-dasharray="2 6"/>
+</svg>

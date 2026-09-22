@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  <style>
+    .swiss-yourcast-playhead { transition: transform 2s linear; }
+    .swiss-yourcast-played { clip-path: inset(0 100% 0 0); transition: clip-path 2s linear; }
+    @media (prefers-reduced-motion: no-preference) {
+      .swiss-card.is-hover .swiss-yourcast-playhead { transform: translateX(340px); }
+      .swiss-card.is-hover .swiss-yourcast-played { clip-path: inset(0 0 0 0); }
+    }
+    @media (prefers-reduced-motion: reduce) { .swiss-yourcast-playhead, .swiss-yourcast-played { transition: none; } }
+  </style>
+  <g font-family="General Sans, sans-serif" font-size="10" letter-spacing="1.5" stroke="none" fill="currentColor" opacity=".55">
+    <text x="40" y="52">YOUR DAILY BRIEF</text><text x="360" y="253" text-anchor="end">PERSONALIZED AUDIO</text>
+  </g>
+  <path d="M30 150h340M30 228h340" stroke-opacity=".18"/>
+  <path d="M30 225v6m85-6v6m85-6v6m85-6v6m85-6v6" stroke-opacity=".35"/>
+  <path d="M44 140v20 M52 133v34 M60 125v50 M68 136v28 M76 118v64 M84 104v92 M92 113v74 M100 128v44 M108 137v26 M116 124v52 M124 107v86 M132 89v122 M140 100v100 M148 117v66 M156 130v40 M164 138v24 M172 132v36 M180 114v72 M188 96v108 M196 84v132 M204 102v96 M212 121v58 M220 134v32 M228 126v48 M236 108v84 M244 94v112 M252 110v80 M260 127v46 M268 139v22 M276 131v38 M284 115v70 M292 102v96 M300 119v62 M308 129v42 M316 138v24 M324 122v56 M332 111v78 M340 124v52 M348 134v32 M356 142v16" stroke-opacity=".65"/>
+  <!-- A single accent path is revealed in the same coordinate space as the playhead. -->
+  <svg class="swiss-yourcast-played" x="30" y="75" width="340" height="150" viewBox="30 75 340 150" overflow="visible">
+    <path d="M44 140v20 M52 133v34 M60 125v50 M68 136v28 M76 118v64 M84 104v92 M92 113v74 M100 128v44 M108 137v26 M116 124v52 M124 107v86 M132 89v122 M140 100v100 M148 117v66 M156 130v40 M164 138v24 M172 132v36 M180 114v72 M188 96v108 M196 84v132 M204 102v96 M212 121v58 M220 134v32 M228 126v48 M236 108v84 M244 94v112 M252 110v80 M260 127v46 M268 139v22 M276 131v38 M284 115v70 M292 102v96 M300 119v62 M308 129v42 M316 138v24 M324 122v56 M332 111v78 M340 124v52 M348 134v32 M356 142v16" stroke="var(--accent)"/>
+  </svg>
+  <path class="swiss-yourcast-playhead" d="M30 78v144m-4-144h8m-8 144h8"/>
+</svg>

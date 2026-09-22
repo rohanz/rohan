@@ -13,8 +13,9 @@ interface Props {
   section?: 'music' | 'projects' | 'about';
   ogImage?: string;
   bodyClass?: string;
+  noindex?: boolean;
 }
-const { title, description, section, ogImage, bodyClass = '' } = Astro.props;
+const { title, description, section, ogImage, bodyClass = '', noindex = false } = Astro.props;
 const canonical = new URL(defaultPathFor(Astro.url.pathname), Astro.site).href;
 const ogAbs = new URL(ogImage ?? '/assets/images/og.png', Astro.site).href;
 const isDefaultOg = ogImage === undefined;
@@ -35,6 +36,7 @@ const nav = [
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{title}</title>
     <meta name="description" content={description} />
+    {noindex && <meta name="robots" content="noindex,nofollow" />}
     <meta name="author" content="rohan.jk" />
     <link rel="canonical" href={canonical} />
     <meta property="og:type" content="website" />

@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  <style>
+    .swiss-systems-depth { transform: scaleX(0); transform-origin: var(--swiss-systems-origin) 0; transition: transform .6s cubic-bezier(.2,.7,.2,1); }
+    @media (prefers-reduced-motion: no-preference) {
+      .swiss-card.is-hover .swiss-systems-depth { transform: scaleX(1); transition-delay: var(--swiss-systems-delay); }
+    }
+    @media (prefers-reduced-motion: reduce) { .swiss-systems-depth { transition: none; } }
+  </style>
+  <g font-family="General Sans, sans-serif" font-size="10" letter-spacing="1.5" stroke="none" fill="currentColor" opacity=".55">
+    <text x="40" y="52">LIMIT ORDER BOOK</text><text x="360" y="253" text-anchor="end">PRICE / TIME PRIORITY</text>
+  </g>
+  <g font-family="General Sans, sans-serif" font-size="10" letter-spacing="1.5" stroke="none" fill="currentColor" opacity=".55">
+    <text x="40" y="78">BID</text><text x="200" y="78" text-anchor="middle">PRICE</text><text x="360" y="78" text-anchor="end">ASK</text>
+  </g>
+  <path d="M174 88v142M226 88v142" stroke-opacity=".25"/>
+  <path d="M40 88h320" stroke-opacity=".14"/>
+  <path d="M40 102h320" stroke-opacity=".14"/>
+  <path d="M40 116h320" stroke-opacity=".14"/>
+  <path d="M40 130h320" stroke-opacity=".14"/>
+  <path d="M40 144h320" stroke-opacity=".14"/>
+  <path d="M40 158h320" stroke-opacity=".14"/>
+  <path d="M40 172h320" stroke-opacity=".14"/>
+  <path d="M40 186h320" stroke-opacity=".14"/>
+  <path d="M40 200h320" stroke-opacity=".14"/>
+  <path d="M40 214h320" stroke-opacity=".14"/>
+  <path d="M40 228h320" stroke-opacity=".14"/>
+  <rect x="230" y="91" width="106" height="8" stroke-opacity=".6"/>
+  <rect class="swiss-systems-depth" style="--swiss-systems-origin: 230px; --swiss-systems-delay: 0.40s" x="230" y="91" width="106" height="8" fill="currentColor" fill-opacity=".3" stroke="none"/>
+  <text x="200" y="99" text-anchor="middle" font-family="General Sans, sans-serif" font-size="9" fill="currentColor" stroke="none" opacity=".55">100.05</text>
+  <rect x="230" y="105" width="78" height="8" stroke-opacity=".6"/>
+  <rect class="swiss-systems-depth" style="--swiss-systems-origin: 230px; --swiss-systems-delay: 0.32s" x="230" y="105" width="78" height="8" fill="currentColor" fill-opacity=".3" stroke="none"/>
+  <text x="200" y="113" text-anchor="middle" font-family="General Sans, sans-serif" font-size="9" fill="currentColor" stroke="none" opacity=".55">100.04</text>
+  <rect x="230" y="119" width="92" height="8" stroke-opacity=".6"/>
+  <rect class="swiss-systems-depth" style="--swiss-systems-origin: 230px; --swiss-systems-delay: 0.22s" x="230" y="119" width="92" height="8" fill="currentColor" fill-opacity=".3" stroke="none"/>
+  <text x="200" y="127" text-anchor="middle" font-family="General Sans, sans-serif" font-size="9" fill="currentColor" stroke="none" opacity=".55">100.03</text>
+  <rect x="230" y="133" width="55" height="8" stroke-opacity=".6"/>
+  <rect class="swiss-systems-depth" style="--swiss-systems-origin: 230px; --swiss-systems-delay: 0.14s" x="230" y="133" width="55" height="8" fill="currentColor" fill-opacity=".3" stroke="none"/>
+  <text x="200" y="141" text-anchor="middle" font-family="General Sans, sans-serif" font-size="9" fill="currentColor" stroke="none" opacity=".55">100.02</text>
+  <rect x="230" y="147" width="30" height="8" stroke-opacity=".6"/>
+  <rect class="swiss-systems-depth" style="--swiss-systems-origin: 230px; --swiss-systems-delay: 0.04s" x="230" y="147" width="30" height="8" fill="currentColor" fill-opacity=".3" stroke="none"/>
+  <text x="200" y="155" text-anchor="middle" font-family="General Sans, sans-serif" font-size="9" fill="currentColor" stroke="none" opacity=".55">100.01</text>
+  <rect x="130" y="161" width="40" height="8" stroke-opacity=".6"/>
+  <rect class="swiss-systems-depth" style="--swiss-systems-origin: 170px; --swiss-systems-delay: 0.04s" x="130" y="161" width="40" height="8" fill="currentColor" fill-opacity=".3" stroke="none"/>
+  <text x="200" y="169" text-anchor="middle" font-family="General Sans, sans-serif" font-size="9" fill="currentColor" stroke="none" opacity=".55">100.00</text>
+  <rect x="102" y="175" width="68" height="8" stroke-opacity=".6"/>
+  <rect class="swiss-systems-depth" style="--swiss-systems-origin: 170px; --swiss-systems-delay: 0.14s" x="102" y="175" width="68" height="8" fill="currentColor" fill-opacity=".3" stroke="none"/>
+  <text x="200" y="183" text-anchor="middle" font-family="General Sans, sans-serif" font-size="9" fill="currentColor" stroke="none" opacity=".55">99.99</text>
+  <rect x="76" y="189" width="94" height="8" stroke-opacity=".6"/>
+  <rect class="swiss-systems-depth" style="--swiss-systems-origin: 170px; --swiss-systems-delay: 0.22s" x="76" y="189" width="94" height="8" fill="currentColor" fill-opacity=".3" stroke="none"/>
+  <text x="200" y="197" text-anchor="middle" font-family="General Sans, sans-serif" font-size="9" fill="currentColor" stroke="none" opacity=".55">99.98</text>
+  <rect x="90" y="203" width="80" height="8" stroke-opacity=".6"/>
+  <rect class="swiss-systems-depth" style="--swiss-systems-origin: 170px; --swiss-systems-delay: 0.32s" x="90" y="203" width="80" height="8" fill="currentColor" fill-opacity=".3" stroke="none"/>
+  <text x="200" y="211" text-anchor="middle" font-family="General Sans, sans-serif" font-size="9" fill="currentColor" stroke="none" opacity=".55">99.97</text>
+  <rect x="54" y="217" width="116" height="8" stroke-opacity=".6"/>
+  <rect class="swiss-systems-depth" style="--swiss-systems-origin: 170px; --swiss-systems-delay: 0.40s" x="54" y="217" width="116" height="8" fill="currentColor" fill-opacity=".3" stroke="none"/>
+  <text x="200" y="225" text-anchor="middle" font-family="General Sans, sans-serif" font-size="9" fill="currentColor" stroke="none" opacity=".55">99.96</text>
+  <path d="M174 158h52" stroke="var(--accent)"/>
+</svg>

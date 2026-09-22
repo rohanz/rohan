@@ -13,7 +13,7 @@ Before ANY work: `git fetch origin && git rebase origin/astro-site` (or branch
 from it). A stale local checkout has caused "old bugs reappeared" confusion
 before — always confirm you're on the origin tip.
 
-## Site structure — three themes, one domain
+## Site structure — four themes, one domain
 
 - **classic** (default) — Astro pages at `/`, `/music`, `/projects[/<slug>]`,
   `/about`. Layout: `src/layouts/DefaultLayout.astro`.
@@ -22,10 +22,19 @@ before — always confirm you're on the origin tip.
 - **blueprint** — a self-contained three.js Vite SPA in `themes/blueprint/`,
   built separately and served under `/blueprint/*`. Desktop-only by design
   (as is transit); classic serves mobile.
+- **swiss** — Astro pages under `/swiss/*` (`src/pages/swiss/`,
+  `src/layouts/SwissLayout.astro`, `src/styles/swiss*.css`). Light
+  typographic/editorial theme; works on phones (no redirect). Project cards
+  carry hand-drawn SVGs in `src/drawings/swiss/<slug>.svg` (add one per new
+  project; a missing drawing shows a hatched placeholder). Accent candidates
+  live in `src/lib/swiss/accents.ts`, previewed at `/swiss/swatches`
+  (unlisted, noindex). Canvas widgets use `swissPalette` in
+  `src/lib/visuals/themes.ts`.
 
 Theme switching is the theme-paths convention (`src/lib/theme-paths.ts`,
 pref key `site:themePref` via `src/lib/theme-switch.ts`). Classic sidebar and
-transit headers carry switch links; blueprint's top-right dropdown links back.
+transit headers carry switch links; blueprint's top-right dropdown and the
+swiss footer link back.
 Theme hops are full navigations with a cross-document view-transition fade
 (`@view-transition` rules in `src/styles/default.css`, `global.css`, and
 `themes/blueprint/index.html`). Blueprint links carry `data-astro-reload`

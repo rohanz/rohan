@@ -1,0 +1,10 @@
+/* Accent comparisons stay local to this unlisted gallery. */
+html.theme-swiss .sw-swatches { display: grid; gap: 2rem; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); }
+html.theme-swiss .sw-swatch { min-width: 0; border: 1px solid var(--hair); padding: 1.25rem; display: grid; gap: 1.25rem; }
+html.theme-swiss .sw-swatch-head { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+html.theme-swiss .sw-swatch-head::before { content: ''; flex: 0 0 1.25rem; height: 1.25rem; background: var(--accent); }
+html.theme-swiss .sw-swatch-head h2 { margin: 0; flex: 1; }
+html.theme-swiss .sw-swatch-head code { font-size: 13px; }
+html.theme-swiss .sw-swatch-hero { display: grid; gap: .75rem; padding: 1rem 0; border-block: 1px solid var(--hair); }
+html.theme-swiss .sw-swatch-hero p { margin: 0; }
+html.theme-swiss .sw-swatch-hero a { justify-self: start; color: var(--accent); }
