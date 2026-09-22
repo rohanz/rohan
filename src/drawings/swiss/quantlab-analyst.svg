@@ -5,7 +5,7 @@
     @media (prefers-reduced-motion: no-preference) {
       .swiss-analyst-tick { transition: stroke-dashoffset .35s ease; }
       .swiss-analyst-stage { transition: stroke .25s ease; }
-      .swiss-analyst-stamp { transition: transform .25s ease, opacity .25s ease; }
+      .swiss-analyst-stamp { transition: transform .25s ease, opacity .25s ease; will-change: transform; }
       .swiss-card.is-hover .swiss-analyst-tick { stroke-dashoffset: 0; transition-delay: var(--swiss-analyst-delay); }
       .swiss-card.is-hover .swiss-analyst-stage { stroke: var(--accent); transition-delay: var(--swiss-analyst-delay); }
       .swiss-card.is-hover .swiss-analyst-stamp { opacity: 1; transform: scale(1); transition-delay: .6s; }
