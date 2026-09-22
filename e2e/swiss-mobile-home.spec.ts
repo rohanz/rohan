@@ -30,8 +30,12 @@ for (const phone of phones) {
       await page.goto('/swiss/');
       await expect(page.locator('.sw-nav')).toBeVisible();
       await expect(page.locator('.sw-nav')).toHaveCSS('opacity', '1');
-      expect(await page.locator('.sw-hero-copy').evaluate((copy) => parseFloat(getComputedStyle(copy).minHeight)))
-        .toBeCloseTo(phone.viewport.height * .7, 0);
+      // One screen: copy fills the upper part, the quads the rest; nothing to scroll.
+      expect(await page.evaluate(() => document.documentElement.scrollHeight - innerHeight)).toBeLessThanOrEqual(0);
+      const copyBox = (await page.locator('.sw-hero-copy').boundingBox())!;
+      const quadsBox = (await page.locator('.sw-quads').boundingBox())!;
+      expect(quadsBox.y).toBeCloseTo(copyBox.y + copyBox.height, 0);
+      expect(Math.abs(quadsBox.y + quadsBox.height - phone.viewport.height)).toBeLessThanOrEqual(2); // bottom hairline
       expect(await page.locator('.sw-quads').evaluate((quads) => getComputedStyle(quads).gridTemplateColumns.split(' ').length)).toBe(2);
       await expect(page.locator('.sw-footer')).toBeHidden();
       expect(await page.evaluate(() => getComputedStyle(document.documentElement).scrollSnapType)).toBe('none');
