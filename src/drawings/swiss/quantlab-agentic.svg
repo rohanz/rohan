@@ -1,10 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
   <style>
-    .swiss-agentic-step { stroke-opacity: .35; transition: stroke-opacity .3s ease; }
-    .swiss-agentic-proof { stroke-dasharray: 24; stroke-dashoffset: 24; transition: stroke-dashoffset .35s ease; }
+    .swiss-agentic-step { stroke-opacity: .35; transition: stroke-opacity 0.3s ease; }
+    .swiss-agentic-proof { stroke-dasharray: 24; stroke-dashoffset: 24; transition: stroke-dashoffset 0.35s ease; }
     @media (prefers-reduced-motion: no-preference) {
       .swiss-card.is-hover .swiss-agentic-step { stroke-opacity: 1; transition-delay: var(--swiss-agentic-delay); }
-      .swiss-card.is-hover .swiss-agentic-proof { stroke-dashoffset: 0; transition-delay: .75s; }
+      .swiss-card.is-hover .swiss-agentic-proof { stroke-dashoffset: 0; transition-delay: 0.75s; }
     }
     @media (prefers-reduced-motion: reduce) { .swiss-agentic-step, .swiss-agentic-proof { transition: none; } }
   </style>

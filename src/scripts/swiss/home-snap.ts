@@ -48,6 +48,7 @@ function init() {
 
   function onWheel(e: WheelEvent) {
     const now = performance.now();
+    if (reduce.matches) return; // honour a live change to reduced motion
     if (animating || now < settleUntil) { e.preventDefault(); return; }
     const heroTop = topOf(heroEl);
     const nextTop = topOf(nextEl);

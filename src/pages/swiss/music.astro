@@ -21,14 +21,13 @@ import { MUSIC_DESCRIPTION } from '../../data/page-meta';
             <span class="sw-track-artist">{s.artist}</span>
           </div>
           <div class="sw-track-viz" aria-hidden="true">
-            {['wave', 'freq', 'stereo'].map((kind) => (
+            {['wave', 'freq', 'stereo', 'vu'].map((kind) => (
               <div class={`sw-meter sw-meter-${kind}`}>
                 <canvas data-viz={kind}></canvas>
                 <span class="sw-label">{kind}</span>
               </div>
             ))}
           </div>
-          <p class="sw-track-summary">{s.summary}</p>
           <div class="sw-track-links">
             <a class="sw-label sw-link-ext" href={s.spotifyUrl} target="_blank" rel="noopener noreferrer">spotify <span class="sw-arrow" aria-hidden="true">↗</span></a>
             <a class="sw-label sw-link-ext" href={s.appleMusicUrl} target="_blank" rel="noopener noreferrer">apple <span class="sw-arrow" aria-hidden="true">↗</span></a>

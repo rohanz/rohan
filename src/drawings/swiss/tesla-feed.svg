@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
   <style>
     .swiss-tesla-ring, .swiss-tesla-diff { opacity: 0; }
-    .swiss-tesla-diff { transition: opacity .25s ease; }
+    .swiss-tesla-diff { transition: opacity 0.25s ease; }
     @keyframes swiss-tesla-audit {
       0% { opacity: 0; transform: translate(0, 0); }
       15%, 42% { opacity: 1; transform: translate(0, 0); }
@@ -10,9 +10,9 @@
       75%, 100% { opacity: 1; transform: translate(132px, 44px); }
     }
     @media (prefers-reduced-motion: no-preference) {
-      .swiss-card.is-hover .swiss-tesla-ring { animation: swiss-tesla-audit 1.6s ease both; }
-      .swiss-card.is-hover .swiss-tesla-added { opacity: 1; transition-delay: .2s; }
-      .swiss-card.is-hover .swiss-tesla-removed { opacity: 1; transition-delay: 1s; }
+      .swiss-card.is-hover .swiss-tesla-ring { animation: swiss-tesla-audit 0.9s ease both; }
+      .swiss-card.is-hover .swiss-tesla-added { opacity: 1; transition-delay: 0.2s; }
+      .swiss-card.is-hover .swiss-tesla-removed { opacity: 1; transition-delay: 0.9s; }
     }
     @media (prefers-reduced-motion: reduce) { .swiss-tesla-diff { transition: none; } }
   </style>

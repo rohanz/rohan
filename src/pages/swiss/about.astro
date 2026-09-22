@@ -42,13 +42,13 @@ import { TESTIMONIALS } from '../../data/testimonials';
         <p class="sw-tech-list">{TECH_STACK.map((t) => t.name).join(' · ')}</p>
       </section>
       <section class="sw-about-cell sw-about-testimonials" data-testimonials aria-labelledby="sw-testimonials-heading" aria-roledescription="carousel">
-        <h2 class="sw-label" id="sw-testimonials-heading">a few words</h2>
+        <h2 class="sw-label" id="sw-testimonials-heading">testimonies</h2>
         <div class="sw-about-quotes" id="sw-testimonial-quotes" aria-live="polite" aria-atomic="true">
           {TESTIMONIALS.map((t, i) => <blockquote class="sw-quote" data-testimonial hidden={i !== 0} aria-hidden={i !== 0 ? 'true' : 'false'}><p>“{t.quote}”</p><footer class="sw-label">{t.author}</footer></blockquote>)}
         </div>
         <div class="sw-testimonial-controls" data-testimonial-controls hidden>
-          <button class="sw-testimonial-arrow" type="button" data-testimonial-prev aria-label="Previous testimonial" aria-controls="sw-testimonial-quotes">←</button>
-          <button class="sw-testimonial-arrow" type="button" data-testimonial-next aria-label="Next testimonial" aria-controls="sw-testimonial-quotes">→</button>
+          <button class="sw-testimonial-arrow" type="button" data-testimonial-prev aria-label="Previous testimony" aria-controls="sw-testimonial-quotes">←</button>
+          <button class="sw-testimonial-arrow" type="button" data-testimonial-next aria-label="Next testimony" aria-controls="sw-testimonial-quotes">→</button>
         </div>
       </section>
     </div>

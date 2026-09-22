@@ -81,7 +81,7 @@ test('swatches show every accent with an isolated sample and noindex metadata', 
   for (const accent of ACCENTS) {
     const swatch = page.locator(`[data-accent="${accent.id}"]`);
     await expect(swatch.getByRole('heading', { name: accent.label, exact: true })).toBeVisible();
-    await expect(swatch.locator('code')).toHaveText(accent.hex);
+    await expect(swatch.locator('.sw-swatch-values code')).toHaveText(accent.hex);
     await expect(swatch.locator('.swiss-card-art svg')).toHaveCount(1);
     expect(await swatch.locator('.swiss-card').evaluate((el) => getComputedStyle(el).getPropertyValue('--accent').trim())).toBe(accent.hex);
   }

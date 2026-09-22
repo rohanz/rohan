@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
   <style>
-    .swiss-research-promise { transition: opacity .7s ease; }
-    .swiss-research-honest { clip-path: inset(0 100% 0 0); transition: clip-path 1.3s cubic-bezier(.2,.7,.2,1); }
+    .swiss-research-promise { transition: opacity 0.7s ease; }
+    .swiss-research-honest { clip-path: inset(0 100% 0 0); transition: clip-path 0.9s cubic-bezier(.2,.7,.2,1); }
     @media (prefers-reduced-motion: no-preference) {
       .swiss-card.is-hover .swiss-research-promise { opacity: .35; }
       .swiss-card.is-hover .swiss-research-honest { clip-path: inset(0 0 0 0); }

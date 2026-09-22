@@ -27,7 +27,8 @@ html.theme-swiss .swiss-card-art { position: relative; flex: 0 0 auto; aspect-ra
 html.theme-swiss .swiss-card-art svg { position: relative; z-index: 1; }
 /* The old cover-image wordmark, set behind the drawing so the line work can
    cross it; grey but heavy so it stays clearly legible. */
-html.theme-swiss .swiss-card-word { position: absolute; left: 1.25rem; right: 1.25rem; bottom: 1rem; z-index: 0; font-family: var(--font-ui); font-weight: 700; font-size: clamp(1.5rem, 2.2vw, 2.1rem); line-height: 1; letter-spacing: -0.03em; color: #9c9890; overflow-wrap: anywhere; }
+html.theme-swiss .swiss-card-word { position: absolute; left: 1.25rem; right: 1.25rem; top: 1rem; z-index: 0; font-family: var(--font-ui); font-weight: 600; font-size: clamp(1.5rem, 2.2vw, 2.1rem); line-height: 1; letter-spacing: -0.03em; color: #9c9890; overflow-wrap: anywhere; transition: color .25s ease; }
+html.theme-swiss .swiss-card:hover .swiss-card-word, html.theme-swiss .swiss-card:focus-visible .swiss-card-word { color: var(--accent); }
 html.theme-swiss .swiss-card-art svg { width: 100%; height: 100%; display: block; }
 html.theme-swiss .swiss-card-placeholder { width: 100%; height: 100%; background: repeating-linear-gradient(135deg, transparent 0 10px, var(--hair) 10px 11px); }
 html.theme-swiss .swiss-card-body { flex: 1; min-height: 10rem; display: flex; flex-direction: column; gap: .5rem; padding: 1.1rem 1.25rem 1.25rem; }

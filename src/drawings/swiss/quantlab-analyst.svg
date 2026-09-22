@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
   <style>
-    .swiss-analyst-tick { stroke-dasharray: 24; stroke-dashoffset: 24; transition: stroke-dashoffset .4s ease; }
+    .swiss-analyst-tick { stroke-dasharray: 24; stroke-dashoffset: 24; transition: stroke-dashoffset 0.4s ease; }
     @media (prefers-reduced-motion: no-preference) {
       .swiss-card.is-hover .swiss-analyst-tick { stroke-dashoffset: 0; transition-delay: var(--swiss-analyst-delay); }
     }

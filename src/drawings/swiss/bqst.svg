@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
   <style>
-    .swiss-bqst-curve { transition: d .9s cubic-bezier(.2,.7,.2,1); }
-    .swiss-bqst-node { transition: transform .9s cubic-bezier(.2,.7,.2,1); }
+    .swiss-bqst-curve { transition: d 0.9s cubic-bezier(.2,.7,.2,1); }
+    .swiss-bqst-node { transition: transform 0.9s cubic-bezier(.2,.7,.2,1); }
     @media (prefers-reduced-motion: no-preference) {
       .swiss-card.is-hover .swiss-bqst-curve { d: path("M40 168 C 92 168, 114 96, 168 96 S 236 192, 292 156 S 344 112, 360 124"); }
       .swiss-card.is-hover .swiss-bqst-node-low { transform: translateY(-36px); }

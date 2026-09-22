@@ -1,5 +1,5 @@
 import { buildAnalyserGraph, ensureAudioContext, type AnalyserGraph } from '../../lib/audio/graph';
-import { FREQ_BANDS, computeBands, smoothCurve } from '../../lib/audio/analysis';
+import { FREQ_BANDS, RED_THRESHOLD_DB, computeBands, smoothCurve, vuDbFromStereo, dbToFrac, onePole } from '../../lib/audio/analysis';
 import { deviceDpr, sizeCanvasWithDpr } from '../../lib/visuals/canvas';
 
 let context: AudioContext | null = null;
@@ -21,7 +21,7 @@ function resize(row: HTMLElement) {
 function drawGrid(surface: Surface, hair: string) {
   const { ctx, w, h, canvas } = surface;
   ctx.clearRect(0, 0, w, h);
-  if (canvas.dataset.viz === 'freq') return;
+  if (canvas.dataset.viz === 'freq' || canvas.dataset.viz === 'vu') return;
   ctx.strokeStyle = hair;
   ctx.lineWidth = 1;
   ctx.beginPath();
@@ -35,9 +35,68 @@ function drawGrid(surface: Surface, hair: string) {
   ctx.stroke();
 }
 
+function drawVu(surface: Surface, db: number, ink: string, hair: string, accent: string, quiet = false) {
+  const { ctx, w, h } = surface;
+  const cx = w / 2, cy = h - 6;
+  const radius = Math.max(1, Math.min(w / 2 - 17, h - 21));
+  const angleFor = (value: number) => -Math.PI * .85 + dbToFrac(value) * Math.PI * .7;
+  ctx.save();
+  ctx.globalAlpha = quiet ? .4 : 1;
+  ctx.strokeStyle = hair;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius, angleFor(-40), angleFor(0));
+  ctx.stroke();
+  ctx.strokeStyle = accent;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius, angleFor(RED_THRESHOLD_DB), angleFor(0));
+  ctx.stroke();
+  // Sparse labels keep the small face legible; minor ticks retain the hot scale.
+  const marks = [-40, -20, -10, 0];
+  ctx.font = '8px ui-monospace, monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  for (let value = -40; value <= 0; value++) {
+    if (value < RED_THRESHOLD_DB && value % 5 !== 0) continue;
+    const major = marks.includes(value);
+    const angle = angleFor(value);
+    const cos = Math.cos(angle), sin = Math.sin(angle);
+    ctx.strokeStyle = major ? ink : hair;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(cx + (radius - (major ? 5 : 2)) * cos, cy + (radius - (major ? 5 : 2)) * sin);
+    ctx.lineTo(cx + (radius + 2) * cos, cy + (radius + 2) * sin);
+    ctx.stroke();
+    if (major) {
+      ctx.fillStyle = ink;
+      ctx.fillText(String(value), cx + (radius + 11) * cos, cy + (radius + 11) * sin);
+    }
+  }
+  ctx.fillStyle = ink;
+  ctx.fillText('DB', cx, cy - 8);
+  const needle = angleFor(db);
+  ctx.strokeStyle = ink;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  ctx.lineTo(cx + (radius - 3) * Math.cos(needle), cy + (radius - 3) * Math.sin(needle));
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(cx, cy, 2, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
 function idle(row: HTMLElement) {
-  const hair = getComputedStyle(row).getPropertyValue('--hair').trim();
-  surfaces.get(row)?.forEach((surface) => drawGrid(surface, hair));
+  const style = getComputedStyle(row);
+  const hair = style.getPropertyValue('--hair').trim();
+  const ink = style.getPropertyValue('--ink').trim();
+  const accent = style.getPropertyValue('--accent').trim();
+  surfaces.get(row)?.forEach((surface) => {
+    drawGrid(surface, hair);
+    if (surface.canvas.dataset.viz === 'vu') drawVu(surface, -40, ink, hair, accent, true);
+  });
 }
 
 /** Initialise quiet grids without creating an audio context. */
@@ -79,6 +138,7 @@ export function attachViz(row: HTMLElement, audio: HTMLAudioElement): () => void
   let frame = 0;
   let timer: ReturnType<typeof setTimeout> | undefined;
   let stopped = false;
+  let vuSmoothed = -40;
 
   function draw() {
     if (stopped || audio.paused || audio.ended) return;
@@ -87,6 +147,7 @@ export function attachViz(row: HTMLElement, audio: HTMLAudioElement): () => void
       analyser!.getByteFrequencyData(freq);
       analyserL?.getFloatTimeDomainData(left);
       analyserR?.getFloatTimeDomainData(right);
+      vuSmoothed = onePole(vuSmoothed, vuDbFromStereo(left, right, Math.min(left.length, right.length)), .18);
       computeBands(freq, bands);
       smoothCurve(bands.freqSmoothed, curve);
       for (const surface of surfaces.get(row) ?? []) {
@@ -113,6 +174,9 @@ export function attachViz(row: HTMLElement, audio: HTMLAudioElement): () => void
           // The only coloured mark is the current spectral peak.
           ctx.fillStyle = accent;
           ctx.fillRect(3 + peak / (curve.length - 1) * (w - 8), h - 6 - curve[peak] * (h - 10), 2, 2);
+          continue;
+        } else if (canvas.dataset.viz === 'vu') {
+          drawVu(surface, vuSmoothed, ink, hair, accent);
           continue;
         } else {
           const radius = Math.min(w, h) / 2 - 4;
