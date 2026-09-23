@@ -40,20 +40,12 @@ export interface BqstPalette {
   seriesReferenceAlpha: number;
   /** Harmonics that stay inside the audible band. */
   aliasAudible: string;
-  /** Harmonics living in the 4x oversampled headroom, and the Nyquist rule. */
+  /** Harmonics above the 22.05 kHz Nyquist line (they need oversampling). */
   aliasOversampled: string;
   /** Foldback alias positions — the danger colour. */
   aliasWarn: string;
-  /** Wash behind the audible half of the aliasing plot. */
-  aliasBandAudible: string;
-  /** Wash behind the 4x-headroom half of the aliasing plot. */
+  /** Wash over the band above Nyquist while it cannot be represented. */
   aliasBandHeadroom: string;
-  /**
-   * The aliasing legend's "audible harmonic" swatch. Its own token because
-   * classic's legend is static HTML built once at init and hardcodes the light
-   * value, while its canvas `aliasAudible` is theme-dependent.
-   */
-  legendAliasAudible: string;
   /**
    * The A/B demo's processed ("bqst") waveform. Its clean waveform, beat grid
    * and bar lines reuse `seriesReference`, `ink` and `seriesPrimary`.

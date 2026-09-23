@@ -4,7 +4,7 @@ import * as S from './__fixtures__/scenarios.js';
 import { createRecordingCanvas, digest } from './ctx-recorder.js';
 import { classicPalette, transitPalette, blueprintPalette } from './themes';
 import type { VisualPalette } from './palette';
-import { drawEq, drawTransfer, drawHarmonics, drawAliasing } from './bqst-render';
+import { drawEq, drawTransfer, drawHarmonics } from './bqst-render';
 import {
   drawCompound, drawRoster, drawQuant, COMPOUND_HEIGHT, ROSTER_HEIGHT, QUANT_HEIGHT,
 } from './qla-render';
@@ -28,6 +28,10 @@ import { QUANT_BLOCKS, fitLadders, beeswarmLevels, lookaheadSeries } from './qua
 //
 // Regenerating the fixtures is NOT a way to make this pass — the generator
 // only ever reads the original code at the commit the dedup started from.
+//
+// The aliasing chart was later redesigned on purpose (one axis, a 1x/4x
+// switch, nested fold arcs), so its cases were retired from the fixtures; its
+// behaviour is covered by bqst-aliasing.test.ts instead.
 
 const PALETTES: Record<string, VisualPalette> = {
   'classic-light': classicPalette(true),
@@ -57,7 +61,6 @@ function render(caseKey: string, palette: VisualPalette) {
 
   switch (name) {
     case 'eq': drawEq(ctx, { w: bqstW, palette }); break;
-    case 'aliasing': drawAliasing(ctx, { w: bqstW, palette }); break;
     case 'transfer': drawTransfer(ctx, { w: bqstW, palette }, Number(arg)); break;
     case 'harmonics': drawHarmonics(ctx, { w: bqstW, palette }, Number(arg)); break;
     case 'compound': drawCompound(ctx, { w: qlW, palette }, cursor); break;

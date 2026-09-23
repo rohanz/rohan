@@ -156,7 +156,7 @@ Oversampling is one of those words that sounds more complicated than the basic i
 
 This matters especially in saturation. A nonlinear curve creates new harmonics above the original signal. If those harmonics go past the host sample rate's <span class="gloss-term" data-gloss="The highest frequency a digital system can represent at a given sample rate. At 44.1 kHz, it is about 22.05 kHz.">Nyquist limit</span>, they can fold back into the audible range as <span class="gloss-term" data-gloss="Digital foldback where frequencies above Nyquist reappear as unrelated lower frequencies, often sounding brittle or inharmonic.">aliasing</span>. That foldback sounds like unrelated high-frequency dirt, nothing like analog saturation.
 
-The chart below shows it with a single 6 kHz tone. Its harmonics keep going past the 22 kHz line, and without oversampling each one would fold back to the red dot below it: energy at frequencies the original sound never had.
+The chart below shows it with a single 6 kHz tone. Its harmonics keep going past the 22 kHz line, and without oversampling each one folds back into the audible band, mirrored around that line: energy at frequencies the original sound never had. Switch to 4× to see them stay put.
 
 <div id="bqst-oversampling-visual"></div>
 

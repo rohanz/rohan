@@ -223,6 +223,7 @@ html.theme-swiss .lcm-key.black { width: 2.75rem; min-width: 44px; }
 html.theme-swiss .article :is(#bqst-eq-visual, #bqst-transfer-visual, #bqst-harmonics-visual, #bqst-oversampling-visual, #bqst-audio-demo):empty { margin: 1.6rem 0 2rem; min-height: calc(340px + 7rem); }
 html.theme-swiss .article #bqst-eq-visual:empty { min-height: calc(340px + 7.55rem); }
 html.theme-swiss .article #bqst-audio-demo:empty { min-height: 13.65rem; }
+html.theme-swiss .article #bqst-oversampling-visual:empty { min-height: 525px; }
 }
 html.theme-swiss .article #demo-player-placeholder:empty { min-height: 7.5rem; margin: 1rem 0 1.5rem; }
 html.theme-swiss .article :is(.qla-btn-accent, .qlf-risk-btn:not(.qlf-risk-btn-warn), .qla-judge-guess) { background: color-mix(in srgb, var(--accent) 16%, var(--paper)); border-color: color-mix(in srgb, var(--accent) 45%, var(--paper)); color: var(--ink); transition: background .2s ease, border-color .2s ease; }

@@ -31,39 +31,6 @@
     "1x stroke | rgba(62,39,35,0.55) | #FFCC80 | 2.8 | 0.688571 | 600 12px Inter, sans-serif | right | []"
    ]
   },
-  "aliasing@640": {
-   "opCount": 140,
-   "stream": "7df36609",
-   "paintCount": 48,
-   "paints": "fed95387",
-   "styles": [
-    "1x clearRect | #000000 | #000000 | 1 | 1 | 10px sans-serif | start | []",
-    "2x fill | #8D6E63 | #8D6E63 | 2.7 | 1 | 700 12px Inter, sans-serif | center | []",
-    "1x fill | #8D6E63 | #8D6E63 | 2.7 | 1 | 700 13px Inter, sans-serif | center | []",
-    "3x fill | #E05555 | #E05555 | 1.35 | 1 | 700 12px Inter, sans-serif | center | []",
-    "5x fill | #FFCC80 | #FFCC80 | 2.7 | 1 | 700 12px Inter, sans-serif | center | []",
-    "1x fill | rgba(62,39,35,0.07) | #000000 | 1 | 1 | 700 16px Chillax, Inter, sans-serif | left | []",
-    "1x fillRect | rgba(141, 110, 99, 0.10) | rgba(62,39,35,0.18) | 1 | 1 | 700 16px Chillax, Inter, sans-serif | left | []",
-    "1x fillRect | rgba(255, 204, 128, 0.16) | rgba(62,39,35,0.18) | 1 | 1 | 700 16px Chillax, Inter, sans-serif | left | []",
-    "3x fillText | rgba(62,39,35,0.55) | rgba(62,39,35,0.22) | 1.2 | 1 | 700 13px Inter, sans-serif | center | []",
-    "3x fillText | rgba(62,39,35,0.62) | #8D6E63 | 2.7 | 1 | 700 12px Inter, sans-serif | center | []",
-    "5x fillText | rgba(62,39,35,0.62) | #FFCC80 | 2.7 | 1 | 700 12px Inter, sans-serif | center | []",
-    "1x fillText | rgba(62,39,35,0.64) | #FFCC80 | 1.2 | 1 | 700 13px Inter, sans-serif | center | []",
-    "1x fillText | rgba(62,39,35,0.72) | #FFCC80 | 2.7 | 1 | 700 14px Inter, sans-serif | left | []",
-    "2x fillText | rgba(62,39,35,0.76) | #FFCC80 | 1.2 | 1 | 700 14px Inter, sans-serif | center | []",
-    "1x fillText | rgba(62,39,35,0.82) | #000000 | 1 | 1 | 700 16px Chillax, Inter, sans-serif | left | []",
-    "3x stroke | #E05555 | #FFCC80 | 2.7 | 1 | 700 12px Inter, sans-serif | center | []",
-    "1x stroke | rgba(141, 110, 99, 0.10) | #FFCC80 | 1.2 | 1 | 700 16px Chillax, Inter, sans-serif | left | [5,6]",
-    "1x stroke | rgba(141, 110, 99, 0.10) | rgba(62,39,35,0.42) | 1.6 | 1 | 700 16px Chillax, Inter, sans-serif | left | []",
-    "1x stroke | rgba(62,39,35,0.07) | rgba(62,39,35,0.18) | 1 | 1 | 700 16px Chillax, Inter, sans-serif | left | []",
-    "1x stroke | rgba(62,39,35,0.55) | #8D6E63 | 2.7 | 1 | 700 13px Inter, sans-serif | center | []",
-    "2x stroke | rgba(62,39,35,0.55) | rgba(62,39,35,0.22) | 1.2 | 1 | 700 13px Inter, sans-serif | center | []",
-    "2x stroke | rgba(62,39,35,0.62) | #8D6E63 | 2.7 | 1 | 700 12px Inter, sans-serif | center | []",
-    "3x stroke | rgba(62,39,35,0.62) | #E05555 | 1.35 | 1 | 700 12px Inter, sans-serif | center | [3,5]",
-    "2x stroke | rgba(62,39,35,0.62) | #FFCC80 | 2.7 | 1 | 700 12px Inter, sans-serif | center | []",
-    "1x stroke | rgba(62,39,35,0.64) | rgba(62,39,35,0.22) | 1.2 | 1 | 700 13px Inter, sans-serif | center | []"
-   ]
-  },
   "transfer@640/0": {
    "opCount": 963,
    "stream": "47301cbb",
@@ -404,39 +371,6 @@
     "1x stroke | rgba(62,39,35,0.55) | #FFCC80 | 1.9 | 0.877143 | 600 12px Inter, sans-serif | right | []",
     "1x stroke | rgba(62,39,35,0.55) | #FFCC80 | 1.9 | 0.94 | 600 12px Inter, sans-serif | right | []",
     "1x stroke | rgba(62,39,35,0.55) | #FFCC80 | 2.8 | 0.688571 | 600 12px Inter, sans-serif | right | []"
-   ]
-  },
-  "aliasing@460": {
-   "opCount": 140,
-   "stream": "5ed753c3",
-   "paintCount": 48,
-   "paints": "63cf6e16",
-   "styles": [
-    "1x clearRect | #000000 | #000000 | 1 | 1 | 10px sans-serif | start | []",
-    "2x fill | #8D6E63 | #8D6E63 | 2.7 | 1 | 700 12px Inter, sans-serif | center | []",
-    "1x fill | #8D6E63 | #8D6E63 | 2.7 | 1 | 700 13px Inter, sans-serif | center | []",
-    "3x fill | #E05555 | #E05555 | 1.35 | 1 | 700 12px Inter, sans-serif | center | []",
-    "5x fill | #FFCC80 | #FFCC80 | 2.7 | 1 | 700 12px Inter, sans-serif | center | []",
-    "1x fill | rgba(62,39,35,0.07) | #000000 | 1 | 1 | 700 13px Chillax, Inter, sans-serif | left | []",
-    "1x fillRect | rgba(141, 110, 99, 0.10) | rgba(62,39,35,0.18) | 1 | 1 | 700 13px Chillax, Inter, sans-serif | left | []",
-    "1x fillRect | rgba(255, 204, 128, 0.16) | rgba(62,39,35,0.18) | 1 | 1 | 700 13px Chillax, Inter, sans-serif | left | []",
-    "3x fillText | rgba(62,39,35,0.55) | rgba(62,39,35,0.22) | 1.2 | 1 | 700 13px Inter, sans-serif | center | []",
-    "3x fillText | rgba(62,39,35,0.62) | #8D6E63 | 2.7 | 1 | 700 12px Inter, sans-serif | center | []",
-    "5x fillText | rgba(62,39,35,0.62) | #FFCC80 | 2.7 | 1 | 700 12px Inter, sans-serif | center | []",
-    "1x fillText | rgba(62,39,35,0.64) | #FFCC80 | 1.2 | 1 | 700 13px Inter, sans-serif | center | []",
-    "1x fillText | rgba(62,39,35,0.72) | #FFCC80 | 2.7 | 1 | 700 12px Inter, sans-serif | left | []",
-    "2x fillText | rgba(62,39,35,0.76) | #FFCC80 | 1.2 | 1 | 700 14px Inter, sans-serif | center | []",
-    "1x fillText | rgba(62,39,35,0.82) | #000000 | 1 | 1 | 700 13px Chillax, Inter, sans-serif | left | []",
-    "3x stroke | #E05555 | #FFCC80 | 2.7 | 1 | 700 12px Inter, sans-serif | center | []",
-    "1x stroke | rgba(141, 110, 99, 0.10) | #FFCC80 | 1.2 | 1 | 700 13px Chillax, Inter, sans-serif | left | [5,6]",
-    "1x stroke | rgba(141, 110, 99, 0.10) | rgba(62,39,35,0.42) | 1.6 | 1 | 700 13px Chillax, Inter, sans-serif | left | []",
-    "1x stroke | rgba(62,39,35,0.07) | rgba(62,39,35,0.18) | 1 | 1 | 700 13px Chillax, Inter, sans-serif | left | []",
-    "1x stroke | rgba(62,39,35,0.55) | #8D6E63 | 2.7 | 1 | 700 13px Inter, sans-serif | center | []",
-    "2x stroke | rgba(62,39,35,0.55) | rgba(62,39,35,0.22) | 1.2 | 1 | 700 13px Inter, sans-serif | center | []",
-    "2x stroke | rgba(62,39,35,0.62) | #8D6E63 | 2.7 | 1 | 700 12px Inter, sans-serif | center | []",
-    "3x stroke | rgba(62,39,35,0.62) | #E05555 | 1.35 | 1 | 700 12px Inter, sans-serif | center | [3,5]",
-    "2x stroke | rgba(62,39,35,0.62) | #FFCC80 | 2.7 | 1 | 700 12px Inter, sans-serif | center | []",
-    "1x stroke | rgba(62,39,35,0.64) | rgba(62,39,35,0.22) | 1.2 | 1 | 700 13px Inter, sans-serif | center | []"
    ]
   },
   "transfer@460/0": {
@@ -783,39 +717,6 @@
     "1x stroke | rgba(232,230,227,0.55) | #FFCC80 | 2.8 | 0.688571 | 600 12px Inter, sans-serif | right | []"
    ]
   },
-  "aliasing@640": {
-   "opCount": 140,
-   "stream": "7df36609",
-   "paintCount": 48,
-   "paints": "e3a52e89",
-   "styles": [
-    "1x clearRect | #000000 | #000000 | 1 | 1 | 10px sans-serif | start | []",
-    "2x fill | #A98778 | #A98778 | 2.7 | 1 | 700 12px Inter, sans-serif | center | []",
-    "1x fill | #A98778 | #A98778 | 2.7 | 1 | 700 13px Inter, sans-serif | center | []",
-    "3x fill | #E05555 | #E05555 | 1.35 | 1 | 700 12px Inter, sans-serif | center | []",
-    "5x fill | #FFCC80 | #FFCC80 | 2.7 | 1 | 700 12px Inter, sans-serif | center | []",
-    "1x fill | rgba(232,230,227,0.07) | #000000 | 1 | 1 | 700 16px Chillax, Inter, sans-serif | left | []",
-    "1x fillRect | rgba(141, 110, 99, 0.09) | rgba(232,230,227,0.18) | 1 | 1 | 700 16px Chillax, Inter, sans-serif | left | []",
-    "1x fillRect | rgba(255, 204, 128, 0.08) | rgba(232,230,227,0.18) | 1 | 1 | 700 16px Chillax, Inter, sans-serif | left | []",
-    "3x fillText | rgba(232,230,227,0.55) | rgba(232,230,227,0.22) | 1.2 | 1 | 700 13px Inter, sans-serif | center | []",
-    "3x fillText | rgba(232,230,227,0.62) | #A98778 | 2.7 | 1 | 700 12px Inter, sans-serif | center | []",
-    "5x fillText | rgba(232,230,227,0.62) | #FFCC80 | 2.7 | 1 | 700 12px Inter, sans-serif | center | []",
-    "1x fillText | rgba(232,230,227,0.64) | #FFCC80 | 1.2 | 1 | 700 13px Inter, sans-serif | center | []",
-    "1x fillText | rgba(232,230,227,0.72) | #FFCC80 | 2.7 | 1 | 700 14px Inter, sans-serif | left | []",
-    "2x fillText | rgba(232,230,227,0.76) | #FFCC80 | 1.2 | 1 | 700 14px Inter, sans-serif | center | []",
-    "1x fillText | rgba(232,230,227,0.82) | #000000 | 1 | 1 | 700 16px Chillax, Inter, sans-serif | left | []",
-    "3x stroke | #E05555 | #FFCC80 | 2.7 | 1 | 700 12px Inter, sans-serif | center | []",
-    "1x stroke | rgba(141, 110, 99, 0.09) | #FFCC80 | 1.2 | 1 | 700 16px Chillax, Inter, sans-serif | left | [5,6]",
-    "1x stroke | rgba(141, 110, 99, 0.09) | rgba(232,230,227,0.42) | 1.6 | 1 | 700 16px Chillax, Inter, sans-serif | left | []",
-    "1x stroke | rgba(232,230,227,0.07) | rgba(232,230,227,0.18) | 1 | 1 | 700 16px Chillax, Inter, sans-serif | left | []",
-    "1x stroke | rgba(232,230,227,0.55) | #A98778 | 2.7 | 1 | 700 13px Inter, sans-serif | center | []",
-    "2x stroke | rgba(232,230,227,0.55) | rgba(232,230,227,0.22) | 1.2 | 1 | 700 13px Inter, sans-serif | center | []",
-    "2x stroke | rgba(232,230,227,0.62) | #A98778 | 2.7 | 1 | 700 12px Inter, sans-serif | center | []",
-    "3x stroke | rgba(232,230,227,0.62) | #E05555 | 1.35 | 1 | 700 12px Inter, sans-serif | center | [3,5]",
-    "2x stroke | rgba(232,230,227,0.62) | #FFCC80 | 2.7 | 1 | 700 12px Inter, sans-serif | center | []",
-    "1x stroke | rgba(232,230,227,0.64) | rgba(232,230,227,0.22) | 1.2 | 1 | 700 13px Inter, sans-serif | center | []"
-   ]
-  },
   "transfer@640/0": {
    "opCount": 963,
    "stream": "47301cbb",
@@ -1156,39 +1057,6 @@
     "1x stroke | rgba(232,230,227,0.55) | #FFCC80 | 1.9 | 0.877143 | 600 12px Inter, sans-serif | right | []",
     "1x stroke | rgba(232,230,227,0.55) | #FFCC80 | 1.9 | 0.94 | 600 12px Inter, sans-serif | right | []",
     "1x stroke | rgba(232,230,227,0.55) | #FFCC80 | 2.8 | 0.688571 | 600 12px Inter, sans-serif | right | []"
-   ]
-  },
-  "aliasing@460": {
-   "opCount": 140,
-   "stream": "5ed753c3",
-   "paintCount": 48,
-   "paints": "4e1d19e6",
-   "styles": [
-    "1x clearRect | #000000 | #000000 | 1 | 1 | 10px sans-serif | start | []",
-    "2x fill | #A98778 | #A98778 | 2.7 | 1 | 700 12px Inter, sans-serif | center | []",
-    "1x fill | #A98778 | #A98778 | 2.7 | 1 | 700 13px Inter, sans-serif | center | []",
-    "3x fill | #E05555 | #E05555 | 1.35 | 1 | 700 12px Inter, sans-serif | center | []",
-    "5x fill | #FFCC80 | #FFCC80 | 2.7 | 1 | 700 12px Inter, sans-serif | center | []",
-    "1x fill | rgba(232,230,227,0.07) | #000000 | 1 | 1 | 700 13px Chillax, Inter, sans-serif | left | []",
-    "1x fillRect | rgba(141, 110, 99, 0.09) | rgba(232,230,227,0.18) | 1 | 1 | 700 13px Chillax, Inter, sans-serif | left | []",
-    "1x fillRect | rgba(255, 204, 128, 0.08) | rgba(232,230,227,0.18) | 1 | 1 | 700 13px Chillax, Inter, sans-serif | left | []",
-    "3x fillText | rgba(232,230,227,0.55) | rgba(232,230,227,0.22) | 1.2 | 1 | 700 13px Inter, sans-serif | center | []",
-    "3x fillText | rgba(232,230,227,0.62) | #A98778 | 2.7 | 1 | 700 12px Inter, sans-serif | center | []",
-    "5x fillText | rgba(232,230,227,0.62) | #FFCC80 | 2.7 | 1 | 700 12px Inter, sans-serif | center | []",
-    "1x fillText | rgba(232,230,227,0.64) | #FFCC80 | 1.2 | 1 | 700 13px Inter, sans-serif | center | []",
-    "1x fillText | rgba(232,230,227,0.72) | #FFCC80 | 2.7 | 1 | 700 12px Inter, sans-serif | left | []",
-    "2x fillText | rgba(232,230,227,0.76) | #FFCC80 | 1.2 | 1 | 700 14px Inter, sans-serif | center | []",
-    "1x fillText | rgba(232,230,227,0.82) | #000000 | 1 | 1 | 700 13px Chillax, Inter, sans-serif | left | []",
-    "3x stroke | #E05555 | #FFCC80 | 2.7 | 1 | 700 12px Inter, sans-serif | center | []",
-    "1x stroke | rgba(141, 110, 99, 0.09) | #FFCC80 | 1.2 | 1 | 700 13px Chillax, Inter, sans-serif | left | [5,6]",
-    "1x stroke | rgba(141, 110, 99, 0.09) | rgba(232,230,227,0.42) | 1.6 | 1 | 700 13px Chillax, Inter, sans-serif | left | []",
-    "1x stroke | rgba(232,230,227,0.07) | rgba(232,230,227,0.18) | 1 | 1 | 700 13px Chillax, Inter, sans-serif | left | []",
-    "1x stroke | rgba(232,230,227,0.55) | #A98778 | 2.7 | 1 | 700 13px Inter, sans-serif | center | []",
-    "2x stroke | rgba(232,230,227,0.55) | rgba(232,230,227,0.22) | 1.2 | 1 | 700 13px Inter, sans-serif | center | []",
-    "2x stroke | rgba(232,230,227,0.62) | #A98778 | 2.7 | 1 | 700 12px Inter, sans-serif | center | []",
-    "3x stroke | rgba(232,230,227,0.62) | #E05555 | 1.35 | 1 | 700 12px Inter, sans-serif | center | [3,5]",
-    "2x stroke | rgba(232,230,227,0.62) | #FFCC80 | 2.7 | 1 | 700 12px Inter, sans-serif | center | []",
-    "1x stroke | rgba(232,230,227,0.64) | rgba(232,230,227,0.22) | 1.2 | 1 | 700 13px Inter, sans-serif | center | []"
    ]
   },
   "transfer@460/0": {
@@ -1535,39 +1403,6 @@
     "1x stroke | rgba(26,26,26,0.55) | #d13d59 | 2.8 | 0.814286 | 600 12px Inter, sans-serif | right | []"
    ]
   },
-  "aliasing@640": {
-   "opCount": 140,
-   "stream": "7df36609",
-   "paintCount": 48,
-   "paints": "d0d777f3",
-   "styles": [
-    "1x clearRect | #000000 | #000000 | 1 | 1 | 10px sans-serif | start | []",
-    "5x fill | #33b4e5 | #33b4e5 | 2.7 | 1 | 700 12px Inter, sans-serif | center | []",
-    "2x fill | #8a8578 | #8a8578 | 2.7 | 1 | 700 12px Inter, sans-serif | center | []",
-    "1x fill | #8a8578 | #8a8578 | 2.7 | 1 | 700 13px Inter, sans-serif | center | []",
-    "3x fill | #d13d59 | #d13d59 | 1.35 | 1 | 700 12px Inter, sans-serif | center | []",
-    "1x fill | rgba(26,26,26,0.07) | #000000 | 1 | 1 | 700 16px 'Helvetica Neue', Helvetica, Arial, sans-serif | left | []",
-    "1x fillRect | rgba(138,133,120, 0.1) | rgba(26,26,26,0.18) | 1 | 1 | 700 16px 'Helvetica Neue', Helvetica, Arial, sans-serif | left | []",
-    "1x fillRect | rgba(51,180,229, 0.16) | rgba(26,26,26,0.18) | 1 | 1 | 700 16px 'Helvetica Neue', Helvetica, Arial, sans-serif | left | []",
-    "3x fillText | rgba(26,26,26,0.55) | rgba(26,26,26,0.22) | 1.2 | 1 | 700 13px Inter, sans-serif | center | []",
-    "5x fillText | rgba(26,26,26,0.62) | #33b4e5 | 2.7 | 1 | 700 12px Inter, sans-serif | center | []",
-    "3x fillText | rgba(26,26,26,0.62) | #8a8578 | 2.7 | 1 | 700 12px Inter, sans-serif | center | []",
-    "1x fillText | rgba(26,26,26,0.64) | #33b4e5 | 1.2 | 1 | 700 13px Inter, sans-serif | center | []",
-    "1x fillText | rgba(26,26,26,0.72) | #33b4e5 | 2.7 | 1 | 700 14px Inter, sans-serif | left | []",
-    "2x fillText | rgba(26,26,26,0.76) | #33b4e5 | 1.2 | 1 | 700 14px Inter, sans-serif | center | []",
-    "1x fillText | rgba(26,26,26,0.82) | #000000 | 1 | 1 | 700 16px 'Helvetica Neue', Helvetica, Arial, sans-serif | left | []",
-    "3x stroke | #d13d59 | #33b4e5 | 2.7 | 1 | 700 12px Inter, sans-serif | center | []",
-    "1x stroke | rgba(138,133,120, 0.1) | #33b4e5 | 1.2 | 1 | 700 16px 'Helvetica Neue', Helvetica, Arial, sans-serif | left | [5,6]",
-    "1x stroke | rgba(138,133,120, 0.1) | rgba(26,26,26,0.42) | 1.6 | 1 | 700 16px 'Helvetica Neue', Helvetica, Arial, sans-serif | left | []",
-    "1x stroke | rgba(26,26,26,0.07) | rgba(26,26,26,0.18) | 1 | 1 | 700 16px 'Helvetica Neue', Helvetica, Arial, sans-serif | left | []",
-    "1x stroke | rgba(26,26,26,0.55) | #8a8578 | 2.7 | 1 | 700 13px Inter, sans-serif | center | []",
-    "2x stroke | rgba(26,26,26,0.55) | rgba(26,26,26,0.22) | 1.2 | 1 | 700 13px Inter, sans-serif | center | []",
-    "2x stroke | rgba(26,26,26,0.62) | #33b4e5 | 2.7 | 1 | 700 12px Inter, sans-serif | center | []",
-    "2x stroke | rgba(26,26,26,0.62) | #8a8578 | 2.7 | 1 | 700 12px Inter, sans-serif | center | []",
-    "3x stroke | rgba(26,26,26,0.62) | #d13d59 | 1.35 | 1 | 700 12px Inter, sans-serif | center | [3,5]",
-    "1x stroke | rgba(26,26,26,0.64) | rgba(26,26,26,0.22) | 1.2 | 1 | 700 13px Inter, sans-serif | center | []"
-   ]
-  },
   "transfer@640/0": {
    "opCount": 963,
    "stream": "47301cbb",
@@ -1908,39 +1743,6 @@
     "1x stroke | rgba(26,26,26,0.55) | #d13d59 | 1.9 | 0.877143 | 600 12px Inter, sans-serif | right | []",
     "1x stroke | rgba(26,26,26,0.55) | #d13d59 | 1.9 | 0.94 | 600 12px Inter, sans-serif | right | []",
     "1x stroke | rgba(26,26,26,0.55) | #d13d59 | 2.8 | 0.814286 | 600 12px Inter, sans-serif | right | []"
-   ]
-  },
-  "aliasing@460": {
-   "opCount": 140,
-   "stream": "5ed753c3",
-   "paintCount": 48,
-   "paints": "37a20d44",
-   "styles": [
-    "1x clearRect | #000000 | #000000 | 1 | 1 | 10px sans-serif | start | []",
-    "5x fill | #33b4e5 | #33b4e5 | 2.7 | 1 | 700 12px Inter, sans-serif | center | []",
-    "2x fill | #8a8578 | #8a8578 | 2.7 | 1 | 700 12px Inter, sans-serif | center | []",
-    "1x fill | #8a8578 | #8a8578 | 2.7 | 1 | 700 13px Inter, sans-serif | center | []",
-    "3x fill | #d13d59 | #d13d59 | 1.35 | 1 | 700 12px Inter, sans-serif | center | []",
-    "1x fill | rgba(26,26,26,0.07) | #000000 | 1 | 1 | 700 13px 'Helvetica Neue', Helvetica, Arial, sans-serif | left | []",
-    "1x fillRect | rgba(138,133,120, 0.1) | rgba(26,26,26,0.18) | 1 | 1 | 700 13px 'Helvetica Neue', Helvetica, Arial, sans-serif | left | []",
-    "1x fillRect | rgba(51,180,229, 0.16) | rgba(26,26,26,0.18) | 1 | 1 | 700 13px 'Helvetica Neue', Helvetica, Arial, sans-serif | left | []",
-    "3x fillText | rgba(26,26,26,0.55) | rgba(26,26,26,0.22) | 1.2 | 1 | 700 13px Inter, sans-serif | center | []",
-    "5x fillText | rgba(26,26,26,0.62) | #33b4e5 | 2.7 | 1 | 700 12px Inter, sans-serif | center | []",
-    "3x fillText | rgba(26,26,26,0.62) | #8a8578 | 2.7 | 1 | 700 12px Inter, sans-serif | center | []",
-    "1x fillText | rgba(26,26,26,0.64) | #33b4e5 | 1.2 | 1 | 700 13px Inter, sans-serif | center | []",
-    "1x fillText | rgba(26,26,26,0.72) | #33b4e5 | 2.7 | 1 | 700 12px Inter, sans-serif | left | []",
-    "2x fillText | rgba(26,26,26,0.76) | #33b4e5 | 1.2 | 1 | 700 14px Inter, sans-serif | center | []",
-    "1x fillText | rgba(26,26,26,0.82) | #000000 | 1 | 1 | 700 13px 'Helvetica Neue', Helvetica, Arial, sans-serif | left | []",
-    "3x stroke | #d13d59 | #33b4e5 | 2.7 | 1 | 700 12px Inter, sans-serif | center | []",
-    "1x stroke | rgba(138,133,120, 0.1) | #33b4e5 | 1.2 | 1 | 700 13px 'Helvetica Neue', Helvetica, Arial, sans-serif | left | [5,6]",
-    "1x stroke | rgba(138,133,120, 0.1) | rgba(26,26,26,0.42) | 1.6 | 1 | 700 13px 'Helvetica Neue', Helvetica, Arial, sans-serif | left | []",
-    "1x stroke | rgba(26,26,26,0.07) | rgba(26,26,26,0.18) | 1 | 1 | 700 13px 'Helvetica Neue', Helvetica, Arial, sans-serif | left | []",
-    "1x stroke | rgba(26,26,26,0.55) | #8a8578 | 2.7 | 1 | 700 13px Inter, sans-serif | center | []",
-    "2x stroke | rgba(26,26,26,0.55) | rgba(26,26,26,0.22) | 1.2 | 1 | 700 13px Inter, sans-serif | center | []",
-    "2x stroke | rgba(26,26,26,0.62) | #33b4e5 | 2.7 | 1 | 700 12px Inter, sans-serif | center | []",
-    "2x stroke | rgba(26,26,26,0.62) | #8a8578 | 2.7 | 1 | 700 12px Inter, sans-serif | center | []",
-    "3x stroke | rgba(26,26,26,0.62) | #d13d59 | 1.35 | 1 | 700 12px Inter, sans-serif | center | [3,5]",
-    "1x stroke | rgba(26,26,26,0.64) | rgba(26,26,26,0.22) | 1.2 | 1 | 700 13px Inter, sans-serif | center | []"
    ]
   },
   "transfer@460/0": {
@@ -2287,39 +2089,6 @@
     "1x stroke | rgba(31,42,86,0.55) | #C74B50 | 2.8 | 0.688571 | 600 12px 'Be Vietnam Pro', sans-serif | right | []"
    ]
   },
-  "aliasing@640": {
-   "opCount": 140,
-   "stream": "7df36609",
-   "paintCount": 48,
-   "paints": "b30e41dd",
-   "styles": [
-    "1x clearRect | #000000 | #000000 | 1 | 1 | 10px sans-serif | start | []",
-    "2x fill | #5C77C4 | #5C77C4 | 2.7 | 1 | 700 12px 'Be Vietnam Pro', sans-serif | center | []",
-    "1x fill | #5C77C4 | #5C77C4 | 2.7 | 1 | 700 13px 'Be Vietnam Pro', sans-serif | center | []",
-    "5x fill | #74757C | #74757C | 2.7 | 1 | 700 12px 'Be Vietnam Pro', sans-serif | center | []",
-    "3x fill | #C74B50 | #C74B50 | 1.35 | 1 | 700 12px 'Be Vietnam Pro', sans-serif | center | []",
-    "1x fill | rgba(31,42,86,0.07) | #000000 | 1 | 1 | 700 16px 'Be Vietnam Pro', sans-serif | left | []",
-    "1x fillRect | rgba(116,117,124, 0.1) | rgba(31,42,86,0.18) | 1 | 1 | 700 16px 'Be Vietnam Pro', sans-serif | left | []",
-    "1x fillRect | rgba(199,75,80, 0.10) | rgba(31,42,86,0.18) | 1 | 1 | 700 16px 'Be Vietnam Pro', sans-serif | left | []",
-    "3x fillText | rgba(31,42,86,0.55) | rgba(31,42,86,0.22) | 1.2 | 1 | 700 13px 'Be Vietnam Pro', sans-serif | center | []",
-    "3x fillText | rgba(31,42,86,0.62) | #5C77C4 | 2.7 | 1 | 700 12px 'Be Vietnam Pro', sans-serif | center | []",
-    "5x fillText | rgba(31,42,86,0.62) | #74757C | 2.7 | 1 | 700 12px 'Be Vietnam Pro', sans-serif | center | []",
-    "1x fillText | rgba(31,42,86,0.64) | #74757C | 1.2 | 1 | 700 13px 'Be Vietnam Pro', sans-serif | center | []",
-    "1x fillText | rgba(31,42,86,0.72) | #74757C | 2.7 | 1 | 700 14px 'Be Vietnam Pro', sans-serif | left | []",
-    "2x fillText | rgba(31,42,86,0.76) | #74757C | 1.2 | 1 | 700 14px 'Be Vietnam Pro', sans-serif | center | []",
-    "1x fillText | rgba(31,42,86,0.82) | #000000 | 1 | 1 | 700 16px 'Be Vietnam Pro', sans-serif | left | []",
-    "3x stroke | #C74B50 | #74757C | 2.7 | 1 | 700 12px 'Be Vietnam Pro', sans-serif | center | []",
-    "1x stroke | rgba(116,117,124, 0.1) | #74757C | 1.2 | 1 | 700 16px 'Be Vietnam Pro', sans-serif | left | [5,6]",
-    "1x stroke | rgba(116,117,124, 0.1) | rgba(31,42,86,0.42) | 1.6 | 1 | 700 16px 'Be Vietnam Pro', sans-serif | left | []",
-    "1x stroke | rgba(31,42,86,0.07) | rgba(31,42,86,0.18) | 1 | 1 | 700 16px 'Be Vietnam Pro', sans-serif | left | []",
-    "1x stroke | rgba(31,42,86,0.55) | #5C77C4 | 2.7 | 1 | 700 13px 'Be Vietnam Pro', sans-serif | center | []",
-    "2x stroke | rgba(31,42,86,0.55) | rgba(31,42,86,0.22) | 1.2 | 1 | 700 13px 'Be Vietnam Pro', sans-serif | center | []",
-    "2x stroke | rgba(31,42,86,0.62) | #5C77C4 | 2.7 | 1 | 700 12px 'Be Vietnam Pro', sans-serif | center | []",
-    "2x stroke | rgba(31,42,86,0.62) | #74757C | 2.7 | 1 | 700 12px 'Be Vietnam Pro', sans-serif | center | []",
-    "3x stroke | rgba(31,42,86,0.62) | #C74B50 | 1.35 | 1 | 700 12px 'Be Vietnam Pro', sans-serif | center | [3,5]",
-    "1x stroke | rgba(31,42,86,0.64) | rgba(31,42,86,0.22) | 1.2 | 1 | 700 13px 'Be Vietnam Pro', sans-serif | center | []"
-   ]
-  },
   "transfer@640/0": {
    "opCount": 963,
    "stream": "47301cbb",
@@ -2660,39 +2429,6 @@
     "1x stroke | rgba(31,42,86,0.55) | #C74B50 | 1.9 | 0.877143 | 600 12px 'Be Vietnam Pro', sans-serif | right | []",
     "1x stroke | rgba(31,42,86,0.55) | #C74B50 | 1.9 | 0.94 | 600 12px 'Be Vietnam Pro', sans-serif | right | []",
     "1x stroke | rgba(31,42,86,0.55) | #C74B50 | 2.8 | 0.688571 | 600 12px 'Be Vietnam Pro', sans-serif | right | []"
-   ]
-  },
-  "aliasing@460": {
-   "opCount": 140,
-   "stream": "5ed753c3",
-   "paintCount": 48,
-   "paints": "99fbd574",
-   "styles": [
-    "1x clearRect | #000000 | #000000 | 1 | 1 | 10px sans-serif | start | []",
-    "2x fill | #5C77C4 | #5C77C4 | 2.7 | 1 | 700 12px 'Be Vietnam Pro', sans-serif | center | []",
-    "1x fill | #5C77C4 | #5C77C4 | 2.7 | 1 | 700 13px 'Be Vietnam Pro', sans-serif | center | []",
-    "5x fill | #74757C | #74757C | 2.7 | 1 | 700 12px 'Be Vietnam Pro', sans-serif | center | []",
-    "3x fill | #C74B50 | #C74B50 | 1.35 | 1 | 700 12px 'Be Vietnam Pro', sans-serif | center | []",
-    "1x fill | rgba(31,42,86,0.07) | #000000 | 1 | 1 | 700 13px 'Be Vietnam Pro', sans-serif | left | []",
-    "1x fillRect | rgba(116,117,124, 0.1) | rgba(31,42,86,0.18) | 1 | 1 | 700 13px 'Be Vietnam Pro', sans-serif | left | []",
-    "1x fillRect | rgba(199,75,80, 0.10) | rgba(31,42,86,0.18) | 1 | 1 | 700 13px 'Be Vietnam Pro', sans-serif | left | []",
-    "3x fillText | rgba(31,42,86,0.55) | rgba(31,42,86,0.22) | 1.2 | 1 | 700 13px 'Be Vietnam Pro', sans-serif | center | []",
-    "3x fillText | rgba(31,42,86,0.62) | #5C77C4 | 2.7 | 1 | 700 12px 'Be Vietnam Pro', sans-serif | center | []",
-    "5x fillText | rgba(31,42,86,0.62) | #74757C | 2.7 | 1 | 700 12px 'Be Vietnam Pro', sans-serif | center | []",
-    "1x fillText | rgba(31,42,86,0.64) | #74757C | 1.2 | 1 | 700 13px 'Be Vietnam Pro', sans-serif | center | []",
-    "1x fillText | rgba(31,42,86,0.72) | #74757C | 2.7 | 1 | 700 12px 'Be Vietnam Pro', sans-serif | left | []",
-    "2x fillText | rgba(31,42,86,0.76) | #74757C | 1.2 | 1 | 700 14px 'Be Vietnam Pro', sans-serif | center | []",
-    "1x fillText | rgba(31,42,86,0.82) | #000000 | 1 | 1 | 700 13px 'Be Vietnam Pro', sans-serif | left | []",
-    "3x stroke | #C74B50 | #74757C | 2.7 | 1 | 700 12px 'Be Vietnam Pro', sans-serif | center | []",
-    "1x stroke | rgba(116,117,124, 0.1) | #74757C | 1.2 | 1 | 700 13px 'Be Vietnam Pro', sans-serif | left | [5,6]",
-    "1x stroke | rgba(116,117,124, 0.1) | rgba(31,42,86,0.42) | 1.6 | 1 | 700 13px 'Be Vietnam Pro', sans-serif | left | []",
-    "1x stroke | rgba(31,42,86,0.07) | rgba(31,42,86,0.18) | 1 | 1 | 700 13px 'Be Vietnam Pro', sans-serif | left | []",
-    "1x stroke | rgba(31,42,86,0.55) | #5C77C4 | 2.7 | 1 | 700 13px 'Be Vietnam Pro', sans-serif | center | []",
-    "2x stroke | rgba(31,42,86,0.55) | rgba(31,42,86,0.22) | 1.2 | 1 | 700 13px 'Be Vietnam Pro', sans-serif | center | []",
-    "2x stroke | rgba(31,42,86,0.62) | #5C77C4 | 2.7 | 1 | 700 12px 'Be Vietnam Pro', sans-serif | center | []",
-    "2x stroke | rgba(31,42,86,0.62) | #74757C | 2.7 | 1 | 700 12px 'Be Vietnam Pro', sans-serif | center | []",
-    "3x stroke | rgba(31,42,86,0.62) | #C74B50 | 1.35 | 1 | 700 12px 'Be Vietnam Pro', sans-serif | center | [3,5]",
-    "1x stroke | rgba(31,42,86,0.64) | rgba(31,42,86,0.22) | 1.2 | 1 | 700 13px 'Be Vietnam Pro', sans-serif | center | []"
    ]
   },
   "transfer@460/0": {

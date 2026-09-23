@@ -89,7 +89,8 @@ for (const phone of [
           expect(await text.evaluate(el => parseFloat(getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(16);
         }
         if (route.endsWith('/bqst')) {
-          await expect(page.locator('.bqst-audio-toggle .is-active')).toHaveCSS('color', 'rgb(247, 245, 240)');
+          await expect(page.locator('#bqst-audio-demo .bqst-audio-toggle .is-active')).toHaveCSS('color', 'rgb(247, 245, 240)');
+          await expect(page.locator('.bqst-os-toggle .is-active')).toHaveCSS('color', 'rgb(247, 245, 240)');
         }
         if (route.endsWith('/live-chord-monitor')) {
           const demo = page.locator('.lcm-demo');

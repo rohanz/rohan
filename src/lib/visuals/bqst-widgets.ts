@@ -38,8 +38,14 @@ const LAB_SLOTS: Array<{ id: string; type: LabType; title: string; meta: string;
   { id: 'bqst-eq-visual', type: 'eq', title: 'baxandall-style eq curves', meta: 'q 0.38 · all stepped shelf positions · +/-6 db', label: 'BQST low and high shelf frequency response' },
   { id: 'bqst-transfer-visual', type: 'transfer', title: 'saturation transfer curve', meta: 'static input sweep · follows the drive control', label: 'BQST Cream and Grit saturation transfer curves' },
   { id: 'bqst-harmonics-visual', type: 'harmonics', title: 'harmonic fingerprint', meta: '1 khz sine · follows the drive control above', label: 'BQST Cream and Grit harmonic profile' },
-  { id: 'bqst-oversampling-visual', type: 'aliasing', title: 'why oversampling matters', meta: '6 khz tone · harmonic foldback at 44.1 khz', label: 'BQST oversampling and aliasing visualization' },
+  { id: 'bqst-oversampling-visual', type: 'aliasing', title: 'why oversampling matters', meta: '6 khz tone · saturated · 44.1 khz session', label: 'BQST oversampling and aliasing visualization' },
 ];
+
+// The caption under the aliasing chart, per oversampling setting.
+const OS_NOTES: Record<1 | 4, string> = {
+  1: 'Harmonics 4× to 7× fold back into the audible band (the brackets under the axis), landing between the real ones: pitches the tone never had.',
+  4: 'At 4× the harmonics fit below 88.2 kHz, and the filter removes them before the audio returns to 44.1 kHz. Nothing folds back.',
+};
 
 const HEIGHTS: Record<LabType, number> = {
   eq: BQST_EQ_HEIGHT,
@@ -80,14 +86,24 @@ export function initBqstDspLab({ root, palette, sizeCanvas, onThemeChange }: Bqs
                 </div>
                 <div class="bqst-chart-cell" style="width:100%;min-width:0"><canvas class="bqst-visual-canvas" aria-label="${slot.label}"></canvas></div>
               </div>`
-            : `<div class="bqst-chart-cell" style="width:100%;min-width:0"><canvas class="bqst-visual-canvas" aria-label="${slot.label}"></canvas></div>`
+            : slot.type === 'aliasing'
+              ? `<div class="bqst-audio-toggle bqst-os-toggle" role="group" aria-label="Oversampling">
+                  <button type="button" class="is-active" data-os="1" aria-pressed="true">no oversampling</button>
+                  <button type="button" data-os="4" aria-pressed="false">4× oversampling</button>
+                </div>
+                <div class="bqst-chart-cell" style="width:100%;min-width:0"><canvas class="bqst-visual-canvas" aria-label="${slot.label}"></canvas></div>
+                <p class="bqst-os-note" aria-live="polite">${OS_NOTES[1]}</p>`
+              : `<div class="bqst-chart-cell" style="width:100%;min-width:0"><canvas class="bqst-visual-canvas" aria-label="${slot.label}"></canvas></div>`
         }
-        <div class="bqst-legend">${legendForBqstVisual(slot.type, palette())}</div>
+        ${legendForBqstVisual(slot.type, palette()) && `<div class="bqst-legend">${legendForBqstVisual(slot.type, palette())}</div>`}
       </div>`;
     slot.canvas = slot.node.querySelector<HTMLCanvasElement>('.bqst-visual-canvas');
   });
 
   const driveState: Record<DriveType, number> = { transfer: 0, harmonics: 0 };
+  // Aliasing chart: 0 = no oversampling, 1 = 4x; tweened when switched.
+  let osMix = 0;
+  let osTween: number | null = null;
   const driveControls = Array.from(root.querySelectorAll<HTMLElement>('.bqst-drive-control')).map((node) => ({
     type: node.dataset.bqstDrive as DriveType,
     input: node.querySelector('input') as HTMLInputElement,
@@ -146,7 +162,7 @@ export function initBqstDspLab({ root, palette, sizeCanvas, onThemeChange }: Bqs
     if (slot.type === 'eq') drawEq(ctx, opts);
     else if (slot.type === 'transfer') drawTransfer(ctx, opts, driveDbFor('transfer'));
     else if (slot.type === 'harmonics') drawHarmonics(ctx, opts, driveDbFor('harmonics'));
-    else drawAliasing(ctx, opts);
+    else drawAliasing(ctx, opts, osMix);
   }
   const drawAll = () => slots.forEach((slot) => drawSlot(slot, true));
 
@@ -236,7 +252,42 @@ export function initBqstDspLab({ root, palette, sizeCanvas, onThemeChange }: Bqs
   const resizeObserver = new ResizeObserver(() => { fullRedraw = true; requestBqstDraw(); });
   slots.forEach((slot) => resizeObserver.observe(slot.canvas!.parentElement!));
 
+  // Oversampling switch: redraws only the aliasing canvas, cross-fading the
+  // fold-backs out (or back in) unless the reader prefers reduced motion.
+  const osSlot = slots.find((slot) => slot.type === 'aliasing');
+  const osButtons = Array.from(osSlot?.node.querySelectorAll<HTMLButtonElement>('.bqst-os-toggle button') ?? []);
+  const osNote = osSlot?.node.querySelector<HTMLElement>('.bqst-os-note');
+  const setOversampling = (factor: 1 | 4) => {
+    if (!osSlot) return;
+    osButtons.forEach((b) => {
+      const on = b.dataset.os === String(factor);
+      b.classList.toggle('is-active', on);
+      b.setAttribute('aria-pressed', String(on));
+    });
+    if (osNote) osNote.textContent = OS_NOTES[factor];
+    const target = factor === 4 ? 1 : 0;
+    if (osTween !== null) cancelAnimationFrame(osTween);
+    osTween = null;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { osMix = target; drawSlot(osSlot, false); return; }
+    const from = osMix;
+    const start = performance.now();
+    const step = (now: number) => {
+      const k = Math.min(1, (now - start) / 320);
+      osMix = from + (target - from) * (1 - Math.pow(1 - k, 3));
+      if (isActive) drawSlot(osSlot, false);
+      osTween = k < 1 && isActive ? requestAnimationFrame(step) : null;
+    };
+    osTween = requestAnimationFrame(step);
+  };
+  const osListeners = osButtons.map((b) => {
+    const onClick = () => setOversampling(b.dataset.os === '4' ? 4 : 1);
+    b.addEventListener('click', onClick);
+    return () => b.removeEventListener('click', onClick);
+  });
+
   return () => {
+    osListeners.forEach((off) => off());
+    if (osTween !== null) cancelAnimationFrame(osTween);
     unsubscribeRedraw?.();
     resizeObserver.disconnect();
     isActive = false;

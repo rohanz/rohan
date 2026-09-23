@@ -22,7 +22,7 @@ export interface BqstDrawOptions {
 export const BQST_EQ_HEIGHT = 360;
 export const BQST_TRANSFER_HEIGHT = 340;
 export const BQST_HARMONICS_HEIGHT = 340;
-export const BQST_ALIASING_HEIGHT = 350;
+export const BQST_ALIASING_HEIGHT = 300;
 
 export function drawEq(ctx: CanvasRenderingContext2D, { w, palette }: BqstDrawOptions): void {
   const p = palette.bqst;
@@ -244,153 +244,154 @@ export function drawHarmonics(
   ctx.fillText(w < 520 ? 'relative harmonic energy' : 'relative harmonic energy below the fundamental', pad.l, 22);
 }
 
-export function drawAliasing(ctx: CanvasRenderingContext2D, { w, palette }: BqstDrawOptions): void {
+/** Harmonics drawn in the aliasing chart: a 6 kHz tone up to its 7th (42 kHz). */
+export const ALIASING_HARMONICS = [1, 2, 3, 4, 5, 6, 7];
+export const ALIASING_FUNDAMENTAL = 6000;
+export const ALIASING_SAMPLE_RATE = 44100;
+
+/**
+ * One frequency axis (0-48 kHz) with a 6 kHz tone's harmonics.
+ *
+ * `oversampled` runs from 0 (no oversampling: everything above the 22.05 kHz
+ * Nyquist line folds back) to 1 (4x: the harmonics have room up to 88.2 kHz
+ * and are filtered before the return to 44.1 kHz). In between it cross-fades,
+ * so the widget can animate the switch.
+ *
+ * A harmonic at f above Nyquist aliases to 44.1k - f: the mirror image around
+ * Nyquist. Each pair is joined by a square bracket under the axis; every pair
+ * is centred on Nyquist, so giving wider pairs deeper brackets nests them and
+ * they never cross.
+ */
+export function drawAliasing(ctx: CanvasRenderingContext2D, { w, palette }: BqstDrawOptions, oversampled = 0): void {
   const p = palette.bqst;
-  const gridColor = palette.ink;
-  const textColor = palette.ink;
+  const ink = palette.ink;
   const h = BQST_ALIASING_HEIGHT;
-  const pad = { l: 10, r: 10, t: 58, b: 34 };
-  const sampleRate = 44100;
-  const nyquist = sampleRate / 2;
-  const displayedMaxFreq = 52000;
-  const fundamental = 6000;
-  const harmonics = [1, 2, 3, 4, 5, 6, 7, 8];
-  const audibleColor = p.aliasAudible;
-  const oversampledColor = p.aliasOversampled;
-  const aliasColor = p.aliasWarn;
-  const plotX = pad.l;
-  const plotY = pad.t;
-  const plotW = w - pad.l - pad.r;
-  const plotH = 238;
-  const axisY = plotY + 154;
-  const axisInset = 20;
-  const axisX0 = plotX + axisInset;
-  const axisX1 = plotX + plotW - axisInset;
-  const axisW = axisX1 - axisX0;
-  const xFor = (freq: number) => axisX0 + (Math.max(0, Math.min(displayedMaxFreq, freq)) / displayedMaxFreq) * axisW;
-  const roundedPath = (x: number, y: number, width: number, height: number, radius: number) => {
-    const r = Math.min(radius, width * 0.5, height * 0.5);
-    ctx.beginPath();
-    ctx.moveTo(x + r, y);
-    ctx.lineTo(x + width - r, y);
-    ctx.quadraticCurveTo(x + width, y, x + width, y + r);
-    ctx.lineTo(x + width, y + height - r);
-    ctx.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
-    ctx.lineTo(x + r, y + height);
-    ctx.quadraticCurveTo(x, y + height, x, y + height - r);
-    ctx.lineTo(x, y + r);
-    ctx.quadraticCurveTo(x, y, x + r, y);
-    ctx.closePath();
-  };
+  const t = Math.max(0, Math.min(1, oversampled));
+  const nyquist = ALIASING_SAMPLE_RATE / 2;
+  const maxFreq = 48000;
+  const narrow = w < 520;
+  const pad = { l: narrow ? 14 : 22, r: narrow ? 14 : 22 };
+  const axisY = 196;
+  const stemMax = 128;
+  const x0 = pad.l;
+  const x1 = w - pad.r;
+  const xFor = (freq: number) => x0 + (freq / maxFreq) * (x1 - x0);
+  const nyX = xFor(nyquist);
+  const warnAlpha = 1 - t;
 
   ctx.clearRect(0, 0, w, h);
-  ctx.fillStyle = textColor(0.82);
-  ctx.font = `700 ${w < 520 ? 13 : 16}px ${palette.fonts.title}`;
-  ctx.textAlign = 'left';
-  ctx.fillText(w < 520 ? '6 kHz harmonics can fold past Nyquist' : 'a 6 kHz tone creates harmonics above the host nyquist point', pad.l, 28);
+  ctx.lineCap = 'butt';
 
-  ctx.fillStyle = gridColor(0.07);
-  roundedPath(plotX, plotY, plotW, plotH, 12);
-  ctx.fill();
-  ctx.strokeStyle = gridColor(0.18);
-  ctx.lineWidth = 1;
-  roundedPath(plotX + 0.5, plotY + 0.5, plotW - 1, plotH - 1, 12);
-  ctx.stroke();
-
-  const audibleEnd = xFor(nyquist);
-  ctx.fillStyle = p.aliasBandAudible;
-  ctx.fillRect(plotX, plotY, audibleEnd - plotX, plotH);
-  ctx.fillStyle = p.aliasBandHeadroom;
-  ctx.fillRect(audibleEnd, plotY, plotX + plotW - audibleEnd, plotH);
-
-  ctx.strokeStyle = textColor(0.42);
-  ctx.lineWidth = 1.6;
-  ctx.beginPath();
-  ctx.moveTo(axisX0, axisY);
-  ctx.lineTo(axisX1, axisY);
-  ctx.stroke();
-
-  ctx.strokeStyle = oversampledColor;
-  ctx.lineWidth = 1.2;
-  ctx.setLineDash([5, 6]);
-  ctx.beginPath();
-  ctx.moveTo(audibleEnd, plotY + 20);
-  ctx.lineTo(audibleEnd, plotY + plotH - 24);
-  ctx.stroke();
-  ctx.setLineDash([]);
-
-  ctx.fillStyle = textColor(0.76);
-  ctx.font = `700 14px ${palette.fonts.ui}`;
-  ctx.textAlign = 'center';
-  ctx.fillText('audible output band', plotX + (audibleEnd - plotX) * 0.5, plotY + 30);
-  ctx.fillText('4x processing headroom', audibleEnd + (plotX + plotW - audibleEnd) * 0.5, plotY + 30);
-  ctx.fillStyle = textColor(0.64);
-  ctx.font = `700 13px ${palette.fonts.ui}`;
-  ctx.fillText('22 kHz output nyquist', audibleEnd, plotY + plotH - 14);
-
-  [0, 44100, displayedMaxFreq].forEach((freq) => {
-    const x = xFor(freq);
-    ctx.strokeStyle = gridColor(0.22);
-    ctx.lineWidth = 1.2;
+  // The band above Nyquist, shaded while it cannot be represented.
+  if (warnAlpha > 0) {
+    ctx.globalAlpha = warnAlpha;
+    ctx.fillStyle = p.aliasBandHeadroom;
+    ctx.fillRect(nyX, 26, x1 - nyX, axisY - 26);
+    ctx.strokeStyle = ink(0.85);
+    ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(x, axisY - 9);
-    ctx.lineTo(x, axisY + 9);
+    ctx.moveTo(Math.round(nyX) + 0.5, 26);
+    ctx.lineTo(Math.round(nyX) + 0.5, axisY);
     ctx.stroke();
-    ctx.fillStyle = textColor(0.55);
-    ctx.font = `700 13px ${palette.fonts.ui}`;
-    ctx.textAlign = 'center';
-    const label = freq === 0 ? '0' : `${Math.round(freq / 1000)}k`;
-    ctx.fillText(label, x, axisY + 30);
-  });
+    ctx.fillStyle = ink(0.62);
+    ctx.font = `600 11px ${palette.fonts.ui}`;
+    ctx.textAlign = 'left';
+    ctx.fillText(narrow ? 'ABOVE 22.05 KHZ' : 'ABOVE NYQUIST · 22.05 KHZ', nyX + 8, 42);
+    ctx.globalAlpha = 1;
+  }
+  if (t > 0) {
+    ctx.globalAlpha = t;
+    ctx.fillStyle = ink(0.62);
+    ctx.font = `600 11px ${palette.fonts.ui}`;
+    ctx.textAlign = 'right';
+    ctx.fillText(narrow ? 'ROOM TO 88.2 KHZ →' : 'AT 4× THE ROOM RUNS TO 88.2 KHZ →', x1, 42);
+    ctx.globalAlpha = 1;
+  }
 
-  const truePoints = harmonics.map((harmonic) => ({
-    harmonic,
-    frequency: fundamental * harmonic,
-    folded: foldFrequency(fundamental * harmonic, sampleRate),
-  }));
-
-  truePoints.forEach(({ harmonic, frequency, folded }, index) => {
-    const x = xFor(frequency);
-    const height = 48 - index * 3;
-    const y = axisY - height;
-    const isAliasingRisk = frequency > nyquist;
-    ctx.strokeStyle = isAliasingRisk ? oversampledColor : audibleColor;
-    ctx.lineWidth = 2.7;
+  // Axis and ticks.
+  ctx.strokeStyle = ink(0.85);
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(x0, axisY + 0.5);
+  ctx.lineTo(x1, axisY + 0.5);
+  ctx.stroke();
+  ctx.fillStyle = ink(0.62);
+  ctx.font = `500 ${narrow ? 10 : 11}px ${palette.fonts.ui}`;
+  ctx.textAlign = 'center';
+  [0, 10000, 20000, 30000, 40000].forEach((freq) => {
+    const x = Math.round(xFor(freq)) + 0.5;
     ctx.beginPath();
     ctx.moveTo(x, axisY);
-    ctx.lineTo(x, y + 8);
+    ctx.lineTo(x, axisY + 5);
     ctx.stroke();
-    ctx.fillStyle = isAliasingRisk ? oversampledColor : audibleColor;
-    ctx.beginPath();
-    ctx.arc(x, y, harmonic === 1 ? 6 : 5.4, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = textColor(0.62);
-    ctx.font = `700 12px ${palette.fonts.ui}`;
-    ctx.textAlign = 'center';
-    ctx.fillText(`${harmonic}x`, x, y - 12);
-
-    if (isAliasingRisk && harmonic <= 6) {
-      const foldedX = xFor(folded);
-      const arrowY = axisY + 54 + (index % 2) * 18;
-      ctx.strokeStyle = aliasColor;
-      ctx.lineWidth = 1.35;
-      ctx.setLineDash([3, 5]);
-      ctx.beginPath();
-      ctx.moveTo(x, axisY + 12);
-      ctx.quadraticCurveTo((x + foldedX) * 0.5, arrowY, foldedX, axisY + 12);
-      ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.fillStyle = aliasColor;
-      ctx.beginPath();
-      ctx.arc(foldedX, axisY + 14, 3.8, 0, Math.PI * 2);
-      ctx.fill();
-    }
+    ctx.fillText(freq === 0 ? '0' : `${freq / 1000} kHz`, x, axisY + 18);
   });
 
-  ctx.fillStyle = textColor(0.72);
-  ctx.font = `700 ${w < 520 ? 12 : 14}px ${palette.fonts.ui}`;
-  ctx.textAlign = 'left';
-  ctx.fillText(w < 520 ? 'red dots show foldback positions without oversampling' : 'red dots show where high harmonics would fold back without oversampling', plotX, plotY + plotH + 34);
+  // Heights are whole multiples of the 6px dash period (minus the trailing
+  // gap), so a dashed stem always ends on a full dash instead of a sliver.
+  const DASH = 3;
+  const stems = ALIASING_HARMONICS.map((k) => {
+    const freq = ALIASING_FUNDAMENTAL * k;
+    const raw = stemMax / Math.pow(k, 0.8);
+    return { k, freq, alias: foldFrequency(freq, ALIASING_SAMPLE_RATE), height: Math.round(raw / (DASH * 2)) * DASH * 2 - DASH };
+  });
+
+  // Fold brackets first, so stems and labels sit on top.
+  const bracketTop = axisY + 28;
+  if (warnAlpha > 0) {
+    ctx.globalAlpha = warnAlpha * 0.75;
+    ctx.strokeStyle = p.aliasWarn;
+    ctx.lineWidth = 1;
+    stems.filter((s) => s.freq > nyquist).forEach((s, i) => {
+      const from = Math.round(xFor(s.freq)) + 0.5;
+      const to = Math.round(xFor(s.alias)) + 0.5;
+      const depth = Math.round(bracketTop + 10 + i * 12) + 0.5;
+      ctx.beginPath();
+      ctx.moveTo(from, bracketTop);
+      ctx.lineTo(from, depth);
+      ctx.lineTo(to, depth);
+      ctx.lineTo(to, bracketTop);
+      ctx.stroke();
+    });
+    ctx.globalAlpha = 1;
+  }
+
+  stems.forEach((s) => {
+    const over = s.freq > nyquist;
+    const x = Math.round(xFor(s.freq)) + 0.5;
+    const top = axisY - s.height;
+    ctx.lineWidth = 2.5;
+    if (over) {
+      // Dashed while it cannot exist at 44.1 kHz, solid once there is room.
+      ctx.strokeStyle = p.aliasOversampled;
+      ctx.setLineDash(t < 0.5 ? [DASH, DASH] : []);
+      ctx.beginPath();
+      ctx.moveTo(x, axisY);
+      ctx.lineTo(x, top);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      if (warnAlpha > 0) {
+        const ax = Math.round(xFor(s.alias)) + 0.5;
+        ctx.globalAlpha = warnAlpha;
+        ctx.strokeStyle = p.aliasWarn;
+        ctx.beginPath();
+        ctx.moveTo(ax, axisY);
+        ctx.lineTo(ax, top);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
+    } else {
+      ctx.strokeStyle = p.aliasAudible;
+      ctx.beginPath();
+      ctx.moveTo(x, axisY);
+      ctx.lineTo(x, top);
+      ctx.stroke();
+    }
+    ctx.fillStyle = over ? p.aliasOversampled : p.aliasAudible;
+    ctx.font = `600 ${narrow ? 10 : 11}px ${palette.fonts.ui}`;
+    ctx.textAlign = 'center';
+    ctx.fillText(`${s.k}×`, x, top - 8);
+  });
 }
 
 /**
@@ -414,8 +415,6 @@ export function legendForBqstVisual(type: string, palette: VisualPalette): strin
   if (type === 'transfer') {
     return `<span><i style="background:${p.seriesReference}"></i>dry signal</span><span><i style="background:${p.seriesPrimary}"></i>cream</span><span><i style="background:${p.seriesComparison}"></i>grit</span>`;
   }
-  if (type === 'aliasing') {
-    return `<span><i style="background:${p.legendAliasAudible}"></i>audible harmonic</span><span><i style="background:${p.aliasOversampled}"></i>harmonic inside 4x processing</span><span><i style="background:${p.aliasWarn}"></i>foldback alias position</span>`;
-  }
+  if (type === 'aliasing') return ''; // labelled directly on the chart
   return `<span><i style="background:${p.seriesPrimary}"></i>cream</span><span><i style="background:${p.seriesComparison}"></i>grit</span>`;
 }
