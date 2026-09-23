@@ -18,8 +18,12 @@ html.theme-swiss .sw-article-art .swiss-card-art svg { position: absolute; inset
 html.theme-swiss .sw-article-art .swiss-card-placeholder { min-height: 16rem; }
 @media (max-width: 899px) {
   html.theme-swiss .sw-article-head-inner { grid-template-columns: minmax(0, 1fr); min-height: 0; }
-  html.theme-swiss .sw-article-art.swiss-card { order: -1; border-left: 0; border-bottom: 1px solid var(--hair); }
-  html.theme-swiss .sw-article-art.swiss-card .swiss-card-art { height: auto; aspect-ratio: 4 / 3; min-height: 0; }
+  /* Both states: on touch a tap applies :hover, and the desktop hover rule
+     above would bring back the column divider and the stretched height. */
+  html.theme-swiss .sw-article-art.swiss-card,
+  html.theme-swiss .sw-article-art.swiss-card:hover { order: -1; border-left: 0; border-bottom: 1px solid var(--hair); }
+  html.theme-swiss .sw-article-art.swiss-card .swiss-card-art,
+  html.theme-swiss .sw-article-art.swiss-card:hover .swiss-card-art { height: auto; aspect-ratio: 4 / 3; min-height: 0; }
 }
 html.theme-swiss .sw-article-layout { max-width: 82.5rem; margin-inline: auto; }
 html.theme-swiss .sw-article-layout { display: grid; grid-template-columns: 1fr; gap: 3rem; padding-block: clamp(3rem, 5vw, 5rem) var(--section); }
@@ -154,6 +158,9 @@ html.theme-swiss .sw-mobile-sections a:focus-visible { outline: 2px solid var(--
   html.theme-swiss .sw-article-head-title > a,
   html.theme-swiss .sw-toc-nav a,
   html.theme-swiss .sw-article-all { display: inline-flex; align-items: center; min-width: 44px; min-height: 44px; }
+  /* The projects link's text is centred in a 44px target, leaving room below
+     it; lift the award chip so it sits evenly between the text and the name. */
+  html.theme-swiss .sw-article-head-title .sw-article-award.sw-label { margin: calc(-2rem + .1rem) 0 .5rem; }
   /* Reserve space for the index link so it cannot cover adjacent navigation. */
   html.theme-swiss .sw-article-foot { padding-bottom: 3.5rem; }
 }
@@ -164,3 +171,9 @@ html.theme-swiss .article .article-triptych > p { margin: 0; }
 html.theme-swiss .article .article-triptych :is(img, .article-zoom) { margin: 0; width: 100%; }
 html.theme-swiss .article .article-triptych .article-zoom::after { display: none; } /* the badge would cover most of a small screenshot */
 @media (max-width: 699px) { html.theme-swiss .article .article-triptych { grid-template-columns: minmax(0, 1fr); } }
+
+/* The episode fetch replaces this empty mount with the full initial transcript. */
+html.theme-swiss #qla2-episode { --qla2-episode-height: 34rem; }
+@media (max-width: 1279px) { html.theme-swiss #qla2-episode { --qla2-episode-height: 40rem; } }
+@media (max-width: 640px) { html.theme-swiss #qla2-episode { --qla2-episode-height: 48rem; } }
+@media (max-width: 374px) { html.theme-swiss #qla2-episode { --qla2-episode-height: 56rem; } }

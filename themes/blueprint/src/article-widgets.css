@@ -237,3 +237,6 @@
 .article-body .demo-waveform-canvas { width: 100%; height: 48px; }
 .article-body .demo-meters { justify-content: center; }
 }
+
+/* The shared episode keeps its initial trace reserved while data loads. */
+.article-body #qla2-episode { --qla2-episode-height: 34rem; }

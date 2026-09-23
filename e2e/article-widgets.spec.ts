@@ -176,3 +176,89 @@ test('late web fonts redraw mounted charts without resetting their controls', as
     }
   }
 });
+
+for (const theme of ['', '/transit']) {
+  test(`${theme || 'classic'} agentic episodes show every call, answer and score immediately`, async ({ page }) => {
+    const data = await (await page.request.get('/assets/data/agentic-analyst-data.json')).json();
+    await page.goto(`${theme}/projects/quantlab-agentic`);
+    const widget = page.locator('#qla2-episode');
+    await expect(widget.getByRole('button')).toHaveCount(data.episodes.length);
+    for (const episode of data.episodes) {
+      const choice = widget.getByRole('button', { name: episode.label, exact: true });
+      await choice.focus();
+      await page.keyboard.press('Enter');
+      await expect(choice).toBeFocused();
+      await expect(choice).toHaveAttribute('aria-pressed', 'true');
+      await expect(widget.locator('.qla2-question')).toHaveText(episode.question);
+      const calls = widget.locator('.qla2-step');
+      await expect(calls).toHaveCount(episode.steps.length);
+      for (const [i, step] of episode.steps.entries()) {
+        await expect(calls.nth(i)).toBeVisible();
+        await expect(calls.nth(i)).toContainText(step.what);
+        await expect(calls.nth(i)).toContainText(step.found);
+      }
+      await expect(widget.locator('.qla2-final')).toHaveText(episode.answer);
+      await expect(widget.locator('.qla2-verdict')).toHaveText(episode.verdict.pass ? 'verified' : 'wrong answer');
+      await expect(widget.locator('.qla2-reward-row')).toHaveCount(4);
+      await expect(widget.locator('.qla2-reward .qla2-zone-label')).toContainText(`${episode.verdict.total.toFixed(2)} / 1`);
+      const values = ['answer', 'validity', 'efficiency', 'grounding'].map((key, i) => {
+        const weight = i === 0 ? .7 : .1;
+        return `${(episode.verdict.components[key] * weight).toFixed(2)} / ${weight.toFixed(2)}`;
+      });
+      await expect(widget.locator('.qla2-reward-points')).toHaveText(values);
+    }
+    await expect(widget.locator('.qla2-outcome')).toHaveClass(/is-fail/);
+    await expect(widget.locator('.qla2-step.is-error')).toHaveCount(1);
+    await expect(widget.locator('[title], .qla2-step-controls, .qla2-system')).toHaveCount(0);
+    const tool = widget.locator('.gloss-term').first();
+    await tool.scrollIntoViewIfNeeded();
+    await tool.focus();
+    await expect(page.getByRole('tooltip')).toBeVisible();
+    await expect(page.getByRole('tooltip')).toHaveText(await tool.getAttribute('data-gloss') ?? '');
+    await expect(tool).toHaveAttribute('aria-describedby', 'gloss-tooltip');
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('tooltip')).toBeHidden();
+  });
+}
+
+test.describe('agentic episode on touch', () => {
+  test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+  test('calls wrap and dynamic glossary terms toggle by tap', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto('/projects/quantlab-agentic');
+    const widget = page.locator('#qla2-episode');
+    for (const label of ['simple lookup', 'multi-step', 'memory trap', 'point in time', 'failure run']) {
+      await widget.getByRole('button', { name: label, exact: true }).tap();
+      expect(await widget.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      const tool = widget.locator('.gloss-term').first();
+      await tool.scrollIntoViewIfNeeded();
+      await tool.tap();
+      await expect(page.getByRole('tooltip')).toBeVisible();
+      await tool.tap();
+      await expect(page.getByRole('tooltip')).toBeHidden();
+      await expect(widget.locator('.qla2-final')).toBeVisible();
+      await expect(widget.locator('.qla2-reward-row')).toHaveCount(4);
+    }
+  });
+});
+
+for (const [theme, width] of [['', 390], ['', 1440], ['/transit', 1440]] as const) {
+  test(`${theme || 'classic'} agentic episode reserves its initial height at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    let release!: () => void;
+    const ready = new Promise<void>((resolve) => { release = resolve; });
+    await page.route('**/assets/data/agentic-analyst-data.json', async (route) => {
+      await ready;
+      await route.continue();
+    });
+    await page.goto(`${theme}/projects/quantlab-agentic`, { waitUntil: 'domcontentloaded' });
+    await page.evaluate(() => document.fonts.ready);
+    const mount = page.locator('#qla2-episode');
+    const height = () => mount.evaluate((el) => el.getBoundingClientRect().height);
+    const before = await height();
+    release();
+    await expect(mount.locator('.qla2-final')).toBeAttached();
+    expect(Math.abs(await height() - before)).toBeLessThanOrEqual(1);
+  });
+}

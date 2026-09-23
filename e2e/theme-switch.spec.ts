@@ -1,4 +1,5 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
+import { parseFrontmatter } from '@astrojs/markdown-remark';
 import { expect, test, devices } from '@playwright/test';
 
 const pref = (page: import('@playwright/test').Page) =>
@@ -67,13 +68,17 @@ test('default and transit pages publish the expected canonicals @smoke', async (
 
 test('sitemap contains canonical routes only', async () => {
   const xml = readFileSync('dist/sitemap-0.xml', 'utf8');
-  for (const path of ['/', '/music/', '/projects/', '/about/', '/projects/careersphere/']) {
-    expect(xml).toContain(`<loc>https://www.rohanjk.xyz${path}</loc>`);
-  }
-  for (const excluded of ['/swatches', '/swiss', '/transit', '/blueprint', '/projects/quantlab-systems/']) {
+  const projects = readdirSync('src/content/projects').filter((file) => file.endsWith('.md'));
+  const listedPaths = projects.filter((file) => {
+    const { frontmatter } = parseFrontmatter(readFileSync(`src/content/projects/${file}`, 'utf8'));
+    return !frontmatter.unlisted;
+  }).map((file) => `/projects/${file.slice(0, -3)}/`);
+  const expected = ['/', '/music/', '/projects/', '/about/', ...listedPaths]
+    .map((path) => `https://www.rohanjk.xyz${path}`).sort();
+  expect([...xml.matchAll(/<loc>(.*?)<\/loc>/g)].map((match) => match[1]).sort()).toEqual(expected);
+  for (const excluded of ['/swatches', '/swiss', '/transit', '/blueprint', '/og/']) {
     expect(xml).not.toContain(excluded);
   }
-  expect((xml.match(/<loc>/g) ?? []).length).toBe(14);
 });
 
 for (const theme of ['transit', 'blueprint']) {

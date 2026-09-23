@@ -14,25 +14,6 @@
 .qla-visual .qla-visual-body .qla2-episode-picker { display: flex; flex-wrap: wrap; gap: 0.55rem; margin-bottom: 1rem; }
 .qla-visual .qla-visual-body .qla2-description { margin: 0 0 1.25rem; color: var(--text-secondary); font-size: 0.95rem; line-height: 1.55; }
 .qla-visual .qla-visual-body .qla2-split-caption { margin: -0.15rem 0 0.7rem; }
-.qla-visual .qla-visual-body .qla2-question { margin: 0 0 1.25rem; padding: 0.6rem 1.1rem; border-left: 3px solid var(--accent); color: var(--text-primary); font-weight: 600; line-height: 1.45; }
-.qla-visual .qla-visual-body .qla2-story { margin: 0 0 1rem; padding: 0; list-style: none; counter-reset: qla2step; }
-.qla-visual .qla-visual-body ol.qla2-story > li.qla2-step { position: relative; margin: 0; padding: 0.55rem 0 0.55rem 2.4rem; counter-increment: qla2step; display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 0.55rem; row-gap: 0.1rem; }
-.qla-visual .qla-visual-body ol.qla2-story > li.qla2-step::before { content: counter(qla2step); position: absolute; left: 0; top: 0.55rem; width: 1.45rem; height: 1.45rem; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--widget-radius, 50%); background: var(--bg-card); display: grid; place-items: center; font-size: 0.72rem; line-height: 1; font-weight: 700; color: var(--accent); }
-.qla-visual .qla-visual-body ol.qla2-story > li.qla2-step + li.qla2-step { border-top: 1px dashed var(--border-subtle); }
-.qla-visual .qla-visual-body .qla2-step-what { color: var(--text-secondary); font-size: 0.95rem; }
-.qla-visual .qla-visual-body .qla2-step-found { color: var(--text-secondary); font-size: 0.95rem; }
-.qla-visual .qla-visual-body .qla2-step-found::before { content: '→  '; color: var(--accent); font-weight: 700; }
-.qla-visual .qla-visual-body .qla2-tool { color: var(--accent); font-weight: 700; }
-.qla-visual .qla-visual-body .qla2-tool, .qla2-final {
-  font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
-  font-size: 0.92rem;
-}
-.qla-visual .qla-visual-body .qla2-outcome { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.9rem; margin-top: 0.45rem; padding: 0.75rem 0.9rem 0.35rem 0.2rem; border-top: 2px solid var(--border-subtle); }
-.qla-visual .qla-visual-body .qla2-final { color: var(--text-primary); font-weight: 700; overflow-wrap: anywhere; }
-.qla-visual .qla-visual-body .qla2-verdict { display: inline-flex; align-items: center; padding: 0.16rem 0.62rem; border-radius: var(--widget-radius, 999px); font-size: 0.68rem; line-height: 1.5; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; white-space: nowrap; }
-.qla-visual .qla-visual-body .qla2-verdict.is-pass { color: var(--accent); box-shadow: var(--widget-decoration, inset 0 0 0 1px var(--accent)); }
-.qla-visual .qla-visual-body .qla2-verdict.is-fail { color: var(--qla2-comparison, #c74b50); box-shadow: var(--widget-decoration, inset 0 0 0 1px currentColor); }
-.qla-visual .qla-visual-body .qla2-outcome-note { margin-left: auto; color: var(--text-secondary); font-size: 0.9rem; }
 .qla-visual .qla-visual-body .qla2-cost-key { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.4rem 1.4rem; margin: 0; padding-left: 1.6rem; color: var(--text-secondary); font-size: 0.92rem; }
 .qla-visual .qla-visual-body .qla2-cost-key li { padding-left: 0.2rem; }
 .qla-visual .qla-visual-body .qla2-cost-key li::marker { color: var(--accent); font-weight: 700; }
@@ -60,38 +41,45 @@
   flex: 0 0 3.2rem;
 }
 
-/* ---- how an answer gets made: system diagram, stepper, reward breakdown ---- */
-/* The five questions sit on one row of equal cells; phones fall back to wrapping. */
-.qla-visual .qla-visual-body .qla2-episode-picker:has(+ .qla2-question + .qla2-description) { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .5rem; }
-.qla-visual .qla-visual-body .qla2-episode-picker:has(+ .qla2-question + .qla2-description) .qla-btn { padding-inline: .5rem; white-space: nowrap; }
-.qla-visual .qla-visual-body .qla2-question + .qla2-description { margin: -.75rem 0 0; color: var(--text-secondary); font-size: .92rem; }
-.qla-visual .qla-visual-body .qla2-system { display: flex; flex-direction: column; align-items: stretch; margin: 1.25rem 0 1.25rem; }
-.qla-visual .qla-visual-body .qla2-sys-band { display: grid; gap: .4rem; }
-.qla-visual .qla-visual-body .qla2-sys-label { color: var(--text-secondary); font-size: .72rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; }
-.qla-visual .qla-visual-body .qla2-sys-tools { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 1px; background: var(--border-subtle); border: 1px solid var(--border-subtle); }
-.qla-visual .qla-visual-body .qla2-sys-tool { display: flex; align-items: center; justify-content: center; min-height: 2.6rem; padding: .35rem .4rem; background: var(--bg-card); text-align: center; transition: background .25s ease, color .25s ease; cursor: help; }
-.qla-visual .qla-visual-body .qla2-sys-tool-name { color: var(--text-secondary); font-family: var(--font-mono, ui-monospace, monospace); font-size: .78rem; line-height: 1.25; }
-.qla-visual .qla-visual-body .qla2-sys-tool.is-used .qla2-sys-tool-name { color: var(--accent); font-weight: 700; }
-.qla-visual .qla-visual-body .qla2-sys-tool.is-active { background: var(--accent); }
-.qla-visual .qla-visual-body .qla2-sys-tool.is-active .qla2-sys-tool-name { color: var(--bg-card); font-weight: 700; }
-.qla-visual .qla-visual-body .qla2-step-controls { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin: 0 0 .75rem; }
-.qla-visual .qla-visual-body .qla2-step-count { margin-left: auto; color: var(--text-secondary); font-size: .72rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; }
-.qla-visual .qla-visual-body ol.qla2-story > li.qla2-step.is-current .qla2-step-found { color: var(--text-primary); }
-.qla-visual .qla-visual-body .qla2-outcome[hidden], .qla-visual .qla-visual-body .qla2-reward[hidden] { display: none; }
-.qla-visual .qla-visual-body .qla2-outcome .qla2-zone-label { flex-basis: 100%; margin: 0; }
-.qla-visual .qla-visual-body .qla2-reward { display: grid; gap: .45rem; margin-top: .9rem; }
-.qla-visual .qla-visual-body .qla2-reward .qla2-zone-label { margin: 0 0 .15rem; }
-.qla-visual .qla-visual-body .qla2-reward-row { display: grid; grid-template-columns: minmax(8rem, 13rem) minmax(0, 1fr) 5.5rem; align-items: center; gap: .75rem; font-size: .88rem; }
-.qla-visual .qla-visual-body .qla2-reward-label { color: var(--text-secondary); }
-/* Bar length is the component's weight, so the 70% answer term dominates visually. */
-.qla-visual .qla-visual-body .qla2-reward-bar { position: relative; display: block; height: .7rem; width: calc(var(--qla2-weight) * 100%); min-width: 1.5rem; background: var(--qla2-wash, rgba(0,0,0,.04)); box-shadow: var(--widget-decoration, inset 0 0 0 1px var(--border-subtle)); }
-.qla-visual .qla-visual-body .qla2-reward-fill { position: absolute; inset: 0 auto 0 0; background: var(--accent); transition: width .5s cubic-bezier(.2,.7,.2,1); }
-.qla-visual .qla-visual-body .qla2-reward-row.is-zero .qla2-reward-label { color: var(--qla2-comparison, #c74b50); }
-.qla-visual .qla-visual-body .qla2-reward-points { color: var(--text-primary); font-variant-numeric: tabular-nums; text-align: right; font-weight: 700; }
-.qla-visual .qla-visual-body .qla2-reward-note { margin: .35rem 0 0; color: var(--text-secondary); font-size: .9rem; }
+/* The episode is one continuous reading path: question, calls, answer, score. */
+#qla2-episode .qla2-episode-picker { display: flex; flex-wrap: wrap; gap: .4rem; }
+#qla2-episode .qla2-episode-picker .qla-btn { flex: 1 1 auto; min-height: 44px; padding-inline: .65rem; background: var(--bg-card); color: var(--text-primary); }
+#qla2-episode .qla2-episode-picker .qla-btn.is-active { background: var(--bg-card); color: var(--accent); border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+#qla2-episode .qla2-episode-picker .qla-btn:hover { border-color: var(--accent); }
+#qla2-episode :is(.qla-btn, .gloss-term):focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+#qla2-episode .qla2-question { margin: 0 0 .8rem; color: var(--text-primary); font-weight: 600; line-height: 1.5; }
+#qla2-episode ol.qla2-story { margin: 0; padding: 0; list-style: none; counter-reset: qla2step; }
+#qla2-episode ol.qla2-story > li.qla2-step { position: relative; margin: 0; padding: .7rem 0 .7rem 2.1rem; counter-increment: qla2step; display: flex; flex-wrap: wrap; align-items: baseline; gap: .15rem .65rem; border-top: 1px solid var(--border-subtle); line-height: 1.5; overflow-wrap: anywhere; }
+#qla2-episode .qla2-step::before { content: counter(qla2step); position: absolute; left: 0; top: .8rem; width: 1.3rem; height: 1.3rem; display: grid; place-items: center; border: 1px solid var(--border-subtle); color: var(--text-secondary); font-size: .75rem; line-height: 1; }
+#qla2-episode .qla2-tool { flex: 0 1 auto; min-width: 0; color: var(--text-primary); font-family: var(--font-mono, ui-monospace, monospace); font-size: .88rem; font-weight: 600; cursor: pointer; }
+#qla2-episode .qla2-step-what { color: var(--text-secondary); font-size: 1rem; }
+#qla2-episode .qla2-step-found { flex-basis: 100%; min-width: 0; color: var(--text-primary); font-size: 1rem; }
+#qla2-episode .qla2-result-label { color: var(--text-secondary); }
+#qla2-episode .qla2-step.is-error .qla2-step-found { color: var(--qla2-comparison); }
+#qla2-episode .qla2-outcome { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem .7rem; padding: .85rem 0; border-block: 1px solid var(--border-subtle); }
+#qla2-episode .qla2-outcome.is-fail { border-left: 3px solid var(--qla2-comparison); padding-left: .8rem; background: color-mix(in srgb, var(--qla2-comparison) 6%, transparent); }
+#qla2-episode .qla2-outcome .qla2-zone-label { flex-basis: 100%; margin: 0; }
+#qla2-episode .qla2-final { color: var(--text-primary); font-weight: 600; overflow-wrap: anywhere; }
+#qla2-episode .qla2-verdict { padding: .1rem .4rem; border: 1px solid currentColor; color: var(--accent); font-size: .72rem; line-height: 1.5; font-weight: 600; }
+#qla2-episode .qla2-verdict.is-fail { color: var(--qla2-comparison); }
+#qla2-episode .qla2-description { flex-basis: 100%; margin: 0; font-size: 1rem; line-height: 1.5; }
+#qla2-episode .qla2-reward { display: grid; gap: .45rem; margin-top: .85rem; }
+#qla2-episode .qla2-reward .qla2-zone-label { margin: 0 0 .15rem; }
+#qla2-episode .qla2-reward-row { display: grid; grid-template-columns: minmax(0, 12rem) minmax(0, 1fr) 6rem; align-items: center; gap: .6rem; font-size: .85rem; line-height: 1.5; }
+#qla2-episode .qla2-reward-label { color: var(--text-secondary); }
+/* Tracks share one scale: the answer can earn seven times the other terms. */
+#qla2-episode .qla2-reward-bar { position: relative; display: block; height: .55rem; width: calc(var(--qla2-weight) * 100%); background: var(--qla2-wash); border: 1px solid var(--border-subtle); }
+#qla2-episode .qla2-reward-fill { position: absolute; inset: 0 auto 0 0; background: var(--accent); }
+#qla2-episode .qla2-reward-row.is-zero .qla2-reward-label { color: var(--qla2-comparison); }
+#qla2-episode .qla2-reward-points { color: var(--text-primary); font-variant-numeric: tabular-nums; text-align: right; }
+#qla2-episode .qla2-status { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 @media (max-width: 640px) {
-  .qla-visual .qla-visual-body .qla2-sys-tools { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .qla-visual .qla-visual-body .qla2-episode-picker:has(+ .qla2-question + .qla2-description) { display: flex; flex-wrap: wrap; }
-  .qla-visual .qla-visual-body .qla2-reward-row { grid-template-columns: minmax(0, 1fr) 4.5rem; }
-  .qla-visual .qla-visual-body .qla2-reward-bar { grid-column: 1 / -1; grid-row: 2; }
+  #qla2-episode .qla2-tool { display: inline-flex; align-items: center; min-height: 44px; }
+  #qla2-episode .qla2-step-what { flex-basis: 100%; }
+  #qla2-episode .qla2-reward-row { grid-template-columns: minmax(0, 1fr) auto; gap: .25rem .5rem; }
+  #qla2-episode .qla2-reward-bar { grid-column: 1 / -1; grid-row: 2; }
 }
+/* Match the empty mount and its first rendered card while the data is loading. */
+#qla2-episode { margin: 1.4rem 0 2rem; }
+#qla2-episode:empty, #qla2-episode > .qla-visual { min-height: var(--qla2-episode-height); }
+#qla2-episode > .qla-visual { margin: 0; }

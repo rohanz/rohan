@@ -225,9 +225,9 @@ html.theme-swiss .article #bqst-eq-visual:empty { min-height: calc(340px + 7.55r
 html.theme-swiss .article #bqst-audio-demo:empty { min-height: 13.65rem; }
 }
 html.theme-swiss .article #demo-player-placeholder:empty { min-height: 7.5rem; margin: 1rem 0 1.5rem; }
-html.theme-swiss .article :is(.qla2-next, .qla-btn-accent, .qlf-risk-btn:not(.qlf-risk-btn-warn), .qla-judge-guess) { background: color-mix(in srgb, var(--accent) 16%, var(--paper)); border-color: color-mix(in srgb, var(--accent) 45%, var(--paper)); color: var(--ink); transition: background .2s ease, border-color .2s ease; }
-html.theme-swiss .article :is(.qla2-next, .qla-btn-accent, .qlf-risk-btn:not(.qlf-risk-btn-warn), .qla-judge-guess):hover:not(:disabled) { background: color-mix(in srgb, var(--accent) 28%, var(--paper)); border-color: var(--accent); }
-html.theme-swiss .article :is(.qla2-back, .qls-step-btn:not(.qla-btn-accent)) { background: var(--ink); border-color: var(--ink); color: var(--paper); }
-html.theme-swiss .article :is(.qla2-back, .qls-step-btn:not(.qla-btn-accent)):hover:not(:disabled) { background: color-mix(in srgb, var(--ink) 82%, var(--paper)); }
-html.theme-swiss .article :is(.qla2-step-controls, .qls-step-controls, .qls-controls) .qla-btn:disabled { opacity: .35; cursor: default; }
+html.theme-swiss .article :is(.qla-btn-accent, .qlf-risk-btn:not(.qlf-risk-btn-warn), .qla-judge-guess) { background: color-mix(in srgb, var(--accent) 16%, var(--paper)); border-color: color-mix(in srgb, var(--accent) 45%, var(--paper)); color: var(--ink); transition: background .2s ease, border-color .2s ease; }
+html.theme-swiss .article :is(.qla-btn-accent, .qlf-risk-btn:not(.qlf-risk-btn-warn), .qla-judge-guess):hover:not(:disabled) { background: color-mix(in srgb, var(--accent) 28%, var(--paper)); border-color: var(--accent); }
+html.theme-swiss .article :is(.qls-step-btn:not(.qla-btn-accent)) { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+html.theme-swiss .article :is(.qls-step-btn:not(.qla-btn-accent)):hover:not(:disabled) { background: color-mix(in srgb, var(--ink) 82%, var(--paper)); }
+html.theme-swiss .article :is(.qls-step-controls, .qls-controls) .qla-btn:disabled { opacity: .35; cursor: default; }
 html.theme-swiss .article .qls-step-btn:disabled { opacity: .35; cursor: default; }

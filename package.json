@@ -16,7 +16,8 @@
     "test:e2e:smoke": "playwright test --grep @smoke",
     "blueprint:content": "node tools/build-blueprint.mjs --content-only",
     "pretest": "npm run blueprint:content",
-    "prebuild": "npm run blueprint:content"
+    "prebuild": "npm run blueprint:content",
+    "og": "node tools/generate-og.mjs"
   },
   "dependencies": {
     "@astrojs/markdown-remark": "^7.2.0",

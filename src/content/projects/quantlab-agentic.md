@@ -29,7 +29,7 @@ You ask it a question in plain English: *what was the average free cash flow of 
 
 The model is a <span class="gloss-term" data-gloss="Qwen3.5-9B, Alibaba's 9-billion-parameter open model (Apache 2.0). Small enough to run on one GPU, which means it could run inside a bank's own walls. The base for everything trained here.">9-billion-parameter open model</span> that fits on one GPU. I trained it for this job, and graded it on two things: getting the answer right, and showing where every number came from.
 
-The fastest way to see it is to watch it work. Pick a question type below and step through the run: which tool the model reaches for, what the filings return, and at the end, how the answer was scored.
+The fastest way to see it is to watch it work. Pick a question type below to see the full run: which tools the model calls, what they return, the final answer, and how it was scored.
 
 <div id="qla2-episode"></div>
 

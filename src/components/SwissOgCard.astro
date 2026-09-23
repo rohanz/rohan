@@ -1,0 +1,56 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import SwissLogo from './SwissLogo.astro';
+import { TAGLINE } from '../data/bio';
+import { cardTextFor } from '../lib/swiss/card-text';
+import { drawingFor, headerViewBoxFor } from '../lib/swiss/drawings';
+import { DEFAULT_ACCENT } from '../lib/swiss/accents';
+import '../styles/swiss.css';
+import '../styles/swiss-og.css';
+
+interface Props { project?: CollectionEntry<'projects'>; hash: string }
+const { project, hash } = Astro.props;
+const wordmark = project ? cardTextFor(project.id)! : 'rohan.jk';
+const drawingSlug = project?.id ?? 'this-website';
+const Drawing = drawingFor(drawingSlug);
+// Keep the quantlab family mark intact and give the discipline its own line.
+const wordLines = wordmark.includes(']:') ? wordmark.replace(']:', ']:\n').split('\n') : [wordmark];
+---
+<!doctype html>
+<html lang="en" class="theme-swiss sw-og" style={`--accent:${DEFAULT_ACCENT.hex}`}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=1200" />
+    <meta name="robots" content="noindex,nofollow" />
+    <meta name="og-input-hash" content={hash} />
+    <title>{wordmark} — share image</title>
+    <link rel="stylesheet" href="/fonts/fonts.css" />
+    <link rel="preload" as="font" type="font/woff2" href="/fonts/GeneralSans-Variable.woff2" crossorigin />
+    <link rel="preload" as="font" type="font/woff2" href="/fonts/chillax-WZY5PMNTII6NKOB2TTIAX7QV.woff2" crossorigin />
+    <link rel="preload" as="font" type="font/woff2" href="/fonts/chillax-THF5L6EHVL4N4NNE3GYDZNZS.woff2" crossorigin />
+  </head>
+  <body>
+    <main class:list={['og-card', { 'og-site': !project }]} data-og-slug={project?.id ?? 'site'}>
+      <div class="og-paper">
+        <header class="og-header og-cell">
+          <div class="og-brand"><SwissLogo /><span>rohan.jk</span></div>
+          <span class="og-kicker sw-label">{project ? 'projects' : 'portfolio'}</span>
+        </header>
+        <section class="og-copy og-cell">
+          {project?.data.award && <span class="og-award sw-label">{project.data.award}</span>}
+          <h1 class="og-wordmark">
+            {wordLines.map((line) => <span>{line}</span>)}
+          </h1>
+          <p class="og-title">{project?.data.title ?? 'software & ai'}</p>
+        </section>
+        <footer class="og-footer og-cell">
+          {project ? <div class="og-tags">{project.data.technologies.slice(0, 3).map((tag) => <span class="sw-label">{tag}</span>)}</div>
+            : <span class="sw-label">{TAGLINE}</span>}
+        </footer>
+      </div>
+      <div class="og-art swiss-card is-hover" aria-hidden="true">
+        {Drawing && <Drawing viewBox={headerViewBoxFor(drawingSlug)} />}
+      </div>
+    </main>
+  </body>
+</html>

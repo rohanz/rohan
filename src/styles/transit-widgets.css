@@ -194,3 +194,8 @@ html:not(.theme-swiss) .article {
 .qlf-audit-ts { color: var(--w-muted); }
 .qlf-audit-line.is-approved .qlf-audit-verdict { color: #66bb6a; }
 .qlf-audit-line.is-rejected .qlf-audit-verdict { color: #b52e49; }
+
+/* Reserve the complete first episode before its data request finishes. */
+html:not(.theme-swiss) .article #qla2-episode { --qla2-episode-height: 34rem; }
+@media (max-width: 1279px) { html:not(.theme-swiss) .article #qla2-episode { --qla2-episode-height: 40rem; } }
+@media (max-width: 640px) { html:not(.theme-swiss) .article #qla2-episode { --qla2-episode-height: 48rem; } }

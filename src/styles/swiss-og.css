@@ -1,0 +1,28 @@
+/* Fixed article-header split. The site's twelve-column grammar becomes six
+   columns per half: 48px outer/cell gutters (4vw), 24px column gaps (2vw),
+   and six 64px columns in the 504px text measure. Rows: 120 / 390 / 120px.
+   Every paper cell uses the same 48px inset; rules run edge to edge. */
+html.theme-swiss.sw-og { font-size: 16px; width: 1200px; height: 630px; overflow: hidden; scrollbar-gutter: auto; }
+html.sw-og body { width: 1200px; height: 630px; min-height: 0; }
+html.sw-og .og-card { --og-gap: 1.5rem; width: 75rem; height: 39.375rem; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); background: var(--paper); }
+html.sw-og .og-paper { min-width: 0; display: grid; grid-template-rows: 7.5rem minmax(0, 1fr) 7.5rem; }
+html.sw-og .og-cell { min-width: 0; padding: var(--gutter); }
+html.sw-og .og-header { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); column-gap: var(--og-gap); align-items: center; border-bottom: 1px solid var(--hair); }
+html.sw-og .og-brand { grid-column: 1 / 5; display: flex; align-items: center; gap: .75rem; font: 500 1.75rem/1 var(--font-display); letter-spacing: -.04em; }
+html.sw-og .og-brand svg { flex: none; width: 2rem; height: 2rem; }
+html.sw-og .og-kicker { grid-column: 5 / 7; justify-self: end; }
+html.sw-og .og-copy { display: flex; flex-direction: column; align-items: flex-start; }
+html.sw-og .og-wordmark { width: 100%; margin: 0; font: 600 4.5rem/1.05 var(--font-ui); letter-spacing: -.03em; overflow-wrap: normal; text-wrap: balance; }
+html.sw-og .og-wordmark span { display: block; }
+html.sw-og .og-award.sw-label { display: inline-flex; padding: .35rem .6rem; margin-bottom: 1.5rem; border: 1px solid var(--accent); color: var(--accent); font-size: 1rem; line-height: 1.2; }
+html.sw-og .og-title { width: 100%; margin: 1rem 0 0; font: 500 1.5rem/1.4 var(--font-ui); color: var(--muted); }
+html.sw-og .og-footer { display: flex; align-items: center; border-top: 1px solid var(--hair); }
+html.sw-og .og-tags { display: flex; flex-wrap: wrap; gap: .5rem var(--og-gap); }
+html.sw-og .og-header .sw-label, html.sw-og .og-footer .sw-label { font-size: 1.125rem; line-height: 1.35; }
+html.sw-og .og-art { min-width: 0; min-height: 0; display: grid; place-items: center; background: var(--ink); color: var(--paper); --card-surface: var(--ink); --accent: var(--accent-on-ink); }
+html.sw-og .og-art > svg { display: block; width: 100%; height: 100%; padding: var(--gutter); }
+/* is-hover selects the finished geometry. Keep no-preference so the drawing
+   selectors apply, but disable every animation and transition for capture. */
+html.sw-og *, html.sw-og *::before, html.sw-og *::after { transition: none !important; animation: none !important; }
+html.sw-og .og-site .og-wordmark { font: 500 5.75rem/1.05 var(--font-display); letter-spacing: var(--track-display); }
+html.sw-og .og-site .og-title { font-size: 2rem; }

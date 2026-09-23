@@ -69,7 +69,8 @@ picture of a project in every theme: inline and animated in classic and
 transit (article header + transit map cards), and frozen by the same script
 into `themes/blueprint/public/drawings/<slug>[.inverse].svg` (gitignored;
 played state, blueprint palette) for the workshop wall and article reader.
-The `image` frontmatter now only feeds share cards / og:image. `unlisted: true` articles are excluded from grids/workshop
+Classic/transit share cards are generated from the wordmark, title and drawing
+(see Share images below); `image` remains legacy content metadata. `unlisted: true` articles are excluded from grids/workshop
 wall/prev-next everywhere but stay reachable by URL and cross-links.
 
 Adding a project: add the md file + assets under `public/assets/...`, set
@@ -80,6 +81,40 @@ there is no hand-kept map to update. Placings go in the optional `award`
 (chip text) and `awardEvent` (tooltip) frontmatter strings; the card shows it
 bottom-right of the drawing and the article header between the projects link
 and the name.
+
+## Share images
+
+Classic/transit use committed 1200×630 Swiss PNGs in
+`public/assets/images/og/<slug>.png`; non-project pages use
+`public/assets/images/og.png`. After adding a project or changing its title,
+wordmark, award, first three technologies or drawing, run `npm run og`.
+For one card use `npm run og -- --only <slug>` (`site` selects the default).
+This is manual only: build never generates images and no content is rewritten.
+The script starts/reuses Astro at localhost:4361 (`OG_BASE_URL` overrides),
+waits for real fonts, and captures every project, including unlisted ones.
+
+The card is an exact 600/600 split: paper cells on the left and a full-bleed
+ink drawing panel on the right. The left rows are 120/390/120px with 48px
+cell insets, derived from the site gutter; its six-column grid uses 64px
+columns and 24px gaps. Branding and a section kicker occupy the top cell;
+the main cell top-aligns the award, General Sans 600 wordmark (at most two
+lines), and the full descriptive title immediately beneath in muted General
+Sans 500. Long descriptive titles wrap to preserve legibility. The bottom
+cell holds up to three tracked-uppercase technologies. The default uses
+Chillax rohan.jk, software & ai, computer engineering @ ntu, and the played
+this-website drawing (also covered by its input hash).
+
+Review every changed PNG at 1200×630, 600×315 and a 300px-wide downscale;
+check wordmarks, grouped titles, fully played drawings, tags and awards.
+Commit the reviewed PNGs together with `public/assets/images/og/manifest.json`.
+`src/lib/project-og.test.ts` rejects missing/wrong-size PNGs and stale input
+hashes (including the template, shared CSS, framing, logo and font bytes).
+
+Tweak `src/components/SwissOgCard.astro` and `src/styles/swiss-og.css`, then
+preview `/og/<slug>` or `/og/site` at 1200×630 and regenerate. These standalone
+routes are noindex, unlinked and excluded by the sitemap allowlist. Drawings
+use `drawingFor`/`headerViewBoxFor`, `.swiss-card.is-hover`, no transitions,
+and the no-preference media state so all final drawing details are present.
 
 ## Build pipeline
 

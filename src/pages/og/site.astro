@@ -1,0 +1,6 @@
+---
+import SwissOgCard from '../../components/SwissOgCard.astro';
+import { readOgCards } from '../../../tools/og-inputs.mjs';
+const hash = (await readOgCards()).find((card) => card.slug === 'site')!.hash;
+---
+<SwissOgCard hash={hash} />

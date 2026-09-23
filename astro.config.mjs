@@ -37,6 +37,7 @@ export default defineConfig({
     sitemap({
       filter: (page) => {
         const path = new URL(page).pathname;
+        // Allowlist also excludes the hidden /og/* screenshot templates.
         return staticSitemapPaths.has(path) || listedProjectPaths.has(path);
       },
     }),

@@ -1,0 +1,14 @@
+---
+import { getCollection } from 'astro:content';
+import SwissOgCard from '../../components/SwissOgCard.astro';
+import { readOgCards } from '../../../tools/og-inputs.mjs';
+
+export async function getStaticPaths() {
+  const hashes = new Map((await readOgCards()).map(({ slug, hash }) => [slug, hash]));
+  return (await getCollection('projects')).map((project) => ({
+    params: { slug: project.id }, props: { project, hash: hashes.get(project.id)! },
+  }));
+}
+const { project, hash } = Astro.props;
+---
+<SwissOgCard project={project} hash={hash} />

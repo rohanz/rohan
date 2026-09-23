@@ -136,3 +136,7 @@ html.theme-swiss .swiss-card.is-hover .swiss-card-art :is([data-depth], .z1, .z2
   /* No technology tags on phones. */
   html.theme-swiss .swiss-card-tags { display: none; }
 }
+/* Snap a drawing back to its resting state without animating (a touch replay
+   removes .is-hover under this class, then re-adds it once it's removed). */
+html.theme-swiss .swiss-card.is-resetting,
+html.theme-swiss .swiss-card.is-resetting * { transition: none !important; }

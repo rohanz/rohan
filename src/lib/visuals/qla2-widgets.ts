@@ -90,26 +90,26 @@ function observeCanvas(canvas: HTMLCanvasElement, redraw: () => void, cleanups: 
   cleanups.push(() => observer.disconnect());
 }
 
-// The six tools are the model's only way to touch the data. Listed in the
-// order the diagram draws them; names match the environment's schemas.
-const TOOLS: Array<{ name: string; does: string }> = [
-  { name: 'get_fundamentals', does: 'a company’s reported numbers' },
-  { name: 'fundamental_asof', does: 'what was known on a date' },
-  { name: 'get_prices', does: 'daily price history' },
-  { name: 'price_stats', does: 'return and volatility' },
-  { name: 'screen', does: 'rank every company by a metric' },
-  { name: 'compute', does: 'arithmetic on literal numbers only' },
-];
+// Names match the environment's schemas; descriptions use the article glossary.
+const TOOL_GLOSSES: Record<string, string> = {
+  get_fundamentals: 'Reads a company’s reported financial figures from SEC filings.',
+  fundamental_asof: 'Reads only the financial figures filed by the requested date.',
+  get_prices: 'Returns a company’s daily price history.',
+  price_stats: 'Computes return and volatility from price history.',
+  screen: 'Ranks companies by a chosen metric and returns the top of the list.',
+  compute: 'Calculates arithmetic on literal numbers only, using figures returned by the other tools.',
+};
 // Weights from the reward function (quantlab/reward.py).
 const REWARD_PARTS: Array<{ key: keyof EpisodeComponents; label: string; weight: number }> = [
-  { key: 'answer', label: 'right answer', weight: 0.7 },
+  { key: 'answer', label: 'answer', weight: 0.7 },
   { key: 'validity', label: 'well-formed calls', weight: 0.1 },
   { key: 'efficiency', label: 'no wasted calls', weight: 0.1 },
-  { key: 'grounding', label: 'answer found in the evidence', weight: 0.1 },
+  { key: 'grounding', label: 'grounding', weight: 0.1 },
 ];
 
 function initEpisode(node: HTMLElement, episodes: Episode[], options: WidgetOptions, cleanups: Array<() => void>) {
-  const body = shell(node, 'how an answer gets made', 'a real question, stepped through the system');
+  const body = shell(node, 'how an answer gets made', '');
+  body.previousElementSibling?.querySelector('.qla-visual-meta')?.remove();
   applyPalette(body, options.palette());
   const picker = el('div', 'qla2-episode-picker');
   picker.setAttribute('role', 'group');
@@ -120,100 +120,59 @@ function initEpisode(node: HTMLElement, episodes: Episode[], options: WidgetOpti
     return b;
   });
   const question = el('p', 'qla2-question');
-  const description = el('p', 'qla2-description');
-
-  // The model's six tools. The one being called lights up as the episode steps.
-  const system = el('div', 'qla2-system');
-  const toolBox = el('div', 'qla2-sys-tools');
-  const toolNodes = new Map<string, HTMLElement>();
-  TOOLS.forEach((tool) => {
-    const t = el('div', 'qla2-sys-tool');
-    t.append(el('span', 'qla2-sys-tool-name', tool.name.replace(/_/g, ' ')));
-    t.title = tool.does;
-    toolNodes.set(tool.name, t);
-    toolBox.append(t);
-  });
-  const toolLabel = el('span', 'qla2-sys-label', 'the model’s six tools, its only way into 12.5M facts from SEC filings');
-  const toolBand = el('div', 'qla2-sys-band');
-  toolBand.append(toolLabel, toolBox);
-  system.append(toolBand);
-
-  const controls = el('div', 'qla2-step-controls');
-  const back = button('back', 'qla-btn qla2-back');
-  const next = button('next step', 'qla-btn qla2-next');
-  const counter = el('span', 'qla2-step-count');
-  controls.append(back, next, counter);
-
   const story = el('ol', 'qla2-story');
-  story.setAttribute('aria-live', 'polite');
+  story.setAttribute('aria-label', 'Tool calls in order');
   const outcome = el('div', 'qla2-outcome');
   const reward = el('div', 'qla2-reward');
-  body.append(picker, question, description, system, controls, story, outcome, reward);
+  const status = el('span', 'qla2-status');
+  status.setAttribute('role', 'status');
+  body.append(picker, question, story, outcome, reward, status);
 
   let selected = 0;
-  let shown = 0; // steps revealed; steps.length + 1 means the answer is scored
   const render = () => {
     const episode = episodes[selected];
-    const last = episode.steps.length + 1;
     pills.forEach((b, i) => { const on = i === selected; b.classList.toggle('is-active', on); b.setAttribute('aria-pressed', String(on)); });
     question.textContent = episode.question;
-    description.textContent = episode.description;
-
-    const active = shown >= 1 && shown <= episode.steps.length ? episode.steps[shown - 1].tool : null;
-    const used = new Set(episode.steps.slice(0, Math.min(shown, episode.steps.length)).map((step) => step.tool));
-    toolNodes.forEach((t, name) => {
-      t.classList.toggle('is-active', name === active);
-      t.classList.toggle('is-used', used.has(name) && name !== active);
-    });
-    system.classList.toggle('is-calling', active !== null);
-
     story.textContent = '';
-    episode.steps.slice(0, Math.min(shown, episode.steps.length)).forEach((step, i) => {
-      const item = el('li', i === shown - 1 ? 'qla2-step is-current' : 'qla2-step');
-      item.append(
-        el('span', 'qla2-tool', step.tool.replace(/_/g, ' ')),
-        el('span', 'qla2-step-what', step.what),
-        el('span', 'qla2-step-found', step.found),
-      );
+    episode.steps.forEach((step) => {
+      const item = el('li', 'qla2-step');
+      const tool = el('span', 'qla2-tool gloss-term', step.tool);
+      tool.dataset.gloss = TOOL_GLOSSES[step.tool];
+      // The shared glossary delegates its events, but only focuses terms present
+      // at startup. These asynchronously inserted terms need their own tabindex.
+      tool.tabIndex = 0;
+      const result = el('span', 'qla2-step-found', step.found);
+      result.prepend(el('span', 'qla2-result-label', 'Returned: '));
+      item.classList.toggle('is-error', step.found.startsWith('error:'));
+      item.append(tool, el('span', 'qla2-step-what', step.what), result);
       story.append(item);
     });
 
     outcome.textContent = '';
-    reward.textContent = '';
-    outcome.hidden = reward.hidden = shown < last;
-    if (shown >= last) {
-      const chip = el('span', episode.verdict.pass ? 'qla2-verdict is-pass' : 'qla2-verdict is-fail',
-        episode.verdict.pass ? 'verified' : 'wrong answer');
-      outcome.append(el('span', 'qla2-zone-label', 'its answer'), el('code', 'qla2-final', episode.answer), chip);
-      const components = episode.verdict.components;
-      reward.append(el('span', 'qla2-zone-label', `how it was scored · ${episode.verdict.total.toFixed(2)} of 1`));
-      REWARD_PARTS.forEach((part) => {
-        const value = components ? components[part.key] : (episode.verdict.pass ? 1 : 0);
-        const row = el('div', value >= 1 ? 'qla2-reward-row is-full' : value > 0 ? 'qla2-reward-row is-part' : 'qla2-reward-row is-zero');
-        const bar = el('span', 'qla2-reward-bar');
-        const fill = el('span', 'qla2-reward-fill');
-        fill.style.width = `${Math.max(0, Math.min(1, value)) * 100}%`;
-        bar.append(fill);
-        row.style.setProperty('--qla2-weight', String(part.weight));
-        row.append(el('span', 'qla2-reward-label', part.label), bar,
-          el('span', 'qla2-reward-points', `${(value * part.weight).toFixed(2)} / ${part.weight.toFixed(1)}`));
-        reward.append(row);
-      });
-      if (!episode.verdict.pass) {
-        reward.append(el('p', 'qla2-reward-note',
-          'The calls were valid and nearly efficient, but the final number did not match the answer computed from the filings and could not be traced to the evidence, so the two parts that matter pay nothing.'));
-      }
-    }
+    outcome.classList.toggle('is-fail', !episode.verdict.pass);
+    const chip = el('span', episode.verdict.pass ? 'qla2-verdict is-pass' : 'qla2-verdict is-fail',
+      episode.verdict.pass ? 'verified' : 'wrong answer');
+    outcome.append(el('span', 'qla2-zone-label', 'the model’s answer'), el('code', 'qla2-final', episode.answer), chip,
+      el('p', 'qla2-description', episode.description));
 
-    back.disabled = shown === 0;
-    next.disabled = shown >= last;
-    next.textContent = shown === 0 ? 'start' : shown === episode.steps.length ? 'score the answer' : shown >= last ? 'done' : 'next step';
-    counter.textContent = shown === 0 ? `${episode.steps.length} tool call${episode.steps.length === 1 ? '' : 's'}`
-      : shown >= last ? 'scored' : `call ${shown} of ${episode.steps.length}`;
+    reward.textContent = '';
+    reward.append(el('span', 'qla2-zone-label', `how it was scored · ${episode.verdict.total.toFixed(2)} / 1`));
+    REWARD_PARTS.forEach((part) => {
+      const value = episode.verdict.components?.[part.key];
+      const row = el('div', value === 0 ? 'qla2-reward-row is-zero' : 'qla2-reward-row');
+      const bar = el('span', 'qla2-reward-bar');
+      const fill = el('span', 'qla2-reward-fill');
+      fill.style.width = `${Math.max(0, Math.min(1, value ?? 0)) * 100}%`;
+      bar.append(fill);
+      bar.setAttribute('aria-hidden', 'true');
+      row.style.setProperty('--qla2-weight', String(part.weight / 0.7));
+      row.append(el('span', 'qla2-reward-label', `${part.label} (${part.weight * 100}%)`), bar,
+        el('span', 'qla2-reward-points', value === undefined ? 'not recorded' : `${(value * part.weight).toFixed(2)} / ${part.weight.toFixed(2)}`));
+      reward.append(row);
+    });
+    status.textContent = `${episode.label}. ${episode.steps.length} tool call${episode.steps.length === 1 ? '' : 's'}. ${episode.verdict.pass ? 'Verified answer' : 'Wrong answer'}. Score ${episode.verdict.total.toFixed(2)} out of 1.`;
   };
-  pills.forEach((b, i) => b.addEventListener('click', () => { selected = i; shown = 0; render(); }));
-  back.addEventListener('click', () => { shown = Math.max(0, shown - 1); render(); });
-  next.addEventListener('click', () => { shown += 1; render(); });
+  pills.forEach((b, i) => b.addEventListener('click', () => { selected = i; render(); }));
   if (options.onThemeChange) cleanups.push(options.onThemeChange(() => applyPalette(body, options.palette())));
   render();
 }
