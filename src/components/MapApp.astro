@@ -16,9 +16,10 @@ import { TECH_STACK } from '../data/tech-stack';
 interface Props {
   title: string;
   description: string;
+  ogImage?: string;
   initialView?: 'music' | 'projects' | 'about';
 }
-const { title, description, initialView } = Astro.props;
+const { title, description, initialView, ogImage } = Astro.props;
 
 // Unlisted projects (pages that exist but don't ride the line) are excluded
 // from the platform entirely: no card, no tag-pill contribution, and — since
@@ -43,7 +44,7 @@ const filterTags = visibleProjectFilters(projects.flatMap((p) => p.data.technolo
 const tech = TECH_STACK.map((t) => t.name);
 
 ---
-<Layout title={title} description={description} bodyClass="home" initialView={initialView}>
+<Layout title={title} description={description} ogImage={ogImage} bodyClass="home" initialView={initialView}>
   <header class="top-bar" id="logo-bar">
     <a id="tt-logo" class="logo" href="/transit" aria-label="rohan.jk — home">
       <img src="/logo.svg" width="34" height="34" alt="" />

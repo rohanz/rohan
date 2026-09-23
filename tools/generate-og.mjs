@@ -8,7 +8,7 @@ import { ogDirectory, ogImagePath, readOgCards, repoRoot } from './og-inputs.mjs
 
 const args = process.argv.slice(2);
 if (args.length && !(args.length === 2 && args[0] === '--only' && /^[a-z0-9-]+$/.test(args[1]))) {
-  console.error('Usage: npm run og [-- --only <slug|site>]');
+  console.error('Usage: npm run og [-- --only <slug|site|section-projects|section-music|section-about>]');
   process.exit(1);
 }
 const only = args[1];
@@ -79,9 +79,9 @@ async function main() {
   page.on('pageerror', (error) => errors.push(error.message));
   page.on('response', (response) => { if (response.status() >= 400) errors.push(`${response.status()} ${response.url()}`); });
   let changed = 0;
-  for (const { slug, hash } of selected) {
+  for (const { slug, route, hash } of selected) {
     errors.length = 0;
-    const response = await page.goto(new URL(`/og/${slug}`, baseURL).href, { waitUntil: 'networkidle' });
+    const response = await page.goto(new URL(route, baseURL).href, { waitUntil: 'networkidle' });
     if (!response?.ok()) throw new Error(`${slug}: route returned ${response?.status()}`);
     if (await page.locator('meta[name="og-input-hash"]').getAttribute('content') !== hash) {
       throw new Error(`${slug}: server inputs differ from this worktree. Restart its Astro server before generating.`);
@@ -96,6 +96,7 @@ async function main() {
         document.fonts.load('550 14px "General Sans"'),
       ]);
       await document.fonts.ready;
+      await Promise.all(Array.from(document.images, (image) => image.decode()));
       await new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done)));
       const card = document.querySelector('.og-card');
       if (!card || card.clientWidth !== 1200 || card.clientHeight !== 630) throw new Error('OG canvas must be exactly 1200×630');

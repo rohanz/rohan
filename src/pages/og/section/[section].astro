@@ -1,0 +1,17 @@
+---
+import { getCollection } from 'astro:content';
+import SwissOgCard from '../../../components/SwissOgCard.astro';
+import { sectionOgCards } from '../../../data/section-og';
+import { SONGS } from '../../../data/music';
+import { TAGLINE } from '../../../data/bio';
+import { readOgCards } from '../../../../tools/og-inputs.mjs';
+
+export async function getStaticPaths() {
+  const hashes = new Map((await readOgCards()).map(({ slug, hash }) => [slug, hash]));
+  return sectionOgCards(await getCollection('projects'), SONGS, TAGLINE).map((section) => ({
+    params: { section: section.section }, props: { section, hash: hashes.get(section.slug)! },
+  }));
+}
+const { section, hash } = Astro.props;
+---
+<SwissOgCard section={section} hash={hash} />

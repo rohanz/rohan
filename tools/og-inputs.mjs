@@ -16,6 +16,7 @@ export const sha256 = (value) => createHash('sha256').update(value).digest('hex'
 const templateFiles = [
   'src/components/SwissOgCard.astro', 'src/components/SwissLogo.astro',
   'src/pages/og/[slug].astro', 'src/pages/og/site.astro',
+  'src/pages/og/section/[section].astro',
   'src/styles/swiss-og.css', 'src/styles/swiss.css',
   'src/styles/drawing-properties.css', 'src/lib/swiss/drawings.ts',
   'src/lib/swiss/accents.ts',
@@ -25,6 +26,11 @@ const templateFiles = [
   'public/fonts/chillax-THF5L6EHVL4N4NNE3GYDZNZS.woff2',
   'tools/og-inputs.mjs', 'tools/generate-og.mjs',
 ];
+
+async function importData(file) {
+  const { code } = await transform(await readFile(resolve(repoRoot, file), 'utf8'), { loader: 'ts', format: 'esm' });
+  return import(`data:text/javascript;base64,${Buffer.from(code).toString('base64')}`);
+}
 
 export async function readOgCards() {
   const sources = await Promise.all(templateFiles.map(async (file) =>
@@ -36,9 +42,11 @@ export async function readOgCards() {
   const frame = await transform(await readFile(resolve(repoRoot, 'src/lib/swiss/drawing-frame.ts'), 'utf8'), { loader: 'ts', format: 'esm' });
   const { headerViewBoxFor } = await import(`data:text/javascript;base64,${Buffer.from(frame.code).toString('base64')}`);
   const files = (await readdir(resolve(repoRoot, 'src/content/projects'))).filter((file) => file.endsWith('.md')).sort();
-  const cards = await Promise.all(files.map(async (file) => {
-    const slug = file.slice(0, -3);
+  const projects = await Promise.all(files.map(async (file) => {
     const { frontmatter } = parseFrontmatter(await readFile(resolve(repoRoot, 'src/content/projects', file), 'utf8'));
+    return { id: file.slice(0, -3), data: frontmatter };
+  }));
+  const cards = await Promise.all(projects.map(async ({ id: slug, data: frontmatter }) => {
     const wordmark = cardTextFor(slug);
     if (!wordmark) throw new Error(`Missing OG wordmark for ${slug}: update src/lib/swiss/card-text.ts`);
     const inputs = {
@@ -48,11 +56,26 @@ export async function readOgCards() {
       frame: headerViewBoxFor(slug),
       templateVersion,
     };
-    return { slug, hash: sha256(JSON.stringify(inputs)) };
+    return { slug, route: `/og/${slug}`, hash: sha256(JSON.stringify(inputs)) };
+  }));
+  const [{ sectionOgCards }, { SONGS }, { TAGLINE }] = await Promise.all([
+    importData('src/data/section-og.ts'), importData('src/data/music.ts'), importData('src/data/bio.ts'),
+  ]);
+  const sections = await Promise.all(sectionOgCards(projects, SONGS, TAGLINE).map(async (section) => {
+    const inputs = {
+      templateVersion, section,
+      drawings: await Promise.all(section.drawings.map(async (slug) => ({
+        slug, drawing: await readFile(resolve(repoRoot, 'src/drawings/swiss', `${slug}.svg`), 'utf8'),
+        frame: headerViewBoxFor(slug),
+      }))),
+      photo: section.photo ? sha256(await readFile(resolve(repoRoot, 'public', `.${section.photo}`))) : null,
+      music: section.section === 'music' ? await readFile(resolve(repoRoot, 'src/components/SwissOgMusic.astro'), 'utf8') : null,
+    };
+    return { slug: section.slug, route: `/og/section/${section.section}`, hash: sha256(JSON.stringify(inputs)) };
   }));
   // The default card uses the same played website drawing as its project.
   const siteDrawing = await readFile(resolve(repoRoot, 'src/drawings/swiss/this-website.svg'), 'utf8');
-  return [...cards, { slug: 'site', hash: sha256(JSON.stringify({ templateVersion, site: true, drawing: siteDrawing, frame: headerViewBoxFor('this-website') })) }];
+  return [...cards, ...sections, { slug: 'site', route: '/og/site', hash: sha256(JSON.stringify({ templateVersion, site: true, drawing: siteDrawing, frame: headerViewBoxFor('this-website') })) }];
 }
 
 export function ogImagePath(slug) {

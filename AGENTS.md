@@ -85,13 +85,22 @@ and the name.
 ## Share images
 
 Classic/transit use committed 1200×630 Swiss PNGs in
-`public/assets/images/og/<slug>.png`; non-project pages use
-`public/assets/images/og.png`. After adding a project or changing its title,
+`public/assets/images/og/<slug>.png`. Projects, music and about (classic and
+transit) use `public/assets/images/og/section-{projects,music,about}.png`;
+home keeps `public/assets/images/og.png`. After adding a project or changing its title,
 wordmark, award, first three technologies or drawing, run `npm run og`.
-For one card use `npm run og -- --only <slug>` (`site` selects the default).
+For one card use `npm run og -- --only <slug>` (`site` selects the default; `section-projects`, `section-music` and
+`section-about` select the section cards).
 This is manual only: build never generates images and no content is rewritten.
 The script starts/reuses Astro at localhost:4361 (`OG_BASE_URL` overrides),
-waits for real fonts, and captures every project, including unlisted ones.
+waits for real fonts and decoded photos, and captures every project, including
+unlisted ones, plus the home and section cards. Section text lives in
+`src/data/section-og.ts`: the projects mosaic uses the first four listed builds
+by order, music derives its release count from `src/data/music.ts` and uses
+`SwissOgMusic.astro` for a static scope/VU illustration, and about uses the
+profile photo cropped at `center 60%` like the about page. Their text, selected
+drawings/framing, illustration and photo bytes are covered by the same stale
+guard. Regenerate after changes to these inputs or listed project ordering/count.
 
 The card is an exact 600/600 split: paper cells on the left and a full-bleed
 ink drawing panel on the right. The left rows are 120/390/120px with 48px
@@ -111,7 +120,8 @@ Commit the reviewed PNGs together with `public/assets/images/og/manifest.json`.
 hashes (including the template, shared CSS, framing, logo and font bytes).
 
 Tweak `src/components/SwissOgCard.astro` and `src/styles/swiss-og.css`, then
-preview `/og/<slug>` or `/og/site` at 1200×630 and regenerate. These standalone
+preview `/og/<slug>`, `/og/site` or `/og/section/{projects,music,about}` at
+1200×630 and regenerate. These standalone
 routes are noindex, unlinked and excluded by the sitemap allowlist. Drawings
 use `drawingFor`/`headerViewBoxFor`, `.swiss-card.is-hover`, no transitions,
 and the no-preference media state so all final drawing details are present.

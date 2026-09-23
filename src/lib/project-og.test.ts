@@ -16,6 +16,14 @@ describe('projectOgImage', () => {
     expect(projectOgImage('missing-project')).toBeUndefined();
   });
 
+  it('includes all section templates in the same stale-image guard', () => {
+    expect(cards.filter(({ slug }) => slug.startsWith('section-')).map(({ slug, route }) => [slug, route])).toEqual([
+      ['section-projects', '/og/section/projects'],
+      ['section-music', '/og/section/music'],
+      ['section-about', '/og/section/about'],
+    ]);
+  });
+
   it.each(cards)('$slug has a current, 1200×630 share card', async ({ slug, hash }) => {
     let png: Buffer;
     let manifest: Record<string, string>;

@@ -1,6 +1,8 @@
 ---
 import type { CollectionEntry } from 'astro:content';
 import SwissLogo from './SwissLogo.astro';
+import SwissOgMusic from './SwissOgMusic.astro';
+import type { SectionOgCard } from '../data/section-og';
 import { TAGLINE } from '../data/bio';
 import { cardTextFor } from '../lib/swiss/card-text';
 import { drawingFor, headerViewBoxFor } from '../lib/swiss/drawings';
@@ -8,9 +10,9 @@ import { DEFAULT_ACCENT } from '../lib/swiss/accents';
 import '../styles/swiss.css';
 import '../styles/swiss-og.css';
 
-interface Props { project?: CollectionEntry<'projects'>; hash: string }
-const { project, hash } = Astro.props;
-const wordmark = project ? cardTextFor(project.id)! : 'rohan.jk';
+interface Props { project?: CollectionEntry<'projects'>; section?: SectionOgCard; hash: string }
+const { project, section, hash } = Astro.props;
+const wordmark = project ? cardTextFor(project.id)! : section?.headline ?? 'rohan.jk';
 const drawingSlug = project?.id ?? 'this-website';
 const Drawing = drawingFor(drawingSlug);
 // Keep the quantlab family mark intact and give the discipline its own line.
@@ -30,26 +32,33 @@ const wordLines = wordmark.includes(']:') ? wordmark.replace(']:', ']:\n').split
     <link rel="preload" as="font" type="font/woff2" href="/fonts/chillax-THF5L6EHVL4N4NNE3GYDZNZS.woff2" crossorigin />
   </head>
   <body>
-    <main class:list={['og-card', { 'og-site': !project }]} data-og-slug={project?.id ?? 'site'}>
+    <main class:list={['og-card', { 'og-site': !project && !section }]} data-og-slug={project?.id ?? section?.slug ?? 'site'}>
       <div class="og-paper">
-        <header class="og-header og-cell">
+        {(project || section) && <header class="og-header og-cell">
           <div class="og-brand"><SwissLogo /><span>rohan.jk</span></div>
-          <span class="og-kicker sw-label">{project ? 'projects' : 'portfolio'}</span>
-        </header>
+          <span class="og-kicker sw-label">{project ? 'projects' : section!.section}</span>
+        </header>}
         <section class="og-copy og-cell">
           {project?.data.award && <span class="og-award sw-label">{project.data.award}</span>}
           <h1 class="og-wordmark">
             {wordLines.map((line) => <span>{line}</span>)}
           </h1>
-          <p class="og-title">{project?.data.title ?? 'software & ai'}</p>
+          <p class="og-title">{project?.data.title ?? section?.title ?? 'software & ai'}</p>
         </section>
         <footer class="og-footer og-cell">
           {project ? <div class="og-tags">{project.data.technologies.slice(0, 3).map((tag) => <span class="sw-label">{tag}</span>)}</div>
+            : section ? <div class="og-tags">{section.metadata.map((tag) => <span class="sw-label">{tag}</span>)}</div>
             : <span class="sw-label">{TAGLINE}</span>}
         </footer>
       </div>
-      <div class="og-art swiss-card is-hover" aria-hidden="true">
-        {Drawing && <Drawing viewBox={headerViewBoxFor(drawingSlug)} />}
+      <div class:list={['og-art swiss-card is-hover', { 'og-mosaic': section?.section === 'projects' }]} aria-hidden="true">
+        {section?.photo ? <img class="og-portrait" src={section.photo} width="600" height="630" alt="" />
+          : section?.section === 'music' ? <SwissOgMusic />
+          : section?.section === 'projects' ? section.drawings.map((slug) => {
+            const TileDrawing = drawingFor(slug);
+            return <div class="og-mosaic-cell">{TileDrawing && <TileDrawing viewBox={headerViewBoxFor(slug)} />}</div>;
+          })
+          : Drawing && <Drawing viewBox={headerViewBoxFor(drawingSlug)} />}
       </div>
     </main>
   </body>
