@@ -1,4 +1,5 @@
 ---
+import SwissCard from '../components/SwissCard.astro';
 import SwissLayout from '../layouts/SwissLayout.astro';
 import { getCollection } from 'astro:content';
 import { HOME_DESCRIPTION } from '../data/page-meta';
@@ -34,17 +35,12 @@ const selected = (await getCollection('projects'))
       <h2 class="sw-display sw-display-md">selected work</h2>
       <a class="sw-label sw-link" href="/projects">all projects</a>
     </div>
-    <div class="sw-rows" data-reveal-group>
-      {selected.map((p) => (
-        <a class="sw-row" href={`/projects/${p.id}`} data-reveal="block">
-          <span class="sw-row-title">{p.data.barTitle ?? p.data.title}</span>
-          <span class="sw-row-summary">{p.data.barTitle ? p.data.title : p.data.summary}</span>
-          <span class="sw-row-tags">{p.data.technologies.slice(0, 3).map((t) => <span class="sw-label">{t}</span>)}</span>
-        </a>
-      ))}
+    <div class="swiss-grid sw-selected-grid" data-reveal-group>
+      {selected.map((p) => <SwissCard slug={p.id} title={p.data.title} summary={p.data.summary} technologies={p.data.technologies} award={p.data.award} awardEvent={p.data.awardEvent} />)}
     </div>
   </section>
   <script>
     import '../scripts/swiss/home-snap.ts';
+    import '../scripts/swiss/tilt.ts';
   </script>
 </SwissLayout>

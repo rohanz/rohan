@@ -18,7 +18,12 @@ function stopPerfHud() {
 
 export function mountPerfHud() {
   stopPerfHud();
-  if (typeof localStorage === 'undefined' || localStorage.getItem(PERF_HUD_KEY) !== '1') return;
+  try {
+    if (localStorage.getItem(PERF_HUD_KEY) !== '1') return;
+  } catch {
+    // Storage may be blocked entirely; the optional meter must never stop boot.
+    return;
+  }
   document.getElementById('perf-hud')?.remove();
   const hud = document.createElement('div');
   hud.id = 'perf-hud';

@@ -47,6 +47,7 @@ import { TESTIMONIALS } from '../data/testimonials';
           {TESTIMONIALS.map((t, i) => <blockquote class="sw-quote" data-testimonial hidden={i !== 0} aria-hidden={i !== 0 ? 'true' : 'false'}><p>“{t.quote}”</p><footer class="sw-label">{t.author}</footer></blockquote>)}
         </div>
         <div class="sw-testimonial-controls" data-testimonial-controls hidden>
+          <button type="button" class="sw-label sw-testimonial-toggle" data-testimonial-toggle aria-controls="sw-testimonial-quotes">Pause testimonies</button>
           <svg class="sw-testimonial-ring" viewBox="0 0 36 36" aria-hidden="true" data-testimonial-ring><circle class="sw-ring-track" cx="18" cy="18" r="16"/><circle class="sw-ring-fill" cx="18" cy="18" r="16" pathLength="100"/></svg>
         </div>
       </section>

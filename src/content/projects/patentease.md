@@ -14,7 +14,7 @@ technologies:
 
 ## the problem
 
-Filing a patent is slow and opaque. The forms are long and repetitive, there is no single place to submit and follow applications, and once something is submitted you get little visibility: no reason given for a rejection, no easy way to follow up, and no consolidated view for a company juggling several filings. On top of that, the most important question before filing, whether something like your invention is already patented, is left for the applicant to research alone.
+Filing a patent is slow and opaque. The forms are long and repetitive, there is no single place to submit and follow applications, and once something is submitted you get little visibility: no reason given for a rejection, no easy way to follow up, and no consolidated view for a company juggling several filings. On top of that, the applicant has to answer the most important question alone: is something like this invention already patented?
 
 I built PatentEase, a mobile app for inventors and companies that covers the whole flow in one place: submit an application, track its status, manage its documents, and check it against existing patents. That last part is the core feature. The app pulls existing patents from Singapore's patent office (IPOS), scores how similar each one is to your filing, and shows you the closest matches with their documents so you can compare them side by side.
 
@@ -25,9 +25,9 @@ I built PatentEase, a mobile app for inventors and companies that covers the who
 - **Real-time dashboard** with notification cards and clickable status counters across four states (approved, in review, pending, rejected)
 - **Streamlined submission:** one form for patents, trademarks, and copyrights, with PDF uploads and auto-generated application numbers (e.g., `PAT-2023-0002`)
 - **Color-coded tracking** with status filtering and tap-to-detail navigation
-- **File management:** searchable two-column grid with PDF preview, signed URL downloads (60s expiry), and native share integration
+- **File management:** searchable two-column grid with PDF preview, signed URL downloads (60s expiry), and sharing through the phone's share sheet
 - **Similarity checker** that surfaces the existing patents closest to a filing
-- **Theming and accessibility:** full dark/light mode, language support scaffolding, and password management with enforced strength rules
+- **Theming and accessibility:** full dark/light mode, groundwork for multiple languages, and password management with enforced strength rules
 
 ## technical deep dive
 
@@ -40,7 +40,7 @@ This was the hardest feature to build. The idea: turn each patent into a vector 
 3. <span class="gloss-term" data-gloss="A score from the angle between two vectors. 1 means they point the same way (very similar documents); near 0 means unrelated.">Cosine similarity</span> is computed against the corpus with a configurable threshold (default 0.7)
 4. Top 3 matches are returned with scores and downloadable documents
 
-I built this as a **separate FastAPI microservice** instead of embedding it in the main backend. That kept the ML pipeline isolated, independently deployable, and non-blocking through async file processing. The main app talks to it over REST, so the encoding model can be swapped or the service scaled without touching the app.
+I built this as a **separate FastAPI microservice** instead of embedding it in the main backend. That kept the ML pipeline isolated and independently deployable, and async file processing meant it never blocked the main app. The main app talks to it over REST, so the encoding model can be swapped or the service scaled without touching the app.
 
 A high score is a prompt to read that patent closely. It is a screening aid for the applicant and makes no legal judgement about novelty.
 
@@ -50,10 +50,10 @@ A high score is a prompt to read that patent closely. It is a screening aid for 
 
 I chose **<span class="gloss-term" data-gloss="A hosted backend platform built on PostgreSQL that bundles authentication, file storage, and realtime change notifications.">Supabase</span>** over a custom backend because it gave me auth, PostgreSQL, object storage, and real-time subscriptions out of the box, letting me spend engineering time on the features that set the product apart (similarity checker, tracking UX).
 
-- **Auth**: Supabase Auth with email/password, session persistence via AsyncStorage, and compliance-grade password validation (8+ chars, letters, numbers, special characters)
-- **Real-time**: PostgreSQL Changes subscription on the notifications table. The dashboard auto-refreshes every 5 seconds, with notification types (`new-patent`, `status-change`) driving the UI
+- **Auth**: Supabase Auth with email/password, session persistence via AsyncStorage, and enforced password rules (8+ characters with letters, numbers and special characters)
+- **Real-time**: the app subscribes to changes on the notifications table, and each notification's type (`new-patent`, `status-change`) decides what the UI shows. The dashboard also refreshes every 5 seconds
 - **Storage**: Patent PDFs uploaded to Supabase object storage with signed URLs generated on-demand (60-second validity for security)
-- **Frontend**: React Native 0.76 + Expo 52 with file-based routing (Expo Router), React Native Paper for Material Design, and Reanimated for fluid animations
+- **Frontend**: React Native 0.76 + Expo 52 with file-based routing (Expo Router), React Native Paper for Material Design, and Reanimated for animations
 
 ![Color-coded patent tracking with status filtering](assets/images/projects/patent/screenshot-tracking.webp)
 

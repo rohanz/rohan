@@ -343,16 +343,13 @@ export function run(ctx) {
   const {
     scene, camera, rig, room, roots = null, extras: scopedExtras = null,
     view = 'OVERVIEW', duration = 4.5, driveCamera = true,
-    reverse = false, ease = null,
+    reverse = false, ease = null, signal,
   } = ctx;
   const targetView = typeof view === 'string' ? VIEWS[view] : view;
 
-  // Cancel any previous in-flight run and undo its leftovers.
-  if (active) {
-    cancelAnimationFrame(active.raf);
-    active.restore();
-    active = null;
-  }
+  // Cancellation restores shared geometry/materials and settles the caller.
+  active?.cancel();
+  if (signal?.aborted) return Promise.resolve();
   frontier.clear();
 
   return new Promise((resolve) => {
@@ -437,14 +434,19 @@ export function run(ctx) {
     let t0 = null;
     const state = {
       raf: 0,
-      restore: () => {
+      cancel: () => {
+        cancelAnimationFrame(state.raf);
         restore(saved);
-        rig.setEnabled(true);
+        signal?.removeEventListener('abort', state.cancel);
+        if (active === state) active = null;
+        resolve();
       },
     };
     active = state;
+    signal?.addEventListener('abort', state.cancel, { once: true });
 
     const finish = () => {
+      signal?.removeEventListener('abort', state.cancel);
       restore(saved); // exact original buffers / drawRanges / material state
       if (driveCamera) {
         camera.position.copy(endPos);

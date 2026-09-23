@@ -64,11 +64,22 @@ test('classic theme links preserve the article through transit', async ({ page }
   await expect(themes.getByRole('link')).toHaveCount(2);
   await expect(themes.getByRole('link', { name: 'transit', exact: true })).toHaveAttribute('href', '/transit/projects/bqst');
   await expect(themes.getByRole('link', { name: 'blueprint', exact: true })).toHaveAttribute('href', '/blueprint/?p=%2Fblueprint%2Fprojects%2Fbqst');
+  await expect(themes.getByRole('link', { name: 'transit', exact: true })).toHaveAttribute('data-astro-reload', '');
+  const classicDocument = await page.evaluate(() => performance.timeOrigin);
   await themes.getByRole('link', { name: 'transit', exact: true }).click();
   await expect(page).toHaveURL(/\/transit\/projects\/bqst\/?$/);
+  expect(await page.evaluate(() => performance.timeOrigin)).not.toBe(classicDocument);
+  const transitDocument = await page.evaluate(() => performance.timeOrigin);
+  await page.screenshot({ timeout: 5000 }); // A pending native transition used to stop frames here.
+  await expect(page.getByRole('link', { name: 'Classic Mode', exact: true })).toHaveAttribute('data-astro-reload', '');
   await page.getByRole('link', { name: 'Classic Mode', exact: true }).click();
   await expect(page).toHaveURL(/\/projects\/bqst\/?$/);
   await expect(page.locator('html')).toHaveClass(/theme-swiss/);
+  expect(await page.evaluate(() => performance.timeOrigin)).not.toBe(transitDocument);
+  await page.evaluate(() => document.fonts.ready);
+  expect(await page.evaluate(() => document.fonts.check('600 20px "General Sans"'))).toBe(true);
+  await expect(page.locator('.sw-article-word')).toHaveCSS('font-weight', '600');
+  await page.screenshot({ timeout: 5000 });
   expect(await page.evaluate(() => localStorage.getItem('site:themePref'))).toBe('default');
 });
 

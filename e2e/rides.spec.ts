@@ -90,3 +90,86 @@ test('SPA ride syncs document.title and announces the route', async ({ page }) =
   await page.waitForTimeout(1600);
   expect(await page.title()).toBe(homeTitle);
 });
+
+// Each traversal has one owner: rides within this map, ClientRouter across
+// documents. Astro state must survive rides so article scroll restoration works.
+test('rides preserve options, history state, theme links, and article scroll through Back/Forward', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/transit?desktop#map');
+  await expect(page.locator('.map-wrap')).toHaveClass(/map-ready/);
+  const checkState = async () => {
+    const state = await page.evaluate(() => history.state);
+    for (const field of ['index', 'scrollX', 'scrollY']) expect(Number.isFinite(state[field])).toBe(true);
+  };
+  await checkState();
+  await page.locator('a[data-line="projects"]').click();
+  await expect(page).toHaveURL(/\/transit\/projects\?desktop#map$/);
+  await expect(page.locator('#bar-section')).toHaveText('Projects');
+  await expect(page.locator('.transit-theme-switch')).toHaveAttribute('href', '/projects');
+  await expect(page.locator('.blueprint-theme-switch')).toHaveAttribute('href', '/blueprint/?p=%2Fblueprint%2Fprojects');
+  await checkState();
+
+  await page.goBack();
+  await expect(page).toHaveURL(/\/transit\?desktop#map$/);
+  await expect(page.locator('#bar-section')).toHaveText('');
+  await expect(page.locator('.transit-theme-switch')).toHaveAttribute('href', '/');
+  await page.goForward();
+  await expect(page.locator('#bar-section')).toHaveText('Projects');
+  await expect(page.locator('.transit-theme-switch')).toHaveAttribute('href', '/projects');
+
+  await page.locator('[data-card="projects"]:visible').first().click();
+  await expect(page.locator('body')).toHaveClass(/page-projects/);
+  const article = new URL(page.url()).pathname;
+  await page.evaluate(() => window.scrollTo(0, 900));
+  await expect.poll(() => page.evaluate(() => history.state.scrollY)).toBe(900);
+  await page.goBack();
+  await expect(page.locator('#bar-section')).toHaveText('Projects');
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+  await page.goForward();
+  await expect(page).toHaveURL(new RegExp(article + '$'));
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(900);
+  await checkState();
+});
+
+test('blocked localStorage leaves the map usable and HUD disabled', async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(window, 'localStorage', { get() { throw new DOMException('Blocked', 'SecurityError'); } });
+  });
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/transit');
+  await expect(page.locator('.map-wrap')).toHaveClass(/map-ready/);
+  await expect(page.locator('#perf-hud')).toHaveCount(0);
+  await page.locator('a[data-line="projects"]').click();
+  await expect(page.locator('#bar-section')).toHaveText('Projects');
+  await expect.poll(() => visCards(page, 'projects')).toBe(WANT.projects);
+});
+
+for (const reducedMotion of ['reduce', 'no-preference'] as const) {
+  test(`keyboard paging retains usable focus through reveal and page edges (${reducedMotion})`, async ({ page }) => {
+    await page.emulateMedia({ reducedMotion });
+    await page.goto('/transit/projects');
+    const next = page.locator('#more-next');
+    const prev = page.locator('#more-prev');
+    await expect(next).toBeEnabled();
+    await next.focus();
+    // Reach the last page, where Next disappears and focus must move to Prev.
+    for (let i = 0; i < 12 && await next.isVisible(); i++) {
+      await page.keyboard.press('Enter');
+      await expect.poll(() => page.evaluate(() => {
+        const active = document.activeElement as HTMLButtonElement | null;
+        return !!active && ['more-next', 'more-prev'].includes(active.id) && !active.hidden && !active.disabled;
+      })).toBe(true);
+    }
+    await expect(next).toBeHidden();
+    await expect(prev).toBeFocused();
+    for (let i = 0; i < 12 && await prev.isVisible(); i++) {
+      await page.keyboard.press('Enter');
+      await expect.poll(() => page.evaluate(() => {
+        const active = document.activeElement as HTMLButtonElement | null;
+        return !!active && ['more-next', 'more-prev'].includes(active.id) && !active.hidden && !active.disabled;
+      })).toBe(true);
+    }
+    await expect(prev).toBeHidden();
+    await expect(next).toBeFocused();
+  });
+}

@@ -38,6 +38,29 @@ export function propertyDefaults(css: string): string {
   return out.join(' ');
 }
 
+// Resolve the final keyframe into the rule that uses it, then remove all
+// temporal CSS. Infinite effects get a deterministic 100% frame too.
+function freezeMotion(css: string): string {
+  const ends = new Map<string, string>();
+  css = css.replace(/@(?:-webkit-)?keyframes\s+([\w-]+)\s*\{((?:[^{}]|\{[^{}]*\})*)\}/g,
+    (_, name: string, frames: string) => {
+      let end = '';
+      for (const [, stops, declarations] of frames.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+        if (stops.split(',').some((stop) => /^(100%|to)$/.test(stop.trim()))) end = declarations;
+      }
+      ends.set(name, end);
+      return '';
+    });
+  return css.replace(/(?:^|(?<=[;{]))\s*(?:-webkit-)?(animation(?:-[\w-]+)?|transition(?:-[\w-]+)?)\s*:\s*([^;}]+);?/g,
+    (_, property: string, value: string) => {
+      if (property === 'animation' || property === 'animation-name') {
+        return [...ends].filter(([name]) => value.split(/[\s,]+/).includes(name))
+          .map(([, end]) => end.trim()).join(' ');
+      }
+      return '';
+    });
+}
+
 // Turns a live drawing into a standalone, static SVG document in its fully
 // played state: every `.swiss-card.is-hover` rule applies (the content is
 // wrapped in a group carrying those classes, and the motion media queries are
@@ -74,6 +97,8 @@ export function freezeDrawing(svg: string, slug: string, colours: DrawingColours
     style = styleMatch[1];
     body = body.replace(styleMatch[0], '');
   }
+  style = freezeMotion(style);
+  body = body.replace(/style="([^"]*)"/g, (_, css: string) => `style="${freezeMotion(css)}"`);
   if (defaults) style = `svg { ${defaults} } ${style}`;
   const compact = (s: string) => s.replace(/\s+/g, ' ').replace(/>\s+</g, '><').trim();
 

@@ -10,8 +10,6 @@
 //                   removed, is a contract change; body-only edits are not.
 
 import type { VisualPalette } from './palette';
-import '../../styles/qla2-widgets.css';
-import '../../styles/room-run.css';
 
 export interface RoomRunOptions {
   root: ParentNode;

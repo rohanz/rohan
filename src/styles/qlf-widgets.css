@@ -1,0 +1,50 @@
+/* Shared qlf widgets structure. Theme skins own colour and decoration. */
+.qlf-legend { display: flex; justify-content: flex-end; gap: 0.3rem 1rem; flex-wrap: wrap; margin: 0.4rem 0 0.3rem; font-size: 0.78rem; }
+.qlf-legend-item { display: inline-flex; align-items: center; gap: 0.35rem; }
+.qlf-legend-swatch { display: inline-block; width: 9px; height: 9px; }
+.qlf-legend-swatch.qlf-sw-rung { width: 3px; height: 12px; }
+.qlf-crosshair-canvas { touch-action: pan-y; cursor: crosshair; }
+.qlf-sr-range { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.qlf-readout { display: flex; gap: 0.4rem 1.4rem; flex-wrap: wrap; margin: 0.5rem 0 0.6rem; padding-left: 44px; transition: opacity 0.15s ease; }
+.qlf-readout.is-idle { opacity: 0.45; }
+.qlf-readout-field { display: inline-flex; align-items: baseline; gap: 0.45rem; }
+.qlf-readout-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+.qlf-readout-value { display: inline-block; font-size: 0.84rem; font-variant-numeric: tabular-nums; text-align: right; min-height: 1.3em; }
+.qlf-mode-toggle { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; }
+.qlf-la-readout { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.7rem; margin-bottom: 0.9rem; }
+.qlf-la-stat { display: grid; gap: 0.15rem; padding: 0.5rem 0.7rem; }
+.qlf-la-stat-hold { opacity: 0.85; }
+.qlf-la-big { font-weight: 700; font-size: 1.7rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.qlf-la-stat-label { font-size: 0.8rem; }
+.qla-visual .qlf-la-window-note { margin: 0.35rem 0 0.7rem; font-size: 0.78rem; }
+.qla-visual .qlf-chip-note { margin: 0.4rem 0 0; font-size: 0.78rem; }
+.qlf-meter { margin-top: 1rem; padding-top: 0.9rem; }
+.qla-visual .qlf-meter-big { margin: 0.7rem 0 0.3rem; font-weight: 700; font-size: 1.25rem; font-variant-numeric: tabular-nums; }
+.qlf-risk-row { margin-top: 0.8rem; }
+.qlf-risk-row > .qlf-btn-group-label { margin-bottom: 0.3rem; }
+.qlf-limits-row { display: flex; gap: 0.3rem 1.6rem; flex-wrap: wrap; align-items: baseline; }
+.qlf-limits-value { font-size: 0.82rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.qlf-state-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; }
+@media (max-width: 560px) {
+.qlf-state-tiles { grid-template-columns: 1fr; }
+}
+.qlf-state-tile { display: grid; grid-template-rows: auto auto; gap: 0.15rem; padding: 0.45rem 0.6rem; min-width: 0; transition: border-color 0.25s ease; }
+.qlf-state-label { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+.qlf-state-body { display: flex; flex-direction: column; height: 4.2em; min-width: 0; font-size: 0.82rem; }
+.qlf-state-body-center { justify-content: center; gap: 0.1rem; }
+.qlf-state-value { line-height: 1.4; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.qlf-state-sub { font-size: 0.72rem; line-height: 1.4; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.qlf-pos-line { display: flex; justify-content: space-between; align-items: baseline; line-height: 1.4; height: 1.4em; font-variant-numeric: tabular-nums; }
+.qlf-risk-bottom { display: flex; gap: 0.8rem 2rem; flex-wrap: wrap; margin-top: 0.9rem; }
+.qlf-risk-bottom .qlf-order-row { max-width: 100%; }
+.qlf-btn-group { min-width: 0; }
+.qlf-btn-group-label { display: block; margin-bottom: 0.35rem; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+.qlf-status-strip { display: block; box-sizing: border-box; height: 2.4em; line-height: 2.4em; padding: 0 0.6rem; font-weight: 700; font-size: 0.82rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.qlf-is-killed [data-buy] { opacity: 0.45; }
+.qlf-risk-buttons { display: flex; gap: 0.45rem; flex-wrap: wrap; }
+.qlf-risk-btn { font-size: 0.8rem; padding: 0.38rem 0.85rem; }
+.qlf-audit-log { height: 280px; overflow-y: auto; padding: 0.5rem 0.6rem; font-size: 0.76rem; line-height: 1.5; }
+.qlf-audit-log::-webkit-scrollbar { width: 7px; height: 7px; }
+.qlf-audit-line { display: flex; gap: 0.5rem; align-items: baseline; padding: 0.1rem 0; }
+.qlf-audit-ts { flex-shrink: 0; }
+.qlf-audit-verdict { font-weight: 700; flex-shrink: 0; }

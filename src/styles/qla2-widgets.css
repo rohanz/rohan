@@ -7,8 +7,9 @@
 .qla-visual .qla-visual-body .qla2-mode-btn.is-active,
 .qla-visual .qla-visual-body .qla2-episode-picker .qla-btn.is-active {
   border-color: var(--accent);
-  color: var(--accent);
-  box-shadow: inset 0 0 0 1px var(--accent);
+  color: var(--widget-selected-text);
+  background: var(--widget-selected-surface);
+  box-shadow: var(--widget-selected-decoration);
 }
 .qla-visual .qla-visual-body .qla2-episode-picker { display: flex; flex-wrap: wrap; gap: 0.55rem; margin-bottom: 1rem; }
 .qla-visual .qla-visual-body .qla2-description { margin: 0 0 1.25rem; color: var(--text-secondary); font-size: 0.95rem; line-height: 1.55; }
@@ -16,7 +17,7 @@
 .qla-visual .qla-visual-body .qla2-question { margin: 0 0 1.25rem; padding: 0.6rem 1.1rem; border-left: 3px solid var(--accent); color: var(--text-primary); font-weight: 600; line-height: 1.45; }
 .qla-visual .qla-visual-body .qla2-story { margin: 0 0 1rem; padding: 0; list-style: none; counter-reset: qla2step; }
 .qla-visual .qla-visual-body ol.qla2-story > li.qla2-step { position: relative; margin: 0; padding: 0.55rem 0 0.55rem 2.4rem; counter-increment: qla2step; display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 0.55rem; row-gap: 0.1rem; }
-.qla-visual .qla-visual-body ol.qla2-story > li.qla2-step::before { content: counter(qla2step); position: absolute; left: 0; top: 0.55rem; width: 1.45rem; height: 1.45rem; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: 50%; background: var(--bg-card); display: grid; place-items: center; font-size: 0.72rem; line-height: 1; font-weight: 700; color: var(--accent); }
+.qla-visual .qla-visual-body ol.qla2-story > li.qla2-step::before { content: counter(qla2step); position: absolute; left: 0; top: 0.55rem; width: 1.45rem; height: 1.45rem; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--widget-radius, 50%); background: var(--bg-card); display: grid; place-items: center; font-size: 0.72rem; line-height: 1; font-weight: 700; color: var(--accent); }
 .qla-visual .qla-visual-body ol.qla2-story > li.qla2-step + li.qla2-step { border-top: 1px dashed var(--border-subtle); }
 .qla-visual .qla-visual-body .qla2-step-what { color: var(--text-secondary); font-size: 0.95rem; }
 .qla-visual .qla-visual-body .qla2-step-found { color: var(--text-secondary); font-size: 0.95rem; }
@@ -28,9 +29,9 @@
 }
 .qla-visual .qla-visual-body .qla2-outcome { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.9rem; margin-top: 0.45rem; padding: 0.75rem 0.9rem 0.35rem 0.2rem; border-top: 2px solid var(--border-subtle); }
 .qla-visual .qla-visual-body .qla2-final { color: var(--text-primary); font-weight: 700; overflow-wrap: anywhere; }
-.qla-visual .qla-visual-body .qla2-verdict { display: inline-flex; align-items: center; padding: 0.16rem 0.62rem; border-radius: 999px; font-size: 0.68rem; line-height: 1.5; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; white-space: nowrap; }
-.qla-visual .qla-visual-body .qla2-verdict.is-pass { color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
-.qla-visual .qla-visual-body .qla2-verdict.is-fail { color: var(--qla2-comparison, #c74b50); box-shadow: inset 0 0 0 1px currentColor; }
+.qla-visual .qla-visual-body .qla2-verdict { display: inline-flex; align-items: center; padding: 0.16rem 0.62rem; border-radius: var(--widget-radius, 999px); font-size: 0.68rem; line-height: 1.5; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; white-space: nowrap; }
+.qla-visual .qla-visual-body .qla2-verdict.is-pass { color: var(--accent); box-shadow: var(--widget-decoration, inset 0 0 0 1px var(--accent)); }
+.qla-visual .qla-visual-body .qla2-verdict.is-fail { color: var(--qla2-comparison, #c74b50); box-shadow: var(--widget-decoration, inset 0 0 0 1px currentColor); }
 .qla-visual .qla-visual-body .qla2-outcome-note { margin-left: auto; color: var(--text-secondary); font-size: 0.9rem; }
 .qla-visual .qla-visual-body .qla2-cost-key { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.4rem 1.4rem; margin: 0; padding-left: 1.6rem; color: var(--text-secondary); font-size: 0.92rem; }
 .qla-visual .qla-visual-body .qla2-cost-key li { padding-left: 0.2rem; }
@@ -46,60 +47,9 @@
 .qla-visual .qla-visual-body .qla2-story + .qla2-zone-label, ol.qla2-story ~ .qla2-zone-label { margin-top: 0.6rem; }
 
 .qla-visual .qla-visual-body .is-hidden { visibility: hidden; }
-@media (prefers-reduced-motion: reduce) {
-  }
 
-/* six-wrong-conclusions cascade (anchored under the card body: the classic
-   theme's universal reset zeroes lower-specificity list spacing) */
-.qla-visual .qla-visual-body .qla2-cascade {
-  list-style: none;
-  margin: 0.5rem 0 0;
-  padding: 0;
-  display: grid;
-  gap: 0.65rem;
-}
-.qla-visual .qla-visual-body .qla2-cascade-step {
-  border: 1px solid var(--border-subtle);
-  border-left: 3px solid var(--qla2-accent);
-  border-radius: 10px;
-  padding: 0.7rem 0.9rem;
-  background: var(--bg-card);
-  display: grid;
-  gap: 0.35rem;
-}
-.qla-visual .qla-visual-body .qla2-cascade-step:last-child {
-  border-left-color: var(--qla2-comparison);
-}
-.qla-visual .qla-visual-body .qla2-cascade-head {
-  display: flex;
-  align-items: baseline;
-  gap: 0.6rem;
-}
-.qla-visual .qla-visual-body .qla2-cascade-index {
-  font-family: 'Chillax', sans-serif;
-  font-weight: 600;
-  font-size: 0.95rem;
-  color: var(--qla2-accent);
-  min-width: 1.2rem;
-}
-.qla-visual .qla-visual-body .qla2-cascade-step:last-child .qla2-cascade-index {
-  color: var(--qla2-comparison);
-}
-.qla-visual .qla-visual-body .qla2-cascade-belief {
-  font-weight: 600;
-  font-size: 0.98rem;
-  color: var(--text-primary);
-}
-.qla-visual .qla-visual-body .qla2-cascade-experiment,
-.qla-visual .qla-visual-body .qla2-cascade-verdict {
-  font-size: 0.95rem;
-  line-height: 1.45;
-  color: var(--text-primary);
-  opacity: 0.85;
-  display: flex;
-  gap: 0.55rem;
-  align-items: baseline;
-}
+
+/* Shared audit reason label, also used by qls-widgets. */
 .qla-visual .qla-visual-body .qla2-cascade-tag {
   font-family: 'Chillax', sans-serif;
   font-weight: 600;
@@ -108,9 +58,6 @@
   text-transform: lowercase;
   color: var(--qla2-accent);
   flex: 0 0 3.2rem;
-}
-.qla-visual .qla-visual-body .qla2-cascade-verdict .qla2-cascade-tag {
-  color: var(--qla2-comparison);
 }
 
 /* ---- how an answer gets made: system diagram, stepper, reward breakdown ---- */
@@ -137,7 +84,7 @@
 .qla-visual .qla-visual-body .qla2-reward-row { display: grid; grid-template-columns: minmax(8rem, 13rem) minmax(0, 1fr) 5.5rem; align-items: center; gap: .75rem; font-size: .88rem; }
 .qla-visual .qla-visual-body .qla2-reward-label { color: var(--text-secondary); }
 /* Bar length is the component's weight, so the 70% answer term dominates visually. */
-.qla-visual .qla-visual-body .qla2-reward-bar { position: relative; display: block; height: .7rem; width: calc(var(--qla2-weight) * 100%); min-width: 1.5rem; background: var(--qla2-wash, rgba(0,0,0,.04)); box-shadow: inset 0 0 0 1px var(--border-subtle); }
+.qla-visual .qla-visual-body .qla2-reward-bar { position: relative; display: block; height: .7rem; width: calc(var(--qla2-weight) * 100%); min-width: 1.5rem; background: var(--qla2-wash, rgba(0,0,0,.04)); box-shadow: var(--widget-decoration, inset 0 0 0 1px var(--border-subtle)); }
 .qla-visual .qla-visual-body .qla2-reward-fill { position: absolute; inset: 0 auto 0 0; background: var(--accent); transition: width .5s cubic-bezier(.2,.7,.2,1); }
 .qla-visual .qla-visual-body .qla2-reward-row.is-zero .qla2-reward-label { color: var(--qla2-comparison, #c74b50); }
 .qla-visual .qla-visual-body .qla2-reward-points { color: var(--text-primary); font-variant-numeric: tabular-nums; text-align: right; font-weight: 700; }

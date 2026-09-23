@@ -7,33 +7,7 @@ import { HEADING_SLUGS } from './heading-slugs.generated.js';
 import './article-overlay.css';
 import './article-widgets.css';
 
-import quantlabAnalyst from './content/articles/quantlab-analyst.md?raw';
-import quantlabAgentic from './content/articles/quantlab-agentic.md?raw';
-import quantlabResearch from './content/articles/quantlab-research.md?raw';
-import quantlabSystems from './content/articles/quantlab-systems.md?raw';
-import careersphere from './content/articles/careersphere.md?raw';
-import bqst from './content/articles/bqst.md?raw';
-import yourcast from './content/articles/yourcast.md?raw';
-import datacenterAtlas from './content/articles/datacenter-atlas.md?raw';
-import patentease from './content/articles/patentease.md?raw';
-import liveChordMonitor from './content/articles/live-chord-monitor.md?raw';
-import teslaFeed from './content/articles/tesla-feed.md?raw';
-import thisWebsite from './content/articles/this-website.md?raw';
-
-const ARTICLES = {
-  'quantlab-analyst': quantlabAnalyst,
-  'quantlab-agentic': quantlabAgentic,
-  'quantlab-research': quantlabResearch,
-  'quantlab-systems': quantlabSystems,
-  careersphere,
-  bqst,
-  yourcast,
-  'datacenter-atlas': datacenterAtlas,
-  patentease,
-  'live-chord-monitor': liveChordMonitor,
-  'tesla-feed': teslaFeed,
-  'this-website': thisWebsite,
-};
+import { ARTICLES } from './articles.generated.js';
 
 // wave3: heading ids now come from HEADING_SLUGS (tools/build-blueprint.mjs,
 // see the comment on extractHeadingSlugs there), pre-slugged with
@@ -102,7 +76,7 @@ function captionImages(body) {
   });
 }
 
-export function createArticleOverlay(projects, { onNavigate } = {}) {
+export function createArticleOverlay(projects, { onNavigate, onRequestNavigate } = {}) {
   const listedProjects = projects.filter((project) => !project.unlisted);
   const overlay = document.createElement('section');
   overlay.className = 'article-overlay';
@@ -199,31 +173,37 @@ export function createArticleOverlay(projects, { onNavigate } = {}) {
     return `<button class="article-project-link" type="button" data-slug="${project.slug}">${text}</button>`;
   }
 
+  const requestOpen = (slug) => onRequestNavigate ? onRequestNavigate(slug) : open(slug);
+  const requestClose = () => onRequestNavigate ? onRequestNavigate(null) : close();
+  let revision = 0;
   let swapTimer = 0;
   let closeTimer = 0;
   function open(slug) {
     const project = projects.find((entry) => entry.slug === slug);
     const markdown = ARTICLES[slug];
     if (!project || !markdown) return;
+    const token = ++revision;
+    clearTimeout(swapTimer);
     clearTimeout(closeTimer); // a just-closed overlay must not hide the reopened one
     // Already open (prev/next): dip the sheet out, swap at the midpoint.
     if (!overlay.hidden && activeProject && activeProject.slug !== slug) {
       overlay.classList.add('is-swapping');
       clearTimeout(swapTimer);
       swapTimer = setTimeout(() => {
+        if (token !== revision) return;
         renderArticle(project, markdown);
         // two rAFs: guarantee the new sheet PAINTS at opacity 0 before the
         // class comes off — removing it in the render frame let the heavy
         // widget init eat the whole transition (looked like a pop-in)
         requestAnimationFrame(() => requestAnimationFrame(() => {
-          overlay.classList.remove('is-swapping');
+          if (token === revision) overlay.classList.remove('is-swapping');
         }));
       }, 170);
       return;
     }
     if (overlay.hidden) previousFocus = document.activeElement;
     overlay.hidden = false;
-    requestAnimationFrame(() => overlay.classList.add('is-visible')); // fade in
+    requestAnimationFrame(() => { if (token === revision) overlay.classList.add('is-visible'); }); // fade in
     document.body.classList.add('article-open');
     renderArticle(project, markdown);
   }
@@ -296,14 +276,19 @@ export function createArticleOverlay(projects, { onNavigate } = {}) {
     onNavigate?.(project.slug);
   }
 
-  function close() {
+  function close({ immediate = false } = {}) {
+    revision++;
+    clearTimeout(swapTimer);
+    clearTimeout(closeTimer);
+    lightbox.close();
     if (overlay.hidden) return;
     cleanupWidgets();
     clearTimeout(swapTimer); // a mid-swap render must not resurrect the article
     overlay.classList.remove('is-swapping');
     overlay.classList.remove('is-visible'); // fade out, then hide
     clearTimeout(closeTimer);
-    closeTimer = setTimeout(() => { overlay.hidden = true; }, 230);
+    if (immediate) overlay.hidden = true;
+    else closeTimer = setTimeout(() => { overlay.hidden = true; }, 230);
     document.body.classList.remove('article-open');
     activeProject = null;
     previousFocus?.focus?.({ preventScroll: true });
@@ -333,7 +318,7 @@ export function createArticleOverlay(projects, { onNavigate } = {}) {
     lightbox.open(img);
   });
 
-  closeButton.addEventListener('click', close);
+  closeButton.addEventListener('click', requestClose);
   overlay.addEventListener('wheel', (event) => event.stopPropagation(), { passive: true });
   overlay.addEventListener('scroll', () => {
     clickSuppress.poke();
@@ -354,8 +339,8 @@ export function createArticleOverlay(projects, { onNavigate } = {}) {
       return;
     }
     const nav = event.target.closest('[data-slug], [data-close]');
-    if (nav?.dataset.slug) { open(nav.dataset.slug); return; }
-    if (nav?.hasAttribute('data-close')) { close(); return; }
+    if (nav?.dataset.slug) { requestOpen(nav.dataset.slug); return; }
+    if (nav?.hasAttribute('data-close')) { requestClose(); return; }
     // In-article links to sibling articles swap within the reader instead of
     // triggering a full page load.
     const inner = event.target.closest('.article-body a[href]');
@@ -363,7 +348,7 @@ export function createArticleOverlay(projects, { onNavigate } = {}) {
       const slug = inner.getAttribute('href')?.match(/\/projects\/([\w-]+)\/?$/)?.[1];
       if (slug && ARTICLES[slug]) {
         event.preventDefault();
-        open(slug);
+        requestOpen(slug);
       }
     }
   });
@@ -385,7 +370,7 @@ export function createArticleOverlay(projects, { onNavigate } = {}) {
     }
   });
   document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape' && !overlay.hidden && !lightbox.isOpen()) close();
+    if (event.key === 'Escape' && !overlay.hidden && !lightbox.isOpen()) requestClose();
   });
 
   return {

@@ -3,7 +3,9 @@ import SwissLayout from '../layouts/SwissLayout.astro';
 ---
 <script is:inline>
   if (location.pathname.startsWith('/blueprint')) {
-    location.replace('/blueprint/?p=' + encodeURIComponent(location.pathname) + location.hash);
+    const params = new URLSearchParams(location.search);
+    params.set('p', location.pathname);
+    location.replace('/blueprint/?' + params + location.hash);
   }
 </script>
 

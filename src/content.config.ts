@@ -17,6 +17,12 @@ const projects = defineCollection({
     // cross-links) but are excluded from the projects platform (cards,
     // tag pills, paging) and from prev/next/all-projects navigation.
     unlisted: z.boolean().default(false),
+    // A placing worth flagging on the card and article header: `award` is the
+    // short chip text ("1st place · hackathon"), `awardEvent` names the event
+    // in full for the tooltip. Flat strings so every frontmatter reader
+    // (including tools/build-blueprint.mjs) can parse them.
+    award: z.string().optional(),
+    awardEvent: z.string().optional(),
   }),
 });
 

@@ -309,6 +309,16 @@ function initRoster(node: HTMLElement, roster: Roster, options: QlaWidgetOptions
 
   const MIN_MEMO_HEIGHT = 160;
   const maxMemoHeight = () => Math.round(window.innerHeight * 0.75);
+  // The height is written to style.height, so read it in the same box model:
+  // a content-box pane (blueprint) must not count its padding and border, or
+  // every resize, drag or arrow key grows it by that amount.
+  const memoHeight = () => {
+    const rect = memoPane.getBoundingClientRect().height;
+    const cs = getComputedStyle(memoPane);
+    if (cs.boxSizing === 'border-box') return rect;
+    const px = (v: string) => parseFloat(v) || 0;
+    return rect - px(cs.paddingTop) - px(cs.paddingBottom) - px(cs.borderTopWidth) - px(cs.borderBottomWidth);
+  };
   const setMemoHeight = (height: number) => {
     const next = Math.max(MIN_MEMO_HEIGHT, Math.min(maxMemoHeight(), height));
     memoPane.style.height = `${next}px`;
@@ -330,7 +340,7 @@ function initRoster(node: HTMLElement, roster: Roster, options: QlaWidgetOptions
     window.removeEventListener('pointercancel', onDragEnd);
   };
   grip.addEventListener('pointerdown', (event) => {
-    dragFrom = { y: event.clientY, height: memoPane.getBoundingClientRect().height };
+    dragFrom = { y: event.clientY, height: memoHeight() };
     grip.classList.add('is-dragging');
     window.addEventListener('pointermove', onDragMove);
     window.addEventListener('pointerup', onDragEnd);
@@ -339,10 +349,10 @@ function initRoster(node: HTMLElement, roster: Roster, options: QlaWidgetOptions
   });
   grip.addEventListener('keydown', (event) => {
     if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;
-    setMemoHeight(memoPane.getBoundingClientRect().height + (event.key === 'ArrowDown' ? 40 : -40));
+    setMemoHeight(memoHeight() + (event.key === 'ArrowDown' ? 40 : -40));
     event.preventDefault();
   });
-  setMemoHeight(memoPane.getBoundingClientRect().height || 300);
+  setMemoHeight(memoHeight() || 300);
   cleanups.push(onDragEnd);
 
   function renderMemo(m: RosterEntry) {
@@ -385,7 +395,7 @@ function initRoster(node: HTMLElement, roster: Roster, options: QlaWidgetOptions
   select.addEventListener('change', () => selectModel(parseInt(select.value, 10)));
 
   const onResize = () => {
-    setMemoHeight(memoPane.getBoundingClientRect().height);
+    setMemoHeight(memoHeight());
     requestDraw();
   };
   window.addEventListener('resize', onResize);

@@ -1,3 +1,13 @@
+import '../../../src/styles/widget-base.css';
+import '../../../src/styles/bqst-widgets.css';
+import '../../../src/styles/chord-monitor.css';
+import '../../../src/styles/qla-widgets.css';
+import '../../../src/styles/qlf-widgets.css';
+import '../../../src/styles/demo-player.css';
+import '../../../src/styles/qla2-widgets.css';
+import '../../../src/styles/qls-widgets.css';
+import '../../../src/styles/mle-replay.css';
+import '../../../src/styles/room-run.css';
 import { asset } from './base.js';
 // Interactive project-detail widgets for the blueprint article reader. Every
 // widget lives in `src/lib/visuals/` at the repo root, shared with the classic
@@ -62,14 +72,19 @@ function initGlossary(article: HTMLElement) {
   cleanups.push(() => glossary.destroy());
 }
 
+import { createFontRedraw } from '../../../src/lib/visuals/font-redraw';
+
 export function initWidgets(article: HTMLElement | null = document.querySelector('.article-body')) {
   cleanupWidgets();
   if (!article) return;
   initGlossary(article);
 
   const root = article;
+  const fonts = createFontRedraw();
+  const onThemeChange = fonts.onThemeChange;
+  cleanups.push(fonts.cleanup);
   cleanups.push(
-    initBqstDspLab({ root, palette, sizeCanvas }),
+    initBqstDspLab({ root, palette, sizeCanvas, onThemeChange }),
     initBqstAudioDemo({ root, palette, dpr: blueprintDpr }),
     initLcmDemo({ root }),
     initDemoPlayer({
@@ -97,14 +112,15 @@ export function initWidgets(article: HTMLElement | null = document.querySelector
     initQlfWidgets({
       root,
       palette,
+      onThemeChange,
       sizeCanvas,
       dataUrl: asset('/assets/data/quantlab-fin-data.json'),
       legendSwatches: 'stylesheet',
     }),
-    initQla2Widgets({ root, palette, sizeCanvas, canvasWidth, dataUrl: asset('/assets/data/agentic-analyst-data.json') }),
-    initQlsWidgets({ root, palette, sizeCanvas, canvasWidth, dataUrl: asset('/assets/data/quantlab-systems-data.json') }),
-    initMleReplay({ root, palette, dataUrl: asset('/assets/data/mle-agent-run.json') }),
-    initRoomRun({ root, palette }),
+    initQla2Widgets({ root, palette, onThemeChange, sizeCanvas, canvasWidth, dataUrl: asset('/assets/data/agentic-analyst-data.json') }),
+    initQlsWidgets({ root, palette, onThemeChange, sizeCanvas, canvasWidth, dataUrl: asset('/assets/data/quantlab-systems-data.json') }),
+    initMleReplay({ root, palette, onThemeChange, dataUrl: asset('/assets/data/mle-agent-run.json') }),
+    initRoomRun({ root, palette, onThemeChange }),
   );
   initThemePalette({ root });
 }

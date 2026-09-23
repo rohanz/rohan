@@ -120,7 +120,10 @@ function init() {
 document.addEventListener('astro:page-load', init);
 document.addEventListener('astro:before-swap', () => {
   stop();
-  if (audio) delete audio.dataset.gcCounted;
+  if (audio) {
+    delete audio.dataset.gcCounted;
+    audio.remove(); // keep the shared graph, release the outgoing body
+  }
   selected = null;
   const session = mediaSession();
   if (session) {

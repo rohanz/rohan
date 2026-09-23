@@ -1,6 +1,17 @@
-import { THEME_PREF_KEY } from './theme-paths';
+import { blueprintEntryFor, defaultPathFor, THEME_PREF_KEY } from './theme-paths';
+
+/** A ride changes the URL without rendering a new transit header. */
+export function updateTransitThemeLinks(): void {
+  document.querySelectorAll<HTMLAnchorElement>('a.transit-theme-switch').forEach((link) => {
+    link.href = defaultPathFor(location.pathname);
+  });
+  document.querySelectorAll<HTMLAnchorElement>('a.blueprint-theme-switch').forEach((link) => {
+    link.href = blueprintEntryFor(location.pathname);
+  });
+}
 
 function bindThemePreferenceLinks(): void {
+  updateTransitThemeLinks();
   document.querySelectorAll<HTMLElement>('[data-theme-pref]').forEach((link) => {
     if (link.dataset.themePrefBound === '1') return;
     link.dataset.themePrefBound = '1';

@@ -265,7 +265,7 @@ function initToc(article: HTMLElement) {
     setCurrent(slug);
     const y = target.getBoundingClientRect().top + window.scrollY - 90;
     window.scrollTo({ top: y, behavior: scrollBehavior() });
-    history.replaceState(null, '', `#${slug}`);
+    history.replaceState({ ...history.state }, '', `#${slug}`);
     // Fallback in case the target is already in place and no scroll fires.
     clearTimeout(clickTimer);
     clickTimer = window.setTimeout(() => {

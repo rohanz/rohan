@@ -26,3 +26,153 @@ test('transit Quantlab roster memo pane resizes by drag and keyboard', async ({ 
   expect(Math.round(afterDrag - afterKey)).toBe(40);
   await expect(grip).toHaveAttribute('aria-valuenow', String(Math.round(afterKey)));
 });
+
+for (const theme of ['', '/transit']) {
+  test(`${theme || 'classic'} BQST charts grow back after a narrow viewport`, async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto(`${theme}/projects/bqst`);
+    const canvases = page.locator('.bqst-visual-canvas');
+    await expect(canvases).toHaveCount(4);
+    const widths = () => canvases.evaluateAll((els) => els.map((el) => el.getBoundingClientRect().width));
+    await expect.poll(async () => (await widths()).every((width) => width > 350)).toBe(true);
+    const wide = await widths();
+    await page.setViewportSize({ width: 700, height: 900 });
+    await expect.poll(async () => (await widths())[0]).toBeLessThan(wide[0] - 100);
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await expect.poll(widths).toEqual(wide);
+  });
+}
+
+test('BQST defers WAVs on phones, then plays and switches versions', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const wavRequests: string[] = [];
+  page.on('request', (request) => { if (/\.wav(?:\?|$)/.test(request.url())) wavRequests.push(request.url()); });
+  await page.goto('/projects/bqst', { waitUntil: 'networkidle' });
+  const demo = page.locator('#bqst-audio-demo');
+  const play = demo.locator('.bqst-audio-play');
+  await expect(play).toBeAttached();
+  expect(wavRequests).toEqual([]);
+  await demo.scrollIntoViewIfNeeded();
+  await expect.poll(() => wavRequests.length).toBe(2);
+  await play.click();
+  await expect(play).toHaveAttribute('aria-pressed', 'true');
+  const head = demo.locator('.bqst-audio-head');
+  const before = await head.evaluate((el) => getComputedStyle(el).transform);
+  await expect.poll(() => head.evaluate((el) => getComputedStyle(el).transform)).not.toBe(before);
+  await demo.getByRole('button', { name: 'bqst', exact: true }).click();
+  await expect(demo.getByRole('button', { name: 'bqst', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(play).toHaveAttribute('aria-pressed', 'true');
+  await demo.getByRole('button', { name: 'clean', exact: true }).click();
+  await expect(demo.getByRole('button', { name: 'clean', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await play.click();
+  await expect(play).toHaveAttribute('aria-pressed', 'false');
+});
+
+test('piano letter shortcuts require focus and release held notes on Tab', async ({ page }) => {
+  await page.goto('/projects/live-chord-monitor');
+  const piano = page.getByRole('region', { name: /^Playable piano/ });
+  await piano.scrollIntoViewIfNeeded();
+  await page.keyboard.press('KeyA');
+  await expect(piano.locator('.active')).toHaveCount(0);
+  await expect(piano).toHaveAttribute('tabindex', '0');
+  await piano.focus();
+  await page.keyboard.down('KeyA');
+  await expect(piano.locator('.active')).toHaveCount(1);
+  await page.keyboard.press('Tab');
+  await expect(piano.locator('.active')).toHaveCount(0);
+  await page.keyboard.up('KeyA');
+  await page.keyboard.down('KeyA');
+  await expect(piano.locator('.active')).toHaveCount(0);
+  await page.keyboard.up('KeyA');
+  const key = piano.locator('.lcm-key').first();
+  await key.dispatchEvent('pointerdown', { pointerId: 1 });
+  await expect(key).toHaveClass(/active/);
+  await page.locator('body').dispatchEvent('pointerup', { pointerId: 1 });
+  await expect(piano.locator('.active')).toHaveCount(0);
+});
+
+test('transit music follows external media pause/error', async ({ page }) => {
+  await page.goto('/transit/music');
+  const buttons = page.locator('#platform-ui [data-play]');
+  await expect(buttons.first()).toBeVisible();
+  await buttons.first().click();
+  await expect(buttons.first()).toHaveAttribute('aria-pressed', 'true');
+  await page.locator('audio').evaluate((audio: HTMLAudioElement) => audio.pause());
+  await expect(buttons.first()).toHaveAttribute('aria-pressed', 'false');
+  await buttons.nth(1).click();
+  await expect(buttons.nth(1)).toHaveAttribute('aria-pressed', 'true');
+  await expect(buttons.first()).toHaveAttribute('aria-pressed', 'false');
+  await page.route('**/*.mp3', (route) => route.abort());
+  await page.locator('audio').evaluate((audio: HTMLAudioElement) => audio.load());
+  await expect(buttons.nth(1)).toHaveAttribute('aria-pressed', 'false');
+});
+
+for (const theme of ['classic', 'transit']) {
+  test(`${theme} detaches persistent audio before swapping and reattaches on entry`, async ({ page }) => {
+    const route = theme === 'classic' ? '/music' : '/transit/music';
+    const playSelector = theme === 'classic' ? '.sw-play' : '#platform-ui [data-play]';
+    await page.goto(route);
+    await page.locator(playSelector).first().click();
+    await expect(page.locator(playSelector).first()).toHaveAttribute('aria-pressed', 'true');
+    const audio = await page.$('audio');
+    expect(audio).not.toBeNull();
+    // A real ClientRouter navigation retains this JS handle, so we can check
+    // that the persistent element no longer points at the outgoing body.
+    await page.evaluate(() => {
+      const link = document.createElement('a');
+      link.href = '/projects/bqst';
+      link.textContent = 'audio lifecycle test navigation';
+      document.body.appendChild(link);
+      link.click();
+    });
+    await expect(page).toHaveURL(/\/projects\/bqst$/);
+    await expect.poll(() => audio!.evaluate((el) => el.parentNode === null)).toBe(true);
+    expect(await audio!.evaluate((el) => el.paused)).toBe(true);
+    if (theme === 'transit') {
+      expect(await audio!.evaluate((el) => [el.onplaying, el.onpause, el.onended, el.onerror].every((handler) => handler === null))).toBe(true);
+    }
+    await page.goBack();
+    await expect(page.locator(playSelector).first()).toBeVisible();
+    await expect.poll(() => audio!.evaluate((el) => el.parentNode === document.body)).toBe(true);
+    await page.locator(playSelector).first().click();
+    await expect(page.locator(playSelector).first()).toHaveAttribute('aria-pressed', 'true');
+    await expect.poll(() => audio!.evaluate((el) => !el.paused && el.currentTime > 0)).toBe(true);
+  });
+}
+
+test('late web fonts redraw mounted charts without resetting their controls', async ({ page }) => {
+  for (const route of ['/projects/bqst', '/projects/quantlab-research', '/projects/quantlab-agentic', '/projects/quantlab-systems']) {
+    await page.goto(route, { waitUntil: 'networkidle' });
+    await expect(page.locator('.article canvas').first()).toBeAttached();
+    if (route.endsWith('/bqst')) {
+      await page.locator('.bqst-knob-stage').first().focus();
+      await page.keyboard.press('ArrowUp');
+      await expect(page.locator('.bqst-knob-stage').first()).toHaveAttribute('aria-valuenow', '0.5');
+    }
+    const result = await page.evaluate(async () => {
+      await document.fonts.ready;
+      await new Promise(requestAnimationFrame);
+      await new Promise(requestAnimationFrame);
+      // Count actual canvas label paints following a late font-load event.
+      // The original renderer is restored even if the assertion later fails.
+      const original = CanvasRenderingContext2D.prototype.fillText;
+      let paints = 0;
+      CanvasRenderingContext2D.prototype.fillText = function (...args: Parameters<typeof original>) {
+        if (this.canvas.closest('.article')) paints++;
+        original.apply(this, args);
+      };
+      try {
+        document.fonts.dispatchEvent(new Event('loadingdone'));
+        await new Promise(requestAnimationFrame);
+        await new Promise(requestAnimationFrame);
+        return paints;
+      } finally {
+        CanvasRenderingContext2D.prototype.fillText = original;
+      }
+    });
+    expect(result, route).toBeGreaterThan(0);
+    if (route.endsWith('/bqst')) {
+      await expect(page.locator('.bqst-knob-stage').first()).toHaveAttribute('aria-valuenow', '0.5');
+    }
+  }
+});

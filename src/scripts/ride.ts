@@ -8,7 +8,7 @@
  *
  * Riding a line ends parked at its platform; "back to map" rides in
  * reverse. URLs stay real via pushState (/transit and its child routes);
- * popstate replays the moves; direct entry parks instantly.
+ * in-map popstate replays the moves; direct entry parks instantly.
  *
  * This module owns ONLY the navigation state machine (URL ↔ view target,
  * reconcile, click/skip semantics, announcements) and the page-lifecycle
@@ -22,9 +22,13 @@ import { rlog } from './ride/rlog';
 import { MapView } from './ride/map-view';
 import { mountPerfHud } from './ride/hud';
 import { FAST_TRAVEL_KEY } from './ride/keys';
+import { updateTransitThemeLinks } from '../lib/theme-switch';
 
 // ---------------------------------------------------------------------------
 let mv: MapView | null = null;
+// Only entries created by the currently rendered map belong to the ride router.
+// Returning from an article builds a new map, so older entries go through Astro.
+let mapHistoryId = '';
 
 // The URL is the single source of truth for which view should be showing.
 // `target` mirrors it; `reconcile()` drives the (async, animated) view toward it.
@@ -35,7 +39,7 @@ let mv: MapView | null = null;
 // in-flight ride finishes. This is what keeps the URL and the visible view in
 // lock-step through interrupts, spam, and history navigation.
 let target: ViewId = 'map';
-// Guards the once-only binding of window-level listeners (popstate/resize) that
+// Guards the once-only binding of window listeners (popstate/resize) that
 // must survive ClientRouter swaps; init() re-runs per page-load.
 let globalBound = false;
 // When a click skips an in-flight ride (finishRide), the engine settles INSTANTLY.
@@ -64,7 +68,10 @@ function fastTravel(): boolean {
 }
 
 function urlFor(view: ViewId): string {
-  return view === 'map' ? '/transit' : `/transit/${view}`;
+  const url = new URL(location.href);
+  url.pathname = view === 'map' ? '/transit' : `/transit/${view}`;
+  // Keep entry options (notably ?desktop and ?rideDebug) and the fragment.
+  return url.pathname + url.search + url.hash;
 }
 
 function viewFromPath(path: string): ViewId {
@@ -124,7 +131,7 @@ function reconcile() {
  *    settled and view === target).
  *  - When idle, a click to a NEW destination starts the ride; clicking the view
  *    you're already on does nothing.
- *  (Back/forward are separate — popstate goes through reconcile(), not this.) */
+ *  (Back/forward are separate — in-map traversal goes through reconcile().) */
 function go(view: ViewId) {
   if (!mv) return;
   rlog('go', { view, busy: mv.busy, at: mv.view });
@@ -143,8 +150,13 @@ function go(view: ViewId) {
     return;
   }
   target = view;
-  if (viewFromPath(location.pathname) !== view)
-    history.pushState({ view }, '', urlFor(view));
+  if (viewFromPath(location.pathname) !== view) {
+    // Keep Astro's state for traversal across documents. In-map entries share
+    // its document index; our capture listener owns only this map's entries.
+    history.replaceState({ ...history.state, scrollX, scrollY }, '');
+    history.pushState({ ...history.state, view, transitMap: mapHistoryId }, '', urlFor(view));
+    updateTransitThemeLinks();
+  }
   reconcile();
 }
 
@@ -234,16 +246,19 @@ function init() {
   if (!globalBound) {
     globalBound = true;
 
-    // Back/forward: the browser has already changed the URL and it cannot be
-    // vetoed, so adopt it as the target and reconcile. If a ride is in flight the
-    // reconciler lands it on settle — the view always converges to the URL rather
-    // than desyncing (the old handler called ride methods that no-op'd while busy,
-    // stranding the header/cards on the wrong view — the "empty platform" bug).
-    window.addEventListener('popstate', () => {
-      if (!mv) return;
-      target = viewFromPath(location.pathname);
+    // Capture runs before Astro's bubble listener. Never let both routers
+    // handle one traversal: rides own this map instance only; Astro owns every
+    // article/other-document entry (and disposes this map before swapping).
+    window.addEventListener('popstate', (event) => {
+      const path = location.pathname.replace(/\/+$/, '');
+      if (!mv || event.state?.transitMap !== mapHistoryId ||
+          !/^\/transit(?:\/(?:music|projects|about))?$/.test(path)) return;
+      event.stopImmediatePropagation();
+      target = viewFromPath(path);
+      updateTransitThemeLinks();
+      window.scrollTo(event.state.scrollX ?? 0, event.state.scrollY ?? 0);
       reconcile();
-    });
+    }, { capture: true });
 
     window.addEventListener('resize', () => {
       if (!mv) return;
@@ -325,11 +340,12 @@ function init() {
   // shipped title is the authoritative map title for later SPA returns.
   announcedView = initial;
   if (initial === 'map') mapTitle = document.title;
+  mapHistoryId = crypto.randomUUID();
   if (initial !== 'map') {
-    history.replaceState({ view: initial }, '', urlFor(initial));
+    history.replaceState({ ...history.state, view: initial, transitMap: mapHistoryId }, '');
     mv.toPlatform(initial, false);
   } else {
-    history.replaceState({ view: 'map' }, '', location.pathname);
+    history.replaceState({ ...history.state, view: 'map', transitMap: mapHistoryId }, '');
     mv.setActiveDest('map');
     // Center Home in the visible region right of the docked rail (same rest
     // pose as every return-to-map), instead of the raw HOME-at-viewport pose.
@@ -340,6 +356,7 @@ function init() {
   // The camera pose is now applied (both branches above call apply()), so reveal
   // the map — it was held hidden so the pre-script identity paint never shows.
   document.querySelector('.map-wrap')?.classList.add('map-ready');
+  updateTransitThemeLinks();
 }
 
 document.addEventListener('astro:page-load', init);

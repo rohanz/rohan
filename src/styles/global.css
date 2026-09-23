@@ -331,8 +331,9 @@ html.theme-transit .sign-header, html.theme-transit .sign-header .sign-title, ht
   font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
-/* Cross-document view transition: theme hops (classic/transit <-> blueprint)
-   are full navigations; this gives them a native cross-fade where supported. */
+/* Theme hops are full documents without native cross-document transitions:
+   Chromium can stall before pagereveal (see AGENTS.md). The ClientRouter's
+   same-document streak transition remains enabled. */
 @view-transition {
-  navigation: auto;
+  navigation: none;
 }

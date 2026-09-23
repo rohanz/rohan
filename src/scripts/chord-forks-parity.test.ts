@@ -1,20 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { lcmDetectChord as classic } from './default/chord-demo.js';
+import { lcmDetectChord as canonical } from '../lib/chord-engine';
 import { lcmDetectChord as transit } from './article-widgets.js';
 import { lcmDetectChord as blueprint } from '../../themes/blueprint/src/article-widgets.js';
 
-// The chord engine used to exist as THREE hand-maintained forks, one per theme, and they drifted
-// silently more than once. They now share a single implementation, `src/lib/chord-engine.ts`:
-//   - `src/scripts/default/chord-demo.js`        (classic)   re-exports it directly
-//   - `src/scripts/article-widgets.ts`           (transit)   re-exports it directly
-//   - `themes/blueprint/src/article-widgets.ts`  (blueprint) re-exports it via a relative import
-// This file no longer proves three independent engines agree — it guards against a theme ever
-// re-forking its own copy again: every theme's `lcmDetectChord` must still trace back to the same
-// shared module, verified the same way drift used to be caught, by running the same exhaustive
-// voicing sweep through all three and demanding byte-identical output — name, alternatives and
-// spelling. If this ever fails, a theme has stopped importing the shared engine.
+// Active article adapters must keep using the canonical engine. The retired
+// classic adapter is gone; compare both active imports directly to the source.
 
-type Detect = typeof classic;
+type Detect = typeof canonical;
 
 const FORKS: [string, Detect][] = [
   ['transit', transit as Detect],
@@ -53,24 +45,24 @@ function voicings(size: number): number[][] {
   return out;
 }
 
-describe('the three chord-engine forks agree', () => {
+describe('article adapters agree with the canonical chord engine', () => {
   for (const size of [1, 2, 3, 4, 5]) {
     const cases = voicings(size);
 
     for (const [forkName, fork] of FORKS) {
-      it(`${forkName} matches classic on all ${cases.length} ${size}-note voicings`, () => {
+      it(`${forkName} matches canonical on all ${cases.length} ${size}-note voicings`, () => {
         const divergences = cases
-          .map((notes) => ({ notes, want: shape(notes, classic), got: shape(notes, fork) }))
+          .map((notes) => ({ notes, want: shape(notes, canonical), got: shape(notes, fork) }))
           .filter((row) => row.want !== row.got)
           .slice(0, 5)
-          .map((row) => `[${row.notes.join(' ')}]\n  classic:   ${row.want}\n  ${forkName}: ${row.got}`);
+          .map((row) => `[${row.notes.join(' ')}]\n  canonical:   ${row.want}\n  ${forkName}: ${row.got}`);
 
         expect(divergences, divergences.join('\n')).toEqual([]);
       });
     }
   }
 
-  it('names a spot-check of voicings identically in all three forks', () => {
+  it('names a spot-check of voicings identically in the canonical module and both adapters', () => {
     const SPOT: [number[], string][] = [
       [[60, 64, 69], 'Am/C'],
       [[63, 66, 72], 'Cdim/Eb'],
@@ -85,7 +77,7 @@ describe('the three chord-engine forks agree', () => {
     ];
 
     for (const [notes, expected] of SPOT) {
-      expect(classic(notes).primary?.displayName, `classic [${notes}]`).toBe(expected);
+      expect(canonical(notes).primary?.displayName, `canonical [${notes}]`).toBe(expected);
       expect(transit(notes).primary?.displayName, `transit [${notes}]`).toBe(expected);
       expect(blueprint(notes).primary?.displayName, `blueprint [${notes}]`).toBe(expected);
     }

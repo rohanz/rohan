@@ -1,10 +1,11 @@
 ---
 title: "shared context for coding agents"
 barTitle: "room"
-summary: "A plugin for Claude Code and Codex that puts every coding agent on a repository into a shared room, where they can see each other's uncommitted edits, claim what they are about to change, announce interface changes before making them, ask each other questions and preview the combined result before anyone merges. It also lets one agent run a team of worker agents in parallel, each in its own Git worktree. Placed third at AI Tinkerers Singapore."
+summary: "A plugin for Claude Code and Codex that gives every coding agent on a repository a shared room: they see each other's uncommitted edits, announce changes before making them, and preview the merged result before anyone commits. Placed third at the OpenAI x ClickHouse x OpenRouter x AI Tinkerers Singapore hackathon."
 image: /assets/images/projects/website/banner.webp
 order: 2
-unlisted: true
+award: "3rd place · hackathon"
+awardEvent: "OpenAI x ClickHouse x OpenRouter x AI Tinkerers Singapore hackathon"
 technologies:
   - TypeScript
   - Node.js
@@ -42,13 +43,17 @@ claude plugin marketplace add rohanz/room && claude plugin install room@room
 codex plugin marketplace add rohanz/room && codex plugin add room@room
 ```
 
+<p class="download-actions">
+  <a href="https://github.com/rohanz/room" class="try-it-btn" target="_blank" rel="noopener noreferrer">try room on GitHub</a>
+</p>
+
 I built the first version with [Kieran Ho](https://www.linkedin.com/in/kieranhch/) and [Hrishikesh Sathyian](https://www.linkedin.com/in/hrishikesh-sathyian/) for AI Tinkerers Singapore's one-day "agents leaving the chatbox" hackathon, where it placed third. We've kept building it since.
 
 ## how it works
 
-The information that matters lives in other people's working copies, uncommitted and changing by the minute. Room combines four sources to answer the questions two developers would otherwise ask each other: a file watcher on each clone, Git state, what each agent says it intends to do, and an index of which code uses which symbols. Together they tell an agent who is touching this, what they're about to change, and whether it affects its own work.
+What an agent needs to know sits in other people's working copies, uncommitted and changing by the minute. Room combines four sources to answer the questions two developers would otherwise ask each other: a file watcher on each clone, Git state, what each agent says it intends to do, and an index of which code uses which symbols. Together they tell an agent who is touching this, what they're about to change, and whether it affects its own work.
 
-With those, Room does five jobs: publish what changed, share it, route it to the right people, deliver it to their agents, and help integrate the result. Each is a path through the same few parts; pick a job to see it.
+With those, Room does five jobs: publish what changed, share it, route it to the right people, deliver it to their agents, and help integrate the result. The diagram below shows Room's parts across two developers' clones: a file watcher, a Room process and an agent on each side, joined through the shared room. Pick a job to highlight the path it takes through them.
 
 <div id="room-arch"></div>
 
@@ -60,17 +65,17 @@ That's the plumbing. This is what it gives an agent, in roughly the order it mee
 
 **Alone, it stays out of the way.** With no server set up, a session starts in a local room: no account, and nothing leaves the machine. Other sessions in the same clone or its worktrees join automatically, and while an agent works alone, Room says nothing at all.
 
-**Saying what you're working on.** An agent declares its scope once, an area taken from the project's `CODEOWNERS` where there is one. Where its work overlaps someone else's, it claims the lines it's about to edit, with a line of intent. Claims are advisory: an edit inside someone else's claim raises an interrupt, but nothing is ever blocked.
+**Saying what you're working on.** An agent declares its scope once: the area it's working in, taken from the project's `CODEOWNERS` file where there is one. Where its work overlaps someone else's, it claims the lines it's about to edit, with a line of intent. Claims are advisory: an edit inside someone else's claim raises an interrupt, but nothing is ever blocked.
 
-**Looking before touching.** An agent can read a teammate's live version of a file, or just their diff, and ask who provides a symbol, who uses it and who owns it. It sees the work near its own in full, and everyone else as a single line.
+**Looking before touching.** An agent can read a teammate's live version of a file, or just their diff, and ask who provides a symbol, who uses it and who owns it. Work close to its own shows up in full; everyone else's shows up as a one-line summary.
 
-**Asking, and waiting for an answer.** An agent can ask a teammate a question and wait for the reply, or for a claim to be released, instead of polling. Its inbox only gets what's addressed to it, conflicts on its own claims and interrupts; routine events stay in the room's feed.
+**Asking, and waiting for an answer.** An agent can ask a teammate a question and wait for the reply, or for a claim to be released, instead of polling. Its inbox only gets messages addressed to it, conflicts on its own claims, and interrupts; routine events stay in the room's feed.
 
 **Changing your mind.** At agent speed, plans change constantly, so revising one is a first-class event. When an agent revises or cancels a plan, everyone it affects gets an interrupt. Finishing a task releases its claims and scope automatically. And when a human changes an agent's instructions midway, that reaches the room too, so the agents around it hear about it.
 
 **Checking it all fits.** A merge preview combines several people's live work in memory and can run the tests on the combined tree. Room also warns an agent as soon as a file it changed stops merging cleanly with a teammate's, rather than at the final merge.
 
-**Pull requests count too.** Open pull requests join the room as participants, so a claim on a file a PR is rewriting gets flagged like any teammate's work. In return, Room can post the branch's coordination story on its pull request: who declared what, which plans were fulfilled or cancelled, what was asked and answered, and which merge previews passed.
+**Pull requests count too.** Open pull requests join the room as participants, so a claim on a file a PR is rewriting gets flagged like any teammate's work. In return, Room can post a summary of how the branch was coordinated on its pull request: who declared what, which plans were fulfilled or cancelled, what was asked and answered, and which merge previews passed.
 
 **Choosing what to share.** A team room sees the full text of the files you change by default. You can narrow that to your declared area, or to plans and claims with no file text at all, and change it live. Team rooms need a GitHub login and push access, so a public repository isn't an open room.
 
@@ -107,11 +112,11 @@ Comparing sets of signatures per symbol, rather than single lines, is what handl
 
 The index is name-based. It has no type resolution and matches method calls by method name, so common names like `get` would connect everything to everything. To keep that noise down, a name defined in more than five files only creates an edge when the consumer imports the defining module.
 
-The widget below applies those rules to a small example, a tax function called from a handler file in a different agent's work. Pick an edit to see what Room observes from the diff and who it tells.
+The widget below applies those rules to a small example: a tax function, and a handler file in another agent's work that calls it. Pick an edit to see what Room reads from the diff and which agent gets a notice.
 
 <div id="room-contract"></div>
 
-In a three-agent test run on a small shop codebase, it did exactly this for real. Codex changed `tax_for` and `shipping_for` to take an address, and within seconds the agent working on pricing tiers, whose handler file used both, got a contract notice. Midway through, I changed my mind about the Claude agent's task: take the order currency from the address country instead of the customer profile. The change reached the room, and Claude reverted its own edit to the customer module without being asked. It read its teammates' live handler code through the room and produced a combined tree that passed 33 tests, then 38 after the change of plan.
+A three-agent test run on a small shop codebase showed this working for real. Codex changed `tax_for` and `shipping_for` to take an address, and within seconds the agent working on pricing tiers, whose handler file used both, got a contract notice. Midway through, I changed my mind about the Claude agent's task: take the order currency from the address country instead of the customer profile. The change reached the room, and Claude reverted its own edit to the customer module without being asked. Claude also read its teammates' live handler code through the room and produced a combined tree that passed 33 tests, then 38 after the change of plan.
 
 ## one person, many agents
 
@@ -127,9 +132,9 @@ Demos go the way you rehearse them. So after the longest real use of Room, one C
 
 The bad news was more useful:
 
-- **Every conflict alarm was false: 16 of 16.** The lead copied a worker's files into its own clone while the worker's claims were open. Workers that exited without finishing kept their claims alive. And a Codex session started by hand in the lead's folder got its writes blamed on the lead, because Room attributed writes by folder. Fixes: a byte-identical copy of the claimant's own file counts as integration, dead workers release their claims, and writes are attributed to the session that made them.
+- **Every conflict alarm was false: 16 of 16.** There were three causes. The lead copied a worker's files into its own clone while the worker's claims were open. Workers that exited without finishing kept their claims alive. And a Codex session started by hand in the lead's folder got its writes blamed on the lead, because Room attributed writes by folder. Fixes: a byte-identical copy of the claimant's own file counts as integration, dead workers release their claims, and writes are attributed to the session that made them.
 - **The integration half was never used.** Zero merge previews. The lead moved work out of worktrees with `cp` and `rsync` about 17 times, because the workers' output was untracked or ignored and the preview couldn't see it. That audit is where `room_collect` came from.
-- **The lead was deaf for twelve hours.** It hadn't been started with the channels flag, so three worker questions waited 22 minutes each, until the human happened to type something. Now `room_spawn` says at spawn time when the lead can't be woken.
+- **The lead was deaf for twelve hours.** It hadn't been started with the launch flag that lets Claude Code be woken, so three worker questions waited 22 minutes each, until the human happened to type something. Now `room_spawn` says at spawn time when the lead can't be woken.
 - **Noise.** Messages were delivered two or three times through different paths, and `room_state` grew to 25,073 characters.
 
 Two later audits checked that Room stays out of the way. Working solo, an ordinary task made zero Room calls. With company, agents were still running a claim, release and "changed" ritual on every edit, so the rules became: declare scope once, claim only where someone else is near the file, and skip routine messages. And the hosted server taught me to keep shared documents small: it once died seconds after every start because each agent had been writing its whole symbol graph into the shared document on every file change. Snapshots are now deduplicated, rate-limited and capped, and the server refuses writes past a size limit.
@@ -148,7 +153,7 @@ Two later audits checked that Room stays out of the way. Working solo, an ordina
 
 **Read the logs of real use.** None of the four worst problems showed up in rehearsed demos. They showed up in a 20-hour session where nobody was performing, and the only way to see them was to count: how many merge previews, how many alarms, how long a question waited. Those numbers decided the next release.
 
-**Sending a wake-up proves nothing.** One regression came from marking a message as seen when a wake-up was sent, which could make an interrupt vanish if the wake-up never landed. Distributed systems classes say this about networks. It holds just as well for agents.
+**Sending a wake-up proves nothing.** One regression came from marking a message as seen when a wake-up was sent, which could make an interrupt vanish if the wake-up never landed. Distributed systems classes teach this about networks: a message sent is not a message received. It holds just as well for agents.
 
 **Coordination should cost nothing when there is nothing to coordinate.** The measure I ended up designing against was how rarely anyone notices Room. Cost should scale with overlap: silent when you are alone, a single line when someone is near your file, and an interrupt only when your next action should change.
 

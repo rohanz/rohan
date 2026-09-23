@@ -2,8 +2,8 @@
 import '../styles/swiss-cards.css';
 import { drawingFor } from '../lib/swiss/drawings';
 import { cardTextFor } from '../lib/swiss/card-text';
-interface Props { slug: string; title: string; summary: string; technologies: string[]; unlisted?: boolean }
-const { slug, title, summary, technologies, unlisted = false } = Astro.props;
+interface Props { slug: string; title: string; summary: string; technologies: string[]; unlisted?: boolean; award?: string; awardEvent?: string }
+const { slug, title, summary, technologies, unlisted = false, award, awardEvent } = Astro.props;
 const Drawing = drawingFor(slug);
 const word = cardTextFor(slug);
 ---
@@ -11,6 +11,7 @@ const word = cardTextFor(slug);
   <!-- The anchor is the static hit area; only .swiss-card-inner transforms, so
        the tilt can never move the card out from under the pointer. -->
   <div class="swiss-card-inner">
+  {award && <span class="swiss-card-award sw-label" title={awardEvent}>{award}</span>}
   <div class="swiss-card-art" aria-hidden="true">
     {word && <span class="swiss-card-word">{word}</span>}
     {unlisted && <span class="swiss-card-unlisted sw-label">unlisted</span>}

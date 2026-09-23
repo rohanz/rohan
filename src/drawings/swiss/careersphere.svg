@@ -6,7 +6,7 @@
     .swiss-sphere-tip, .swiss-sphere-tip * , .swiss-sphere-ring { fill-opacity: 0; stroke-opacity: 0; }
     @media (prefers-reduced-motion: no-preference) {
       .swiss-sphere-route { transition: stroke-dashoffset .9s cubic-bezier(.2,.7,.2,1); }
-      .swiss-sphere-tip, .swiss-sphere-tip *, .swiss-sphere-ring { transition: fill-opacity .3s ease, stroke-opacity .3s ease, fill var(--dur-fade) ease; }
+      .swiss-sphere-tip, .swiss-sphere-tip *, .swiss-sphere-ring { transition: fill-opacity .3s ease, stroke-opacity .3s ease, fill var(--dur-fade, 250ms) ease; }
       .swiss-card.is-hover .swiss-sphere-route { stroke-dashoffset: 0; }
       .swiss-card.is-hover .swiss-sphere-ring { stroke-opacity: 1; transition-delay: .25s; }
       .swiss-card.is-hover .swiss-sphere-tip, .swiss-card.is-hover .swiss-sphere-tip * { fill-opacity: 1; stroke-opacity: 1; transition-delay: .35s; }

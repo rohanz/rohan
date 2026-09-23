@@ -19,6 +19,7 @@ export interface BqstLabOptions {
   root: ParentNode;
   palette: () => VisualPalette;
   sizeCanvas: SizeCanvas;
+  onThemeChange?: (redraw: () => void) => () => void;
 }
 
 export interface BqstAudioDemoOptions {
@@ -51,7 +52,7 @@ const HEIGHTS: Record<LabType, number> = {
 // BQST DSP LAB
 // ============================================================
 /** Mount the four DSP charts found under `root`; returns cleanup. */
-export function initBqstDspLab({ root, palette, sizeCanvas }: BqstLabOptions): () => void {
+export function initBqstDspLab({ root, palette, sizeCanvas, onThemeChange }: BqstLabOptions): () => void {
   const slots = LAB_SLOTS
     .map((d) => ({ ...d, node: root.querySelector<HTMLElement>(`#${d.id}`), canvas: null as HTMLCanvasElement | null }))
     .filter((s): s is typeof s & { node: HTMLElement } => !!s.node);
@@ -77,9 +78,9 @@ export function initBqstDspLab({ root, palette, sizeCanvas }: BqstLabOptions): (
                   </div>
                   <input type="range" min="0" max="18" value="0" step="0.1" aria-label="BQST saturation drive">
                 </div>
-                <canvas class="bqst-visual-canvas" aria-label="${slot.label}"></canvas>
+                <div class="bqst-chart-cell" style="width:100%;min-width:0"><canvas class="bqst-visual-canvas" aria-label="${slot.label}"></canvas></div>
               </div>`
-            : `<canvas class="bqst-visual-canvas" aria-label="${slot.label}"></canvas>`
+            : `<div class="bqst-chart-cell" style="width:100%;min-width:0"><canvas class="bqst-visual-canvas" aria-label="${slot.label}"></canvas></div>`
         }
         <div class="bqst-legend">${legendForBqstVisual(slot.type, palette())}</div>
       </div>`;
@@ -97,9 +98,10 @@ export function initBqstDspLab({ root, palette, sizeCanvas }: BqstLabOptions): (
   type DriveControl = (typeof driveControls)[number];
 
   function resizeCanvas(canvas: HTMLCanvasElement, height: number) {
-    const rect = canvas.getBoundingClientRect();
+    // The cell follows the grid, independently of the canvas’s pinned CSS width.
+    const rect = canvas.parentElement!.getBoundingClientRect();
     canvas.style.height = `${height}px`;
-    return sizeCanvas(canvas, Math.max(rect.width, 280), height);
+    return sizeCanvas(canvas, Math.max(1, rect.width), height);
   }
   const driveDbFor = (type: DriveType) => driveState[type] ?? 0;
   const drive01For = (type: DriveType) => Math.max(0, Math.min(1, driveDbFor(type) / 18));
@@ -134,7 +136,7 @@ export function initBqstDspLab({ root, palette, sizeCanvas }: BqstLabOptions): (
     let entry = sized.get(slot.canvas);
     if (resize || !entry) {
       const ctx = resizeCanvas(slot.canvas, HEIGHTS[slot.type]);
-      // the raw layout width, not the 280 sizing floor: the captions switch on it
+      // Draw in the same whole CSS pixels used by the sizing helper.
       entry = { ctx, w: slot.canvas.getBoundingClientRect().width };
       sized.set(slot.canvas, entry);
     }
@@ -214,7 +216,7 @@ export function initBqstDspLab({ root, palette, sizeCanvas }: BqstLabOptions): (
   let bqstDrawId: number | null = null;
   let fullRedraw = true; // first paint, resize, fonts and theme changes re-size every canvas
   function requestBqstDraw() {
-    if (bqstDrawId !== null) return; // one already queued for this frame
+    if (!isActive || bqstDrawId !== null) return; // one already queued for this frame
     bqstDrawId = requestAnimationFrame(() => {
       bqstDrawId = null;
       if (!isActive) return;
@@ -227,12 +229,16 @@ export function initBqstDspLab({ root, palette, sizeCanvas }: BqstLabOptions): (
     });
   }
   requestBqstDraw();
-  document.fonts?.ready.then(() => { fullRedraw = true; requestBqstDraw(); }).catch(() => {});
+  const unsubscribeRedraw = onThemeChange?.(() => { fullRedraw = true; requestBqstDraw(); });
   let resizeTimer: number | undefined;
   const onResize = () => { clearTimeout(resizeTimer); resizeTimer = window.setTimeout(() => { fullRedraw = true; requestBqstDraw(); }, 150); };
   window.addEventListener('resize', onResize);
+  const resizeObserver = new ResizeObserver(() => { fullRedraw = true; requestBqstDraw(); });
+  slots.forEach((slot) => resizeObserver.observe(slot.canvas!.parentElement!));
 
   return () => {
+    unsubscribeRedraw?.();
+    resizeObserver.disconnect();
     isActive = false;
     if (bqstDrawId !== null) cancelAnimationFrame(bqstDrawId);
     clearTimeout(resizeTimer);
@@ -435,6 +441,7 @@ export function initBqstAudioDemo(options: BqstAudioDemoOptions): () => void {
   const engine = new BqstEngine({
     cleanUrl,
     processedUrl,
+    autoLoad: false,
     getAudioContext: sharedAudioContext,
     mediaSession: {
       title: 'BQST A/B demo',
@@ -483,7 +490,17 @@ export function initBqstAudioDemo(options: BqstAudioDemoOptions): () => void {
 
   drawWaveform();
 
+  // Fetch only near the demo. start() also loads, so an early play gesture and
+  // browsers without IntersectionObserver retain a direct, user-driven path.
+  const loadObserver = typeof IntersectionObserver === 'undefined' ? null : new IntersectionObserver((entries) => {
+    if (!entries.some((entry) => entry.isIntersecting)) return;
+    loadObserver?.disconnect();
+    engine.load();
+  }, { rootMargin: '200px' });
+  loadObserver?.observe(placeholder);
+
   const onPlayClick = () => {
+    loadObserver?.disconnect();
     if (engine.isPlaying) engine.pause();
     else {
       playButton.setAttribute('aria-busy', String(!engine.isReady));
@@ -503,6 +520,7 @@ export function initBqstAudioDemo(options: BqstAudioDemoOptions): () => void {
   window.addEventListener('resize', onResize);
 
   return () => {
+    loadObserver?.disconnect();
     if (waveFadeId) cancelAnimationFrame(waveFadeId);
     window.removeEventListener('resize', onResize);
     playButton.removeEventListener('click', onPlayClick);

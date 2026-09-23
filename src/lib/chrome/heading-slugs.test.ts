@@ -7,16 +7,16 @@
 // `-1`/`-2`, and had its own (subtly different) special-character handling.
 import { describe, expect, it } from 'vitest';
 import GithubSlugger from 'github-slugger';
-import { decodeEntities, extractHeadingSlugs, loadBlueprintMarked } from '../../../tools/build-blueprint.mjs';
+import { marked } from 'marked';
+import { decodeEntities, extractHeadingSlugs } from '../../../tools/build-blueprint.mjs';
 
 async function expectParity(markdown: string) {
-  const marked = await loadBlueprintMarked();
   const actual = extractHeadingSlugs(marked, markdown);
 
   // Independently re-derive the expected ids straight from github-slugger,
   // reading heading text off the same rendered HTML (mirrors what a browser's
   // `heading.textContent` would give article-overlay.js's old runtime path).
-  const html = marked.parse(markdown, { gfm: true });
+  const html = marked.parse(markdown, { gfm: true, async: false });
   const slugger = new GithubSlugger();
   const expected: string[] = [];
   const headingRe = /<h([23])[^>]*>([\s\S]*?)<\/h\1>/g;

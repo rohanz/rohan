@@ -98,10 +98,8 @@ function ensureAudioGraph(): void {
     audioEl.crossOrigin = 'anonymous';
     audioEl.hidden = true;
   }
-  // Attach to the DOM so playback state is observable/inspectable; it stays
-  // visually hidden and drives the shared analyser graph either way. Re-append
-  // after ClientRouter swaps: the swap replaces <body>, orphaning the element
-  // (playback still works detached, but keep the stated inspectability true).
+  bindAudioEvents();
+  // Reattach the persistent audio graph to the current page for analytics.
   if (!audioEl.isConnected) document.body.appendChild(audioEl);
   audioCtx = ensureAudioContext(audioCtx);
   if (!audioCtx || source) return;
@@ -826,7 +824,8 @@ class RowPlayer {
    *  is starting — see stopMusicPlayback), the row is about to be hidden and faded
    *  off anyway, so animating it just burns frames against the departure ride. */
   reset(instant = false): void {
-    audioEl?.pause(); // only the audio pause needs the element; visuals reset regardless
+    this.playIntent++; // invalidate pending play promises, including on navigation
+    if (activePlayer === this) audioEl?.pause();
     this.isPlaying = false;
     this.setPressed(false);
     this.cancelAnimations(); // stop the live loop AND any in-flight fades
@@ -869,26 +868,16 @@ class RowPlayer {
     audioEl.src = this.audioUrl;
     audioEl.currentTime = 0;
     const intent = ++this.playIntent;
-    audioEl.onended = () => {
-      this.reset();
-      if (activePlayer === this) activePlayer = null;
-    };
     audioEl
       .play()
-      .then(() => {
-        if (intent !== this.playIntent || activePlayer !== this) return;
-        this.isPlaying = true;
-        this.setPressed(true);
-        this.drawLive();
-      })
       .catch((err) => {
         // Autoplay policy, 404'd file, CORS — without this the button just does
         // nothing forever with zero breadcrumbs. Leave a console trace and put the
         // row back in its resting state so a retry click is possible.
-        if (intent !== this.playIntent) return; // superseded by a newer click
+        if (intent !== this.playIntent || activePlayer !== this) return;
         console.warn('[music] playback failed', this.audioUrl, err);
-        this.setPressed(false);
-        if (activePlayer === this) activePlayer = null;
+        this.reset();
+        activePlayer = null;
       });
   }
 }
@@ -898,6 +887,47 @@ let activePlayer: RowPlayer | null = null;
 let players: RowPlayer[] = [];
 let resizeTimer: ReturnType<typeof setTimeout> | undefined;
 let resizeBound = false;
+
+// Media events are authoritative, including pauses/errors initiated outside
+// the row UI. These handlers capture no row: resolve the current owner when
+// the event arrives, and ignore events from a superseded source/intent.
+function audioOwner(): RowPlayer | null {
+  if (!audioEl || !activePlayer || audioEl.src !== new URL(activePlayer.audioUrl, location.href).href) return null;
+  return activePlayer;
+}
+
+function bindAudioEvents(): void {
+  if (!audioEl) return;
+  audioEl.onplaying = () => {
+    const owner = audioOwner();
+    if (!owner || !audioEl || audioEl.paused || audioEl.ended || owner.isPlaying) return;
+    owner.cancelAnimations();
+    owner.isPlaying = true;
+    owner.setPressed(true);
+    owner.drawLive();
+  };
+  const stopped = () => {
+    const owner = audioOwner();
+    if (!owner || !audioEl || (!audioEl.paused && !audioEl.ended && !audioEl.error)) return;
+    owner.reset();
+    if (activePlayer === owner) activePlayer = null;
+  };
+  audioEl.onpause = stopped;
+  audioEl.onended = stopped;
+  audioEl.onerror = stopped;
+}
+
+function cleanupMusicPlayer(): void {
+  stopMusicPlayback();
+  players.forEach((player) => player.destroy());
+  players = [];
+  clearTimeout(resizeTimer);
+  if (audioEl) {
+    audioEl.onplaying = audioEl.onpause = audioEl.onended = audioEl.onerror = null;
+    delete audioEl.dataset.gcCounted;
+    audioEl.remove(); // do not retain the outgoing body through the shared graph
+  }
+}
 
 /** Size every music row's canvases NOW (synchronously), against their current
  *  laid-out box. The ride engine calls this while it reveals the music platform
@@ -958,6 +988,10 @@ function initMusicPlayer(): void {
   players = [];
   const rows = Array.from(document.querySelectorAll<HTMLElement>('#platform-ui [data-card="music"]'));
   if (!rows.length) return;
+  if (audioEl) {
+    document.body.appendChild(audioEl);
+    bindAudioEvents();
+  }
   // Construct each row's player independently so one row's failure can't abort
   // the rest: a single throw inside a `rows.map(...)` would leave every later
   // row without a player (dead play button, unpainted meters).
@@ -1000,4 +1034,4 @@ function watchDpr(): void {
 }
 
 document.addEventListener('astro:page-load', initMusicPlayer);
-document.addEventListener('astro:before-swap', stopMusicPlayback);
+document.addEventListener('astro:before-swap', cleanupMusicPlayer);

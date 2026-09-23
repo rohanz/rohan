@@ -45,4 +45,7 @@ export default defineConfig({
   // main-thread noise that skews perf work on an animation-heavy site (and this
   // site is routinely felt-tested against `astro dev`). Production is unaffected.
   devToolbar: { enabled: false },
+  // Room keeps worker worktrees (each with its own node_modules) under .room/;
+  // watching them exhausts the file watcher and dev stops seeing edits.
+  vite: { server: { watch: { ignored: ['**/.room/**'] } } },
 });

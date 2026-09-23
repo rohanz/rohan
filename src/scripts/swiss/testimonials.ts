@@ -1,9 +1,8 @@
 // Testimony carousel: auto-advances on a fixed interval and pauses while the
 // pointer or keyboard focus is inside, resuming from where it was. One frame
 // loop owns both the countdown and the ring's progress, so there is no
-// CSS-animation state to get out of sync with the timer. There are no visible
-// controls by design; under reduced motion nothing rotates and the stylesheet
-// lays every quote out in turn instead.
+// CSS-animation state to get out of sync with the timer. The native button
+// keeps an explicit pause after focus leaves. Reduced motion exposes all quotes.
 const INTERVAL = 6000;
 let cleanup: (() => void) | undefined;
 
@@ -14,8 +13,9 @@ function init() {
   const root: HTMLElement = rootEl;
   const quotes = Array.from(root.querySelectorAll<HTMLElement>('[data-testimonial]'));
   const controls = root.querySelector<HTMLElement>('[data-testimonial-controls]');
+  const toggle = root.querySelector<HTMLButtonElement>('[data-testimonial-toggle]');
   const ringFill = root.querySelector<SVGCircleElement>('[data-testimonial-ring] .sw-ring-fill');
-  if (quotes.length < 2 || !controls) return;
+  if (quotes.length < 2 || !controls || !toggle) return;
 
   const events = new AbortController();
   const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -26,10 +26,11 @@ function init() {
   const hover = window.matchMedia('(hover: hover) and (pointer: fine)');
   let hovered = hover.matches && root.matches(':hover');
   let focused = false;
+  let paused = false;
   quotes.forEach((quote) => { quote.hidden = false; });
   controls.hidden = false;
 
-  const running = () => !motion.matches && !hovered && !focused && !document.hidden;
+  const running = () => !motion.matches && !paused && !hovered && !focused && !document.hidden;
 
   function paint() {
     if (!ringFill) return;
@@ -39,7 +40,10 @@ function init() {
 
   function show(index: number) {
     current = (index + quotes.length) % quotes.length;
-    quotes.forEach((quote, i) => quote.setAttribute('aria-hidden', String(i !== current)));
+    quotes.forEach((quote, i) => {
+      if (motion.matches) quote.removeAttribute('aria-hidden');
+      else quote.setAttribute('aria-hidden', String(i !== current));
+    });
   }
 
   function frame(now: number) {
@@ -77,10 +81,20 @@ function init() {
     focused = event.relatedTarget instanceof Node && root.contains(event.relatedTarget);
     schedule();
   }, options);
-  motion.addEventListener('change', schedule, options);
+  toggle.addEventListener('click', () => {
+    paused = !paused;
+    toggle.textContent = paused ? 'Resume testimonies' : 'Pause testimonies';
+    schedule();
+  }, options);
+  const syncMotion = () => {
+    controls.hidden = motion.matches;
+    show(current);
+    schedule();
+  };
+  motion.addEventListener('change', syncMotion, options);
   document.addEventListener('visibilitychange', schedule, options);
   paint();
-  schedule();
+  syncMotion();
   cleanup = () => { cancelAnimationFrame(raf); raf = 0; events.abort(); };
 }
 

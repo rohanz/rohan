@@ -5,3 +5,4 @@ src/projects.generated.js
 src/site-data.generated.js
 src/heading-slugs.generated.js
 public/drawings/
+src/articles.generated.js

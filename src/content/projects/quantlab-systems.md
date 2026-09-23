@@ -4,9 +4,6 @@ barTitle: "quantlab: systems"
 summary: "The execution arm of a miniature trading firm, built to understand what happens between a signal and a fill: a deterministic C++ limit order book at 10M ops/sec, a risk-control gateway no strategy can bypass, and a live paper-trading pipeline built to measure how far live results drift from what the backtest promised."
 image: /assets/images/projects/quantlab-systems/banner.webp
 order: 7
-# Unlisted: page is built and reachable by URL/cross-links, but excluded from
-# the projects platform (cards, tag pills, paging) and prev/next navigation.
-unlisted: true
 technologies:
   - C++
   - Python
@@ -19,7 +16,7 @@ technologies:
 
 A backtest ends with a list of target positions and takes the rest for granted: the orders go out, the fills come back at the price you asked for, and the equity curve moves. At a real trading firm, most of the engineering lives in that gap. Something has to match each order against everyone else's. Something has to stop a broken strategy from sending an order it shouldn't. Something has to let several strategies share one account without trading against each other. And someone has to check whether a strategy earns in a real market what it earned in the simulation.
 
-The <a href="/projects/quantlab-research">research side of <span class="gloss-term" data-gloss="My trading-firm-in-miniature monorepo. This article covers the execution systems; a separate article covers the strategy research, and two more cover a fine-tuned AI analyst and the research agent that grew out of it.">quantlab</span></a> taught me how to find a signal and test it honestly. It skipped all of that. Broker SDKs and backtesting frameworks exist to hide this machinery so you can get on with the strategy, so the only way I could see it was to build it.
+The <a href="/projects/quantlab-research">research side of <span class="gloss-term" data-gloss="My trading-firm-in-miniature monorepo. This article covers the execution systems; a separate article covers the strategy research, and two more cover a fine-tuned AI analyst and the research agent that grew out of it.">quantlab</span></a> taught me how to find a signal and test it fairly. It skipped everything that happens after the signal. Broker SDKs and backtesting frameworks exist to hide this machinery so you can get on with the strategy, so the only way I could see it was to build it.
 
 This article covers the execution arm of quantlab, laid out the way a trading desk is:
 
@@ -30,7 +27,7 @@ This article covers the execution arm of quantlab, laid out the way a trading de
 
 Two rules held throughout: no strategy talks to a broker directly, and every decision leaves a record. Knight Capital lost $440 million in 45 minutes in 2012 after a botched deployment with no effective controls between its code and the exchange. That story is why the risk layer sits in the middle of everything here.
 
-The engine and the risk layer are finished and measured. The live pipeline has traded, and has only started collecting the number it was built to produce.
+The engine and the risk layer are finished and measured. The live pipeline has traded, but has only just started collecting data for the number it was built to produce: how far live results drift from the backtest.
 
 ## the matching engine
 
@@ -42,12 +39,12 @@ Each of those paths is easy to get subtly wrong, so nine tests pin them down one
 
 The engine is about 136 lines of dependency-free C++20, and four decisions do most of the work.
 
-1. **Prices and quantities are integers.** Prices are counted in ticks, and there is no floating-point number anywhere in the matching path. Exchanges don't trust IEEE 754 with money, and neither should a book.
+1. **Prices and quantities are integers.** Prices are counted in ticks, and there is no floating-point number anywhere in the matching path. Exchanges don't trust floating-point rounding (IEEE 754) with money, and neither should a book.
 2. **Each side is a sorted map of price levels.** Bids sort high to low and asks low to high, so the best price is always the first entry. Each level holds a linked list of orders in arrival order. I chose the list because its iterators stay valid when a neighbour is cancelled out of the middle, which is the operation most likely to corrupt a queue.
 3. **An id index points at every live order.** It records the order's side, price and place in its queue, so a cancel is a lookup instead of a search.
 4. **The resting order's price wins.** If a buyer bids 110 into a book whose best offer is 103, the trade prints at 103 and the buyer keeps the difference. That rule alone explains much of why real fills differ from simulated ones. My own backtester fills everything at the next day's open and models none of it.
 
-The demo below runs a scripted order stream through the book. The stream is stitched together from the engine's own test cases, and the browser version is checked against the same nine assertions as the C++ suite, so each step shows what the engine does. Press next order to add one order at a time, and back to undo it. Watch the queue at 103: two sellers at the same price, served in the order they arrived. The shaded band between the best bid and the best ask is the <span class="gloss-term" data-gloss="The gap between the highest price anyone is currently willing to buy at and the lowest price anyone is willing to sell at. Nothing trades inside it: it is the cost of crossing the book immediately instead of waiting in the queue.">spread</span>.
+The demo below runs a scripted order stream through the book. The stream is stitched together from the engine's own test cases, and the browser version is checked against the same nine assertions as the C++ suite, so each step shows what the C++ engine would do. Press next order to add one order at a time, and back to undo it. Watch the queue at 103: two sellers at the same price, served in the order they arrived. The shaded band between the best bid and the best ask is the <span class="gloss-term" data-gloss="The gap between the highest price anyone is currently willing to buy at and the lowest price anyone is willing to sell at. Nothing trades inside it: it is the cost of crossing the book immediately instead of waiting in the queue.">spread</span>.
 
 <div id="qls-book"></div>
 
@@ -61,7 +58,7 @@ It has one gap. It hashes the trades, not the book left behind, so an engine tha
 
 The benchmark runs five million operations in a mix meant to look like a real market rather than a best case: 60% limit orders placed within twenty ticks of a 10,000-tick mid, 30% cancels of recently added orders, and 10% market orders of up to 200 lots, all drawn from a fixed-seed splitmix64 stream so every run is identical. Rebuilt on an M2 Max for this write-up, it does **5,000,000 operations in 0.48 seconds: 10.5M ops/sec, or 95 nanoseconds each**, producing 1,528,625 trades and leaving 1,223,855 orders resting across 19 price levels a side. A colocated production engine built by a team would beat it. The speed here comes from getting the data structures right, with no tuning on top.
 
-There's more to take. Matching engines are supposed to avoid allocating memory while they match, and this one doesn't: each new price level allocates a map node, each resting order allocates a list node, and every call returns a new vector of trades. The README says so. The v2 plan in the repo covers it with pooled memory and intrusive lists over a flat array of price levels. It also adds a latency histogram in place of one throughput average (an average hides the slow tail, which is where exchanges get into trouble), order modify as its own operation, and replay of real exchange message logs so the benchmark stops being a workload I invented.
+There's still speed left on the table. Matching engines are supposed to avoid allocating memory while they match, and this one doesn't: each new price level allocates a map node, each resting order allocates a list node, and every call returns a new vector of trades. The README says so. The v2 plan in the repo covers it with pooled memory and intrusive lists over a flat array of price levels. It also adds a latency histogram in place of one throughput average (an average hides the slow tail, which is where exchanges get into trouble), order modify as its own operation, and replay of real exchange message logs so the benchmark stops being a workload I invented.
 
 The README lists what else is missing: no IOC, FOK or stop orders, no self-trade prevention and no fees. The engine is also single-threaded, on purpose. Real matching engines are too, because determinism needs every event in one total order. Concurrency belongs in the I/O around the book.
 
@@ -80,7 +77,7 @@ Two of the rules are deliberately lopsided, and both come from one idea: you can
 
 Every decision, approved or rejected, goes into an append-only audit log as one JSON line with the time, the order, the verdict and the reasons. It's written before the answer goes back to the caller and is never edited, because a log that can be rewritten can't hold anyone to account. Thirteen tests cover the layer, and the one I'd point to isn't a limit test. It fills the log, reopens it, and checks that every decision is still there in order, approvals included.
 
-This section also caught a bug in the code. When I first wrote it, it said risk-reducing orders survive a tripped kill switch, and so did the demo below. The engine didn't: it rejected every order once the switch tripped. I treated the article as the spec and changed the code to match, in a commit named for exactly that.
+Writing this section also caught a bug in the code. My first draft said risk-reducing orders survive a tripped kill switch, and so did the demo below. The code didn't: it rejected every order once the switch tripped. I treated the article as the spec and changed the code to match, in a commit named for exactly that.
 
 The playground runs the real rule logic with the service's default limits, shown at the top. The order buttons propose trades, and each one lands in the log as approved or rejected with its reason. Push a symbol past its cap, then simulate a bad day to trip the kill switch and see which orders still get through.
 
@@ -130,13 +127,13 @@ No amount of effort makes that number arrive sooner. It builds one trading day a
 
 ## the data underneath
 
-Daily bars are enough to backtest a monthly strategy, but execution happens inside the day. So the last layer is intraday data: minute bars from the broker's <span class="gloss-term" data-gloss="The Investors Exchange, a US stock exchange. Its public data feed is free, which also means it only shows trades that happened on IEX: a slice of the market, not all of it.">IEX</span> feed, and underneath them a decoder for IEX's raw TOPS message captures, so the pipeline can read the format the exchange actually publishes.
+Daily bars are enough to backtest a monthly strategy, but execution happens inside the day. So the last layer is intraday data: minute bars from the broker's <span class="gloss-term" data-gloss="The Investors Exchange, a US stock exchange. Its public data feed is free, which also means it only shows trades that happened on IEX: a slice of the market, not all of it.">IEX</span> feed, and underneath them a decoder for raw captures of TOPS, the message format IEX publishes its quotes and trades in, so the pipeline can read the format the exchange actually publishes.
 
 I tried an existing parser first and dropped it for one reason. Its threaded reader doesn't pass decoder errors back, and doesn't reliably signal the end of the stream when a worker dies, so one bad message can leave the consumer waiting forever. That's fine in a notebook and unacceptable in an unattended run over gigabytes of data, which has to stop loudly when something breaks. Writing a small decoder (Ethernet, then IPv4 and UDP, then IEX-TP framing, then TOPS trade reports) with hand-checked byte offsets for both feed versions took less time than auditing the package, and added no dependency.
 
 The fast version groups messages of equal length and filters on the message-type byte with NumPy before decoding any fields. On the framing-heavy traffic that makes up most of a real capture, it runs **5.31x** faster than the reference. On the small golden test captures it runs at **0.62x**, slower, because those hold nine messages and all nine are trades that have to become Python objects, so there's nothing to skip. Both numbers are in the performance doc, because the slower one tells you when the optimisation helps.
 
-One rule from the repo's decision log covers all of this: minute data is for observing, never for simulating fills. It can show what happened inside a day. It can't become a fill assumption in a backtest, because a feed that only sees one exchange's trades would let me simulate fills nobody could have got. I built the execution stack to stop the simulation making up its own rules, and better data doesn't change that.
+One rule from the repo's decision log covers all of this: minute data is for observing, never for simulating fills. It can show what happened inside a day. It can't become a fill assumption in a backtest, because a feed that only sees one exchange's trades would let me simulate fills nobody could have got. I built the execution stack so the simulation can't assume fills that couldn't have happened, and better data doesn't change that rule.
 
 ## what i'd claim
 

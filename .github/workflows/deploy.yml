@@ -1,9 +1,5 @@
-# Deploys the built site to GitHub Pages. INERT until two things happen:
-#   1. Repo Settings → Pages → Source is switched to "GitHub Actions"
-#      (currently "deploy from branch: master", which serves the old static
-#      site — do NOT merge astro-site onto master before flipping this).
-#   2. This workflow is run (manual trigger, from the astro-site branch).
-# Rollback: flip the Pages source back to "deploy from branch: master".
+# Production is astro-site. Manual dispatch validates this exact checkout and
+# deploys its artifact only after the reusable CI job succeeds.
 name: Deploy to Pages
 
 on:
@@ -19,22 +15,15 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      - run: npm run build
-      - uses: actions/upload-pages-artifact@v4
-        with:
-          path: dist
+  validate:
+    if: github.ref == 'refs/heads/astro-site'
+    uses: ./.github/workflows/ci.yml
+    with:
+      upload-pages: true
 
   deploy:
-    needs: build
+    if: github.ref == 'refs/heads/astro-site'
+    needs: validate
     runs-on: ubuntu-latest
     environment:
       name: github-pages

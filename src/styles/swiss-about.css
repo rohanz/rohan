@@ -24,6 +24,9 @@ html.theme-swiss .sw-quote { grid-area: 1 / 1; margin: 0; min-width: 0; opacity:
 html.theme-swiss .sw-quote[aria-hidden="true"] { opacity: 0; visibility: hidden; pointer-events: none; }
 html.theme-swiss .sw-quote p { margin: 0 0 1rem; font-family: var(--font-ui); line-height: 1.5; }
 html.theme-swiss .sw-testimonial-controls { display: flex; align-items: center; justify-content: flex-end; gap: .5rem; margin-top: auto; }
+html.theme-swiss .sw-testimonial-toggle.sw-label { min-width: 2.75rem; min-height: 2.75rem; padding: .5rem .75rem; border: 1px solid var(--ink); border-radius: 0; background: var(--ink); color: var(--paper); font-size: 1rem; cursor: pointer; }
+html.theme-swiss .sw-testimonial-toggle:hover { background: var(--accent); border-color: var(--accent); color: var(--ink); }
+html.theme-swiss .sw-testimonial-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 html.theme-swiss .sw-testimonial-controls[hidden] { display: none; }
 @media (hover: hover) {
   html.theme-swiss .sw-about-cell:hover:not(:focus-within) { background: var(--tint); }
@@ -58,7 +61,7 @@ html.theme-swiss .sw-ring-track { fill: none; stroke: var(--hair); stroke-width:
 html.theme-swiss .sw-ring-fill { fill: none; stroke: var(--ink); stroke-width: 2; stroke-linecap: butt; stroke-dasharray: 100; stroke-dashoffset: 100; }
 /* Reduced motion: nothing rotates, so every quote is simply laid out in turn. */
 @media (prefers-reduced-motion: reduce) {
-  html.theme-swiss .sw-testimonial-ring { display: none; }
+  html.theme-swiss .sw-testimonial-controls { display: none; }
   html.theme-swiss .sw-about-quotes { display: block; }
   /* [hidden] is server-rendered on every quote but the first; laying them all out from first paint avoids a shift when the script wakes. */
   html.theme-swiss .sw-quote, html.theme-swiss .sw-quote[aria-hidden="true"], html.theme-swiss .sw-quote[hidden] { display: block; opacity: 1; visibility: visible; pointer-events: auto; }

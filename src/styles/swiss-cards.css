@@ -72,8 +72,13 @@ html.theme-swiss .swiss-card.is-tilting :is(.swiss-card-inner, .swiss-card-art s
    cross it; grey but heavy so it stays clearly legible. */
 html.theme-swiss .swiss-card-word { position: absolute; left: 1.25rem; right: 1.25rem; top: 1rem; z-index: 0; font-family: var(--font-ui); font-weight: 600; font-size: clamp(1.2rem, 7cqw, 2.1rem); line-height: 1; letter-spacing: -0.03em; color: #9c9890; overflow-wrap: anywhere; transition: color .25s ease; }
 html.theme-swiss .swiss-card:focus-visible .swiss-card-word { color: var(--accent); }
+/* A placing (frontmatter `award`): an outlined accent chip in the bottom-right
+   of the drawing area (the art is 4:3, so its bottom sits at 75cqw). Outside
+   the aria-hidden art so screen readers announce it. Its background is the card
+   surface, masking any drawing line beneath; both follow the hover inversion. */
+html.theme-swiss .swiss-card-award.sw-label { position: absolute; top: calc(75cqw - .25rem); right: 1.25rem; z-index: 2; transform: translateY(-100%); padding: .2rem .45rem; border: 1px solid var(--accent); background: var(--card-surface, var(--paper)); color: var(--accent); font-size: .6875rem; pointer-events: none; transition: background var(--dur-fade) ease, color var(--dur-fade) ease, border-color var(--dur-fade) ease; }
 /* Dev-only marker for unlisted drafts (production never renders them in the grid). */
-html.theme-swiss .swiss-card-unlisted { position: absolute; right: 1.25rem; bottom: 1rem; z-index: 1; padding: .2rem .45rem; border: 1px dashed currentColor; color: var(--muted); }
+html.theme-swiss .swiss-card-unlisted { position: absolute; right: 1.25rem; top: 1rem; z-index: 1; padding: .2rem .45rem; border: 1px dashed currentColor; color: var(--muted); }
 @media (hover: hover) { html.theme-swiss .swiss-card:hover .swiss-card-word { color: var(--accent); } }
 html.theme-swiss .swiss-card-art svg { width: 100%; height: 100%; display: block; }
 html.theme-swiss .swiss-card-placeholder { width: 100%; height: 100%; background: repeating-linear-gradient(135deg, transparent 0 10px, var(--hair) 10px 11px); }

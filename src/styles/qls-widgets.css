@@ -10,7 +10,7 @@
    "selected" in every theme without fighting any of them. */
 .qla-visual .qla-visual-body .qls-mode-btn.is-active {
   border-color: var(--accent);
-  box-shadow: inset 0 0 0 1.5px var(--accent);
+  box-shadow: var(--widget-decoration, inset 0 0 0 1.5px var(--accent));
   font-weight: 700;
 }
 
@@ -35,8 +35,8 @@
 }
 .qla-visual .qla-visual-body .qls-sw-incoming {
   background: transparent;
-  border-radius: 2px;
-  box-shadow: inset 0 0 0 1.5px currentColor;
+  border-radius: var(--widget-radius, 2px);
+  box-shadow: var(--widget-decoration, inset 0 0 0 1.5px currentColor);
 }
 
 .qla-visual .qla-visual-body .qls-op {
@@ -55,8 +55,8 @@
   text-transform: uppercase;
   color: var(--accent);
   padding: 0.14rem 0.55rem;
-  border-radius: 999px;
-  box-shadow: inset 0 0 0 1px currentColor;
+  border-radius: var(--widget-radius, 999px);
+  box-shadow: var(--widget-decoration, inset 0 0 0 1px currentColor);
   white-space: nowrap;
 }
 .qla-visual .qla-visual-body .qls-op-text {
@@ -82,7 +82,7 @@
   padding: 0.55rem 0.75rem;
   border: 1px solid var(--border-subtle);
   border-left: 3px solid var(--border-subtle);
-  border-radius: 8px;
+  border-radius: var(--widget-radius, 8px);
   background: var(--bg-card);
   display: grid;
   gap: 0.28rem;
@@ -136,7 +136,7 @@
 }
 .qla-visual .qla-visual-body .qls-book {
   border: 1px solid var(--border-subtle);
-  border-radius: 10px;
+  border-radius: var(--widget-radius, 10px);
   padding: 0.75rem 0.85rem;
   background: var(--bg-card);
   display: grid;
@@ -184,7 +184,7 @@
   gap: 0.3rem;
   padding: 0.14rem 0.45rem;
   border: 1px solid var(--border-subtle);
-  border-radius: 6px;
+  border-radius: var(--widget-radius, 6px);
   font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
   font-size: 0.76rem;
   color: var(--text-secondary);

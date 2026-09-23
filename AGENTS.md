@@ -30,11 +30,32 @@ Theme switching is the theme-paths convention (`src/lib/theme-paths.ts`,
 pref key `site:themePref` via `src/lib/theme-switch.ts`). Classic rails/footer
 and transit headers carry switch links; blueprint's
 top-right dropdown links back. The root theme preference is `default`.
-Theme hops are full navigations with a cross-document view-transition fade
-(`@view-transition` rules in `src/styles/swiss.css`, `src/styles/global.css`, and
-`themes/blueprint/index.html`). Blueprint links carry `data-astro-reload`
-(force real navigation) and `data-astro-prefetch="false"` (its deep URLs are
-SPA routes, not files — prefetching them 404s).
+Theme hops are full-document navigations: both classic/transit switchers carry
+`data-astro-reload`; ClientRouter remains active for navigation within a theme.
+Blueprint links also carry `data-astro-prefetch="false"` (its deep URLs are SPA
+routes, not files — prefetching them 404s).
+
+**Native cross-document transitions are disabled** (`navigation: none` in
+`swiss.css` and `global.css`). Chromium 149.0.7827.55, both headless and headed,
+stalled after classic → transit with `navigation: auto`: no animation frames,
+no `pagereveal`, a pending `document.activeViewTransition`, and screenshots
+that timed out even after a later `page.goto`. Disabling the transit wipe or
+removing named transition groups did not help. A minimal pair of documents
+containing only the native opt-in and an ordinary anchor reproduced it, without
+Astro, app scripts, or named groups; disabling the opt-in restored rendering.
+This isolates the failure to native cross-document transition/rendering in that
+browser, rather than the transit wipe. No `pageswap`/`pagereveal` workaround is
+installed. Blueprint's own opt-in alone cannot start a transition to/from a
+shell that opts out. In-theme ClientRouter fades and transit's streak still work.
+Keep the General Sans `font-display: fallback` mitigation in `fonts.css`.
+
+Transit rides preserve Astro's history state fields and all existing query/hash
+URL components (including `?desktop`). A capture-phase popstate listener owns
+only entries tagged with the current map instance: it stops Astro's listener
+and replays the ride. Article/other-document traversal belongs to ClientRouter,
+which disposes the map and restores scroll. Never let both routers handle the
+same traversal. Rebuilding a map creates a fresh instance tag. Ride URL changes
+refresh both theme switch links through the shared theme-path helpers.
 
 ## Content: single source of truth
 
@@ -52,9 +73,13 @@ The `image` frontmatter now only feeds share cards / og:image. `unlisted: true` 
 wall/prev-next everywhere but stay reachable by URL and cross-links.
 
 Adding a project: add the md file + assets under `public/assets/...`, set
-`order`, update sitemap per existing convention. Blueprint's article reader
-imports articles explicitly in `themes/blueprint/src/article-overlay.js`
-(`ARTICLES` map) — add one import line there for a new slug.
+`order`, update sitemap per existing convention. Blueprint's article imports
+are generated from the same collection (`npm run blueprint:content`, run by
+dev/prebuild/pretest), and a test fails if any project lacks an article, so
+there is no hand-kept map to update. Placings go in the optional `award`
+(chip text) and `awardEvent` (tooltip) frontmatter strings; the card shows it
+bottom-right of the drawing and the article header between the projects link
+and the name.
 
 ## Build pipeline
 
@@ -174,7 +199,7 @@ arbitrary shas — instead revert the commit on astro-site, push, re-run).
 See `themes/blueprint/AGENTS.md` and `DESIGN.md` for the 3D scene
 architecture, canvas-resolution rules, and transition specs. Known deferred
 debts (tracked in docs/superpowers/specs/2026-07-21-blueprint-theme-fold-in-design.md):
-~600KB chunk (code-split candidate), hardcoded ARTICLES import map,
+~600KB chunk (code-split candidate),
 box()/wallFraming() duplication across scene files.
 
 

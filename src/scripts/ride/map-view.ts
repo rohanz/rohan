@@ -1168,12 +1168,38 @@ export class MapView {
     });
   }
 
+  private pagingFocus: string | null = null;
+
+  /** Paging controls disappear during the pan/reveal. Park keyboard focus on
+   *  their stable container, then restore it only if the user hasn't moved it. */
+  private parkPagingFocus() {
+    const active = document.activeElement;
+    if (!this.ui || !(active instanceof HTMLButtonElement) ||
+        !['more-next', 'more-prev'].includes(active.id)) return;
+    this.pagingFocus = active.id;
+    this.ui.tabIndex = -1;
+    this.ui.focus({ preventScroll: true });
+  }
+
+  private restorePagingFocus() {
+    if (!this.pagingFocus) return;
+    if (document.activeElement === this.ui) {
+      const controls = [this.pagingFocus, 'more-next', 'more-prev']
+        .map((id) => document.getElementById(id) as HTMLButtonElement | null);
+      const control = controls.find((button) => button && !button.hidden && !button.disabled);
+      const fallback = document.querySelector<HTMLElement>('#station-board .board-link.active');
+      (control ?? fallback)?.focus({ preventScroll: true });
+    }
+    this.pagingFocus = null;
+  }
+
   /** Show/hide the edge paging buttons for the current view + page. */
   updateMoreButtons() {
     if (!this.ui || this.view === 'map') return;
     const pages = this.pagesFor(this.view);
     const more = this.ui.querySelector<HTMLButtonElement>('#more-next');
     const back = this.ui.querySelector<HTMLButtonElement>('#more-prev');
+    this.parkPagingFocus();
     if (more) more.hidden = pages <= 1 || this.page >= pages - 1;
     if (back) back.hidden = pages <= 1 || this.page === 0;
     // Page-range indicator ("4–6 of 10"), projects only — derived live from the
@@ -1368,8 +1394,10 @@ export class MapView {
       gsap.set(dividers, { autoAlpha: 1 });
       gsap.set(btns, { autoAlpha: 1 });
       btns.forEach((b) => (b.disabled = false));
+      this.restorePagingFocus();
       return;
     }
+    this.parkPagingFocus();
     btns.forEach((b) => (b.disabled = true));
     const lastCardDelay = Math.max(0, (staggerCards.length - 1) * 0.15);
     gsap.to(btns, {
@@ -1392,7 +1420,10 @@ export class MapView {
         stagger: 0.15,
         ease: 'power2.out',
         overwrite: 'auto',
-        onComplete: () => btns.forEach((b) => (b.disabled = false)),
+        onComplete: () => {
+          btns.forEach((b) => (b.disabled = false));
+          this.restorePagingFocus();
+        },
       },
     );
   }
@@ -1989,6 +2020,7 @@ export class MapView {
     const line = lineById(id);
     const pages = this.pagesFor(id);
     if (page < 0 || page >= pages) return;
+    this.parkPagingFocus();
     this.busy = true;
     const park = this.parkPose(line, page);
     if (prefersReducedMotion()) {

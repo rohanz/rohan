@@ -42,7 +42,7 @@ export const VIEWBOX = { w: 1000, h: 700 };
 // each count against the actual content source (src/content/projects/*.md,
 // src/data/music.json) so the map can never silently disagree with the site.
 // Plain loops only: this module is client-bundled (no fs / astro imports).
-export const PROJECT_STOP_COUNT = 10;
+export const PROJECT_STOP_COUNT = 14;
 export const MUSIC_STOP_COUNT = 4;
 
 // Projects: stops march right-to-left at 200 pitch, LAST stop anchored at

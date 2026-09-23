@@ -36,7 +36,7 @@ The chord-detection engine at the centre of it runs right here in the browser. I
 
 ## try it
 
-Play a chord and it names it. Use your computer keyboard (the letters are printed on the keys) or tap the keys. A few to try: hold `A D G` for a C major triad (C, E, G); add `J` to make it a Cmaj7; or play `D G K` and watch it read `C/E`, the same triad with E in the bass, a <span class="gloss-term" data-gloss="An inversion is a chord with a note other than the root in the bass. C major with E in the bass is the first inversion, written C/E.">first inversion</span>.
+The keyboard below runs that same engine. Play a chord and it shows the chord's name and spells out its notes. Use your computer keyboard (the letters are printed on the keys) or tap the keys. A few to try: hold `A D G` for a C major triad (C, E, G); add `J` to make it a Cmaj7; or play `D G K` and watch it read `C/E`, the same triad with E in the bass, a <span class="gloss-term" data-gloss="An inversion is a chord with a note other than the root in the bass. C major with E in the bass is the first inversion, written C/E.">first inversion</span>.
 
 <div id="lcm-demo"></div>
 
@@ -44,7 +44,7 @@ That readout is doing more than looking notes up in a table. Working out a chord
 
 ## naming a chord from notes
 
-A handful of pressed keys is just a set of <span class="gloss-term" data-gloss="A pitch class is a note name regardless of octave. Every C is pitch class 0, every C# is 1, and so on up to 11. There are only 12.">pitch classes</span>. The same set can be several different chords depending on which note you treat as the <span class="gloss-term" data-gloss="The root is the note a chord is named from and built on. The root of a C major chord is C.">root</span>. C, E and G spell a C major chord; the notes A, C and E spell A minor, and the two overlap. So the engine doesn't assume the lowest note is the root. It treats every active pitch class as a candidate root, measures the <span class="gloss-term" data-gloss="An interval is the distance between two notes in semitones. A major third is 4 semitones; a perfect fifth is 7.">intervals</span> of the other notes against it, and tests that interval set against 41 chord templates, from triads up through 13th chords and altered dominants.
+A handful of pressed keys is just a set of <span class="gloss-term" data-gloss="A pitch class is a note name regardless of octave. Every C is pitch class 0, every C# is 1, and so on up to 11. There are only 12.">pitch classes</span>. The same set can be several different chords depending on which note you treat as the <span class="gloss-term" data-gloss="The root is the note a chord is named from and built on. The root of a C major chord is C.">root</span>. C, E and G spell C major, and A, C and E spell A minor. Play all four notes together and the set could be named from C or from A. So the engine doesn't assume the lowest note is the root. It treats every active pitch class as a candidate root, measures the <span class="gloss-term" data-gloss="An interval is the distance between two notes in semitones. A major third is 4 semitones; a perfect fifth is 7.">intervals</span> of the other notes against it, and tests that interval set against 41 chord templates, from triads up through 13th chords and altered dominants.
 
 Plenty of candidates can fit at once. A busy voicing might match a dozen names, so each one gets a score and the highest wins:
 
@@ -59,7 +59,7 @@ const score = 100
   + matchedTones * 3;              // and the name that accounts for more sounding notes
 ```
 
-A few decisions live in that scoring. Incomplete or cluttered matches lose points, and a stray note costs more than a missing one, so a clean triad beats a triad with two notes hanging off it. The priority term lets a true `Cmaj9` outrank the plain `Cmaj7` sitting inside it. And the bass bonus is what produces <span class="gloss-term" data-gloss="A slash chord names the chord and then the bass note after a slash, like C/E for a C chord with E in the bass.">slash chords</span> on its own: play C-E-G with E at the bottom and `C/E` scores highest, ahead of any rootless reading.
+That scoring encodes a few decisions. Incomplete or cluttered matches lose points, and a stray note costs more than a missing one, so a clean triad beats a triad with two notes hanging off it. The priority term lets a true `Cmaj9` outrank the plain `Cmaj7` sitting inside it. And the same scoring produces <span class="gloss-term" data-gloss="A slash chord names the chord and then the bass note after a slash, like C/E for a C chord with E in the bass.">slash chords</span>: play C-E-G with E at the bottom and the C major reading still scores highest, so the name becomes `C/E`.
 
 Real voicings often leave notes out, too. Jazz pianists drop the fifth all the time, since it adds little and frees up a finger, so the engine lets the perfect fifth go missing and still finds the chord. That is why C-E-Bb-D comes back as `C9(no5)` instead of matching nothing. When more than one name is defensible, up to four runners-up within 20 points of the winner show up under it as alternatives.
 
@@ -86,7 +86,7 @@ One limit: the sharp-or-flat choice is a single global toggle with no key-signat
 
 The input side has its own set of problems, and they only really surface once real hardware is involved.
 
-The first: the same note can arrive from more than one place at once. A MIDI keyboard, the computer keyboard, and a mouse click can all be holding middle C together. So for each note the app tracks the set of sources currently holding each note and releases it only when the last source lets go, so one input lifting off never cuts a note another input is still playing.
+The first: the same note can arrive from more than one place at once. A MIDI keyboard, the computer keyboard, and a mouse click can all be holding middle C together. So the app tracks which sources are holding each note and releases a note only when the last one lets go. Lifting off one input never cuts a note another is still playing.
 
 The second: hardware gets unplugged mid-chord. Pull out a controller while keys are down and those <span class="gloss-term" data-gloss="A stuck note is one the app thinks is still held because it never received the matching 'note off', often after a device disconnects mid-note.">notes would stick</span> forever, because the matching "note off" never arrives. The app listens for device disconnects over the <span class="gloss-term" data-gloss="The Web MIDI API lets a browser or Electron app talk to MIDI devices directly, including hot-plugging devices while running.">Web MIDI API</span> and fires the missing note-offs itself for whatever that device was holding.
 

@@ -3,11 +3,19 @@ name: CI
 on:
   push:
   pull_request:
+  workflow_call:
+    inputs:
+      upload-pages:
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
 
 jobs:
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v6
 
@@ -29,8 +37,28 @@ jobs:
       - name: Install Playwright chromium
         run: npx playwright install --with-deps chromium
 
-      - name: E2E tests (playwright, excluding @slow)
-        run: npm run test:e2e
+      # Test the exact dist tree that will be uploaded, including Pages' SPA fallback.
+      - name: Serve the built site
+        run: |
+          python3 tools/preview-ghpages.py dist 4340 > /tmp/preview.log 2>&1 &
+          for attempt in {1..30}; do
+            if curl --fail --silent http://localhost:4340/ > /dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/preview.log
+          exit 1
+
+      - name: E2E tests (playwright)
+        run: npm run test:e2e:all
+        env:
+          PW_BASE_URL: http://localhost:4340
+          PW_STATIC_BASE_URL: http://localhost:4340
+
+      - name: Upload validated Pages artifact
+        if: inputs.upload-pages && github.ref == 'refs/heads/astro-site'
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: dist
 
       - name: Upload playwright report on failure
         if: failure()

@@ -27,7 +27,7 @@ const filters = visibleProjectFilters(projects.flatMap((p) => p.data.technologie
       </div>
     </aside>
     <div class="swiss-grid" id="sw-project-grid" data-reveal-group>
-      {projects.map((p) => <SwissCard slug={p.id} title={p.data.title} summary={p.data.summary} technologies={p.data.technologies} unlisted={!!p.data.unlisted} />)}
+      {projects.map((p) => <SwissCard slug={p.id} title={p.data.title} summary={p.data.summary} technologies={p.data.technologies} unlisted={!!p.data.unlisted} award={p.data.award} awardEvent={p.data.awardEvent} />)}
     </div>
   </section>
   <script>

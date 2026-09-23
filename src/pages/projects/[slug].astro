@@ -2,18 +2,22 @@
 import SwissLayout from '../../layouts/SwissLayout.astro';
 import { getCollection, render } from 'astro:content';
 import { getProjectNav, type NavItem } from '../../lib/projectNav';
+import { projectOgImage } from '../../lib/project-og';
 import { cardTextFor } from '../../lib/swiss/card-text';
 import { drawingFor, headerViewBoxFor } from '../../lib/swiss/drawings';
 import '../../styles/swiss-cards.css';
 import '../../styles/swiss-article.css';
-import '../../styles/swiss-widgets.css';
-// The shared widget modules import these too (blueprint relies on that). Importing
-// them from the page as well puts them in the page's own head, so the dev server's
-// ClientRouter keeps them across navigations; builds dedupe the two imports.
+import '../../styles/widget-base.css';
+import '../../styles/bqst-widgets.css';
+import '../../styles/chord-monitor.css';
+import '../../styles/qla-widgets.css';
+import '../../styles/qlf-widgets.css';
+import '../../styles/demo-player.css';
 import '../../styles/qla2-widgets.css';
 import '../../styles/qls-widgets.css';
 import '../../styles/mle-replay.css';
 import '../../styles/room-run.css';
+import '../../styles/swiss-widgets.css';
 
 export async function getStaticPaths() {
   const projects = (await getCollection('projects')).sort((a, b) => a.data.order - b.data.order);
@@ -32,11 +36,12 @@ const h2h3 = headings.filter((h) => h.depth === 2 || h.depth === 3);
 const firstH2 = h2h3.findIndex((h) => h.depth === 2);
 const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
 ---
-<SwissLayout title={`${project.data.barTitle ? `${project.data.barTitle} · ` : ''}${project.data.title} — rohan.jk`} description={project.data.summary} section="projects" ogImage={`/assets/images/og/${project.id}.png`}>
+<SwissLayout title={`${project.data.barTitle ? `${project.data.barTitle} · ` : ''}${project.data.title} — rohan.jk`} description={project.data.summary} section="projects" ogImage={projectOgImage(project.id)}>
   <header class="sw-article-head">
     <div class="sw-article-head-inner">
       <div class="sw-article-head-title">
         <a class="sw-label sw-link" href="/projects">projects</a>
+        {project.data.award && <span class="sw-article-award sw-label" title={project.data.awardEvent}>{project.data.award}</span>}
         <h1 class="sw-article-word">{word ?? project.data.title}</h1>
         {word && <p class="sw-article-title">{project.data.title}</p>}
         <p class="sw-article-summary">{project.data.summary}</p>
@@ -107,7 +112,7 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
         if (!target) return;
         event.preventDefault();
         disclosure.open = false;
-        history.replaceState(null, '', link.hash);
+        history.replaceState({ ...history.state }, '', link.hash);
         target.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
         target.setAttribute('tabindex', '-1');
         target.focus({ preventScroll: true });

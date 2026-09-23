@@ -25,5 +25,5 @@
   </g>
   <text class="swiss-research-label" x="151" y="91" font-family="'General Sans', sans-serif" fill="currentColor" stroke="none" font-size="8" letter-spacing="1">SURVIVORSHIP +4.6%/YR</text>
   <g stroke-width="1.25"><path d="M40 270h22"/><path d="M171 270h22" stroke-dasharray="1 5"/></g>
-  <g font-family="'General Sans', sans-serif" fill="currentColor" stroke="none" font-size="8" letter-spacing="1.2"><text x="70" y="273">BACKTEST</text><text x="201" y="273">LIVE / HONEST</text></g>
+  <g font-family="'General Sans', sans-serif" fill="currentColor" stroke="none" font-size="8" letter-spacing="1.2"><text x="70" y="273">BACKTEST</text><text x="201" y="273">LIVE</text></g>
 </svg>

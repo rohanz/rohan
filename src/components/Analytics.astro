@@ -1,15 +1,15 @@
 ---
 // GoatCounter (rohan140.goatcounter.com). no_onload: the ClientRouter swaps
 // pages without full loads, so auto-counting would log only the first page —
-// we count every astro:page-load instead (fires on the initial load too).
+// count the initial document immediately and each ClientRouter page load.
 // GoatCounter ignores localhost by itself, so dev browsing never counts.
 // Events: goatcounter.count({ path: 'name', event: true }) — wired for the
 // signals Rohan cares about (theme switches, resume download, music plays).
 ---
 <script is:inline>
-  window.goatcounter = { no_onload: true };
+  window.goatcounter ??= { no_onload: true };
 </script>
-<script is:inline data-goatcounter="https://rohan140.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+<script is:inline data-goatcounter="https://rohan140.goatcounter.com/count" async src="//gc.zgo.at/count.js" onload="document.dispatchEvent(new Event('goatcounter:ready'))"></script>
 <script>
   type GcOpts = { path: string; event?: boolean };
   declare global {
@@ -18,14 +18,28 @@
     }
   }
 
-  const count = (opts: GcOpts) => {
+  const pending: GcOpts[] = [];
+  const flush = () => {
     const gc = window.goatcounter;
-    if (gc && typeof gc.count === 'function') gc.count(opts);
+    if (typeof gc?.count !== 'function') return;
+    for (const opts of pending.splice(0)) gc.count(opts);
   };
+  const count = (opts: GcOpts) => {
+    pending.push(opts);
+    flush();
+  };
+  document.addEventListener('goatcounter:ready', flush);
 
-  document.addEventListener('astro:page-load', () => {
+  // The initial window load can arrive after a client navigation when the SDK
+  // is slow. Count each document once, including before that first load event.
+  let countedBody: HTMLElement | undefined;
+  const countPage = () => {
+    if (countedBody === document.body) return;
+    countedBody = document.body;
     count({ path: location.pathname });
-  });
+  };
+  countPage();
+  document.addEventListener('astro:page-load', countPage);
 
   // Delegated events survive router swaps without rebinding per page.
   document.addEventListener('click', (e) => {

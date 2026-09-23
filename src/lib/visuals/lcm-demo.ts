@@ -29,7 +29,7 @@ export function initLcmDemo({ root }: LcmDemoOptions): () => void {
         <div class="lcm-notes"></div>
         <div class="lcm-alts"></div>
       </div>
-      <div class="lcm-piano" role="group" aria-label="Playable piano"></div>
+      <div class="lcm-piano" role="region" tabindex="0" aria-label="Playable piano. Use the letter keys shown on the notes while this piano is focused."></div>
     </div>`;
 
   const piano = placeholder.querySelector('.lcm-piano') as HTMLElement;
@@ -100,29 +100,12 @@ export function initLcmDemo({ root }: LcmDemoOptions): () => void {
   window.addEventListener('pointerup', endPointer);
   window.addEventListener('pointercancel', endPointer);
 
-  // Only hijack the ~15 mapped letter keys while the piano is actually on
-  // screen — a page-wide preventDefault on letters would break typing and
-  // shortcuts everywhere else on the article. Starts true (corrected by the
-  // observer's first callback) and stays true if IntersectionObserver is
-  // unavailable so the piano still works.
-  let pianoVisible = true;
-  let pianoIO: IntersectionObserver | undefined;
-  const demo = placeholder.querySelector('.lcm-demo') as HTMLElement;
-  if (typeof IntersectionObserver !== 'undefined' && demo) {
-    pianoIO = new IntersectionObserver((entries) => {
-      pianoVisible = entries[0].isIntersecting;
-    });
-    pianoIO.observe(demo);
-  }
-
   const onKeyDown = (e: KeyboardEvent) => {
     if (e.repeat || e.metaKey || e.ctrlKey || e.altKey) return;
     const ae = document.activeElement as HTMLElement | null;
     if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.isContentEditable)) return;
     const off = LCM_KEY_OFFSETS[e.code];
     if (off === undefined) return;
-    // Off-screen piano: let the key through un-prevented (no note either).
-    if (!pianoVisible) return;
     e.preventDefault();
     keyHeld.add(LOW + off);
     render();
@@ -134,19 +117,25 @@ export function initLcmDemo({ root }: LcmDemoOptions): () => void {
     render();
   };
   const onBlur = () => { keyHeld.clear(); pointerNotes.clear(); render(); };
-  window.addEventListener('keydown', onKeyDown);
-  window.addEventListener('keyup', onKeyUp);
+  const onFocusOut = (e: FocusEvent) => {
+    if (e.relatedTarget instanceof Node && piano.contains(e.relatedTarget)) return;
+    keyHeld.clear();
+    render();
+  };
+  piano.addEventListener('keydown', onKeyDown);
+  piano.addEventListener('keyup', onKeyUp);
+  piano.addEventListener('focusout', onFocusOut);
   window.addEventListener('blur', onBlur);
 
   render();
 
   return () => {
-    pianoIO?.disconnect();
     piano.removeEventListener('pointerdown', onPointerDown);
     window.removeEventListener('pointerup', endPointer);
     window.removeEventListener('pointercancel', endPointer);
-    window.removeEventListener('keydown', onKeyDown);
-    window.removeEventListener('keyup', onKeyUp);
+    piano.removeEventListener('keydown', onKeyDown);
+    piano.removeEventListener('keyup', onKeyUp);
+    piano.removeEventListener('focusout', onFocusOut);
     window.removeEventListener('blur', onBlur);
   };
 }

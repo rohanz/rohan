@@ -198,15 +198,13 @@ function wallSign(text, worldH = 0.22) {
 const LISTED_PROJECTS = PROJECTS.filter((project) => !project.unlisted);
 const workshop = buildWorkshop(LISTED_PROJECTS);
 scene.add(workshop.group);
-const articleReader = createArticleOverlay(PROJECTS, { onNavigate: (slug) => {
-  syncUrl(slug);
-  if (slug) {
+const articleReader = createArticleOverlay(PROJECTS, {
+  onRequestNavigate: (slug) => navigatePath(slug ? `/projects/${slug}` : '/projects'),
+  onNavigate: (slug) => {
     const project = PROJECTS.find((entry) => entry.slug === slug);
     if (project) setDocTitle(project.name !== project.title ? `${project.name} · ${project.title}` : project.title);
-  } else {
-    setDocTitle(mode === 'home' ? null : SCENE_TITLES[mode]); // reader closed
-  }
-} });
+  },
+});
 {
   const sign = wallSign('01 / project workshop', 0.11);
   sign.position.set(-1.58, 2.42, -2.42); // left side of the sheet wall
@@ -223,7 +221,7 @@ rig.onPointerRay((raycaster) => {
   if (mode === 'projects') {
     if (workshop.clickUnderRay(raycaster)) return; // pager consumed it
     const slug = workshop.getLinkUnderRay(raycaster);
-    if (slug) articleReader.open(slug);
+    if (slug) navigatePath(`/projects/${slug}`);
     return;
   }
   if (mode === 'about') {
@@ -348,15 +346,17 @@ const constructionBase = constructionMats.map((m2) => m2.opacity);
 function setConstructionOpacity(k) {
   constructionMats.forEach((m2, i) => { m2.opacity = constructionBase[i] * k; m2.transparent = true; });
 }
+let constructionFrame = 0;
 function fadeConstruction(toK, ms = 700) {
+  cancelAnimationFrame(constructionFrame);
   const from = constructionMats[0].opacity / (constructionBase[0] || 1);
   const t0 = performance.now();
   const step = (now) => {
     const t = Math.min((now - t0) / ms, 1);
     setConstructionOpacity(from + (toK - from) * t);
-    if (t < 1) requestAnimationFrame(step);
+    if (t < 1) constructionFrame = requestAnimationFrame(step);
   };
-  requestAnimationFrame(step);
+  constructionFrame = requestAnimationFrame(step);
 }
 
 // The home<->studio flight shares ONE authored path; each direction has its
@@ -525,15 +525,10 @@ renderer.domElement.addEventListener('wheel', (e) => {
 }, { passive: false });
 
 // SCENE01 -> room: tilt down out of the plan while that room draws in.
-async function enterScene(sceneId) {
+async function enterScene(sceneId, signal) {
   if (transitioning || mode !== 'home') return;
   const sceneDef = scenes[sceneId];
   if (!sceneDef) return;
-  if (REDUCED_MOTION) {
-    placeInScene(sceneId);
-    syncUrl();
-    return;
-  }
   transitioning = true;
   showMenu(false); // the centre panel disappears the moment a scene is chosen
 
@@ -566,10 +561,13 @@ async function enterScene(sceneId) {
   // The selected world sketches itself in while we descend.
   const drawing = entranceDraw.run({
     scene, camera, rig, view, duration: D,
-    driveCamera: false, ease: inkEase, ...sceneDef.draw,
+    driveCamera: false, ease: inkEase, signal, ...sceneDef.draw,
   });
 
   await new Promise((resolve) => {
+    let raf;
+    const cancel = () => { cancelAnimationFrame(raf); resolve(); };
+    signal.addEventListener('abort', cancel, { once: true });
     // Clock starts on the FIRST rendered frame, not at click — the click
     // frame is heavy (studio world reveal), and a late first rAF skips the
     // fast-start profile ahead, reading as the plan popping before the
@@ -585,12 +583,13 @@ async function enterScene(sceneId) {
       const eLook = pitchProfileIn(t);
       camera.quaternion.slerpQuaternions(qFrom, qTo, eLook);
       homePlan.setTransitOpacity(Math.max(0, 1 - e * 1.6), sceneDef.planId);
-      if (t < 1) requestAnimationFrame(step);
-      else resolve();
+      if (t < 1) raf = requestAnimationFrame(step);
+      else { signal.removeEventListener('abort', cancel); resolve(); }
     };
-    requestAnimationFrame(step);
+    raf = requestAnimationFrame(step);
   });
   await drawing;
+  if (signal.aborted) return;
 
   homePlan.group.visible = false;
   camera.up.set(0, 1, 0);
@@ -602,19 +601,11 @@ async function enterScene(sceneId) {
   mode = sceneId;
   transitioning = false;
   fadeConstruction(1);
-  syncUrl();
 }
 
 // Any room -> SCENE01: lift back up along that room's authored path.
-async function goHome() {
-  articleReader.close();
+async function goHome(signal) {
   if (transitioning || mode === 'home') return;
-  if (REDUCED_MOTION) {
-    placeAtHome();
-    syncUrl();
-    return;
-  }
-  player.stopAll(); // leaving a room always silences it
   const sceneDef = scenes[mode];
   const view = resolvedView(sceneDef);
   transitioning = true;
@@ -642,9 +633,12 @@ async function goHome() {
   const authoredQ = new THREE.Quaternion();
   const drawingOut = entranceDraw.run({
     scene, camera, rig, view, duration: D,
-    driveCamera: false, reverse: true, ease: inkEase, ...sceneDef.draw,
+    driveCamera: false, reverse: true, ease: inkEase, signal, ...sceneDef.draw,
   });
   await new Promise((resolve) => {
+    let raf;
+    const cancel = () => { cancelAnimationFrame(raf); resolve(); };
+    signal.addEventListener('abort', cancel, { once: true });
     let start = null; // clock from the first rendered frame (see enterStudio)
     const pos = new THREE.Vector3();
     const step = (now) => {
@@ -662,22 +656,22 @@ async function goHome() {
       authoredQ.slerpQuaternions(qHome, qSeat, eLook);
       camera.quaternion.slerpQuaternions(startQ, authoredQ, blend);
       homePlan.setTransitOpacity(Math.max(0, 1 - ef * 1.6), sceneDef.planId);
-      if (t < 1) requestAnimationFrame(step);
-      else resolve();
+      if (t < 1) raf = requestAnimationFrame(step);
+      else { signal.removeEventListener('abort', cancel); resolve(); }
     };
-    requestAnimationFrame(step);
+    raf = requestAnimationFrame(step);
   });
+  await drawingOut;
+  if (signal.aborted) return;
   camera.up.copy(HOME_CAM.up);
   camera.position.copy(HOME_CAM.pos);
   camera.lookAt(HOME_CAM.look);
   homePlan.setOpacity(1);
-  await drawingOut;
   showSceneWorld(sceneDef, false);
   setConstructionOpacity(1);
   mode = 'home';
   transitioning = false;
   showMenu(true); // back at the plan: the centre panel returns
-  syncUrl();
 }
 
 // Real hrefs on the nav anchors: they join the tab order and Enter activates
@@ -685,7 +679,7 @@ async function goHome() {
 {
   const back = document.getElementById('nav-back');
   back.href = withBase('/');
-  back.addEventListener('click', (e) => { e.preventDefault(); goHome(); });
+  back.addEventListener('click', (e) => { e.preventDefault(); navigatePath('/'); });
 }
 
 // Theme switcher: SAME-ORIGIN relative links, exactly the live site's
@@ -741,23 +735,21 @@ curtain.style.cssText =
   `position:fixed;inset:0;z-index:11;background:${COLORS.creamCss};opacity:0;` +
   'pointer-events:none;transition:opacity 0.3s ease;';
 document.body.appendChild(curtain);
-const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const wait = (ms, signal) => new Promise((resolve) => {
+  const done = () => { clearTimeout(timer); signal.removeEventListener('abort', done); resolve(); };
+  const timer = setTimeout(done, ms);
+  signal.addEventListener('abort', done, { once: true });
+});
 
-async function flipScene(sceneId) {
-  if (REDUCED_MOTION) {
-    player.stopAll();
-    placeInScene(sceneId);
-    syncUrl();
-    return;
-  }
+async function flipScene(sceneId, signal) {
   const fromDef = scenes[mode];
   const toDef = scenes[sceneId];
   transitioning = true;
-  player.stopAll();
   rig.setEnabled(false);
   labelLayer.style.opacity = '0';
   curtain.style.opacity = '1';
-  await wait(320);
+  await wait(320, signal);
+  if (signal.aborted) return;
   // behind the curtain: swap worlds and cut the camera
   showSceneWorld(fromDef, false);
   showSceneWorld(toDef, true);
@@ -772,24 +764,18 @@ async function flipScene(sceneId) {
   rig.flyTo(view, { duration: 0.02 });
   setSceneUI(toDef);
   mode = sceneId;
-  syncUrl();
-  await wait(300);
+  await wait(300, signal);
+  if (signal.aborted) return;
   transitioning = false;
 }
 
-async function navigateScene(sceneId) {
-  articleReader.close();
-  if (transitioning || mode === sceneId) return;
-  if (mode === 'home') await enterScene(sceneId);
-  else await flipScene(sceneId);
-}
 for (const sceneId of Object.keys(scenes)) {
   const tab = navLinks[sceneId];
   const row = document.getElementById(`menu-${sceneId}`);
   tab.href = withBase(`/${sceneId}`);
   row.href = withBase(`/${sceneId}`);
-  tab.addEventListener('click', (e) => { e.preventDefault(); navigateScene(sceneId); });
-  row.addEventListener('click', (e) => { e.preventDefault(); enterScene(sceneId); });
+  tab.addEventListener('click', (e) => { e.preventDefault(); navigatePath(`/${sceneId}`); });
+  row.addEventListener('click', (e) => { e.preventDefault(); navigatePath(`/${sceneId}`); });
 }
 
 // Frame loop (Timer, not the deprecated THREE.Clock)
@@ -849,22 +835,46 @@ frame();
 // scene directly (no animation on a cold load); /projects/<slug> opens the
 // article. Navigation pushes history; back/forward replay it.
 const SCENE_PATHS = { projects: '/projects', music: '/music', about: '/about' };
-let applyingHistory = false;
+let navigation = null;
 
-function currentPath() {
-  if (articleReader.isOpen && articleReader.activeSlug) {
-    return `/projects/${articleReader.activeSlug}`;
+// One owner for URLs, room exits and all asynchronous scene work. A new
+// request aborts the old camera/drawing/timer work before placing anything.
+async function navigatePath(path, { historyMode = 'push', instant = false } = {}) {
+  const article = path.match(/^\/projects\/([\w-]+)\/?$/)?.[1];
+  const target = article ? 'projects' : Object.keys(SCENE_PATHS).find((id) =>
+    path.replace(/\/$/, '') === SCENE_PATHS[id]) ?? 'home';
+  const interrupted = transitioning;
+  navigation?.abort();
+  const controller = new AbortController();
+  navigation = controller;
+  const { signal } = controller;
+  cancelAnimationFrame(constructionFrame);
+  curtain.style.opacity = '0';
+  transitioning = false;
+  volDrag = null;
+  pendingHover = null;
+  rig.setEnabled(false);
+  player.stopAll();
+  if (!article || instant || interrupted || mode !== 'projects') {
+    articleReader.close({ immediate: true });
   }
-  return mode === 'home' ? '/' : SCENE_PATHS[mode];
-}
-
-function syncUrl(slug) {
-  if (applyingHistory) return;
-  const path = withBase(slug ? `/projects/${slug}` : currentPath());
-  if (location.pathname !== path) {
-    history.pushState({}, '', path);
-    gcCount({ path });
+  const url = withBase(article ? `/projects/${article}` : SCENE_PATHS[target] ?? '/');
+  if (historyMode === 'push' && location.pathname !== url) {
+    // Keep supported flags (notably ?desktop) through internal navigation.
+    history.pushState({}, '', url + location.search);
+    gcCount({ path: url });
   }
+  if (target === mode && !interrupted) {
+    rig.setEnabled(target !== 'home');
+    if (target !== 'home') setSceneUI(scenes[target]);
+  } else if (instant || interrupted || REDUCED_MOTION) {
+    if (target === 'home') placeAtHome();
+    else placeInScene(target);
+  } else if (target === 'home') await goHome(signal);
+  else if (mode === 'home') await enterScene(target, signal);
+  else await flipScene(target, signal);
+  if (signal.aborted) return;
+  if (article) articleReader.open(article);
 }
 
 // Instant placement for cold loads and history jumps: no crane, no curtain.
@@ -887,8 +897,7 @@ function placeInScene(sceneId) {
 }
 
 function placeAtHome() {
-  player.stopAll();
-  articleReader.close();
+  setConstructionOpacity(1);
   for (const def of Object.values(scenes)) showSceneWorld(def, false);
   homePlan.group.visible = true;
   homePlan.setOpacity(1);
@@ -901,35 +910,11 @@ function placeAtHome() {
   mode = 'home';
 }
 
-function applyPath(path) {
-  const article = path.match(/^\/projects\/([\w-]+)\/?$/);
-  applyingHistory = true;
-  try {
-    if (article) {
-      if (mode !== 'projects') placeInScene('projects');
-      articleReader.open(article[1]);
-    } else if (path.startsWith('/projects')) {
-      articleReader.close();
-      if (mode !== 'projects') placeInScene('projects');
-    } else if (path.startsWith('/music')) {
-      articleReader.close();
-      if (mode !== 'music') placeInScene('music');
-    } else if (path.startsWith('/about')) {
-      articleReader.close();
-      if (mode !== 'about') placeInScene('about');
-    } else if (mode !== 'home') {
-      placeAtHome();
-    }
-  } finally {
-    applyingHistory = false;
-  }
-}
-
 window.addEventListener('popstate', () => {
-  applyPath(stripBase(location.pathname));
+  void navigatePath(stripBase(location.pathname), { historyMode: 'none', instant: true });
   gcCount({ path: location.pathname });
 });
-if (stripBase(location.pathname) !== '/') applyPath(stripBase(location.pathname));
+void navigatePath(stripBase(location.pathname), { historyMode: 'none', instant: true });
 
 gcCount({ path: location.pathname }); // initial pageview (post-routing)
 
@@ -943,8 +928,10 @@ requestAnimationFrame(() => requestAnimationFrame(() => {
 }));
 
 // Debug handle (proto only)
-const enterStudio = () => enterScene('music');
+const enterStudio = () => navigatePath('/music');
 window.__proto = {
   camera, rig, room, workshop, lounge, player, consoleKit, homePlan, articleReader,
-  enterScene, enterStudio, goHome,
+  enterScene: (id) => navigatePath(`/${id}`), enterStudio, goHome: () => navigatePath('/'),
+  get mode() { return mode; },
+  get transitioning() { return transitioning; },
 };

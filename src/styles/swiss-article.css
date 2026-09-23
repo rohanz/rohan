@@ -72,6 +72,10 @@ html.theme-swiss .toc-rail { display: none; }
 html.theme-swiss .sw-toc .toc-inner { position: relative; max-height: calc(100dvh - 180px); overflow-y: auto; scrollbar-width: thin; }
 html.theme-swiss .sw-article-head h1 { margin: 0; overflow-wrap: anywhere; }
 html.theme-swiss .sw-article-meta .sw-label { margin: 0; }
+/* A placing (frontmatter `award`): the card's outlined chip, centred in the
+   2rem gap between the projects link and the project name. Zero height in the
+   flow, so the header lays out identically with or without an award. */
+html.theme-swiss .sw-article-head-title .sw-article-award.sw-label { box-sizing: border-box; height: 1.4rem; margin: calc(-2rem + .6rem) 0 calc(2rem - 1.4rem - .6rem); padding: 0 .45rem; display: inline-flex; align-items: center; border: 1px solid var(--accent); color: var(--accent); font-size: .6875rem; line-height: 1; }
 html.theme-swiss .article :is(h2, h3, h4) { scroll-margin-top: 90px; }
 html.theme-swiss .article { overflow-wrap: anywhere; }
 html.theme-swiss .article img { height: auto; margin: 1.5rem auto; }

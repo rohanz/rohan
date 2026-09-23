@@ -6,8 +6,6 @@
 import type { VisualPalette } from './palette';
 import { LADDER_HEIGHT, drawLadder } from './qls-render';
 import { LOB_SCRIPT, replayScript, type LobStepState } from './qls-lob';
-import '../../styles/qla2-widgets.css';
-import '../../styles/qls-widgets.css';
 
 interface AuditRow {
   ts: string; log: string; book: string; symbol: string;

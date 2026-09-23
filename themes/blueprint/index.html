@@ -184,8 +184,13 @@
     // GitHub Pages SPA fallback: 404.html re-encodes deep links as
     // /?p=/blueprint/projects/x; decode and restore before the app boots.
     (function () {
-      const p = new URLSearchParams(location.search).get('p');
-      if (p) history.replaceState({}, '', p + location.hash);
+      const params = new URLSearchParams(location.search);
+      const p = params.get('p');
+      if (p && p.startsWith('/blueprint/') && !p.includes('://')) {
+        params.delete('p');
+        const search = params.size ? '?' + params : '';
+        history.replaceState({}, '', p + search + location.hash);
+      }
     })();
   </script>
 </head>

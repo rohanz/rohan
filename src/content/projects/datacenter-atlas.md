@@ -15,7 +15,7 @@ technologies:
 
 ## the problem
 
-Where is the world building its next data centers? Nobody keeps one list. Operational facilities are scattered across Wikidata, OpenStreetMap and PeeringDB. The sites that show where capacity is heading (planned campuses, projects under construction, land bought for future builds) mostly exist only as announcements in industry news and as tables inside broker market reports.
+Where is the world building its next data centers? There is no single list. Operational facilities are scattered across Wikidata, OpenStreetMap and PeeringDB. The sites that show where capacity is heading (planned campuses, projects under construction, land bought for future builds) mostly exist only as announcements in industry news and as tables inside broker market reports.
 
 During an internship at AlphaGeo, a company that sells geographic datasets, I built a pipeline that finds those new and planned data centers automatically, puts coordinates on them so they can be mapped, and merges them with the known operational ones into a single deduplicated atlas. The latest full run held **10,578 facilities**. Of those, 6,421 are operational and **4,157 are not built yet** (2,115 planned, 1,589 under construction, and 453 sites where land has been bought). AlphaGeo still uses the pipeline, and the dataset of existing and upcoming data centers it produces is now one of the datasets they sell.
 
@@ -31,18 +31,18 @@ The first stage pulls structured records from Wikidata (via SPARQL), OpenStreetM
 
 ### stage 2: news feeds
 
-Next, six industry news feeds are polled for new articles. A keyword filter shortlists anything about data center construction, expansions, or land deals, and those articles are scraped asynchronously (15 concurrent workers with per-host connection limits) and sent to Gemini for structured extraction: operator, location, capacity in MW, investment, expected go-live date, and a status of planned, under construction, or land bought. Already-processed article URLs are skipped on the next run.
+Next, six industry news feeds are polled for new articles. A keyword filter shortlists anything about data center construction, expansions, or land deals. Those articles are scraped asynchronously (15 concurrent workers with per-host connection limits) and sent to Gemini, which pulls out the operator, location, capacity in MW, investment, expected go-live date, and a status of planned, under construction, or land bought. Already-processed article URLs are skipped on the next run.
 
 ![Stage 2: RSS feed processing](assets/images/projects/datacenter/screenshot-news.webp)
 
 ### stage 3: the report-finding agent
 
-The richest source of planned capacity is Cushman & Wakefield's regional data center market reports, which list projects in the pipeline for the Americas, EMEA and APAC. They move to a new URL with every edition, so instead of maintaining links by hand, a <span class="gloss-term" data-gloss="LangGraph is a library for building LLM agents as explicit state machines: named steps, with code deciding which step runs next.">LangGraph</span> state machine finds the latest edition on its own:
+The richest source of planned capacity is Cushman & Wakefield's regional data center market reports, which list projects in the pipeline for the Americas, EMEA and APAC. Each edition lives at a new URL, so instead of updating links by hand, I built a <span class="gloss-term" data-gloss="LangGraph is a library for building LLM agents as explicit state machines: named steps, with code deciding which step runs next.">LangGraph</span> state machine that finds the latest edition itself:
 
-1. Searches Google via SerpAPI for candidate report pages
-2. Each candidate is scored by Gemini 2.5 Pro with structured output (Pydantic models) returning a confidence and its reasoning
-3. If a clear winner exists (confidence >= 0.85 with >= 0.2 gap), it skips expensive final analysis
-4. Otherwise, it launches headless Playwright browsers to render top candidates and feeds the full HTML to the LLM for a final decision
+1. Search Google via SerpAPI for candidate report pages
+2. Score each candidate with Gemini 2.5 Pro, using structured output (Pydantic models) that returns a confidence and the reasoning behind it
+3. If one candidate clearly wins (confidence of at least 0.85, and at least 0.2 ahead of the next), stop there and skip the expensive final check
+4. Otherwise, render the top candidates in headless Playwright browsers and give their full HTML to the LLM for a final decision
 
 The screenshot below shows the agent evaluating candidates and selecting the Americas report with a confidence score of 1.00:
 
@@ -53,12 +53,12 @@ The screenshot below shows the agent evaluating candidates and selecting the Ame
 Once the agent finds a report, the next challenge is getting data out of it. Cushman & Wakefield publishes these reports as interactive FlippingBook web viewers with no downloadable PDF, so my scraper rebuilds one:
 
 1. Playwright navigates the viewer, detecting the platform variant (cushwake.cld.bz vs. digital.cushmanwakefield.com)
-2. Captures page-by-page screenshots with content-loading verification
-3. Detects end-of-document via page counter parsing
+2. Screenshots each page once its content has finished loading
+3. Reads the viewer's page counter to know when it has reached the last page
 4. Stitches screenshots into a PDF, then converts each page to an image at 200 DPI
 5. Each image is sent to Gemini Vision for structured JSON extraction
 
-As an optimization, only the first page is processed initially to extract a source specifier (e.g., "Americas H2 2024"). If that edition is already in the database, the remaining pages are skipped entirely. The reports are the biggest source of planned sites by far: about 4,000 of the atlas's rows came from them.
+As an optimization, only the first page is processed at first, to read which edition this is (the source specifier, e.g. "Americas H2 2024"). If that edition is already in the database, the remaining pages are skipped entirely. The reports are the biggest source of planned sites by far: about 4,000 of the atlas's rows came from them.
 
 ### putting sites on the map
 
@@ -68,11 +68,11 @@ Public databases already carry coordinates. Reports and news articles usually gi
 
 With data coming from three public databases, six news feeds and three report regions, the same facility often shows up more than once. The merge pipeline deduplicates at three levels:
 
-- **Source level:** URL tracking for news, source specifier checking for reports, natural API idempotency for public databases
-- **Cross-source:** two records are the same facility if they sit within 300 m of each other (measured in <span class="gloss-term" data-gloss="EPSG:3857 is the Web Mercator projection. Converting latitude and longitude into it gives planar coordinates in metres, so distance checks become simple arithmetic.">EPSG:3857</span> metres) and their names match at 90% or more on a <span class="gloss-term" data-gloss="A fuzzy string score that sorts the words in each name before comparing, so 'Equinix SG1 Singapore' and 'Singapore Equinix SG1' still match.">token sort ratio</span>. Richer records fill in missing attributes from sparser ones
+- **Source level:** URL tracking for news, source specifier checking for reports, stable record IDs for public databases, so fetching a record again updates it instead of adding a copy
+- **Cross-source:** two records are the same facility if they sit within 300 m of each other (measured in <span class="gloss-term" data-gloss="EPSG:3857 is the Web Mercator projection. Converting latitude and longitude into it gives planar coordinates in metres, so distance checks become simple arithmetic.">EPSG:3857</span> metres) and their names match at 90% or more on a <span class="gloss-term" data-gloss="A fuzzy string score that sorts the words in each name before comparing, so 'Equinix SG1 Singapore' and 'Singapore Equinix SG1' still match.">token sort ratio</span>. When two records merge, fields missing from one are filled in from the other
 - **Database level:** composite primary keys `(source, source_specifier, id)` with `INSERT OR REPLACE` for atomic upserts
 
-After all three stages complete, the pipeline standardizes status values into four canonical ones and reports the final counts:
+After all three stages complete, the pipeline maps every source's status labels onto four standard values and reports the final counts:
 
 ![Pipeline complete: 10,578 facilities across four status categories](assets/images/projects/datacenter/screenshot-complete.webp)
 
@@ -82,13 +82,13 @@ Public sources, news feeds, and Cushman & Wakefield reports are processed in seq
 
 ![Pipeline architecture](assets/images/projects/datacenter/architecture.webp)
 
-Under the hood, the codebase follows a clean ETL separation: `scrape/` (acquisition), `extract/` (parsing + AI), `transform/` (merge + dedup), `load/` (persistence to SQLite via SQLAlchemy). All tunable parameters (concurrency limits, DPI, AI prompts, keyword filters, feed URLs) live in a single `config.yaml`.
+Under the hood, the codebase is split along the ETL stages: `scrape/` (acquisition), `extract/` (parsing + AI), `transform/` (merge + dedup), `load/` (persistence to SQLite via SQLAlchemy). All tunable parameters (concurrency limits, DPI, AI prompts, keyword filters, feed URLs) live in a single `config.yaml`.
 
 ## limitations
 
 - Coordinates for report and news rows are Gemini's estimates from whatever location the source gives. A street address lands close; a city-only project lands on the city centre, so those points are only as precise as the city.
 - In the run shown above, the 163 news-derived projects came through without coordinates, so they are in the database but not on the map.
-- Deduplication is heuristic. A planned campus announced under a project codename and later listed under the operator's name, or two buildings on one campus, can slip past a 300 m and 90% name rule in either direction.
+- Deduplication is heuristic. A planned campus announced under a project codename and later listed under the operator's name, or two buildings on one campus, can fool the 300 m and 90% name rule either way: one site kept as two records, or two sites merged into one.
 - The report scraper is tied to how Cushman & Wakefield's viewers behave today. A redesign of their viewer would need scraper changes.
 
 ## what stuck with me

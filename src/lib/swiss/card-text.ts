@@ -13,7 +13,7 @@ export const CARD_TEXT: Record<string, string> = {
   'live-chord-monitor': 'live chord monitor',
   patentease: 'PatentEase',
   'tesla-feed': 'tesla charger tracker',
-  'this-website': 'rohan.jk',
+  'this-website': 'this website',
   room: 'room',
   'mle-agent': 'ml research agent',
 };

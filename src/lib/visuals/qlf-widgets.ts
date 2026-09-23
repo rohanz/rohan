@@ -31,7 +31,9 @@ interface SurvivorshipData {
 }
 interface QlfData { lookahead?: LookaheadData; kalman?: KalmanData; survivorship?: SurvivorshipData }
 
-export type QlfWidgetOptions = QuantlabWidgetOptions;
+export type QlfWidgetOptions = QuantlabWidgetOptions & {
+  onThemeChange?: (redraw: () => void) => () => void;
+};
 
 // ---- quantlab-research: 1. the lookahead cheat ----
 function initLookahead(node: HTMLElement, la: LookaheadData, options: QlfWidgetOptions, cleanups: Cleanups) {
@@ -98,6 +100,7 @@ function initLookahead(node: HTMLElement, la: LookaheadData, options: QlfWidgetO
   attachCrosshair(canvas, crossInput, n, LOOKAHEAD_PAD.l, LOOKAHEAD_PAD.r, setCursor);
   setCursor(null);
   redrawOnResize(requestDraw, cleanups);
+  if (options.onThemeChange) cleanups.push(options.onThemeChange(requestDraw));
 }
 
 // ---- quantlab-research: 2. kalman vs rolling OLS ----
@@ -153,6 +156,7 @@ function initKalman(node: HTMLElement, km: KalmanData, options: QlfWidgetOptions
 
   attachCrosshair(canvas, crossInput, n, KALMAN_PAD.l, KALMAN_PAD.r, setCursor);
   redrawOnResize(requestDraw, cleanups);
+  if (options.onThemeChange) cleanups.push(options.onThemeChange(requestDraw));
   setCursor(null);
 }
 
@@ -210,6 +214,7 @@ function initSurvivorship(node: HTMLElement, sv: SurvivorshipData, options: QlfW
 
   attachCrosshair(canvas, crossInput, n, SURVIVORSHIP_PAD.l, SURVIVORSHIP_PAD.r, setCursor);
   redrawOnResize(requestDraw, cleanups);
+  if (options.onThemeChange) cleanups.push(options.onThemeChange(requestDraw));
   setCursor(null);
 }
 

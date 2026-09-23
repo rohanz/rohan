@@ -8,8 +8,12 @@ test('default to transit preserves the current article path and stores preferenc
   await page.goto('/projects/careersphere');
   const switchLink = page.locator('.sw-footer [data-theme-pref="transit"]');
   await expect(switchLink).toHaveAttribute('href', '/transit/projects/careersphere');
+  await expect(switchLink).toHaveAttribute('data-astro-reload', '');
+  const before = await page.evaluate(() => performance.timeOrigin);
   await switchLink.click();
   await expect(page).toHaveURL(/\/transit\/projects\/careersphere\/?$/);
+  expect(await page.evaluate(() => performance.timeOrigin)).not.toBe(before);
+  await page.screenshot({ timeout: 5000 });
   await expect.poll(() => pref(page)).toBe('transit');
 });
 
@@ -19,8 +23,11 @@ test('transit to default preserves the current path and is never captured by the
   await expect(page.locator('[data-theme-pref="default"]')).toHaveCount(1);
   await expect(switchLink).toHaveAccessibleName('Classic Mode');
   await expect(switchLink).toHaveAttribute('href', '/projects');
+  await expect(switchLink).toHaveAttribute('data-astro-reload', '');
+  const before = await page.evaluate(() => performance.timeOrigin);
   await switchLink.click();
   await expect(page).toHaveURL(/\/projects\/?$/);
+  expect(await page.evaluate(() => performance.timeOrigin)).not.toBe(before);
   await expect.poll(() => pref(page)).toBe('default');
 });
 

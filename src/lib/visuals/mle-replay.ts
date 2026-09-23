@@ -7,8 +7,6 @@
 //                "gain over the best so far", with the run's real iterations on it
 
 import type { VisualPalette } from './palette';
-import '../../styles/qla2-widgets.css';
-import '../../styles/mle-replay.css';
 
 interface RecipePiece { t: string; k: 'base' | 'add' | 'rej' | 'void' }
 interface Iteration {

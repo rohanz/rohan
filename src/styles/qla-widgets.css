@@ -1,0 +1,39 @@
+/* Shared qla widgets structure. Theme skins own colour and decoration. */
+.qla-visual .qla-compound-takeaway { margin: 0.4rem 0 0.8rem; min-height: 2.9em; font-size: 0.92rem; font-style: italic; }
+.qla-compound-canvas { display: block; width: 100%; max-width: 100%; }
+.qla-compound-canvas-wrap { position: relative; }
+.qla-memo { padding: 0.9rem 1rem; white-space: pre-wrap; font-size: 0.85rem; line-height: 1.55; }
+.qla-mark-bad { font-weight: 700; }
+.qla-mark-good { padding: 0 0.15em; }
+.qla-gate-report-strip { display: flex; align-items: center; flex-wrap: wrap; gap: 0.45rem; margin: 0.2rem 0 0.8rem; padding: 0.5rem 0.7rem; }
+.qla-gate-report-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+.qla-gate-report-tail { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+.qla-gate-chip { font-size: 0.78rem; padding: 0.08em 0.45em; }
+.qla-gate-report-title { font-weight: 700; font-size: 0.85rem; display: flex; gap: 0.7rem; align-items: baseline; flex-wrap: wrap; }
+.qla-fixer-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 0.9rem; }
+.qla-fixer-col-title { font-weight: 700; font-size: 0.82rem; margin-bottom: 0.4rem; }
+.qla-visual .qla-judge-status { font-weight: 700; font-size: 0.85rem; margin: 0 0 0.7rem; }
+.qla-judge-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 0.9rem; margin-bottom: 0.9rem; }
+.qla-judge-col { display: flex; flex-direction: column; align-items: center; gap: 0.7rem; }
+.qla-judge-col .qla-judge-panel { align-self: stretch; }
+.qla-judge-probe { visibility: hidden; }
+.qla-judge-panel { overflow: hidden; }
+.qla-judge-panel-label { font-weight: 700; font-size: 0.82rem; padding: 0.55rem 0.9rem; }
+.qla-judge-panel-body { padding: 0.8rem 0.9rem; white-space: pre-wrap; font-size: 0.83rem; line-height: 1.55; }
+.qla-judge-guess:disabled { opacity: 0.45; cursor: default; }
+.qla-judge-controls { justify-content: center; display: flex; flex-wrap: wrap; }
+.qla-judge-feedback { text-align: center; font-size: 0.92rem; font-weight: 700; }
+.qla-roster-controls { display: flex; align-items: center; gap: 0.6rem; margin: 0.7rem 0 0.5rem; }
+.qla-roster-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+.qla-roster-select { padding: 0.35rem 0.6rem; font-size: 0.85rem; cursor: pointer; }
+.qla-visual .qla-roster-desc { margin: 0 0 0.4rem; min-height: 2.6em; font-size: 0.88rem; line-height: 1.3; }
+.qla-roster-stats { display: flex; flex-wrap: wrap; gap: 0.35rem 1.1rem; margin-bottom: 0.55rem; min-height: 1.4em; }
+.qla-roster-stat { font-size: 0.76rem; font-variant-numeric: tabular-nums; }
+.qla-roster-verdict { font-size: 0.76rem; font-weight: 700; }
+.qla-roster-memo { height: 300px; min-height: 160px; max-height: 75vh; margin-top: 0.5rem; scrollbar-width: thin; }
+.qla-roster-memo::-webkit-scrollbar { width: 6px; }
+.qla-roster-grip { height: 16px; margin-top: 2px; display: flex; align-items: center; justify-content: center; cursor: ns-resize; touch-action: none; }
+.qla-roster-grip::before { content: ''; }
+.qla-imx-captions { display: grid; margin-top: 0.4rem; }
+.qla-imx-captions p { grid-area: 1 / 1; margin: 0; font-size: 0.92rem; font-style: italic; }
+.qla-imx-captions p.is-off { visibility: hidden; }

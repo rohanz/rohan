@@ -1,0 +1,28 @@
+/* Shared widget base structure. Theme skins own colour and decoration. */
+.bqst-lab { box-sizing: border-box; max-width: 100%; overflow: hidden; }
+.bqst-audio-demo { box-sizing: border-box; max-width: 100%; overflow: hidden; }
+.bqst-lab-header { display: flex; justify-content: space-between; gap: 1rem; padding: 0.9rem 1rem 0.75rem; }
+.bqst-audio-demo-header { display: flex; justify-content: space-between; gap: 1rem; padding: 0.9rem 1rem 0.75rem; }
+.bqst-lab-kicker { font-weight: 700; font-size: 1rem; }
+.bqst-lab-meta { font-size: 0.82rem; }
+.bqst-audio-demo-body { padding: 1rem; }
+.qla-visual { box-sizing: border-box; max-width: 100%; margin: 1.4rem 0 2rem; overflow: hidden; }
+.qla-visual-header { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.35rem 1rem; padding: 0.9rem 1rem 0.75rem; }
+.qla-visual-kicker { font-weight: 700; font-size: 1rem; }
+.qla-visual-meta { font-size: 0.82rem; }
+.qla-visual-body { padding: 1rem; }
+@media (max-width: 640px) {
+.qla-visual-body { padding: 0.8rem; }
+}
+.qla-btn { font-weight: 700; font-size: 0.88rem; padding: 0.45rem 1.1rem; cursor: pointer; transition: border-color 0.15s ease, background 0.15s ease; }
+@media (prefers-reduced-motion: reduce) {
+.qla-btn { transition: none; }
+}
+
+/* Complete skin contracts; selected text and surface must always travel together. */
+:is(.bqst-lab, .bqst-audio-demo, .qla-visual) { border: var(--widget-card-border); border-radius: var(--widget-card-radius); background: var(--widget-card-surface); }
+.qla-btn { border-radius: var(--widget-control-radius); }
+/* Focus is independent of hover/selected/playing fills. Never reset it in state rules. */
+:is(.qla-btn, .bqst-audio-play, .bqst-audio-toggle button, .qla-roster-select, .qla-roster-grip, .qlf-audit-log, .lcm-piano, .lcm-key):focus-visible { outline: 2px solid var(--widget-focus); outline-offset: 2px; }
+:is(.qla-judge-controls, .qlf-mode-toggle, .qlf-risk-buttons) { flex-wrap: wrap; }
+.qla-btn:disabled { cursor: default; }

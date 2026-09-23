@@ -17,7 +17,7 @@ technologies:
 
 I follow a lot of different topics: music production, AI, MMA, news, startups, film. Keeping up meant visiting 10-15 news sites and YouTube channels a day. I wanted my news as a podcast I could play on the move, but the options were either generic robot narration or hour-long debates I didn't have time for.
 
-So I built yourcast, on my own, for the Google Cloud Run Hackathon 2025. You pick the topics you care about, press one button, and about two minutes later you have a personal news episode of a few minutes, narrated, with chapters and a link to every source it used.
+So I built yourcast on my own for the Google Cloud Run Hackathon 2025. You pick the topics you care about, press one button, and about two minutes later you have a narrated news episode a few minutes long, with chapters and a link to every source it used.
 
 ![The yourcast landing page](assets/images/projects/yourcast/screenshot-landing.webp)
 
@@ -33,15 +33,15 @@ You sign in with Google, choose from curated topic categories or define your own
 
 Every six hours, a scheduled job pulls articles from over 200 <span class="gloss-term" data-gloss="RSS is a plain feed format news sites publish, listing their latest articles in a machine-readable way.">RSS</span> feeds spanning technology, sports, entertainment, finance, and more, which adds up to **16,000+ articles a day**.
 
-News feeds overlap heavily, so articles are deduplicated before anything else. Each one is turned into an <span class="gloss-term" data-gloss="An embedding is a list of numbers representing a text's meaning, so two articles about the same event end up close together even if they share few words.">embedding</span> with Google's text-embedding-004, and articles with <span class="gloss-term" data-gloss="A measure of how closely two embedding vectors point in the same direction, from -1 to 1. Near 1 means the texts mean nearly the same thing.">cosine similarity</span> above 0.85 become candidates for the same story. A Gemini call then acts as a judge on whether they really cover the same event, and each story gets an importance score from 0 to 100. Everything lands in PostgreSQL with <span class="gloss-term" data-gloss="A PostgreSQL extension that stores vectors and runs similarity searches inside the database.">pgvector</span>, so you get one take on each story instead of five versions of the same news.
+News feeds overlap heavily, so articles are deduplicated before anything else. Each one is turned into an <span class="gloss-term" data-gloss="An embedding is a list of numbers representing a text's meaning, so two articles about the same event end up close together even if they share few words.">embedding</span> with Google's text-embedding-004, and articles with <span class="gloss-term" data-gloss="A measure of how closely two embedding vectors point in the same direction, from -1 to 1. Near 1 means the texts mean nearly the same thing.">cosine similarity</span> above 0.85 become candidates for the same story. Gemini then checks whether they really cover the same event, and gives each story an importance score from 0 to 100. Everything is stored in PostgreSQL with <span class="gloss-term" data-gloss="A PostgreSQL extension that stores vectors and runs similarity searches inside the database.">pgvector</span>. The result is one take on each story instead of five versions of the same news.
 
 ### picking your stories
 
-When you ask for an episode, the selector gives topics with more news more airtime, decays older stories (breaking news fades fast, science fades slowly), boosts stories that many outlets are covering, ignores anything older than five days, and skips stories you have already heard in a previous episode.
+When you ask for an episode, the selector ranks the stories. Topics with more news get more airtime, older stories lose weight (breaking news fades fast, science fades slowly), and stories that many outlets are covering get a boost. Anything older than five days, or already heard in one of your previous episodes, is skipped.
 
 ### writing the script
 
-The script is written by a small team of agents built with Google's <span class="gloss-term" data-gloss="Agent Development Kit: Google's framework for composing LLM agents, including sequential and parallel agent pipelines that share session state.">Agent Development Kit (ADK)</span>, all running Gemini 2.0 Flash Lite with strict grounding rules:
+The script is written by a small team of agents built with Google's <span class="gloss-term" data-gloss="Agent Development Kit: Google's framework for composing LLM agents, including sequential and parallel agent pipelines that share session state.">Agent Development Kit (ADK)</span>, all running Gemini 2.0 Flash Lite with strict rules to stick to the source articles:
 
 - Three setup agents run in sequence: one picks the episode title and tone from the top stories, one writes the episode description, and one writes the intro and outro to match that tone.
 - Then one topic agent per topic writes its segment, all in parallel. Each gets a word budget proportional to how much news its topic has, and has to land within 85-105% of it so episodes come out a consistent length.

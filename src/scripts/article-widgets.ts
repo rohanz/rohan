@@ -9,11 +9,9 @@
 import { sizeCanvasWithDpr, deviceDpr } from '../lib/visuals/canvas';
 import { swissPalette, transitPalette } from '../lib/visuals/themes';
 import type { VisualPalette } from '../lib/visuals/palette';
-import { withAlpha } from '../lib/visuals/color';
 import { lcmDetectChord } from '../lib/chord-engine';
 import { initBqstDspLab, initBqstAudioDemo } from '../lib/visuals/bqst-widgets';
 import { initLcmDemo } from '../lib/visuals/lcm-demo';
-import { initThemePalette, initDemoPlayer, type DemoPlayerStyle } from '../lib/visuals/site-demo';
 import { initQlaWidgets } from '../lib/visuals/qla-widgets';
 import { initQlfWidgets } from '../lib/visuals/qlf-widgets';
 import { initQla2Widgets } from '../lib/visuals/qla2-widgets';
@@ -35,16 +33,9 @@ const sizeCanvas = (canvas: HTMLCanvasElement, w: number, h: number) => sizeCanv
 const canvasWidth = (canvas: HTMLCanvasElement) =>
   canvas.parentElement?.getBoundingClientRect().width || canvas.getBoundingClientRect().width;
 
-// The meter demo keeps the old site's instrument look: train-line blue (Swiss:
-// its live accent) on a cream card, with a monospace VU scale.
-const demoPlayerStyle = (swiss: boolean): DemoPlayerStyle => ({
-  meter: withAlpha(swiss ? PALETTE.bqst.seriesPrimary : '#33b4e5'),
-  hot: (a) => `rgba(180,50,50,${a})`,
-  font: '8px Courier New',
-  vectorscopeFade: 'rgba(239,236,228,0.3)',
-});
-
 const cleanups: Array<() => void> = [];
+
+import { createFontRedraw } from '../lib/visuals/font-redraw';
 
 // Swiss exposes the chart roles as CSS custom properties for its widget CSS.
 function publishSwissTokens() {
@@ -67,25 +58,20 @@ export function initWidgets() {
   if (!document.querySelector('.article')) return;
 
   const root = document;
+  const fonts = createFontRedraw();
+  const onThemeChange = fonts.onThemeChange;
+  cleanups.push(fonts.cleanup);
   cleanups.push(
-    initBqstDspLab({ root, palette, sizeCanvas }),
+    initBqstDspLab({ root, palette, sizeCanvas, onThemeChange }),
     initBqstAudioDemo({ root, palette, dpr: deviceDpr, playhead: true }),
     initLcmDemo({ root }),
-    initDemoPlayer({
-      root,
-      sizeCanvas,
-      style: demoPlayerStyle(swiss),
-      audioUrl: '/assets/audio/snippets/looseends.mp3',
-      lazyOnPhones: true,
-    }),
     initQlaWidgets({ root, palette, sizeCanvas, dataUrl: '/assets/data/quantlab-visual-data.json' }),
-    initQlfWidgets({ root, palette, sizeCanvas, dataUrl: '/assets/data/quantlab-fin-data.json' }),
-    initQla2Widgets({ root, palette, sizeCanvas, canvasWidth, dataUrl: '/assets/data/agentic-analyst-data.json' }),
-    initQlsWidgets({ root, palette, sizeCanvas, canvasWidth, dataUrl: '/assets/data/quantlab-systems-data.json' }),
-    initMleReplay({ root, palette, dataUrl: '/assets/data/mle-agent-run.json' }),
-    initRoomRun({ root, palette }),
+    initQlfWidgets({ root, palette, sizeCanvas, onThemeChange, dataUrl: '/assets/data/quantlab-fin-data.json' }),
+    initQla2Widgets({ root, palette, onThemeChange, sizeCanvas, canvasWidth, dataUrl: '/assets/data/agentic-analyst-data.json' }),
+    initQlsWidgets({ root, palette, onThemeChange, sizeCanvas, canvasWidth, dataUrl: '/assets/data/quantlab-systems-data.json' }),
+    initMleReplay({ root, palette, onThemeChange, dataUrl: '/assets/data/mle-agent-run.json' }),
+    initRoomRun({ root, palette, onThemeChange }),
   );
-  initThemePalette({ root });
 }
 
 export function cleanupWidgets() {
