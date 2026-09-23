@@ -294,17 +294,17 @@ export function drawAliasing(ctx: CanvasRenderingContext2D, { w, palette }: Bqst
     ctx.lineTo(Math.round(nyX) + 0.5, axisY);
     ctx.stroke();
     ctx.fillStyle = ink(0.62);
-    ctx.font = `600 11px ${palette.fonts.ui}`;
+    ctx.font = `600 ${narrow ? 11 : 13}px ${palette.fonts.ui}`;
     ctx.textAlign = 'left';
-    ctx.fillText(narrow ? 'ABOVE 22.05 KHZ' : 'ABOVE NYQUIST · 22.05 KHZ', nyX + 8, 42);
+    ctx.fillText(narrow ? 'ABOVE 22.05 KHZ' : 'ABOVE NYQUIST · 22.05 KHZ', nyX + 10, 46);
     ctx.globalAlpha = 1;
   }
   if (t > 0) {
     ctx.globalAlpha = t;
     ctx.fillStyle = ink(0.62);
-    ctx.font = `600 11px ${palette.fonts.ui}`;
+    ctx.font = `600 ${narrow ? 11 : 13}px ${palette.fonts.ui}`;
     ctx.textAlign = 'right';
-    ctx.fillText(narrow ? 'ROOM TO 88.2 KHZ →' : 'AT 4× THE ROOM RUNS TO 88.2 KHZ →', x1, 42);
+    ctx.fillText(narrow ? '4× NYQUIST: 88.2 KHZ →' : 'NYQUIST AT 4×: 88.2 KHZ →', x1, 46);
     ctx.globalAlpha = 1;
   }
 
@@ -316,7 +316,7 @@ export function drawAliasing(ctx: CanvasRenderingContext2D, { w, palette }: Bqst
   ctx.lineTo(x1, axisY + 0.5);
   ctx.stroke();
   ctx.fillStyle = ink(0.62);
-  ctx.font = `500 ${narrow ? 10 : 11}px ${palette.fonts.ui}`;
+  ctx.font = `500 ${narrow ? 11 : 13}px ${palette.fonts.ui}`;
   ctx.textAlign = 'center';
   [0, 10000, 20000, 30000, 40000].forEach((freq) => {
     const x = Math.round(xFor(freq)) + 0.5;
@@ -324,7 +324,7 @@ export function drawAliasing(ctx: CanvasRenderingContext2D, { w, palette }: Bqst
     ctx.moveTo(x, axisY);
     ctx.lineTo(x, axisY + 5);
     ctx.stroke();
-    ctx.fillText(freq === 0 ? '0' : `${freq / 1000} kHz`, x, axisY + 18);
+    ctx.fillText(freq === 0 ? '0' : `${freq / 1000} kHz`, x, axisY + 21);
   });
 
   // Heights are whole multiples of the 6px dash period (minus the trailing
@@ -337,15 +337,15 @@ export function drawAliasing(ctx: CanvasRenderingContext2D, { w, palette }: Bqst
   });
 
   // Fold brackets first, so stems and labels sit on top.
-  const bracketTop = axisY + 28;
+  const bracketTop = axisY + 32;
   if (warnAlpha > 0) {
-    ctx.globalAlpha = warnAlpha * 0.75;
+    ctx.globalAlpha = warnAlpha;
     ctx.strokeStyle = p.aliasWarn;
-    ctx.lineWidth = 1;
+    ctx.lineWidth = 1.5;
     stems.filter((s) => s.freq > nyquist).forEach((s, i) => {
-      const from = Math.round(xFor(s.freq)) + 0.5;
-      const to = Math.round(xFor(s.alias)) + 0.5;
-      const depth = Math.round(bracketTop + 10 + i * 12) + 0.5;
+      const from = Math.round(xFor(s.freq));
+      const to = Math.round(xFor(s.alias));
+      const depth = Math.round(bracketTop + 10 + i * 12);
       ctx.beginPath();
       ctx.moveTo(from, bracketTop);
       ctx.lineTo(from, depth);
@@ -388,9 +388,9 @@ export function drawAliasing(ctx: CanvasRenderingContext2D, { w, palette }: Bqst
       ctx.stroke();
     }
     ctx.fillStyle = over ? p.aliasOversampled : p.aliasAudible;
-    ctx.font = `600 ${narrow ? 10 : 11}px ${palette.fonts.ui}`;
+    ctx.font = `600 ${narrow ? 12 : 14}px ${palette.fonts.ui}`;
     ctx.textAlign = 'center';
-    ctx.fillText(`${s.k}×`, x, top - 8);
+    ctx.fillText(`${s.k}×`, x, top - 9);
   });
 }
 
