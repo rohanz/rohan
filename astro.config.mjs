@@ -2,6 +2,7 @@ import { defineConfig } from 'astro/config';
 import sitemap from '@astrojs/sitemap';
 import rehypeRootAssets from './src/lib/rehype-root-assets.mjs';
 import rehypeHeadingAnchors from './src/lib/rehype-heading-anchors.mjs';
+import rehypeImageDims from './src/lib/rehype-image-dims.mjs';
 import { readdirSync, readFileSync } from 'node:fs';
 
 const staticSitemapPaths = new Set(['/', '/music/', '/projects/', '/about/']);
@@ -32,7 +33,7 @@ export default defineConfig({
   // start and never fires on touch — viewport prefetches every visible link
   // during idle, so navigations land with the HTML already cached.
   prefetch: { prefetchAll: true, defaultStrategy: 'viewport' },
-  markdown: { rehypePlugins: [rehypeRootAssets, rehypeHeadingAnchors] },
+  markdown: { rehypePlugins: [rehypeRootAssets, rehypeImageDims, rehypeHeadingAnchors] },
   integrations: [
     sitemap({
       filter: (page) => {

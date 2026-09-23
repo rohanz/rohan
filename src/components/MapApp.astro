@@ -10,7 +10,8 @@ import { SONGS as music } from '../data/music';
 import { encodeFilter, visibleProjectFilters } from '../data/project-filters';
 import { RESUME_LABEL_TITLE, RESUME_PATH } from '../data/resume';
 import { SOCIALS } from '../data/socials';
-import { STATS as stats } from '../data/stats';
+import { statsFor } from '../data/stats';
+import { portrait } from '../lib/portrait';
 import { TECH_STACK } from '../data/tech-stack';
 
 interface Props {
@@ -27,6 +28,8 @@ const { title, description, initialView, ogImage } = Astro.props;
 const projects = (await getCollection('projects'))
   .filter((p) => !p.data.unlisted)
   .sort((a, b) => a.data.order - b.data.order);
+const stats = statsFor(projects.length);
+const photo = await portrait();
 
 // Curated filter pills (labels, aliases, display order) come from
 // src/data/project-filters.ts, shared with classic and blueprint; a pill whose
@@ -163,7 +166,15 @@ const tech = TECH_STACK.map((t) => t.name);
              Stop 3: socials (R) + cv (L). The photo/bio split mirrors the
              original site's separate bento-photo and bento-bio cards. -->
         <div class="platform-card card-about card-about-photo" data-card="about">
-          <img class="photo" src="/assets/images/profile.webp" alt="Rohan" loading="lazy" />
+          {/* First on /transit/about, where the card is on screen at load;
+               elsewhere it waits, then loads at idle so the ride to about finds
+               it ready. */}
+          <picture>
+            <source type="image/avif" srcset={photo.avifSrcset} sizes="300px" />
+            <img class="photo" src={photo.src} srcset={photo.webpSrcset} sizes="300px" alt="Rohan" width={photo.width} height={photo.height} decoding="async"
+              {...(initialView === 'about' ? { loading: 'eager', fetchpriority: 'high' } : { loading: 'lazy' })} />
+          </picture>
+          {initialView !== 'about' && <script is:inline>{`(function (img) { if (!img || img.complete) return; var go = function () { img.loading = 'eager'; }; if ('requestIdleCallback' in window) requestIdleCallback(go, { timeout: 4000 }); else setTimeout(go, 2000); })(document.currentScript.previousElementSibling.querySelector('img'));`}</script>}
         </div>
 
         <div class="platform-card card-about card-about-bio" data-card="about">
@@ -790,6 +801,8 @@ const tech = TECH_STACK.map((t) => t.name);
   /* Photo card: image sits inset within the uniform box with a thin frame,
      rather than bleeding edge to edge. */
   .card-about-photo { padding: 0.4rem; }
+  /* <picture> only chooses the file; the img stays the card's flex child. */
+  .card-about-photo picture { display: contents; }
   .card-about-photo .photo {
     flex: 1;
     width: 100%;

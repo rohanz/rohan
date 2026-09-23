@@ -5,15 +5,25 @@ import { BIO_INTRO, BIO_WORK, BIO_MUSIC } from '../data/bio';
 import { ABOUT_DESCRIPTION } from '../data/page-meta';
 import { RESUME_FILENAME, RESUME_LABEL, RESUME_PATH } from '../data/resume';
 import { SOCIALS } from '../data/socials';
-import { STATS } from '../data/stats';
+import { statsFor } from '../data/stats';
+import { getCollection } from 'astro:content';
+import { PORTRAIT_SIZES, portrait } from '../lib/portrait';
 import { TECH_STACK } from '../data/tech-stack';
 import { TESTIMONIALS } from '../data/testimonials';
+const photo = await portrait();
+const STATS = statsFor((await getCollection('projects')).filter((p) => !p.data.unlisted).length);
 ---
 <SwissLayout ogImage="/assets/images/og/section-about.png" title="about - rohan.jk" description={ABOUT_DESCRIPTION} section="about" hideFooter>
   <section class="sw-about" aria-label="About Rohan">
     <div class="sw-about-rail">
-      <figure class="sw-about-photo">
-        <img src="/assets/images/profile.webp" alt="Rohan outdoors" width="1000" height="1334" loading="eager" decoding="async" />
+      {/* The page's largest element, so it is fetched first; a blurred inline
+           copy fills the frame until it arrives (see lib/portrait.ts). */}
+      <figure class="sw-about-photo" style={`--photo-placeholder: url(${photo.placeholder})`}>
+        <picture>
+          <source type="image/avif" srcset={photo.avifSrcset} sizes={PORTRAIT_SIZES} />
+          <img src={photo.src} srcset={photo.webpSrcset} sizes={PORTRAIT_SIZES} alt="Rohan outdoors" width={photo.width} height={photo.height} loading="eager" fetchpriority="high" decoding="async" />
+        </picture>
+        <script is:inline>{`(function (img) { if (!img || img.complete) return; img.classList.add('is-pending'); var done = function () { img.classList.remove('is-pending'); }; img.addEventListener('load', done, { once: true }); img.addEventListener('error', done, { once: true }); })(document.currentScript.parentElement.querySelector('img'));`}</script>
       </figure>
       <div class="sw-about-caption">
         <a class="sw-label sw-link-ext" href={RESUME_PATH} download={RESUME_FILENAME}>{RESUME_LABEL} <span class="sw-arrow" aria-hidden="true">↗</span></a>

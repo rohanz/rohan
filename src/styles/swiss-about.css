@@ -1,8 +1,13 @@
 /* Shared-edge cells, using the home hero's rail and quadrant grammar. */
 html.theme-swiss .sw-about { display: grid; grid-template-columns: minmax(0, 1fr); }
 html.theme-swiss .sw-about-rail { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); background: var(--tint); border-bottom: 1px solid var(--tint-hair); }
-html.theme-swiss .sw-about-photo { position: relative; min-width: 0; min-height: 16rem; margin: 0; border-right: 1px solid var(--tint-hair); }
-html.theme-swiss .sw-about-photo img { position: absolute; width: 100%; height: 100%; object-fit: cover; object-position: center 60%; }
+html.theme-swiss .sw-about-photo { position: relative; min-width: 0; min-height: 16rem; margin: 0; overflow: hidden; border-right: 1px solid var(--tint-hair); }
+/* Blurred placeholder under the photo; the photo fades in over it only when it
+   was not already cached (the inline script adds .is-pending). */
+html.theme-swiss .sw-about-photo::before { content: ''; position: absolute; inset: 0; background: var(--photo-placeholder) center 60% / cover no-repeat; filter: blur(16px); transform: scale(1.12); }
+html.theme-swiss .sw-about-photo img { position: absolute; width: 100%; height: 100%; object-fit: cover; object-position: center 60%; transition: opacity .35s ease; }
+html.theme-swiss .sw-about-photo img.is-pending { opacity: 0; }
+@media (prefers-reduced-motion: reduce) { html.theme-swiss .sw-about-photo img { transition: none; } }
 html.theme-swiss .sw-about-caption { --cap-pad: 1.5rem; display: flex; flex-direction: column; justify-content: space-between; gap: 2rem; min-width: 0; padding: var(--cap-pad); }
 html.theme-swiss .sw-about-caption p { margin: 0; }
 /* The CV link is the whole cell: one large, easy target under the portrait. */

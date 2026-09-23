@@ -7,6 +7,7 @@ import { SOCIALS } from '../data/socials';
 import { DEFAULT_ACCENT } from '../lib/swiss/accents';
 import '../styles/swiss.css';
 import '../styles/copy-lines.css';
+import { PORTRAIT_SIZES, portrait } from '../lib/portrait';
 
 interface Props {
   title: string;
@@ -35,6 +36,9 @@ const nav = [
   { id: 'music', label: 'music', href: '/music' },
   { id: 'about', label: 'about', href: '/about' },
 ] as const;
+// The about portrait's candidates ride on the nav link so any page can fetch
+// the right one at idle (see prefetchPortrait below).
+const photo = await portrait();
 ---
 <html lang="en" class:list={['theme-swiss', { 'sw-home': section === 'home' }]} style={`--accent:${DEFAULT_ACCENT.hex}`}>
   <head>
@@ -78,7 +82,7 @@ const nav = [
       <div class="sw-wrap sw-nav-inner">
         <a class="sw-wordmark" href="/" aria-label="rohan.jk — home"><SwissLogo class="sw-logo" />rohan.jk</a>
         <nav class="sw-nav-links" aria-label="Primary">
-          {nav.map((n) => <a class="sw-link" href={n.href} aria-current={section === n.id ? 'page' : undefined}>{n.label}</a>)}
+          {nav.map((n) => <a class="sw-link" href={n.href} aria-current={section === n.id ? 'page' : undefined} {...(n.id === 'about' ? { 'data-portrait-srcset': photo.avifSrcset, 'data-portrait-sizes': PORTRAIT_SIZES } : {})}>{n.label}</a>)}
         </nav>
         <button class="sw-menu-toggle" type="button" aria-expanded="false" aria-controls="sw-mobile-menu">
           <span class="sw-menu-toggle-label">menu</span>
@@ -106,6 +110,26 @@ const nav = [
       import '../lib/theme-switch.ts';
       import { installCopyLines } from '../lib/chrome/copy-lines';
       installCopyLines();
+
+      // Page prefetch fetches HTML only, so the about portrait would still start
+      // downloading on arrival. Once per session, at idle and not on data saver,
+      // fetch the same candidate the about page will pick.
+      let portraitFetched = false;
+      function prefetchPortrait() {
+        if (portraitFetched || location.pathname.startsWith('/about')) return;
+        const link = document.querySelector<HTMLAnchorElement>('a[data-portrait-srcset]');
+        const saveData = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData;
+        if (!link || saveData) return;
+        portraitFetched = true;
+        const go = () => {
+          const img = new Image();
+          img.sizes = link.dataset.portraitSizes ?? '100vw';
+          img.srcset = link.dataset.portraitSrcset ?? '';
+        };
+        if ('requestIdleCallback' in window) requestIdleCallback(go, { timeout: 4000 });
+        else setTimeout(go, 2000);
+      }
+      document.addEventListener('astro:page-load', prefetchPortrait);
 
       let cleanupNav: (() => void) | undefined;
       function initNav() {
