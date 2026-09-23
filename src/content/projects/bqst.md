@@ -9,12 +9,10 @@ technologies:
   - JUCE
   - DSP
   - Product Design
+links:
+  - "download bqst for macOS | /downloads/bqst/BQST-1.0.3-macOS-universal.pkg"
+  - "buy me a coffee | https://ko-fi.com/rohanjk"
 ---
-
-<p class="bqst-download-actions">
-  <a href="/downloads/bqst/BQST-1.0.3-macOS-universal.pkg" class="try-it-btn" data-astro-prefetch="false" download>download bqst for macOS</a>
-  <a href="https://ko-fi.com/rohanjk" class="support-btn" target="_blank" rel="noopener noreferrer">buy me a coffee</a>
-</p>
 
 ## why i built it
 

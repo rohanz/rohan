@@ -14,7 +14,7 @@ test('delayed analytics SDK flushes page paths and events once across router nav
   // Pages redirects directory URLs to a trailing slash; dev does not. The
   // analytics contract is the actual visited path, including that redirect.
   const aboutPath = new URL(page.url()).pathname;
-  await expect(page.locator('[data-testimonial-toggle]')).toBeVisible();
+  await expect(page.locator('[data-testimonial-ring]')).toBeVisible();
   await page.locator('.sw-about-caption a').evaluate((el) => {
     el.addEventListener('click', (event) => event.preventDefault(), { once: true });
     (el as HTMLElement).click();

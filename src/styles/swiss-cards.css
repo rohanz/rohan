@@ -62,7 +62,7 @@ html.theme-swiss .swiss-card.is-hover .swiss-card-inner { transition: transform 
   html.theme-swiss .swiss-card-inner { transform: none; }
 }
 html.theme-swiss .swiss-card-art { position: relative; flex: 0 0 auto; aspect-ratio: 4 / 3; padding: 1.25rem; border-bottom: 1px solid var(--tint-hair); color: inherit; }
-html.theme-swiss .swiss-card-art svg { position: relative; z-index: 1; text-rendering: geometricPrecision; backface-visibility: hidden; }
+html.theme-swiss .swiss-card-art svg { position: relative; z-index: 1; text-rendering: geometricPrecision; }
 /* Compositor layer only while the card moves (tilt.ts sets .is-tilting): the GPU
    transforms one texture, so glyphs don't re-snap to pixels every frame. At rest
    the layer drops and Chrome re-rasterises at the real transform, keeping thin

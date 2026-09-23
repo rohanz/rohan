@@ -365,11 +365,11 @@
 .article-body .bqst-download-actions { display: flex; flex-wrap: wrap; gap: 9px; }
 /* Primary CTAs fill navy; secondary actions stay outlined. Both invert
    on hover. */
-.article-body .try-it-btn,
-.article-body .support-btn { padding: 8px 11px; border: 2px solid var(--article-blue); text-decoration: none; font-weight: 700; }
-.article-body .try-it-btn { background: var(--article-blue); color: var(--article-paper); }
-.article-body .try-it-btn:hover { background: transparent; color: var(--article-blue); }
-.article-body .support-btn:hover { background: var(--article-blue); color: var(--article-paper); }
+:is(.article-body, .article-links) .try-it-btn,
+:is(.article-body, .article-links) .support-btn { padding: 8px 11px; border: 2px solid var(--article-blue); text-decoration: none; font-weight: 700; }
+:is(.article-body, .article-links) .try-it-btn { background: var(--article-blue); color: var(--article-paper); }
+:is(.article-body, .article-links) .try-it-btn:hover { background: transparent; color: var(--article-blue); }
+:is(.article-body, .article-links) .support-btn:hover { background: var(--article-blue); color: var(--article-paper); }
 
 .article-body .article-stat-grid,
 .article-body .bqst-asset-strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 1.6em 0; }
@@ -461,3 +461,5 @@
   text-transform: uppercase;
   opacity: 0.6;
 }
+
+.article-links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }

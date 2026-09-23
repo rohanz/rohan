@@ -6,6 +6,7 @@ import { ClientRouter } from 'astro:transitions';
 import { SOCIALS } from '../data/socials';
 import { DEFAULT_ACCENT } from '../lib/swiss/accents';
 import '../styles/swiss.css';
+import '../styles/copy-lines.css';
 
 interface Props {
   title: string;
@@ -103,6 +104,8 @@ const nav = [
     <script>
       import '../scripts/swiss/reveal.ts';
       import '../lib/theme-switch.ts';
+      import { installCopyLines } from '../lib/chrome/copy-lines';
+      installCopyLines();
 
       let cleanupNav: (() => void) | undefined;
       function initNav() {

@@ -1,7 +1,7 @@
 ---
 title: "teaching a small model to show its work: training an auditable research agent"
 barTitle: "quantlab: agent"
-summary: "A 9-billion-parameter open model that answers investment-research questions by looking things up in SEC filings through six tools, doing the maths explicitly, and citing the evidence for every number. Trained with imitation then reinforcement learning, and graded by code that pays for evidence."
+summary: "A 9-billion-parameter open model that answers investment-research questions by looking things up in SEC filings through six tools, doing the maths explicitly, and citing the evidence for every number. Trained with imitation then reinforcement learning, and scored by code that checks every number against the filings."
 image: /assets/images/projects/quantlab-analyst/banner.webp
 order: 0
 technologies:
@@ -115,7 +115,7 @@ The whole project cost around $350. The failure catalogue cost extra in dignity:
 
 What I'd defend in an interview, in order:
 
-1. **Build the environment so correctness is computable.** Point-in-time data, questions whose answers are computed, and a code-only reward that pays for evidence and survived people trying to break it.
+1. **Build the environment so correctness is computable.** Point-in-time data, questions whose answers are computed, and a reward computed in code that checks every number against the filings, and that survived people trying to break it.
 2. **Run the whole modern training stack hands-on.** Teacher distillation, fine-tuning, and GRPO on rented GPUs, with each stage's failure modes experienced rather than read about.
 3. **Serve it like production.** Pinned images, versioned weights, capacity measured on real agent traffic.
 4. **Refuse a flattering number.** The project's best result was spotted because a cheap probe disagreed with a dashboard, and following it up replaced a false headline with a true, smaller, better-measured one. You can only show evaluation integrity by catching yourself.

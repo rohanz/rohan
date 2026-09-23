@@ -221,6 +221,7 @@ async function syncProjectContent(drawingSlugs) {
       tech: requireField(frontmatter, 'technologies', file),
       drawing: drawingSlugs.has(slug) ? `drawings/${slug}` : null,
       order: requireField(frontmatter, 'order', file),
+      links: frontmatter.links ?? [],
       ...(frontmatter.unlisted === true ? { unlisted: true } : {}),
     });
   }

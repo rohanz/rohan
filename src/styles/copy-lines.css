@@ -1,0 +1,33 @@
+/* Install commands with a copy button per line (src/lib/chrome/copy-lines.ts).
+   Each line is a real <pre>, so it keeps the theme's code-block look; these
+   rules only keep it to one scrolling line and seat the square copy button.
+   The html body prefix outranks each theme's article pre and p rules. */
+html body .copy-lines { margin: 1.75rem 0; display: grid; gap: .5rem; }
+html body .copy-lines p.copy-lines-label { margin: .75rem 0 0; font-size: .75rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; opacity: .65; }
+html body .copy-lines p.copy-lines-label:first-child { margin-top: 0; }
+html body .copy-lines .copy-line { display: flex; align-items: center; gap: .5rem; min-width: 0; padding-right: .6rem; border: 1px solid color-mix(in srgb, currentColor 22%, transparent); background: color-mix(in srgb, currentColor 4%, transparent); }
+/* The command scrolls on one line inside the box; the fade marks the cut edge
+   and the end padding lets the last characters scroll clear of it. */
+html body .copy-lines .copy-line > pre { flex: 1; min-width: 0; margin: 0; padding: 1.1rem 1.25rem; font-size: .85rem; line-height: 1.5; border: 0; background: none; white-space: pre; overflow-x: auto; overflow-wrap: normal; scrollbar-width: none; -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 1.25rem), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 1.25rem), transparent); }
+html body .copy-lines .copy-line > pre::-webkit-scrollbar { display: none; }
+html body .copy-lines .copy-line > pre code { white-space: pre; padding: 0; background: none; }
+/* Classic: the row is the article's code block (swiss-article.css pre). */
+html.theme-swiss body .copy-lines .copy-line { border-color: var(--hair); background: var(--tint); }
+html.theme-swiss body .copy-lines .copy-line > pre { padding: 1.25rem 1.5rem; }
+html body .copy-lines .copy-line-btn {
+  position: relative; flex: none; width: 2rem; height: 2rem; padding: 0; border: 1px solid color-mix(in srgb, currentColor 30%, transparent);
+  background: none; color: inherit; cursor: pointer;
+}
+html body .copy-lines .copy-line-btn::before {
+  content: ''; position: absolute; inset: 0; margin: auto; width: 1rem; height: 1rem; background: currentColor;
+  -webkit-mask: var(--copy-icon) center / contain no-repeat; mask: var(--copy-icon) center / contain no-repeat;
+  --copy-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.4'%3E%3Crect x='5.5' y='5.5' width='8' height='8'/%3E%3Cpath d='M10.5 5.5v-3h-8v8h3'/%3E%3C/svg%3E");
+}
+html body .copy-lines .copy-line-btn.is-copied::before {
+  --copy-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='square'%3E%3Cpath d='m3 8.5 3 3 7-7'/%3E%3C/svg%3E");
+}
+html body .copy-lines .copy-line-btn:hover { border-color: currentColor; background: color-mix(in srgb, currentColor 6%, transparent); }
+html body .copy-lines .copy-line-btn:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+/* Classic: inverted square, ink with a paper icon. */
+html.theme-swiss body .copy-lines .copy-line-btn { border-color: var(--ink); background: var(--ink); color: var(--paper); }
+html.theme-swiss body .copy-lines .copy-line-btn:hover { border-color: var(--accent); background: var(--accent); }

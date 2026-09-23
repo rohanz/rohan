@@ -9,6 +9,8 @@ html.theme-swiss .sw-article-word { margin: 0; font-family: var(--font-ui); font
 html.theme-swiss .sw-article-title { margin: .9rem 0 0; font-size: clamp(1.05rem, 1.25vw, 1.25rem); font-weight: 500; color: var(--muted); max-width: 48ch; line-height: 1.4; }
 html.theme-swiss .sw-article-summary { max-width: 52ch; font-size: clamp(1rem, 1.1vw, 1.1rem); line-height: 1.5; margin: 1.5rem 0 0; color: var(--ink); }
 html.theme-swiss .sw-article-meta { display: flex; flex-wrap: wrap; gap: .5rem 1rem; margin-top: 2rem; }
+html.theme-swiss .sw-article-links { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1.5rem; }
+html.theme-swiss .sw-article-links a { margin: 0; }
 /* Card supplies the drawing animation contract, but this is a flat hero cell. */
 html.theme-swiss .sw-article-art.swiss-card,
 html.theme-swiss .sw-article-art.swiss-card:hover { background: var(--ink); color: var(--paper); box-shadow: none; transform: none; will-change: auto; border: 0; border-left: 1px solid var(--hair); justify-content: center; }
@@ -116,9 +118,9 @@ html.theme-swiss body.image-lightbox-open { overflow: hidden; }
 
 /* Classes present in the shared Markdown content. */
 /* Primary action filled ink, secondary outlined; both go accent on hover. */
-html.theme-swiss .article :is(.try-it-btn, .support-btn) { display: inline-block; padding: .6rem 1.1rem; margin: .25rem .5rem .25rem 0; border: 1px solid var(--ink); color: var(--ink); text-decoration: none; font-size: .85rem; font-weight: 500; transition: background .2s ease, color .2s ease, border-color .2s ease; }
-html.theme-swiss .article .try-it-btn { background: var(--ink); color: var(--paper); }
-html.theme-swiss .article :is(.try-it-btn, .support-btn):hover, html.theme-swiss .article :is(.try-it-btn, .support-btn):focus-visible { background: var(--accent); border-color: var(--accent); color: var(--paper); }
+html.theme-swiss :is(.article, .sw-article-links) :is(.try-it-btn, .support-btn) { display: inline-block; padding: .6rem 1.1rem; margin: .25rem .5rem .25rem 0; border: 1px solid var(--ink); color: var(--ink); text-decoration: none; font-size: .85rem; font-weight: 500; transition: background .2s ease, color .2s ease, border-color .2s ease; }
+html.theme-swiss :is(.article, .sw-article-links) .try-it-btn { background: var(--ink); color: var(--paper); }
+html.theme-swiss :is(.article, .sw-article-links) :is(.try-it-btn, .support-btn):hover, html.theme-swiss :is(.article, .sw-article-links) :is(.try-it-btn, .support-btn):focus-visible { background: var(--accent); border-color: var(--accent); color: var(--paper); }
 html.theme-swiss :is(.download-actions, .bqst-download-actions) { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
 html.theme-swiss .article-stat-grid { display: flex; flex-wrap: wrap; gap: 1rem; margin: 1.5rem 0; }
 html.theme-swiss .article-stat-card { flex: 1 1 160px; padding: 1rem; border: 1px solid var(--hair); }

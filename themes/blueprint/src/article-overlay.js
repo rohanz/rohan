@@ -2,10 +2,13 @@ import { marked } from 'marked';
 import { withBase, asset } from './base.js';
 import { cleanupWidgets, initWidgets } from './article-widgets.ts';
 import { createLightbox } from '../../../src/lib/chrome/lightbox';
+import { installCopyLines } from '../../../src/lib/chrome/copy-lines';
+import { linksHtml } from '../../../src/lib/project-links';
 import { computeActiveHeadingId, triggerFraction, createClickSuppression } from '../../../src/lib/chrome/toc-scrollspy';
 import { HEADING_SLUGS } from './heading-slugs.generated.js';
 import './article-overlay.css';
 import './article-widgets.css';
+import '../../../src/styles/copy-lines.css';
 
 import { ARTICLES } from './articles.generated.js';
 
@@ -221,6 +224,7 @@ export function createArticleOverlay(projects, { onNavigate, onRequestNavigate }
       ${project.summary ? `<p>${project.summary}</p>` : ''}
       <div class="article-meta">
         <div class="article-tags">${project.tech.map((tag) => `<span>${tag}</span>`).join('')}</div>
+        ${project.links?.length ? `<div class="article-links">${linksHtml(project.links)}</div>` : ''}
       </div>`;
     // The project's drawing (frozen in its played state by
     // tools/build-blueprint.mjs). Drop the previous article's drawing
@@ -259,6 +263,7 @@ export function createArticleOverlay(projects, { onNavigate, onRequestNavigate }
     }
     body.replaceChildren(tpl.content);
     captionImages(body);
+    installCopyLines();
     initWidgets(body);
     buildToc(project.slug);
     projectNav.classList.toggle('is-unlisted', !isListed);

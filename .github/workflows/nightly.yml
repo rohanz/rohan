@@ -1,9 +1,7 @@
 # The full browser suite (every test, including the @slow stress runs),
-# sharded across four runners. GitHub only fires `schedule` triggers for
-# workflows on the repository's default branch; this repo's default is still
-# `master` (the retired static site), so the schedule takes effect once
-# astro-site is the default branch. Until then, run it by hand:
-# Actions > Nightly full suite > Run workflow, branch astro-site.
+# sharded across four runners. GitHub only fires `schedule` triggers on the
+# default branch, which is astro-site. Run it by hand from
+# Actions > Nightly full suite > Run workflow.
 name: Nightly full suite
 
 on:

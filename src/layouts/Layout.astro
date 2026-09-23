@@ -3,6 +3,7 @@ import Analytics from '../components/Analytics.astro';
 import '@fontsource-variable/inter';
 import interWoff2 from '@fontsource-variable/inter/files/inter-latin-wght-normal.woff2?url';
 import '../styles/global.css';
+import '../styles/copy-lines.css';
 import { ClientRouter } from 'astro:transitions';
 import { SOCIALS } from '../data/socials';
 
@@ -91,6 +92,8 @@ const personLd = JSON.stringify({
     <script>
       import '../scripts/wipe.ts';
       import '../lib/theme-switch.ts';
+      import { installCopyLines } from '../lib/chrome/copy-lines';
+      installCopyLines();
     </script>
   </body>
 </html>

@@ -23,6 +23,10 @@ const projects = defineCollection({
     // (including tools/build-blueprint.mjs) can parse them.
     award: z.string().optional(),
     awardEvent: z.string().optional(),
+    // Calls to action shown under the tags in the article header, each
+    // "label | href" (a flat string list, for the same reason as award). The
+    // first is the primary button. See lib/project-links.ts.
+    links: z.array(z.string().regex(/^.+ \| \S+$/, 'expected "label | href"')).default([]),
   }),
 });
 

@@ -2,11 +2,11 @@ import { test, expect } from '@playwright/test';
 
 const active = '[data-testimonial][aria-hidden="false"]';
 
-test('testimonies rotate on their own and pause under a fine pointer, with a visible pause control', async ({ page }) => {
+test('testimonies rotate on their own and pause under a fine pointer', async ({ page }) => {
   await page.clock.install();
   await page.goto('/about');
   const quotes = page.locator('[data-testimonial]');
-  await expect(page.getByRole('button', { name: 'Pause testimonies' })).toBeVisible();
+  await expect(page.locator('[data-testimonial-ring]')).toBeVisible();
   await expect(quotes.first()).toHaveAttribute('aria-hidden', 'false');
   await page.mouse.move(5, 5);
   await page.clock.runFor(6500);
@@ -27,10 +27,10 @@ test('reduced motion lays every testimony out with nothing rotating', async ({ p
     await expect(quote).toBeVisible();
     await expect(quote).not.toHaveAttribute('aria-hidden');
   }
-  await expect(page.locator('[data-testimonial-toggle]')).toBeHidden();
+  await expect(page.locator('[data-testimonial-ring]')).toBeHidden();
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await expect(page.locator(active)).toHaveCount(1);
-  await expect(page.locator('[data-testimonial-toggle]')).toBeVisible();
+  await expect(page.locator('[data-testimonial-ring]')).toBeVisible();
   await page.mouse.move(5, 5);
   await page.clock.runFor(6500);
   await expect(quotes.nth(1)).toHaveAttribute('aria-hidden', 'false');
@@ -62,10 +62,7 @@ test.describe('touch accessibility', () => {
   test.use({ viewport: { width: 375, height: 667 }, isMobile: true, hasTouch: true });
   test('about actions have 44px hit areas', async ({ page }) => {
     await page.goto('/about');
-    const toggle = page.locator('[data-testimonial-toggle]');
-    await expect(toggle).toHaveCSS('color', 'rgb(247, 245, 240)');
-    expect(await toggle.evaluate((el) => parseFloat(getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(16);
-    for (const action of await page.locator('.sw-about-caption a, .sw-about-links a, [data-testimonial-toggle]').all()) {
+    for (const action of await page.locator('.sw-about-caption a, .sw-about-links a').all()) {
       const box = await action.boundingBox();
       expect(box!.height).toBeGreaterThanOrEqual(44);
       expect(box!.width).toBeGreaterThanOrEqual(44);
@@ -105,28 +102,3 @@ test('shared audio analytics counts once per visit, including after returning', 
   expect(await counts()).toBe(1);
 });
 
-for (const touch of [false, true]) {
-  test(`explicit testimony pause survives focus leaving (${touch ? 'touch' : 'keyboard'})`, async ({ browser }) => {
-    const context = await browser.newContext({ hasTouch: touch, isMobile: touch, viewport: { width: touch ? 390 : 1440, height: 900 } });
-    const page = await context.newPage();
-    await page.clock.install();
-    await page.goto('/about');
-    const toggle = page.locator('[data-testimonial-toggle]');
-    const activate = async () => {
-      if (touch) await toggle.tap();
-      else { await toggle.focus(); await page.keyboard.press('Enter'); }
-      await page.locator('.sw-about-caption a').focus();
-      await page.mouse.move(5, 5);
-    };
-    await activate();
-    await expect(toggle).toHaveText('Resume testimonies');
-    const pausedQuote = await page.locator(active).textContent();
-    await page.clock.runFor(13000);
-    await expect(page.locator(active)).toHaveText(pausedQuote!);
-    await activate();
-    await expect(toggle).toHaveText('Pause testimonies');
-    await page.clock.runFor(6500);
-    await expect(page.locator(active)).not.toHaveText(pausedQuote!);
-    await context.close();
-  });
-}

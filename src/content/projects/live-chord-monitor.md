@@ -11,12 +11,10 @@ technologies:
   - Web MIDI
   - Real-Time
   - Music Theory
+links:
+  - "download for macOS | https://github.com/rohanz/live-chord-monitor/releases/download/v0.2.0/Live-Chord-Monitor-0.2.0-universal.dmg"
+  - "buy me a coffee | https://ko-fi.com/rohanjk"
 ---
-
-<p class="download-actions">
-  <a href="https://github.com/rohanz/live-chord-monitor/releases/download/v0.2.0/Live-Chord-Monitor-0.2.0-universal.dmg" class="try-it-btn">download for macOS</a>
-  <a href="https://ko-fi.com/rohanjk" class="support-btn" target="_blank" rel="noopener noreferrer">buy me a coffee</a>
-</p>
 
 ## why i built it
 

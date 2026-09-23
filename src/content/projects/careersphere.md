@@ -15,12 +15,10 @@ technologies:
   - DuckDB
   - Data Pipelines
   - Cloud Infra
+links:
+  - "try careersphere | https://careersphere-197801188818.asia-southeast1.run.app/"
+  - "view source | https://github.com/rohanz/careersphere"
 ---
-
-<p class="download-actions">
-  <a href="https://careersphere-197801188818.asia-southeast1.run.app/" class="try-it-btn" target="_blank" rel="noopener noreferrer">try careersphere</a>
-  <a href="https://github.com/rohanz/careersphere" class="support-btn" target="_blank" rel="noopener noreferrer">view source</a>
-</p>
 
 ## the problem
 
