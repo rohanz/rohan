@@ -10,14 +10,15 @@ export const repoRoot = resolve(process.cwd());
 export const ogDirectory = resolve(repoRoot, 'public/assets/images/og');
 export const sha256 = (value) => createHash('sha256').update(value).digest('hex');
 
-// The version is content-addressed: template, shared visual tokens, framing,
-// logo and actual font bytes all invalidate the cards when they change.
+// The version is content-addressed: template, shared visual tokens, logo and
+// actual font bytes all invalidate every card when they change. Framing is
+// per card (below), so one drawing's offset never invalidates the others.
 const templateFiles = [
   'src/components/SwissOgCard.astro', 'src/components/SwissLogo.astro',
   'src/pages/og/[slug].astro', 'src/pages/og/site.astro',
   'src/styles/swiss-og.css', 'src/styles/swiss.css',
   'src/styles/drawing-properties.css', 'src/lib/swiss/drawings.ts',
-  'src/lib/swiss/drawing-frame.ts', 'src/lib/swiss/accents.ts',
+  'src/lib/swiss/accents.ts',
   'src/data/bio.ts',
   'public/fonts/fonts.css', 'public/fonts/GeneralSans-Variable.woff2',
   'public/fonts/chillax-WZY5PMNTII6NKOB2TTIAX7QV.woff2',
@@ -32,6 +33,8 @@ export async function readOgCards() {
   // Same import-free TS -> JS convention as build-blueprint.mjs; no new deps.
   const { code } = await transform(await readFile(resolve(repoRoot, 'src/lib/swiss/card-text.ts'), 'utf8'), { loader: 'ts', format: 'esm' });
   const { cardTextFor } = await import(`data:text/javascript;base64,${Buffer.from(code).toString('base64')}`);
+  const frame = await transform(await readFile(resolve(repoRoot, 'src/lib/swiss/drawing-frame.ts'), 'utf8'), { loader: 'ts', format: 'esm' });
+  const { headerViewBoxFor } = await import(`data:text/javascript;base64,${Buffer.from(frame.code).toString('base64')}`);
   const files = (await readdir(resolve(repoRoot, 'src/content/projects'))).filter((file) => file.endsWith('.md')).sort();
   const cards = await Promise.all(files.map(async (file) => {
     const slug = file.slice(0, -3);
@@ -42,13 +45,14 @@ export async function readOgCards() {
       title: frontmatter.title, wordmark, award: frontmatter.award ?? null,
       technologies: frontmatter.technologies.slice(0, 3),
       drawing: await readFile(resolve(repoRoot, 'src/drawings/swiss', `${slug}.svg`), 'utf8'),
+      frame: headerViewBoxFor(slug),
       templateVersion,
     };
     return { slug, hash: sha256(JSON.stringify(inputs)) };
   }));
   // The default card uses the same played website drawing as its project.
   const siteDrawing = await readFile(resolve(repoRoot, 'src/drawings/swiss/this-website.svg'), 'utf8');
-  return [...cards, { slug: 'site', hash: sha256(JSON.stringify({ templateVersion, site: true, drawing: siteDrawing })) }];
+  return [...cards, { slug: 'site', hash: sha256(JSON.stringify({ templateVersion, site: true, drawing: siteDrawing, frame: headerViewBoxFor('this-website') })) }];
 }
 
 export function ogImagePath(slug) {

@@ -12,7 +12,16 @@ if (args.length && !(args.length === 2 && args[0] === '--only' && /^[a-z0-9-]+$/
   process.exit(1);
 }
 const only = args[1];
-const baseURL = new URL(process.env.OG_BASE_URL ?? 'http://localhost:4361');
+// Astro allows one dev server per project: reuse the usual one on 4321 when it
+// serves the OG template, otherwise start a private one on 4361.
+async function servesTemplate(origin) {
+  try {
+    const res = await fetch(new URL('/og/site', origin), { signal: AbortSignal.timeout(1500) });
+    return res.ok && (await res.text()).includes('name="og-input-hash"');
+  } catch { return false; }
+}
+const baseURL = new URL(process.env.OG_BASE_URL
+  || (await servesTemplate('http://localhost:4321') ? 'http://localhost:4321' : 'http://localhost:4361'));
 if (!['localhost', '127.0.0.1', '[::1]'].includes(baseURL.hostname)) throw new Error('OG_BASE_URL must be a local Astro server.');
 let server;
 let browser;
