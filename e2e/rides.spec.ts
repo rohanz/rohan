@@ -103,14 +103,14 @@ test('rides preserve options, history state, theme links, and article scroll thr
   };
   await checkState();
   await page.locator('a[data-line="projects"]').click();
-  await expect(page).toHaveURL(/\/transit\/projects\?desktop#map$/);
+  await expect(page).toHaveURL(/\/transit\/projects\/?\?desktop#map$/);
   await expect(page.locator('#bar-section')).toHaveText('Projects');
   await expect(page.locator('.transit-theme-switch')).toHaveAttribute('href', '/projects');
   await expect(page.locator('.blueprint-theme-switch')).toHaveAttribute('href', '/blueprint/?p=%2Fblueprint%2Fprojects');
   await checkState();
 
   await page.goBack();
-  await expect(page).toHaveURL(/\/transit\?desktop#map$/);
+  await expect(page).toHaveURL(/\/transit\/?\?desktop#map$/);
   await expect(page.locator('#bar-section')).toHaveText('');
   await expect(page.locator('.transit-theme-switch')).toHaveAttribute('href', '/');
   await page.goForward();
