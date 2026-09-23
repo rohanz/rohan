@@ -1,8 +1,6 @@
 // Single source of truth for the meta descriptions shared by classic and
-// transit's index/about/music pages. Titles are NOT unified here: classic
-// spells the separator with a hyphen ("rohan.jk - software & ai") and
-// transit with an em dash ("rohan.jk — software & ai") — a deliberate
-// per-theme style difference, not a copy-paste drift.
+// transit's index/about/music pages. Titles live on each page; every theme
+// separates them with a plain hyphen ("music - rohan.jk").
 //
 // Import-free by contract — see the note in music.ts.
 

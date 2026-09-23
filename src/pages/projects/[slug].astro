@@ -37,7 +37,7 @@ const h2h3 = headings.filter((h) => h.depth === 2 || h.depth === 3);
 const firstH2 = h2h3.findIndex((h) => h.depth === 2);
 const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
 ---
-<SwissLayout title={`${project.data.barTitle ? `${project.data.barTitle} · ` : ''}${project.data.title} — rohan.jk`} description={project.data.summary} section="projects" ogImage={projectOgImage(project.id)}>
+<SwissLayout title={`${project.data.barTitle ? `${project.data.barTitle} · ` : ''}${project.data.title} - rohan.jk`} description={project.data.summary} section="projects" ogImage={projectOgImage(project.id)}>
   <header class="sw-article-head">
     <div class="sw-article-head-inner">
       <div class="sw-article-head-title">

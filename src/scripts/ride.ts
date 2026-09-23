@@ -98,13 +98,13 @@ function asViewId(v: string | undefined | null): ViewId {
 let announcedView: ViewId | null = null;
 // The map's title is whatever the home page ships with; captured at init when we
 // actually load ON the home page (see init), else the static index.astro title.
-let mapTitle = 'rohan.jk — software & ai';
+let mapTitle = 'rohan.jk - software & ai';
 function announceView(view: ViewId) {
   if (view === announcedView) return;
   announcedView = view;
-  // Platform titles mirror the static pages exactly ("music — rohan.jk" etc.);
+  // Platform titles mirror the static pages exactly ("music - rohan.jk" etc.);
   // the ViewId IS the lowercase name those pages use.
-  document.title = view === 'map' ? mapTitle : `${view} — rohan.jk`;
+  document.title = view === 'map' ? mapTitle : `${view} - rohan.jk`;
   const announcer = document.getElementById('routeAnnouncer');
   if (announcer) announcer.textContent = view === 'map' ? 'Map' : lineById(view).nav!.name;
 }

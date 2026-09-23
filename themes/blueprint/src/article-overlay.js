@@ -224,7 +224,6 @@ export function createArticleOverlay(projects, { onNavigate, onRequestNavigate }
       ${project.summary ? `<p>${project.summary}</p>` : ''}
       <div class="article-meta">
         <div class="article-tags">${project.tech.map((tag) => `<span>${tag}</span>`).join('')}</div>
-        ${project.links?.length ? `<div class="article-links">${linksHtml(project.links)}</div>` : ''}
       </div>`;
     // The project's drawing (frozen in its played state by
     // tools/build-blueprint.mjs). Drop the previous article's drawing
@@ -262,6 +261,9 @@ export function createArticleOverlay(projects, { onNavigate, onRequestNavigate }
       }
     }
     body.replaceChildren(tpl.content);
+    // Call-to-action links open the body, under the drawing (the classic and
+    // transit themes put them in their article headers instead).
+    if (project.links?.length) body.insertAdjacentHTML('afterbegin', `<p class="download-actions article-links">${linksHtml(project.links)}</p>`);
     captionImages(body);
     installCopyLines();
     initWidgets(body);

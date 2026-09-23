@@ -12,7 +12,7 @@ const projects = (await getCollection('projects'))
   .sort((a, b) => a.data.order - b.data.order);
 const filters = visibleProjectFilters(projects.flatMap((p) => p.data.technologies));
 ---
-<SwissLayout ogImage="/assets/images/og/section-projects.png" title="projects — rohan.jk" description="Projects by rohan.jk — software, AI, audio, and data engineering builds." section="projects" hideFooter>
+<SwissLayout ogImage="/assets/images/og/section-projects.png" title="projects - rohan.jk" description="Projects by rohan.jk — software, AI, audio, and data engineering builds." section="projects" hideFooter>
   <section class="sw-projects" aria-label="Projects">
     <aside class="sw-project-rail">
       <div class="sw-project-rail-inner">
