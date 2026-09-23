@@ -173,8 +173,10 @@ async function syncDrawings() {
   const { COLORS } = await import(pathToFileURL(path.join(blueprintRoot, 'src', 'constants.js')).href);
   const defaults = propertyDefaults(await readFile(path.join(repoRoot, 'src', 'styles', 'drawing-properties.css'), 'utf8'));
   const palettes = {
-    '': { ink: COLORS.inkCss, paper: COLORS.creamCss, accent: COLORS.accentCss },
-    '.inverse': { ink: COLORS.creamCss, paper: COLORS.inkCss, accent: COLORS.accentCss },
+    // Drawings take blueprint's blue as their accent (the crimson stays for UI
+    // warnings); the inverted sheet needs a lighter blue to hold on navy.
+    '': { ink: COLORS.inkCss, paper: COLORS.creamCss, accent: COLORS.skyCss },
+    '.inverse': { ink: COLORS.creamCss, paper: COLORS.inkCss, accent: COLORS.skyOnInkCss },
   };
 
   await rm(drawingsDir, { recursive: true, force: true });

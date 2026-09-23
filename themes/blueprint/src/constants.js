@@ -14,6 +14,8 @@ export const COLORS = {
   accentDim: 'rgba(199, 75, 80, 0.35)',
   sky: 0x4A63B0,        // blueprint blue — room signage (one step deeper than the
   skyCss: '#4A63B0',    // charts' light navy #5C77C4, so signs hold up at distance)
+  // Drawing accent on an inverted (navy) sheet: sky is too dark there.
+  skyOnInkCss: '#9DB0E8',
 };
 
 export const ROOM = {

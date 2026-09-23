@@ -220,23 +220,6 @@ function buildSheet(project, index) {
   texture.anisotropy = 8;
   let hovered = false;
 
-  function titleLines(text, maxWidth) {
-    for (let size = 36; size >= 14; size--) {
-      ctx.font = `600 ${size}px ${FONT}`;
-      const lines = [];
-      let line = '';
-      for (const word of text.split(' ')) {
-        const next = line ? `${line} ${word}` : word;
-        if (ctx.measureText(next).width <= maxWidth) line = next;
-        else { if (line) lines.push(line); line = word; }
-      }
-      if (line) lines.push(line);
-      // big single/double-line titles; three-liners only below 26px
-      if (lines.length <= (size > 26 ? 2 : 3)) return { lines, size };
-    }
-    return { lines: [text], size: 14 };
-  }
-
   // Mutable content: pagination re-points each sheet at a new project.
   let current = project;
   let number = index;
@@ -289,14 +272,15 @@ function buildSheet(project, index) {
     ctx.fillRect(28, H - 142, W - 56, 114);
     ctx.fillStyle = ink;
 
-    ctx.font = `600 24px ${FONT}`;
-    ctx.fillText(`01 / SHEET ${String(number + 1).padStart(2, '0')}`, 50, 68);
+    ctx.font = `600 20px ${FONT}`;
+    ctx.fillText(`01 / SHEET ${String(number + 1).padStart(2, '0')}`, 50, 62);
 
-    // Drawing panel: the project's drawing, its centred 400x240 band fitted
-    // to the panel's height; a drafted construction study stands in until it
-    // arrives (and for a project without a drawing). SVG sources rasterise at
-    // the 2x backing store's scale, so the lines stay vector-sharp.
-    const px = 50, py = 88, pw = 590, ph = 148;
+    // Drawing panel: the sheet's main element. The project's drawing, its
+    // centred 400x240 band fitted to the panel's height; a drafted construction
+    // study stands in until it arrives (and for a project without a drawing).
+    // SVG sources rasterise at the 2x backing store's scale, so the lines stay
+    // vector-sharp. Tags live in the title band below, which frees this height.
+    const px = 50, py = 76, pw = 590, ph = 214;
     const src = current.drawing && (hovered ? current.drawingInverse : current.drawing);
     const entry = src ? imageCache.get(src) : null;
     const drawPlaceholder = (alpha) => {
@@ -323,7 +307,7 @@ function buildSheet(project, index) {
     }
 
     // Teaser: two lines that trail off (the article carries the full text).
-    ctx.font = `500 17px ${FONT}`;
+    ctx.font = `500 16px ${FONT}`;
     const MAX_LINES = 2;
     // A project with a short name leads with it and uses its one-line title as
     // the teaser; one without falls back to title + summary.
@@ -348,37 +332,24 @@ function buildSheet(project, index) {
       line = `${line}…`;
     }
     if (line) sumLines.push(line);
-    sumLines.forEach((l, i) => ctx.fillText(l, 50, 264 + i * 24));
+    sumLines.forEach((l, i) => ctx.fillText(l, 50, 314 + i * 21));
 
-    // tech tags as chips, like the original site's project cards
-    const techs = current.tech || [];
-    ctx.font = `600 13px ${FONT}`;
-    let tx = 50;
-    const ty = 312, pillH = 26;
-    for (let i = 0; i < techs.length; i++) {
-      // Lowercased to match the filter pills and the article overlay's tags
-      // (canvas text has no text-transform, so it happens here).
-      const label = techs[i].toLowerCase();
-      const tw = ctx.measureText(label).width + 20;
-      if (tx + tw > 640) {
-        const more = `+${techs.length - i}`;
-        ctx.fillText(more, tx + 4, ty + 17);
-        break;
-      }
-      ctx.beginPath();
-      ctx.roundRect(tx, ty, tw, pillH, 13);
-      ctx.stroke();
-      ctx.fillText(label, tx + 10, ty + 17);
-      tx += tw + 10;
+    // Title band: the project name on one line (shrunk to fit), then up to
+    // three tags beneath it, both in cream on the inverted cell.
+    ctx.fillStyle = paper;
+    let nameSize = 40;
+    const name = current.name ?? current.title;
+    for (; nameSize > 22; nameSize--) {
+      ctx.font = `600 ${nameSize}px ${FONT}`;
+      if (ctx.measureText(name).width <= 590) break;
     }
-
-    const title = titleLines(current.name ?? current.title, 560);
-    const titleSize = title.size; // measured at draw size — no overflow bump
-    ctx.font = `600 ${titleSize}px ${FONT}`;
-    ctx.fillStyle = paper; // cream on the inverted cell
-    title.lines.forEach((line2, lineIndex) => {
-      ctx.fillText(line2, 50, H - 100 + lineIndex * (titleSize + 6));
-    });
+    ctx.fillText(name, 50, H - 86);
+    // Lowercased to match the filter pills and the article overlay's tags
+    // (canvas text has no text-transform, so it happens here).
+    ctx.font = `600 14px ${FONT}`;
+    ctx.globalAlpha = 0.75;
+    ctx.fillText((current.tech || []).slice(0, 3).map((t) => t.toLowerCase()).join('  ·  '), 50, H - 50);
+    ctx.globalAlpha = 1;
     ctx.fillStyle = ink;
     texture.needsUpdate = true;
   }
