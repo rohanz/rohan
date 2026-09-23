@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 for (const mobile of [false, true]) {
-  test(`article section survives Back (${mobile ? 'mobile disclosure' : 'desktop TOC'})`, async ({ page }) => {
+  test(`article section survives Back (${mobile ? 'mobile disclosure' : 'desktop TOC'}) @smoke`, async ({ page }) => {
     await page.setViewportSize(mobile ? { width: 390, height: 844 } : { width: 1440, height: 900 });
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto('/projects/bqst');

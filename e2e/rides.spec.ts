@@ -9,7 +9,7 @@ import { test, expect } from '@playwright/test';
 import { LINES, WANT, settle, visCards, collectErrors } from './helpers';
 
 for (const line of LINES) {
-  test(`ride home -> ${line} reveals all ${WANT[line]} cards`, async ({ page }) => {
+  test(`ride home -> ${line} reveals all ${WANT[line]} cards @smoke`, async ({ page }) => {
     await page.goto('/transit', { waitUntil: 'networkidle' });
     await page.waitForTimeout(500);
     await page.click(`a[data-line="${line}"]`);
@@ -93,7 +93,7 @@ test('SPA ride syncs document.title and announces the route', async ({ page }) =
 
 // Each traversal has one owner: rides within this map, ClientRouter across
 // documents. Astro state must survive rides so article scroll restoration works.
-test('rides preserve options, history state, theme links, and article scroll through Back/Forward', async ({ page }) => {
+test('rides preserve options, history state, theme links, and article scroll through Back/Forward @smoke', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/transit?desktop#map');
   await expect(page.locator('.map-wrap')).toHaveClass(/map-ready/);

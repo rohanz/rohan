@@ -1,5 +1,6 @@
-# Production is astro-site. Manual dispatch validates this exact checkout and
-# deploys its artifact only after the reusable CI job succeeds.
+# Production is astro-site. Manual dispatch validates this exact checkout with
+# the smoke tier and deploys that same build only after it passes. The full
+# suite runs nightly (nightly.yml) and by hand after risky changes.
 name: Deploy to Pages
 
 on:
@@ -19,6 +20,7 @@ jobs:
     if: github.ref == 'refs/heads/astro-site'
     uses: ./.github/workflows/ci.yml
     with:
+      suite: smoke
       upload-pages: true
 
   deploy:

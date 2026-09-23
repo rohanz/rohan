@@ -272,7 +272,7 @@ test.describe('CLS budget — prefers-reduced-motion', () => {
 
 
 for (const path of ['/projects/bqst', '/transit/projects/bqst']) {
-  test(`article reserves widget space on ${path}`, async ({ page }) => {
+  test(`article reserves widget space on ${path} @smoke`, async ({ page }) => {
     await instrument(page, ['.article'], SETTLE_MS, true);
     await loadAndSettle(page, path);
     const r = (await readRects(page))['.article'];
@@ -281,7 +281,7 @@ for (const path of ['/projects/bqst', '/transit/projects/bqst']) {
   });
 }
 
-test('classic client-side article navigation stays shift-free', async ({ page }) => {
+test('classic client-side article navigation stays shift-free @smoke', async ({ page }) => {
   await instrument(page, TRACKED, 1200);
   await page.goto('/projects');
   await page.waitForFunction(() => window.__sampleDone);

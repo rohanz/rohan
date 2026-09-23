@@ -10,7 +10,7 @@ const routes = [
 ];
 
 for (const route of routes) {
-  test(`swiss ${route} renders without errors`, async ({ page }, testInfo) => {
+  test(`swiss ${route} renders without errors @smoke`, async ({ page }, testInfo) => {
     const errors: string[] = [];
     page.on('pageerror', (error) => errors.push(error.message));
     page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()); });
@@ -39,7 +39,7 @@ for (const route of routes) {
   });
 }
 
-test('classic cards match listed content and tilt on hover', async ({ page }) => {
+test('classic cards match listed content and tilt on hover @smoke', async ({ page }) => {
   const listed = readdirSync('src/content/projects').filter(name => name.endsWith('.md'))
     .filter(name => !/^unlisted:\s*true\s*$/m.test(readFileSync(`src/content/projects/${name}`, 'utf8')))
     .map(name => `/projects/${name.slice(0, -3)}`).sort();
@@ -57,7 +57,7 @@ test('classic cards match listed content and tilt on hover', async ({ page }) =>
   await expect(first).not.toHaveClass(/is-hover/);
 });
 
-test('classic theme links preserve the article through transit', async ({ page }) => {
+test('classic theme links preserve the article through transit @smoke', async ({ page }) => {
   await page.goto('/projects/bqst');
   const themes = page.locator('.sw-footer').getByRole('navigation', { name: 'Site themes' });
   await expect(themes.locator('[aria-current="true"]')).toHaveText('classic');
@@ -103,7 +103,7 @@ test('swatches show every accent with an isolated sample and noindex metadata', 
   await expect(page.locator('a[href="/swatches"]')).toHaveCount(0);
 });
 
-test('swiss stacks at phone width without horizontal scroll', async ({ page }) => {
+test('swiss stacks at phone width without horizontal scroll @smoke', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 800 });
   for (const route of routes) {
     await page.goto(route);

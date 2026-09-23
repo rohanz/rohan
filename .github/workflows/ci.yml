@@ -1,10 +1,28 @@
 name: CI
 
+# Two tiers. Pushes (and the deploy gate) run the smoke tier: build, type
+# check, unit tests and the @smoke browser tests on one runner. The full tier
+# (every browser test, including the @slow stress runs) is sharded across four
+# runners; nightly.yml runs it on a schedule, and it can be started by hand
+# (Actions > CI > Run workflow > suite: full) after transit, navigation or
+# widget changes. Each shard still runs serially (workers: 1 in
+# playwright.config.ts), so sharding adds no animation contention.
+
 on:
   push:
   pull_request:
+  workflow_dispatch:
+    inputs:
+      suite:
+        description: smoke or full
+        type: choice
+        options: [smoke, full]
+        default: smoke
   workflow_call:
     inputs:
+      suite:
+        type: string
+        default: smoke
       upload-pages:
         type: boolean
         default: false
@@ -13,9 +31,9 @@ permissions:
   contents: read
 
 jobs:
-  test:
+  build:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v6
 
@@ -34,8 +52,58 @@ jobs:
       - name: Unit tests (vitest)
         run: npm test
 
+      # The browser tests and the Pages upload both use this exact tree.
+      - name: Save the built site
+        uses: actions/upload-artifact@v5
+        with:
+          name: site
+          path: dist
+          include-hidden-files: true
+          retention-days: 1
+
+  e2e:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ${{ fromJSON(inputs.suite == 'full' && '[1,2,3,4]' || '[1]') }}
+    env:
+      SUITE: ${{ inputs.suite || 'smoke' }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Browsers are keyed on the lockfile (it pins the Playwright version);
+      # a cache hit only needs the system libraries.
+      - name: Cache Playwright browsers
+        id: pw-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
       - name: Install Playwright chromium
+        if: steps.pw-cache.outputs.cache-hit != 'true'
         run: npx playwright install --with-deps chromium
+
+      - name: Install Playwright system dependencies
+        if: steps.pw-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
+
+      - name: Download the built site
+        uses: actions/download-artifact@v5
+        with:
+          name: site
+          path: dist
 
       # Test the exact dist tree that will be uploaded, including Pages' SPA fallback.
       - name: Serve the built site
@@ -48,22 +116,37 @@ jobs:
           cat /tmp/preview.log
           exit 1
 
-      - name: E2E tests (playwright)
-        run: npm run test:e2e:all
+      - name: E2E tests (playwright, ${{ env.SUITE }})
+        run: |
+          if [ "$SUITE" = "full" ]; then
+            npx playwright test --shard=${{ matrix.shard }}/${{ strategy.job-total }}
+          else
+            npx playwright test --grep @smoke
+          fi
         env:
           PW_BASE_URL: http://localhost:4340
           PW_STATIC_BASE_URL: http://localhost:4340
-
-      - name: Upload validated Pages artifact
-        if: inputs.upload-pages && github.ref == 'refs/heads/astro-site'
-        uses: actions/upload-pages-artifact@v4
-        with:
-          path: dist
 
       - name: Upload playwright report on failure
         if: failure()
         uses: actions/upload-artifact@v5
         with:
-          name: playwright-report
+          name: playwright-report-${{ env.SUITE }}-${{ matrix.shard }}
           path: playwright-report/
           retention-days: 7
+
+  pages:
+    needs: [build, e2e]
+    if: inputs.upload-pages && github.ref == 'refs/heads/astro-site'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download the validated site
+        uses: actions/download-artifact@v5
+        with:
+          name: site
+          path: dist
+
+      - name: Upload validated Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: dist

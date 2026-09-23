@@ -4,7 +4,7 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 375, height: 667 }
   test.describe(`projects touch ${viewport.width}`, () => {
     test.use({ viewport, isMobile: true, hasTouch: true });
 
-    test('single column, no filter chips, readable cards and no overflow', async ({ page }) => {
+    test('single column, no filter chips, readable cards and no overflow @smoke', async ({ page }) => {
       await page.goto('/projects');
       const grid = page.locator('.swiss-grid');
       expect(await grid.evaluate((el) => getComputedStyle(el).gridTemplateColumns.split(' ').length)).toBe(1);

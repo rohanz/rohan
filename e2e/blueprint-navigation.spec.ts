@@ -16,7 +16,7 @@ async function settled(page: Page, mode: string) {
   })).toBe(mode);
 }
 
-test('boots cleanly and opens an article by clicking a workshop wall sheet', async ({ page }) => {
+test('boots cleanly and opens an article by clicking a workshop wall sheet @smoke', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
   page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()); });

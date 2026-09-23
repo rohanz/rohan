@@ -5,7 +5,7 @@
 import { test, expect } from '@playwright/test';
 import { collectErrors } from './helpers';
 
-test('play/pause a track produces no console errors', async ({ page }) => {
+test('play/pause a track produces no console errors @smoke', async ({ page }) => {
   const errs = collectErrors(page);
   await page.goto('/transit/music', { waitUntil: 'networkidle' });
   await page.waitForTimeout(1200);

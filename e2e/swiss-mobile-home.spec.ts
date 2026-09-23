@@ -24,7 +24,7 @@ for (const phone of phones) {
       isMobile: true,
     });
 
-    test('home stacks into a phone-first hero with no top bar', async ({ page }, testInfo) => {
+    test('home stacks into a phone-first hero with no top bar @smoke', async ({ page }, testInfo) => {
       const errors: string[] = [];
       page.on('pageerror', (error) => errors.push(error.message));
       page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()); });

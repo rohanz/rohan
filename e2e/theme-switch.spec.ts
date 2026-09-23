@@ -4,7 +4,7 @@ import { expect, test, devices } from '@playwright/test';
 const pref = (page: import('@playwright/test').Page) =>
   page.evaluate(() => localStorage.getItem('site:themePref'));
 
-test('default to transit preserves the current article path and stores preference', async ({ page }) => {
+test('default to transit preserves the current article path and stores preference @smoke', async ({ page }) => {
   await page.goto('/projects/careersphere');
   const switchLink = page.locator('.sw-footer [data-theme-pref="transit"]');
   await expect(switchLink).toHaveAttribute('href', '/transit/projects/careersphere');
@@ -17,7 +17,7 @@ test('default to transit preserves the current article path and stores preferenc
   await expect.poll(() => pref(page)).toBe('transit');
 });
 
-test('transit to default preserves the current path and is never captured by the ride engine', async ({ page }) => {
+test('transit to default preserves the current path and is never captured by the ride engine @smoke', async ({ page }) => {
   await page.goto('/transit/projects');
   const switchLink = page.locator('.top-bar .transit-theme-switch');
   await expect(page.locator('[data-theme-pref="default"]')).toHaveCount(1);
@@ -51,7 +51,7 @@ test('stored transit preference never auto-redirects a default entry', async ({ 
   await expect(page.locator('html')).toHaveClass(/theme-swiss/);
 });
 
-test('default and transit pages publish the expected canonicals', async ({ page }) => {
+test('default and transit pages publish the expected canonicals @smoke', async ({ page }) => {
   await page.goto('/projects/careersphere');
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
     'href',

@@ -37,7 +37,7 @@ test('reduced motion lays every testimony out with nothing rotating', async ({ p
 
 });
 
-test('about starts with h1 and keeps prose legible', async ({ page }) => {
+test('about starts with h1 and keeps prose legible @smoke', async ({ page }) => {
   await page.goto('/about');
   expect(await page.locator('main :is(h1,h2,h3)').evaluateAll((els) => els.map((el) => el.tagName))).toEqual(['H1', 'H2', 'H2', 'H2']);
   for (const selector of ['.sw-about-body', '.sw-tech-list']) {

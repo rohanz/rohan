@@ -24,7 +24,7 @@ test('phones do not download the 9MB installer or the 1.4MB demo MP3 up front', 
   expect(heavy, 'demo audio fetched before the widget is anywhere near the viewport').toEqual([]);
 });
 
-test('touch works on the interactive widgets: piano keys and the BQST drive knob', async ({ page, context }) => {
+test('touch works on the interactive widgets: piano keys and the BQST drive knob @smoke', async ({ page, context }) => {
   await page.setViewportSize(PHONE);
   const cdp = await context.newCDPSession(page);
 

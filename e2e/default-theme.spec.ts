@@ -3,7 +3,7 @@ import { expect, test, type Page } from '@playwright/test';
 const visibleCards = (page: Page) =>
   page.locator('#sw-project-grid .swiss-card:not(.hidden):not([hidden])');
 
-test('grid pills filter cards, aliases match, and all resets', async ({ page }) => {
+test('grid pills filter cards, aliases match, and all resets @smoke', async ({ page }) => {
   await page.goto('/projects', { waitUntil: 'networkidle' });
   const initial = await visibleCards(page).count();
   expect(initial).toBeGreaterThan(1);
@@ -23,7 +23,7 @@ test('grid pills filter cards, aliases match, and all resets', async ({ page }) 
   expect(await visibleCards(page).count()).toBe(initial);
 });
 
-test('qla judge completes round three with verdict and score in one result row', async ({ page }) => {
+test('qla judge completes round three with verdict and score in one result row @smoke', async ({ page }) => {
   await page.goto('/projects/quantlab-analyst', { waitUntil: 'networkidle' });
   const judge = page.locator('#qla-judge-visual');
   await expect(judge.locator('.qla-judge-guess').first()).toBeVisible();
