@@ -1,26 +1,56 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
   <style>
-    .swiss-agentic-step { stroke-opacity: .35; transition: stroke-opacity 0.3s ease; }
-    .swiss-agentic-proof { stroke-dasharray: 24; stroke-dashoffset: 24; transition: stroke-dashoffset 0.35s ease; }
+    /* Undrawn dashes sit one unit before the path start (offset 101 over a
+       100 dash) so the round cap never leaves a dot at rest.
+       The model reaches into three filings in turn, a figure lights up in each,
+       and the three threads meet in a checked answer. Same draw ease as the
+       rest of the set. */
+    .swiss-agentic-call, .swiss-agentic-join { stroke-dasharray: 100 102; stroke-dashoffset: 101; }
+    .swiss-agentic-hit { fill: var(--accent); fill-opacity: 0; stroke: none; }
+    .swiss-agentic-tick { stroke-dasharray: 100 102; stroke-dashoffset: 101; }
     @media (prefers-reduced-motion: no-preference) {
-      .swiss-card.is-hover .swiss-agentic-step { stroke-opacity: 1; transition-delay: var(--swiss-agentic-delay); }
-      .swiss-card.is-hover .swiss-agentic-proof { stroke-dashoffset: 0; transition-delay: 0.75s; }
+      .swiss-agentic-call, .swiss-agentic-join, .swiss-agentic-tick { transition: stroke-dashoffset .45s cubic-bezier(.2,.7,.2,1); }
+      .swiss-agentic-hit { transition: fill-opacity .3s ease; }
+      .swiss-card.is-hover .swiss-agentic-call { stroke-dashoffset: 0; transition-delay: var(--d); }
+      .swiss-card.is-hover .swiss-agentic-hit { fill-opacity: .9; transition-delay: calc(var(--d) + .3s); }
+      .swiss-card.is-hover .swiss-agentic-join { stroke-dashoffset: 0; transition-delay: calc(var(--d) + .4s); }
+      .swiss-card.is-hover .swiss-agentic-tick { stroke-dashoffset: 0; transition-delay: 1.05s; }
     }
-    @media (prefers-reduced-motion: reduce) { .swiss-agentic-step, .swiss-agentic-proof { transition: none; } }
   </style>
-  <g font-family="General Sans, sans-serif" font-size="10" letter-spacing="1.5" stroke="none" fill="currentColor" opacity=".55">
-    
+
+  <!-- the model -->
+  <rect x="34" y="152" width="62" height="46" rx="2"/>
+  <text x="65" y="181" text-anchor="middle" font-family="General Sans, sans-serif" font-weight="600" font-size="15" fill="currentColor" stroke="none">9B</text>
+
+  <!-- three filings, each a sheet of figures with one row the model reads -->
+  <g stroke-width="1.5">
+    <path d="M168 88h56l12 12v44h-68z M224 88v12h12"/>
+    <path d="M178 106h30M178 116h44M178 126h36M178 136h40" stroke-opacity=".35"/>
+    <path d="M168 153h56l12 12v44h-68z M224 153v12h12"/>
+    <path d="M178 171h36M178 181h44M178 191h30M178 201h40" stroke-opacity=".35"/>
+    <path d="M168 218h56l12 12v44h-68z M224 218v12h12"/>
+    <path d="M178 236h40M178 246h30M178 256h44M178 266h36" stroke-opacity=".35"/>
   </g>
-  <path d="M66 177v34h268v-34M200 211v10" stroke-opacity=".18" stroke-dasharray="3 6"/>
-  <g class="swiss-agentic-step" style="--swiss-agentic-delay: 0.00s"><rect x="40" y="117" width="52" height="60"/><path d="M92 147h15m-5-4 5 4-5 4"/></g>
-  <g class="swiss-agentic-step" style="--swiss-agentic-delay: 0.15s"><rect x="107" y="117" width="52" height="60"/><path d="M159 147h15m-5-4 5 4-5 4"/></g>
-  <g class="swiss-agentic-step" style="--swiss-agentic-delay: 0.30s"><rect x="174" y="117" width="52" height="60"/><path d="M226 147h15m-5-4 5 4-5 4"/></g>
-  <g class="swiss-agentic-step" style="--swiss-agentic-delay: 0.45s"><rect x="241" y="117" width="52" height="60"/><path d="M293 147h15m-5-4 5 4-5 4"/></g>
-  <g class="swiss-agentic-step" style="--swiss-agentic-delay: 0.60s"><rect x="308" y="117" width="52" height="60"/></g>
-  <path d="M59 138c0-9 15-9 15 0 0 5-8 5-8 11m0 7v1"/>
-  <path d="M121 132h24m-24 9h24m-24 9h16m-16 9h20"/>
-  <path d="m190 136-7 11 7 11m20-22 7 11-7 11m-8-24-4 26"/>
-  <path d="M253 137h28m-28 10h20m-20 10h24"/>
-  <path d="M322 134h24m-24 10h18m-18 10h12"/>
-  <path class="swiss-agentic-proof" d="m335 160 5 5 10-12" stroke="var(--accent)"/>
+  <rect class="swiss-agentic-hit" style="--d: 0s" x="175" y="113" width="50" height="6"/>
+  <rect class="swiss-agentic-hit" style="--d: .18s" x="175" y="188" width="36" height="6"/>
+  <rect class="swiss-agentic-hit" style="--d: .36s" x="175" y="253" width="50" height="6"/>
+
+  <!-- calls out from the model; faint rails show the route at rest -->
+  <g stroke-width="1.25" stroke-opacity=".18" stroke-dasharray="2 5">
+    <path d="M96 166C130 166 136 116 168 116"/><path d="M96 175h72"/><path d="M96 184C130 184 136 246 168 246"/>
+    <path d="M236 116C272 116 276 166 300 170"/><path d="M236 181h64"/><path d="M236 246C272 246 276 196 300 192"/>
+  </g>
+  <g stroke-width="1.5">
+    <path class="swiss-agentic-call" style="--d: 0s" pathLength="100" d="M96 166C130 166 136 116 168 116"/>
+    <path class="swiss-agentic-call" style="--d: .18s" pathLength="100" d="M96 175h72"/>
+    <path class="swiss-agentic-call" style="--d: .36s" pathLength="100" d="M96 184C130 184 136 246 168 246"/>
+    <path class="swiss-agentic-join" style="--d: 0s" pathLength="100" d="M236 116C272 116 276 166 300 170"/>
+    <path class="swiss-agentic-join" style="--d: .18s" pathLength="100" d="M236 181h64"/>
+    <path class="swiss-agentic-join" style="--d: .36s" pathLength="100" d="M236 246C272 246 276 196 300 192"/>
+  </g>
+
+  <!-- the answer, checked -->
+  <rect x="300" y="156" width="66" height="50" rx="2"/>
+  <path d="M312 172h26M312 182h18" stroke-width="1.5" stroke-opacity=".5"/>
+  <path class="swiss-agentic-tick" pathLength="100" d="m336 190 7 7 14-17" stroke="var(--accent)" stroke-width="2.5"/>
 </svg>

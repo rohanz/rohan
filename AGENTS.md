@@ -43,7 +43,12 @@ title, summary, image, technologies, order, unlisted). Astro reads them as a
 collection; **blueprint gets them at build time** via `tools/build-blueprint.mjs`,
 which strips frontmatter into `themes/blueprint/src/content/articles/` and
 generates `themes/blueprint/src/projects.generated.js` (both gitignored —
-never edit them). `unlisted: true` articles are excluded from grids/workshop
+never edit them). The project drawings (`src/drawings/swiss/`) are the
+picture of a project in every theme: inline and animated in classic and
+transit (article header + transit map cards), and frozen by the same script
+into `themes/blueprint/public/drawings/<slug>[.inverse].svg` (gitignored;
+played state, blueprint palette) for the workshop wall and article reader.
+The `image` frontmatter now only feeds share cards / og:image. `unlisted: true` articles are excluded from grids/workshop
 wall/prev-next everywhere but stay reachable by URL and cross-links.
 
 Adding a project: add the md file + assets under `public/assets/...`, set
@@ -223,13 +228,26 @@ sits there). Hover rules key on `.swiss-card.is-hover`, gated by
 ease `cubic-bezier(.2,.7,.2,1)` (patentease bar, careersphere routes,
 analyst ticks). Line draws use `stroke-dasharray: 100` with
 `pathLength="100"` on each path so the whole ease plays out. Parts that
-rotate (bqst) transition a registered custom property (`@property
---bqst-angle` in `swiss-cards.css`) instead of `transform` so they never
-soften mid-motion; on hover they also take the accent. Text must not move
-on hover (opacity via `fill-opacity`/`stroke-opacity`, not `opacity`).
+move, rotate or scale (bqst dials, atlas pins, patentease bar, systems
+depth, yourcast playhead, analyst stamp, this-website split) transition a
+registered custom property (the `@property` block in `swiss-cards.css`;
+inline SVG `<style>` cannot register one) instead of `transform`, so they
+redraw as vectors and never soften then re-sharpen. Fades use
+`fill-opacity`/`stroke-opacity` (or a registered 0..1 property that
+multiplies each element's own opacity), never `opacity`, for the same
+reason. Undrawn dashes rest at `stroke-dasharray: 100 102;
+stroke-dashoffset: 101` so a round cap leaves no dot. A fill that fades in
+must rest on `transparent`, not `none` (none cannot interpolate).
 A vitest (`src/lib/swiss/drawings.test.ts`) fails if a project has no
-drawing. The article header shows the same drawing large; it plays once on
-arrival and again on hover.
+drawing; `drawing-frame.test.ts` fails if blueprint's freezer can't resolve
+one (use only the colour tokens above). Header centring offsets live in
+`src/lib/swiss/drawing-frame.ts`; a new animated property goes in
+`src/styles/drawing-properties.css`. The article header shows the same drawing large, in the inverted
+(hovered-card) colours, played once on arrival; `headerViewBoxFor(slug)` in
+`src/lib/swiss/drawings.ts` holds a measured per-drawing vertical offset
+that centres it (re-measure if a drawing changes shape). Dev builds also
+list unlisted projects in the grid with a dashed "unlisted" tag; production
+never does.
 
 **Widgets in articles.** Canvas colours come from `swissPalette(accent)` in
 `src/lib/visuals/themes.ts`, rebuilt from the live `--accent` on every
@@ -237,6 +255,30 @@ page load; legends must read the same palette values (never hardcode a
 hex in `swiss-widgets.css`; use `--accent`, `--w-good`, `color-mix`).
 Canvases are sized by `sizeCanvasWithDpr`, which pins the CSS box to whole
 pixels so text stays crisp.
+
+Widget rules (Rohan's): show only what's needed to understand the widget;
+the paragraph before every `<div id>` must say what it shows and what to
+do; don't add widgets for the sake of it (fold ideas into one); controls
+wrap, never scroll sideways. Explorable beats a click-through stepper
+(pick a point, flip a mode, drag a slider). Buttons: actions (next, start,
+order, guess) wear the accent wash, back/restart are solid ink, view
+switches stay paper with an accent border when selected; one rule in
+`swiss-widgets.css`. Sliders are Swiss-styled (hairline track, accent fill,
+square thumb, 44px hit area). Newer widgets live as shared modules used by
+every theme (`src/lib/visuals/qla2-widgets.ts`, `qls-widgets.ts`,
+`mle-replay.ts`, `room-run.ts`, each with its own stylesheet); older ones
+(bqst, chord, analyst, research) are still duplicated between
+`src/scripts/article-widgets.ts` (classic + transit) and
+`themes/blueprint/src/article-widgets.ts`, so fixes there land twice until
+they are consolidated. `src/scripts/default/*` is the retired classic
+theme's code, no longer loaded. Every number a widget shows must come from
+the project's own repo or data file.
+
+**Motion.** `--dur-fade` (250ms) and `--ease-house` in `swiss.css` are the
+single source for colour fades; the music row fades through registered
+colour tokens (`--t-ink` etc.) and `music-viz.ts` reads `--dur-fade` so
+the canvases move in step. Per-frame audio readouts use the frame
+timestamp and `AudioContext.getOutputTimestamp()`, not `currentTime`.
 
 **Accent.** `src/lib/swiss/accents.ts` (`DEFAULT_ACCENT`; 44 candidates
 with contrast at `/swatches`, unlisted + noindex). `tintOf()` derives

@@ -23,7 +23,7 @@ test('grid pills filter cards, aliases match, and all resets', async ({ page }) 
   expect(await visibleCards(page).count()).toBe(initial);
 });
 
-test('qla judge completes round three with verdict and separate score', async ({ page }) => {
+test('qla judge completes round three with verdict and score in one result row', async ({ page }) => {
   await page.goto('/projects/quantlab-analyst', { waitUntil: 'networkidle' });
   const judge = page.locator('#qla-judge-visual');
   await expect(judge.locator('.qla-judge-guess').first()).toBeVisible();
@@ -32,7 +32,8 @@ test('qla judge completes round three with verdict and separate score', async ({
     if (round < 2) await judge.getByRole('button', { name: 'next round' }).click();
   }
   await expect(judge.locator('.qla-judge-feedback')).toContainText(/Correct|Not this time/);
-  await expect(judge.locator('.qla-judge-score')).toContainText(/You went \d\/3\./);
+  await expect(judge.locator('.qla-judge-feedback')).toContainText(/You went \d\/3\./);
+  await expect(judge.getByRole('button', { name: 'play again' })).toBeVisible();
   await expect(judge).toContainText('all rounds played');
 });
 

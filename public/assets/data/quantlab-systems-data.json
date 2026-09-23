@@ -1,0 +1,791 @@
+{
+ "auditLog": [
+  {
+   "ts": "2026-07-07T07:10:57.375451+00:00",
+   "log": "risk_audit.jsonl",
+   "book": "service smoke test",
+   "symbol": "SPY",
+   "qty": 1,
+   "price": 600.0,
+   "approved": true,
+   "reasons": []
+  },
+  {
+   "ts": "2026-07-07T07:10:58.099448+00:00",
+   "log": "risk_audit.jsonl",
+   "book": "service smoke test",
+   "symbol": "AAPL",
+   "qty": 1,
+   "price": 200.0,
+   "approved": false,
+   "reasons": [
+    "AAPL is not on the allowed-symbol list"
+   ]
+  },
+  {
+   "ts": "2026-07-08T03:00:57.659302+00:00",
+   "log": "risk_momentum.jsonl",
+   "book": "momentum",
+   "symbol": "CIEN",
+   "qty": 5,
+   "price": 422.46,
+   "approved": true,
+   "reasons": []
+  },
+  {
+   "ts": "2026-07-08T03:00:57.659654+00:00",
+   "log": "risk_momentum.jsonl",
+   "book": "momentum",
+   "symbol": "COHR",
+   "qty": 7,
+   "price": 333.36,
+   "approved": true,
+   "reasons": []
+  },
+  {
+   "ts": "2026-07-08T03:00:57.659706+00:00",
+   "log": "risk_momentum.jsonl",
+   "book": "momentum",
+   "symbol": "GLW",
+   "qty": 12,
+   "price": 196.79,
+   "approved": true,
+   "reasons": []
+  },
+  {
+   "ts": "2026-07-08T03:00:57.659745+00:00",
+   "log": "risk_momentum.jsonl",
+   "book": "momentum",
+   "symbol": "INTC",
+   "qty": 20,
+   "price": 120.35,
+   "approved": true,
+   "reasons": []
+  },
+  {
+   "ts": "2026-07-08T03:00:57.659780+00:00",
+   "log": "risk_momentum.jsonl",
+   "book": "momentum",
+   "symbol": "LITE",
+   "qty": 3,
+   "price": 728.32,
+   "approved": true,
+   "reasons": []
+  },
+  {
+   "ts": "2026-07-08T03:00:57.659814+00:00",
+   "log": "risk_momentum.jsonl",
+   "book": "momentum",
+   "symbol": "MU",
+   "qty": 2,
+   "price": 975.56,
+   "approved": true,
+   "reasons": []
+  },
+  {
+   "ts": "2026-07-08T03:00:57.659849+00:00",
+   "log": "risk_momentum.jsonl",
+   "book": "momentum",
+   "symbol": "SNDK",
+   "qty": 1,
+   "price": 1745.0,
+   "approved": true,
+   "reasons": []
+  },
+  {
+   "ts": "2026-07-08T03:00:57.659886+00:00",
+   "log": "risk_momentum.jsonl",
+   "book": "momentum",
+   "symbol": "STX",
+   "qty": 3,
+   "price": 820.16,
+   "approved": true,
+   "reasons": []
+  },
+  {
+   "ts": "2026-07-08T03:00:57.659927+00:00",
+   "log": "risk_momentum.jsonl",
+   "book": "momentum",
+   "symbol": "TER",
+   "qty": 6,
+   "price": 369.09,
+   "approved": true,
+   "reasons": []
+  },
+  {
+   "ts": "2026-07-08T03:00:57.659961+00:00",
+   "log": "risk_momentum.jsonl",
+   "book": "momentum",
+   "symbol": "WDC",
+   "qty": 4,
+   "price": 539.0,
+   "approved": true,
+   "reasons": []
+  },
+  {
+   "ts": "2026-07-08T03:00:57.660000+00:00",
+   "log": "risk_ma.jsonl",
+   "book": "ma_spy",
+   "symbol": "SPY",
+   "qty": 33,
+   "price": 744.78,
+   "approved": false,
+   "reasons": [
+    "symbol exposure 24578 would exceed cap 6250"
+   ]
+  },
+  {
+   "ts": "2026-07-08T03:01:21.092061+00:00",
+   "log": "risk_ma.jsonl",
+   "book": "ma_spy",
+   "symbol": "SPY",
+   "qty": 33,
+   "price": 744.78,
+   "approved": false,
+   "reasons": [
+    "symbol exposure 24578 would exceed cap 6250"
+   ]
+  },
+  {
+   "ts": "2026-07-08T03:01:39.981152+00:00",
+   "log": "risk_momentum.jsonl",
+   "book": "momentum",
+   "symbol": "CIEN",
+   "qty": 5,
+   "price": 422.46,
+   "approved": true,
+   "reasons": []
+  },
+  {
+   "ts": "2026-07-08T03:01:39.981577+00:00",
+   "log": "risk_momentum.jsonl",
+   "book": "momentum",
+   "symbol": "COHR",
+   "qty": 7,
+   "price": 333.36,
+   "approved": true,
+   "reasons": []
+  },
+  {
+   "ts": "2026-07-08T03:01:39.981628+00:00",
+   "log": "risk_momentum.jsonl",
+   "book": "momentum",
+   "symbol": "GLW",
+   "qty": 12,
+   "price": 196.79,
+   "approved": true,
+   "reasons": []
+  },
+  {
+   "ts": "2026-07-08T03:01:39.981667+00:00",
+   "log": "risk_momentum.jsonl",
+   "book": "momentum",
+   "symbol": "INTC",
+   "qty": 20,
+   "price": 120.35,
+   "approved": true,
+   "reasons": []
+  },
+  {
+   "ts": "2026-07-08T03:01:39.981700+00:00",
+   "log": "risk_momentum.jsonl",
+   "book": "momentum",
+   "symbol": "LITE",
+   "qty": 3,
+   "price": 728.32,
+   "approved": true,
+   "reasons": []
+  },
+  {
+   "ts": "2026-07-08T03:01:39.981735+00:00",
+   "log": "risk_momentum.jsonl",
+   "book": "momentum",
+   "symbol": "MU",
+   "qty": 2,
+   "price": 975.56,
+   "approved": true,
+   "reasons": []
+  },
+  {
+   "ts": "2026-07-08T03:01:39.981770+00:00",
+   "log": "risk_momentum.jsonl",
+   "book": "momentum",
+   "symbol": "SNDK",
+   "qty": 1,
+   "price": 1745.0,
+   "approved": true,
+   "reasons": []
+  },
+  {
+   "ts": "2026-07-08T03:01:39.981808+00:00",
+   "log": "risk_momentum.jsonl",
+   "book": "momentum",
+   "symbol": "STX",
+   "qty": 3,
+   "price": 820.16,
+   "approved": true,
+   "reasons": []
+  },
+  {
+   "ts": "2026-07-08T03:01:39.981849+00:00",
+   "log": "risk_momentum.jsonl",
+   "book": "momentum",
+   "symbol": "TER",
+   "qty": 6,
+   "price": 369.09,
+   "approved": true,
+   "reasons": []
+  },
+  {
+   "ts": "2026-07-08T03:01:39.981885+00:00",
+   "log": "risk_momentum.jsonl",
+   "book": "momentum",
+   "symbol": "WDC",
+   "qty": 4,
+   "price": 539.0,
+   "approved": true,
+   "reasons": []
+  },
+  {
+   "ts": "2026-07-08T03:01:39.981922+00:00",
+   "log": "risk_ma.jsonl",
+   "book": "ma_spy",
+   "symbol": "SPY",
+   "qty": 33,
+   "price": 744.78,
+   "approved": false,
+   "reasons": [
+    "symbol exposure 24578 would exceed cap 6250"
+   ]
+  },
+  {
+   "ts": "2026-07-08T03:02:18.968956+00:00",
+   "log": "risk_ma.jsonl",
+   "book": "ma_spy",
+   "symbol": "SPY",
+   "qty": 33,
+   "price": 744.78,
+   "approved": true,
+   "reasons": []
+  },
+  {
+   "ts": "2026-07-09T10:49:31.141757+00:00",
+   "log": "risk_momentum.jsonl",
+   "book": "momentum",
+   "symbol": "CIEN",
+   "qty": 5,
+   "price": 422.46,
+   "approved": true,
+   "reasons": []
+  },
+  {
+   "ts": "2026-07-09T10:49:31.142718+00:00",
+   "log": "risk_momentum.jsonl",
+   "book": "momentum",
+   "symbol": "COHR",
+   "qty": 7,
+   "price": 333.36,
+   "approved": true,
+   "reasons": []
+  },
+  {
+   "ts": "2026-07-09T10:49:31.142811+00:00",
+   "log": "risk_momentum.jsonl",
+   "book": "momentum",
+   "symbol": "GLW",
+   "qty": 12,
+   "price": 196.79,
+   "approved": true,
+   "reasons": []
+  },
+  {
+   "ts": "2026-07-09T10:49:31.142865+00:00",
+   "log": "risk_momentum.jsonl",
+   "book": "momentum",
+   "symbol": "INTC",
+   "qty": 20,
+   "price": 120.35,
+   "approved": true,
+   "reasons": []
+  },
+  {
+   "ts": "2026-07-09T10:49:31.142910+00:00",
+   "log": "risk_momentum.jsonl",
+   "book": "momentum",
+   "symbol": "LITE",
+   "qty": 3,
+   "price": 728.32,
+   "approved": true,
+   "reasons": []
+  },
+  {
+   "ts": "2026-07-09T10:49:31.142951+00:00",
+   "log": "risk_momentum.jsonl",
+   "book": "momentum",
+   "symbol": "MU",
+   "qty": 2,
+   "price": 975.56,
+   "approved": true,
+   "reasons": []
+  },
+  {
+   "ts": "2026-07-09T10:49:31.142991+00:00",
+   "log": "risk_momentum.jsonl",
+   "book": "momentum",
+   "symbol": "SNDK",
+   "qty": 1,
+   "price": 1745.0,
+   "approved": true,
+   "reasons": []
+  },
+  {
+   "ts": "2026-07-09T10:49:31.143032+00:00",
+   "log": "risk_momentum.jsonl",
+   "book": "momentum",
+   "symbol": "STX",
+   "qty": 3,
+   "price": 820.16,
+   "approved": true,
+   "reasons": []
+  },
+  {
+   "ts": "2026-07-09T10:49:31.143077+00:00",
+   "log": "risk_momentum.jsonl",
+   "book": "momentum",
+   "symbol": "TER",
+   "qty": 6,
+   "price": 369.09,
+   "approved": true,
+   "reasons": []
+  },
+  {
+   "ts": "2026-07-09T10:49:31.143116+00:00",
+   "log": "risk_momentum.jsonl",
+   "book": "momentum",
+   "symbol": "WDC",
+   "qty": 4,
+   "price": 539.0,
+   "approved": true,
+   "reasons": []
+  },
+  {
+   "ts": "2026-07-09T10:49:31.143195+00:00",
+   "log": "risk_lowvol.jsonl",
+   "book": "lowvol",
+   "symbol": "ATO",
+   "qty": 14,
+   "price": 176.87,
+   "approved": true,
+   "reasons": []
+  },
+  {
+   "ts": "2026-07-09T10:49:31.143386+00:00",
+   "log": "risk_lowvol.jsonl",
+   "book": "lowvol",
+   "symbol": "BRK-B",
+   "qty": 4,
+   "price": 507.78,
+   "approved": true,
+   "reasons": []
+  },
+  {
+   "ts": "2026-07-09T10:49:31.143445+00:00",
+   "log": "risk_lowvol.jsonl",
+   "book": "lowvol",
+   "symbol": "DUK",
+   "qty": 19,
+   "price": 129.6,
+   "approved": true,
+   "reasons": []
+  },
+  {
+   "ts": "2026-07-09T10:49:31.143487+00:00",
+   "log": "risk_lowvol.jsonl",
+   "book": "lowvol",
+   "symbol": "EVRG",
+   "qty": 28,
+   "price": 88.13,
+   "approved": true,
+   "reasons": []
+  },
+  {
+   "ts": "2026-07-09T10:49:31.143523+00:00",
+   "log": "risk_lowvol.jsonl",
+   "book": "lowvol",
+   "symbol": "FE",
+   "qty": 51,
+   "price": 48.53,
+   "approved": true,
+   "reasons": []
+  },
+  {
+   "ts": "2026-07-09T10:49:31.143557+00:00",
+   "log": "risk_lowvol.jsonl",
+   "book": "lowvol",
+   "symbol": "L",
+   "qty": 21,
+   "price": 116.52,
+   "approved": true,
+   "reasons": []
+  },
+  {
+   "ts": "2026-07-09T10:49:31.143590+00:00",
+   "log": "risk_lowvol.jsonl",
+   "book": "lowvol",
+   "symbol": "LNT",
+   "qty": 32,
+   "price": 78.03,
+   "approved": true,
+   "reasons": []
+  },
+  {
+   "ts": "2026-07-09T10:49:31.143626+00:00",
+   "log": "risk_lowvol.jsonl",
+   "book": "lowvol",
+   "symbol": "NXP",
+   "qty": 173,
+   "price": 14.41,
+   "approved": true,
+   "reasons": []
+  },
+  {
+   "ts": "2026-07-09T10:49:31.143659+00:00",
+   "log": "risk_lowvol.jsonl",
+   "book": "lowvol",
+   "symbol": "REG",
+   "qty": 30,
+   "price": 80.96,
+   "approved": true,
+   "reasons": []
+  },
+  {
+   "ts": "2026-07-09T10:49:31.143690+00:00",
+   "log": "risk_lowvol.jsonl",
+   "book": "lowvol",
+   "symbol": "WEC",
+   "qty": 21,
+   "price": 118.83,
+   "approved": true,
+   "reasons": []
+  },
+  {
+   "ts": "2026-07-09T10:49:31.143724+00:00",
+   "log": "risk_ma_spy.jsonl",
+   "book": "ma_spy",
+   "symbol": "SPY",
+   "qty": 33,
+   "price": 744.78,
+   "approved": true,
+   "reasons": []
+  },
+  {
+   "ts": "2026-07-09T10:49:31.143836+00:00",
+   "log": "risk_inout.jsonl",
+   "book": "inout",
+   "symbol": "QQQ",
+   "qty": 35,
+   "price": 711.44,
+   "approved": true,
+   "reasons": []
+  }
+ ],
+ "books": [
+  {
+   "name": "momentum",
+   "label": "momentum (12-1, top 10)",
+   "cadence": "monthly",
+   "budget": 25000.0,
+   "symbolCap": 6250.0,
+   "grossCap": 27500.0,
+   "dailyLoss": 750.0,
+   "universe": "all 500 S&P names",
+   "holdings": [
+    {
+     "symbol": "CIEN",
+     "qty": 5,
+     "price": 422.46,
+     "notional": 2112.3
+    },
+    {
+     "symbol": "COHR",
+     "qty": 7,
+     "price": 333.36,
+     "notional": 2333.52
+    },
+    {
+     "symbol": "GLW",
+     "qty": 12,
+     "price": 196.79,
+     "notional": 2361.48
+    },
+    {
+     "symbol": "INTC",
+     "qty": 20,
+     "price": 120.35,
+     "notional": 2407.0
+    },
+    {
+     "symbol": "LITE",
+     "qty": 3,
+     "price": 728.32,
+     "notional": 2184.96
+    },
+    {
+     "symbol": "MU",
+     "qty": 2,
+     "price": 975.56,
+     "notional": 1951.12
+    },
+    {
+     "symbol": "SNDK",
+     "qty": 1,
+     "price": 1745.0,
+     "notional": 1745.0
+    },
+    {
+     "symbol": "STX",
+     "qty": 3,
+     "price": 820.16,
+     "notional": 2460.48
+    },
+    {
+     "symbol": "TER",
+     "qty": 6,
+     "price": 369.09,
+     "notional": 2214.54
+    },
+    {
+     "symbol": "WDC",
+     "qty": 4,
+     "price": 539.0,
+     "notional": 2156.0
+    }
+   ],
+   "gross": 21926.4
+  },
+  {
+   "name": "lowvol",
+   "label": "low volatility (calmest 10)",
+   "cadence": "monthly",
+   "budget": 25000.0,
+   "symbolCap": 6250.0,
+   "grossCap": 27500.0,
+   "dailyLoss": 750.0,
+   "universe": "all 500 S&P names",
+   "holdings": [
+    {
+     "symbol": "ATO",
+     "qty": 14,
+     "price": 176.87,
+     "notional": 2476.18
+    },
+    {
+     "symbol": "BRK-B",
+     "qty": 4,
+     "price": 507.78,
+     "notional": 2031.12
+    },
+    {
+     "symbol": "DUK",
+     "qty": 19,
+     "price": 129.6,
+     "notional": 2462.4
+    },
+    {
+     "symbol": "EVRG",
+     "qty": 28,
+     "price": 88.13,
+     "notional": 2467.64
+    },
+    {
+     "symbol": "FE",
+     "qty": 51,
+     "price": 48.53,
+     "notional": 2475.03
+    },
+    {
+     "symbol": "L",
+     "qty": 21,
+     "price": 116.52,
+     "notional": 2446.92
+    },
+    {
+     "symbol": "LNT",
+     "qty": 32,
+     "price": 78.03,
+     "notional": 2496.96
+    },
+    {
+     "symbol": "NXP",
+     "qty": 173,
+     "price": 14.41,
+     "notional": 2492.93
+    },
+    {
+     "symbol": "REG",
+     "qty": 30,
+     "price": 80.96,
+     "notional": 2428.8
+    },
+    {
+     "symbol": "WEC",
+     "qty": 21,
+     "price": 118.83,
+     "notional": 2495.43
+    }
+   ],
+   "gross": 24273.41
+  },
+  {
+   "name": "ma_spy",
+   "label": "moving-average trend on SPY",
+   "cadence": "daily",
+   "budget": 25000.0,
+   "symbolCap": 27500.0,
+   "grossCap": 27500.0,
+   "dailyLoss": 750.0,
+   "universe": "SPY only",
+   "holdings": [
+    {
+     "symbol": "SPY",
+     "qty": 33,
+     "price": 744.78,
+     "notional": 24577.74
+    }
+   ],
+   "gross": 24577.74
+  },
+  {
+   "name": "inout",
+   "label": "In & Out (the cautionary exhibit)",
+   "cadence": "daily",
+   "budget": 25000.0,
+   "symbolCap": 27500.0,
+   "grossCap": 27500.0,
+   "dailyLoss": 750.0,
+   "universe": "QQQ or IEF",
+   "holdings": [
+    {
+     "symbol": "QQQ",
+     "qty": 35,
+     "price": 711.44,
+     "notional": 24900.4
+    }
+   ],
+   "gross": 24900.4
+  }
+ ],
+ "netted": [
+  {
+   "symbol": "ATO",
+   "qty": 14,
+   "price": 176.87
+  },
+  {
+   "symbol": "BRK-B",
+   "qty": 4,
+   "price": 507.78
+  },
+  {
+   "symbol": "CIEN",
+   "qty": 5,
+   "price": 422.46
+  },
+  {
+   "symbol": "COHR",
+   "qty": 7,
+   "price": 333.36
+  },
+  {
+   "symbol": "DUK",
+   "qty": 19,
+   "price": 129.6
+  },
+  {
+   "symbol": "EVRG",
+   "qty": 28,
+   "price": 88.13
+  },
+  {
+   "symbol": "FE",
+   "qty": 51,
+   "price": 48.53
+  },
+  {
+   "symbol": "GLW",
+   "qty": 12,
+   "price": 196.79
+  },
+  {
+   "symbol": "INTC",
+   "qty": 20,
+   "price": 120.35
+  },
+  {
+   "symbol": "L",
+   "qty": 21,
+   "price": 116.52
+  },
+  {
+   "symbol": "LITE",
+   "qty": 3,
+   "price": 728.32
+  },
+  {
+   "symbol": "LNT",
+   "qty": 32,
+   "price": 78.03
+  },
+  {
+   "symbol": "MU",
+   "qty": 2,
+   "price": 975.56
+  },
+  {
+   "symbol": "NXP",
+   "qty": 173,
+   "price": 14.41
+  },
+  {
+   "symbol": "QQQ",
+   "qty": 35,
+   "price": 711.44
+  },
+  {
+   "symbol": "REG",
+   "qty": 30,
+   "price": 80.96
+  },
+  {
+   "symbol": "SNDK",
+   "qty": 1,
+   "price": 1745.0
+  },
+  {
+   "symbol": "SPY",
+   "qty": 33,
+   "price": 744.78
+  },
+  {
+   "symbol": "STX",
+   "qty": 3,
+   "price": 820.16
+  },
+  {
+   "symbol": "TER",
+   "qty": 6,
+   "price": 369.09
+  },
+  {
+   "symbol": "WDC",
+   "qty": 4,
+   "price": 539.0
+  },
+  {
+   "symbol": "WEC",
+   "qty": 21,
+   "price": 118.83
+  }
+ ],
+ "snapshotTs": "2026-07-09T10:49:31.143956+00:00"
+}

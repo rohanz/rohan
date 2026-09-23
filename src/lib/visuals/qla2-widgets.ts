@@ -17,8 +17,9 @@ interface Episode {
   question: string;
   steps: EpisodeStep[];
   answer: string;
-  verdict: { pass: boolean; total: number; grounded: boolean };
+  verdict: { pass: boolean; total: number; grounded: boolean; components?: EpisodeComponents };
 }
+interface EpisodeComponents { answer: number; validity: number; efficiency: number; grounding: number }
 interface CascadeRow { belief: string; experiment: string; verdict: string }
 interface Qla2Data {
   ladder: Record<string, Record<string, number>>;
@@ -92,35 +93,86 @@ function observeCanvas(canvas: HTMLCanvasElement, redraw: () => void, cleanups: 
   cleanups.push(() => observer.disconnect());
 }
 
+// The six tools are the model's only way to touch the data. Listed in the
+// order the diagram draws them; names match the environment's schemas.
+const TOOLS: Array<{ name: string; does: string }> = [
+  { name: 'get_fundamentals', does: 'a company’s reported numbers' },
+  { name: 'fundamental_asof', does: 'what was known on a date' },
+  { name: 'get_prices', does: 'daily price history' },
+  { name: 'price_stats', does: 'return and volatility' },
+  { name: 'screen', does: 'rank every company by a metric' },
+  { name: 'compute', does: 'arithmetic on literal numbers only' },
+];
+// Weights from the reward function (quantlab/reward.py).
+const REWARD_PARTS: Array<{ key: keyof EpisodeComponents; label: string; weight: number }> = [
+  { key: 'answer', label: 'right answer', weight: 0.7 },
+  { key: 'validity', label: 'well-formed calls', weight: 0.1 },
+  { key: 'efficiency', label: 'no wasted calls', weight: 0.1 },
+  { key: 'grounding', label: 'answer found in the evidence', weight: 0.1 },
+];
+
 function initEpisode(node: HTMLElement, episodes: Episode[], options: WidgetOptions, cleanups: Array<() => void>) {
-  const body = shell(node, 'inside one episode', 'watch the model answer one real question, step by step');
+  const body = shell(node, 'how an answer gets made', 'a real question, stepped through the system');
   applyPalette(body, options.palette());
   const picker = el('div', 'qla2-episode-picker');
   picker.setAttribute('role', 'group');
-  picker.setAttribute('aria-label', 'Choose transcript');
+  picker.setAttribute('aria-label', 'Choose a question');
   const pills = episodes.map((episode) => {
     const b = button(episode.label, 'qla-btn qla2-mode-btn');
     picker.append(b);
     return b;
   });
-  const description = el('p', 'qla2-description');
   const question = el('p', 'qla2-question');
-  const storyLabel = el('div', 'qla2-zone-label', 'what the model did');
+  const description = el('p', 'qla2-description');
+
+  // The model's six tools. The one being called lights up as the episode steps.
+  const system = el('div', 'qla2-system');
+  const toolBox = el('div', 'qla2-sys-tools');
+  const toolNodes = new Map<string, HTMLElement>();
+  TOOLS.forEach((tool) => {
+    const t = el('div', 'qla2-sys-tool');
+    t.append(el('span', 'qla2-sys-tool-name', tool.name.replace(/_/g, ' ')));
+    t.title = tool.does;
+    toolNodes.set(tool.name, t);
+    toolBox.append(t);
+  });
+  const toolLabel = el('span', 'qla2-sys-label', 'the model’s six tools, its only way into 12.5M facts from SEC filings');
+  const toolBand = el('div', 'qla2-sys-band');
+  toolBand.append(toolLabel, toolBox);
+  system.append(toolBand);
+
+  const controls = el('div', 'qla2-step-controls');
+  const back = button('back', 'qla-btn qla2-back');
+  const next = button('next step', 'qla-btn qla2-next');
+  const counter = el('span', 'qla2-step-count');
+  controls.append(back, next, counter);
+
   const story = el('ol', 'qla2-story');
   story.setAttribute('aria-live', 'polite');
-  const outcomeLabel = el('div', 'qla2-zone-label', 'its answer');
   const outcome = el('div', 'qla2-outcome');
-  body.append(picker, description, question, storyLabel, story, outcomeLabel, outcome);
+  const reward = el('div', 'qla2-reward');
+  body.append(picker, question, description, system, controls, story, outcome, reward);
 
   let selected = 0;
+  let shown = 0; // steps revealed; steps.length + 1 means the answer is scored
   const render = () => {
     const episode = episodes[selected];
+    const last = episode.steps.length + 1;
     pills.forEach((b, i) => { const on = i === selected; b.classList.toggle('is-active', on); b.setAttribute('aria-pressed', String(on)); });
-    description.textContent = episode.description;
     question.textContent = episode.question;
+    description.textContent = episode.description;
+
+    const active = shown >= 1 && shown <= episode.steps.length ? episode.steps[shown - 1].tool : null;
+    const used = new Set(episode.steps.slice(0, Math.min(shown, episode.steps.length)).map((step) => step.tool));
+    toolNodes.forEach((t, name) => {
+      t.classList.toggle('is-active', name === active);
+      t.classList.toggle('is-used', used.has(name) && name !== active);
+    });
+    system.classList.toggle('is-calling', active !== null);
+
     story.textContent = '';
-    episode.steps.forEach((step) => {
-      const item = el('li', 'qla2-step');
+    episode.steps.slice(0, Math.min(shown, episode.steps.length)).forEach((step, i) => {
+      const item = el('li', i === shown - 1 ? 'qla2-step is-current' : 'qla2-step');
       item.append(
         el('span', 'qla2-tool', step.tool.replace(/_/g, ' ')),
         el('span', 'qla2-step-what', step.what),
@@ -128,27 +180,53 @@ function initEpisode(node: HTMLElement, episodes: Episode[], options: WidgetOpti
       );
       story.append(item);
     });
+
     outcome.textContent = '';
-    const chip = el('span', episode.verdict.pass ? 'qla2-verdict is-pass' : 'qla2-verdict is-fail',
-      episode.verdict.pass ? 'verified' : 'wrong answer');
-    const answer = el('code', 'qla2-final', episode.answer);
-    const note = el('span', 'qla2-outcome-note',
-      episode.verdict.pass
-        ? `checked against the filings by code, not by a human · scored ${episode.verdict.total.toFixed(2)} of 1`
-        : `the lookups were real, but the final arithmetic went wrong · scored ${episode.verdict.total.toFixed(2)} of 1`);
-    outcome.append(answer, chip, note);
+    reward.textContent = '';
+    outcome.hidden = reward.hidden = shown < last;
+    if (shown >= last) {
+      const chip = el('span', episode.verdict.pass ? 'qla2-verdict is-pass' : 'qla2-verdict is-fail',
+        episode.verdict.pass ? 'verified' : 'wrong answer');
+      outcome.append(el('span', 'qla2-zone-label', 'its answer'), el('code', 'qla2-final', episode.answer), chip);
+      const components = episode.verdict.components;
+      reward.append(el('span', 'qla2-zone-label', `how it was scored · ${episode.verdict.total.toFixed(2)} of 1`));
+      REWARD_PARTS.forEach((part) => {
+        const value = components ? components[part.key] : (episode.verdict.pass ? 1 : 0);
+        const row = el('div', value >= 1 ? 'qla2-reward-row is-full' : value > 0 ? 'qla2-reward-row is-part' : 'qla2-reward-row is-zero');
+        const bar = el('span', 'qla2-reward-bar');
+        const fill = el('span', 'qla2-reward-fill');
+        fill.style.width = `${Math.max(0, Math.min(1, value)) * 100}%`;
+        bar.append(fill);
+        row.style.setProperty('--qla2-weight', String(part.weight));
+        row.append(el('span', 'qla2-reward-label', part.label), bar,
+          el('span', 'qla2-reward-points', `${(value * part.weight).toFixed(2)} / ${part.weight.toFixed(1)}`));
+        reward.append(row);
+      });
+      if (!episode.verdict.pass) {
+        reward.append(el('p', 'qla2-reward-note',
+          'The calls were valid and nearly efficient, but the final number did not match the answer computed from the filings and could not be traced to the evidence, so the two parts that matter pay nothing.'));
+      }
+    }
+
+    back.disabled = shown === 0;
+    next.disabled = shown >= last;
+    next.textContent = shown === 0 ? 'start' : shown === episode.steps.length ? 'score the answer' : shown >= last ? 'done' : 'next step';
+    counter.textContent = shown === 0 ? `${episode.steps.length} tool call${episode.steps.length === 1 ? '' : 's'}`
+      : shown >= last ? 'scored' : `call ${shown} of ${episode.steps.length}`;
   };
-  pills.forEach((b, i) => b.addEventListener('click', () => { selected = i; render(); }));
+  pills.forEach((b, i) => b.addEventListener('click', () => { selected = i; shown = 0; render(); }));
+  back.addEventListener('click', () => { shown = Math.max(0, shown - 1); render(); });
+  next.addEventListener('click', () => { shown += 1; render(); });
   if (options.onThemeChange) cleanups.push(options.onThemeChange(() => applyPalette(body, options.palette())));
   render();
 }
 
 function initLadder(node: HTMLElement, ladder: Qla2Data['ladder'], options: WidgetOptions, cleanups: Array<() => void>) {
-  const body = shell(node, 'the training ladder', 'the honest numbers, next to what the broken evaluation setup originally reported');
+  const body = shell(node, 'the training ladder', 'the corrected numbers, next to what the broken evaluation setup first reported');
   applyPalette(body, options.palette());
   const toggle = el('div', 'qlf-mode-toggle');
   toggle.setAttribute('role', 'group'); toggle.setAttribute('aria-label', 'Evaluation view');
-  const labels: Record<string, string> = { honest_val: 'the honest ladder', unseen_templates: 'what I almost published', val: 'what was recorded' };
+  const labels: Record<string, string> = { honest_val: 'what it really scored', unseen_templates: 'what I almost published', val: 'what was recorded' };
   const captions: Record<string, string> = {
     honest_val: 'Measured through the rebuilt byte-faithful harness: base 0.790, SFT 0.899, GRPO-v1 0.871. SFT is the champion; the RL stage gave points back. The teacher (API-served, never affected) still leads.',
     unseen_templates: 'The headline the broken setup nearly shipped: the trained 9B "overtaking" its teacher 0.883 to 0.852 on unseen question types. The adapters were never actually served; this is the base model in a costume.',
@@ -251,7 +329,7 @@ function initRatchet(node: HTMLElement, data: Qla2Data, options: WidgetOptions, 
     viewB.classList.toggle('is-active', m === 'reality'); viewB.setAttribute('aria-pressed', String(m === 'reality'));
     caption.textContent = m === 'agent'
       ? 'Three experiments, one dial: the agent raised my learning rate tenfold and the proxy score climbed each time, for about $30 total.'
-      : 'Trained at full scale, its recipe won on the slice it optimized and lost on unseen question types. The metric was honest about one and blind to the other.';
+      : 'Trained at full scale, its recipe won on the slice it optimized and lost on unseen question types. The metric measured one and missed the other.';
     redraw();
   };
   viewA.addEventListener('click', () => select('agent'));

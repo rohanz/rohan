@@ -4,7 +4,7 @@
        that transitions, not `transform`. Chrome cannot composite a custom-property
        transition, so every frame is a fresh vector redraw: no texture softening
        during the motion and no re-sharpen when it ends. */
-    /* --bqst-angle is registered in swiss-cards.css (@property must live in a document stylesheet). */
+    /* --bqst-angle is registered in drawing-properties.css (@property must live in a document stylesheet). */
     .swiss-bqst-dial, .swiss-bqst-needle { transform: rotate(var(--bqst-angle)); transition: stroke .35s ease; }
     .swiss-card.is-hover .swiss-bqst-dial, .swiss-card.is-hover .swiss-bqst-needle { stroke: var(--accent); }
     @media (prefers-reduced-motion: no-preference) {

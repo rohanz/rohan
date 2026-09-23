@@ -1,0 +1,20 @@
+/* Registered animation properties for the project drawings
+   (src/drawings/swiss/*.svg). Transitioning a registered custom property
+   (rather than `transform`) keeps the animation on the main thread as a vector
+   redraw: no compositor texture softening mid-animation and no re-sharpen at
+   the end. @property must be declared in a document stylesheet; inline SVG
+   <style> blocks are ignored for registration.
+
+   Imported by src/lib/swiss/drawings.ts, so every page (classic or transit)
+   that renders a drawing gets these. tools/build-blueprint.mjs reads the
+   initial values from here to seed blueprint's static copies. Add a line when
+   a drawing animates a new property. */
+@property --bqst-angle { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+@property --analyst-scale { syntax: '<number>'; inherits: false; initial-value: 1.2; }
+@property --atlas-pin { syntax: '<number>'; inherits: false; initial-value: 0; }
+@property --patent-fill { syntax: '<number>'; inherits: false; initial-value: 0; }
+@property --systems-depth { syntax: '<number>'; inherits: false; initial-value: 0; }
+@property --yourcast-x { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --web-split { syntax: '<number>'; inherits: false; initial-value: 0; }
+@property --web-src { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --web-cls { syntax: '<number>'; inherits: true; initial-value: 0; }

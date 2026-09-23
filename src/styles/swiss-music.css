@@ -17,8 +17,33 @@ html.theme-swiss .sw-music-rail-inner {
 html.theme-swiss .sw-music h1 { margin: 0; }
 html.theme-swiss .sw-music-rail-inner > :last-child { margin-top: auto; }
 html.theme-swiss .sw-music-rail-inner .sw-rail-links { margin-top: auto; }
+/* Who made the music, in the desktop rail only: the phone and tablet rail is
+   a thin band above the tracks. */
+html.theme-swiss .sw-music-credits { display: none; }
+@media (min-width: 1100px) {
+  html.theme-swiss .sw-music-credits { display: block; padding: 0 2rem 2rem; }
+  html.theme-swiss .sw-music-credits p { margin: 0; max-width: 22rem; line-height: 1.45; }
+}
 html.theme-swiss .sw-tracks { min-width: 0; }
+/* A playing row fades to its inverted palette the way project cards fade on
+   hover. The colours are registered so they interpolate; everything in the row,
+   including the canvases that read them each frame, moves together. */
+@property --t-ink { syntax: '<color>'; inherits: true; initial-value: #141414; }
+@property --t-paper { syntax: '<color>'; inherits: true; initial-value: #f7f5f0; }
+@property --t-hair { syntax: '<color>'; inherits: true; initial-value: #d6d3cc; }
+@property --t-muted { syntax: '<color>'; inherits: true; initial-value: #6b6b66; }
+@property --t-accent { syntax: '<color>'; inherits: true; initial-value: #5f66c2; }
+html.theme-swiss .sw-tracks { --t-ink: var(--ink); --t-paper: var(--paper); --t-hair: var(--hair); --t-muted: var(--muted); --t-accent: var(--accent); }
 html.theme-swiss .sw-track {
+  --ink: var(--t-ink);
+  --paper: var(--t-paper);
+  --hair: var(--t-hair);
+  --muted: var(--t-muted);
+  --accent: var(--t-accent);
+  transition-property: --t-ink, --t-paper, --t-hair, --t-muted, --t-accent, background-color;
+  transition-duration: var(--dur-fade);
+  /* ease-out cubic: the same curve the meters fade with in music-viz.ts */
+  transition-timing-function: cubic-bezier(.33, 1, .68, 1);
   --cell-hair: var(--hair);
   cursor: pointer;
   display: grid;
@@ -30,11 +55,11 @@ html.theme-swiss .sw-track {
 html.theme-swiss .sw-track:hover,
 html.theme-swiss .sw-track:focus-within { background: var(--tint); --cell-hair: var(--tint-hair); }
 html.theme-swiss .sw-track.is-playing {
-  --ink: var(--music-paper);
-  --paper: var(--music-ink);
-  --hair: color-mix(in srgb, var(--music-paper) 30%, var(--music-ink));
-  --muted: var(--music-paper);
-  --accent: var(--accent-on-ink);
+  --t-ink: var(--music-paper);
+  --t-paper: var(--music-ink);
+  --t-hair: color-mix(in srgb, var(--music-paper) 30%, var(--music-ink));
+  --t-muted: var(--music-paper);
+  --t-accent: var(--accent-on-ink);
   --cell-hair: var(--hair);
   background: var(--paper);
 }
@@ -51,6 +76,7 @@ html.theme-swiss .sw-play {
   cursor: pointer;
   display: grid;
   place-items: center;
+  transition: background-color var(--dur-fade) ease, color var(--dur-fade) ease;
 }
 html.theme-swiss .sw-track.is-playing .sw-play:not(:hover) { background: var(--music-accent); color: var(--music-paper); }
 html.theme-swiss .sw-play:hover { background: var(--ink); color: var(--paper); }

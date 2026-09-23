@@ -4,8 +4,11 @@ import SwissCard from '../../components/SwissCard.astro';
 import SwissRailLinks from '../../components/SwissRailLinks.astro';
 import { getCollection } from 'astro:content';
 import { encodeFilter, visibleProjectFilters } from '../../data/project-filters';
+// Dev shows unlisted drafts in the grid (marked) so they can be reviewed in
+// place; production builds keep them URL-only.
+const showUnlisted = import.meta.env.DEV;
 const projects = (await getCollection('projects'))
-  .filter((p) => !p.data.unlisted)
+  .filter((p) => showUnlisted || !p.data.unlisted)
   .sort((a, b) => a.data.order - b.data.order);
 const filters = visibleProjectFilters(projects.flatMap((p) => p.data.technologies));
 ---
@@ -15,7 +18,6 @@ const filters = visibleProjectFilters(projects.flatMap((p) => p.data.technologie
       <div class="sw-project-rail-inner">
         <div class="sw-rail-heading">
           <h1 class="sw-display sw-display-page" data-reveal="lines">projects</h1>
-          <span class="sw-label">{projects.length} builds</span>
         </div>
         <div class="sw-filters" role="group" aria-label="Filter projects by technology">
           <button type="button" class="sw-filter sw-label" data-filter="all" aria-pressed="true" aria-controls="sw-project-grid">all</button>
@@ -25,7 +27,7 @@ const filters = visibleProjectFilters(projects.flatMap((p) => p.data.technologie
       </div>
     </aside>
     <div class="swiss-grid" id="sw-project-grid" data-reveal-group>
-      {projects.map((p) => <SwissCard slug={p.id} title={p.data.title} summary={p.data.summary} technologies={p.data.technologies} />)}
+      {projects.map((p) => <SwissCard slug={p.id} title={p.data.title} summary={p.data.summary} technologies={p.data.technologies} unlisted={!!p.data.unlisted} />)}
     </div>
   </section>
   <script>

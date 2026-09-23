@@ -21,7 +21,7 @@ html.theme-swiss .sw-filter:focus-visible { outline-offset: -3px; }
   html.theme-swiss .sw-project-rail { border-right: 1px solid var(--tint-hair); }
   html.theme-swiss .sw-project-rail-inner { position: sticky; top: var(--nav-height); min-height: calc(100svh - var(--nav-height)); max-height: calc(100svh - var(--nav-height)); overflow-y: auto; display: flex; flex-direction: column; }
   html.theme-swiss .sw-project-rail-inner .sw-rail-links { margin-top: auto; }
-  html.theme-swiss .sw-filters .sw-filter { min-height: 2.25rem; padding: .55rem 2rem; }
+  html.theme-swiss .sw-filters .sw-filter { min-height: 2rem; padding: .45rem 2rem; }
   html.theme-swiss .sw-filters { flex-direction: column; overflow-x: visible; }
   html.theme-swiss .sw-filter { width: 100%; border-right: 0; border-bottom: 1px solid var(--tint-hair); padding: .9rem 2rem; }
   /* The rail's right rule also forms the field's left edge. */
@@ -42,30 +42,38 @@ html.theme-swiss .swiss-card {
 }
 html.theme-swiss .swiss-card-inner {
   display: flex; flex-direction: column; height: 100%; background: var(--paper); overflow: hidden;
-  /* Permanent compositor layer: contents rasterise once and the GPU transforms the
-     texture, so SVG/text glyphs do not re-snap to pixels every frame (no shimmer). */
-  will-change: transform; backface-visibility: hidden;
+  backface-visibility: hidden;
   transform: perspective(900px) rotateX(calc(var(--rx) * 1deg)) rotateY(calc(var(--ry) * 1deg)) scale(var(--lift, 1));
   transform-style: preserve-3d;
-  transition: transform .4s cubic-bezier(.2,.7,.2,1), box-shadow .4s ease, background .35s ease, color .35s ease;
+  transition: transform .4s var(--ease-house), box-shadow .4s ease, background var(--dur-fade) ease, color var(--dur-fade) ease;
 }
 html.theme-swiss .swiss-card:focus-visible { --lift: 1.025; z-index: 2; color: var(--paper); }
 @media (hover: hover) { html.theme-swiss .swiss-card:hover { --lift: 1.025; z-index: 2; color: var(--paper); } }
 html.theme-swiss .swiss-card:focus-visible .swiss-card-inner { --card-surface: var(--ink); --accent: var(--accent-on-ink, #9aa0dc); background: var(--ink); box-shadow: 0 30px 60px -30px rgba(20,20,20,.35); }
 @media (hover: hover) { html.theme-swiss .swiss-card:hover .swiss-card-inner { --card-surface: var(--ink); --accent: var(--accent-on-ink, #9aa0dc); background: var(--ink); box-shadow: 0 30px 60px -30px rgba(20,20,20,.35); } }
-html.theme-swiss .swiss-card.is-hover .swiss-card-inner { transition: transform .08s linear, box-shadow .4s ease, background .35s ease, color .35s ease; }
+html.theme-swiss .swiss-card.is-hover .swiss-card-inner { transition: transform .08s linear, box-shadow .4s ease, background var(--dur-fade) ease, color var(--dur-fade) ease; }
+/* Drawing parts painted with --card-surface (a plain custom property, so it
+   flips instantly) fade on the card background's timing instead of flashing
+   the old surface while the card is still mid-fade. Zero specificity: a
+   drawing that sets its own transition on these parts wins and must list
+   fill itself (see careersphere's tip). */
+:where(html.theme-swiss .swiss-surface, html.theme-swiss .swiss-surface > *) { transition: fill var(--dur-fade) ease, stroke var(--dur-fade) ease; }
 @media (hover: none), (prefers-reduced-motion: reduce) {
   html.theme-swiss .swiss-card-inner { transform: none; }
 }
 html.theme-swiss .swiss-card-art { position: relative; flex: 0 0 auto; aspect-ratio: 4 / 3; padding: 1.25rem; border-bottom: 1px solid var(--tint-hair); color: inherit; }
-/* The SVG itself is the persistent layer: its animated children then repaint inside
-   one texture instead of triggering whole-drawing re-rasterisation (the 'sharpen' at
-   the end of an animation). */
-html.theme-swiss .swiss-card-art svg { position: relative; z-index: 1; text-rendering: geometricPrecision; will-change: transform; backface-visibility: hidden; }
+html.theme-swiss .swiss-card-art svg { position: relative; z-index: 1; text-rendering: geometricPrecision; backface-visibility: hidden; }
+/* Compositor layer only while the card moves (tilt.ts sets .is-tilting): the GPU
+   transforms one texture, so glyphs don't re-snap to pixels every frame. At rest
+   the layer drops and Chrome re-rasterises at the real transform, keeping thin
+   strokes crisp; a permanent layer left tilted cards drawn as a stretched bitmap. */
+html.theme-swiss .swiss-card.is-tilting :is(.swiss-card-inner, .swiss-card-art svg) { will-change: transform; }
 /* The old cover-image wordmark, set behind the drawing so the line work can
    cross it; grey but heavy so it stays clearly legible. */
 html.theme-swiss .swiss-card-word { position: absolute; left: 1.25rem; right: 1.25rem; top: 1rem; z-index: 0; font-family: var(--font-ui); font-weight: 600; font-size: clamp(1.2rem, 7cqw, 2.1rem); line-height: 1; letter-spacing: -0.03em; color: #9c9890; overflow-wrap: anywhere; transition: color .25s ease; }
 html.theme-swiss .swiss-card:focus-visible .swiss-card-word { color: var(--accent); }
+/* Dev-only marker for unlisted drafts (production never renders them in the grid). */
+html.theme-swiss .swiss-card-unlisted { position: absolute; right: 1.25rem; bottom: 1rem; z-index: 1; padding: .2rem .45rem; border: 1px dashed currentColor; color: var(--muted); }
 @media (hover: hover) { html.theme-swiss .swiss-card:hover .swiss-card-word { color: var(--accent); } }
 html.theme-swiss .swiss-card-art svg { width: 100%; height: 100%; display: block; }
 html.theme-swiss .swiss-card-placeholder { width: 100%; height: 100%; background: repeating-linear-gradient(135deg, transparent 0 10px, var(--hair) 10px 11px); }
@@ -123,10 +131,3 @@ html.theme-swiss .swiss-card.is-hover .swiss-card-art :is([data-depth], .z1, .z2
   /* No technology tags on phones. */
   html.theme-swiss .swiss-card-tags { display: none; }
 }
-
-/* Registered animation properties for the drawings. Transitioning a registered
-   custom property (rather than `transform`) keeps the animation on the main
-   thread as a vector redraw: no compositor texture softening mid-animation and
-   no re-sharpen at the end. @property must be declared in a document stylesheet;
-   inline SVG <style> blocks are ignored for registration. */
-@property --bqst-angle { syntax: '<angle>'; inherits: false; initial-value: 0deg; }

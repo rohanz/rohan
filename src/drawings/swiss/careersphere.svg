@@ -1,17 +1,20 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
   <style>
-    .swiss-sphere-route { stroke-dasharray: 100; stroke-dashoffset: 100; }
+    .swiss-sphere-route { stroke-dasharray: 100 102; stroke-dashoffset: 101; }
     /* Fade via paint opacity, not `opacity`: an opacity transition makes Chrome
        re-rasterise the text when it ends, which reads as a tiny jump. */
     .swiss-sphere-tip, .swiss-sphere-tip * , .swiss-sphere-ring { fill-opacity: 0; stroke-opacity: 0; }
     @media (prefers-reduced-motion: no-preference) {
       .swiss-sphere-route { transition: stroke-dashoffset .9s cubic-bezier(.2,.7,.2,1); }
-      .swiss-sphere-tip, .swiss-sphere-tip *, .swiss-sphere-ring { transition: fill-opacity .3s ease, stroke-opacity .3s ease; }
+      .swiss-sphere-tip, .swiss-sphere-tip *, .swiss-sphere-ring { transition: fill-opacity .3s ease, stroke-opacity .3s ease, fill var(--dur-fade) ease; }
       .swiss-card.is-hover .swiss-sphere-route { stroke-dashoffset: 0; }
       .swiss-card.is-hover .swiss-sphere-ring { stroke-opacity: 1; transition-delay: .25s; }
       .swiss-card.is-hover .swiss-sphere-tip, .swiss-card.is-hover .swiss-sphere-tip * { fill-opacity: 1; stroke-opacity: 1; transition-delay: .35s; }
     }
   </style>
+  <!-- The globe and everything on it, centred in the drawing area below the
+       wordmark. The career tag stays put, over the globe's right edge. -->
+  <g transform="translate(22 6)">
   <!-- Static geographic wireframe; text never belongs to a moving layer. -->
   <circle cx="178" cy="171" r="96" stroke-width="1.25" stroke-opacity=".3"/>
   <g stroke-width="1" stroke-opacity=".18">
@@ -167,9 +170,11 @@
   <circle cx="178" cy="171" r="10" stroke-width="1.25" stroke-opacity=".4"/>
   <text x="191" y="175" font-family="'General Sans', sans-serif" fill="currentColor" stroke="none" font-size="9" letter-spacing="1.5">YOU</text>
   <circle class="swiss-sphere-ring" cx="131" cy="215" r="7" stroke="var(--accent)"/>
+  </g>
   <g class="swiss-sphere-tip" stroke-width="1.25">
-    <path d="M138 215h14l16-11h58" stroke="var(--accent)"/>
-    <rect x="226" y="187" width="155" height="39" rx="3"/>
+    <path d="M160 221h12l14-14.5h40" stroke="var(--accent)"/>
+    <!-- Opaque in the card's own surface colour, so the text reads over the globe. -->
+    <rect class="swiss-surface" x="226" y="187" width="155" height="39" rx="3" fill="var(--card-surface, var(--paper))"/>
     <text x="236" y="203" font-family="'General Sans', sans-serif" fill="currentColor" stroke="none" font-size="10">Back End Developer</text>
     <text x="236" y="217" font-family="'General Sans', sans-serif" fill="currentColor" stroke="none" font-size="8" letter-spacing="1">70% MATCH</text>
   </g>

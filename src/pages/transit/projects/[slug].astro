@@ -3,6 +3,14 @@ import PageLayout from '../../../layouts/PageLayout.astro';
 import { getCollection, render } from 'astro:content';
 import { getProjectNav, type NavItem } from '../../../lib/projectNav';
 import { lineById } from '../../../data/system';
+import { drawingFor, headerViewBoxFor } from '../../../lib/swiss/drawings';
+// The shared widget modules import these too (blueprint relies on that). Importing
+// them from the page as well puts them in the page's own head, so the dev server's
+// ClientRouter keeps them across navigations; builds dedupe the two imports.
+import '../../../styles/qla2-widgets.css';
+import '../../../styles/qls-widgets.css';
+import '../../../styles/mle-replay.css';
+import '../../../styles/room-run.css';
 
 export async function getStaticPaths() {
   const projects = (await getCollection('projects')).sort((a, b) => a.data.order - b.data.order);
@@ -23,6 +31,7 @@ const { project, ordered } = Astro.props;
 const { Content, headings } = await render(project);
 const { prev, next } = getProjectNav(ordered, project.id);
 const line = lineById('projects');
+const Drawing = drawingFor(project.id);
 // TOC covers h2/h3 of the article body only — no h1/title, and nothing
 // before the first h2 (a leading h3 would float above the line's first stop).
 const h2h3 = headings.filter((h) => h.depth === 2 || h.depth === 3);
@@ -30,7 +39,7 @@ const firstH2 = h2h3.findIndex((h) => h.depth === 2);
 const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
 ---
 <PageLayout
-  title={`${project.data.title} — rohan.jk`}
+  title={`${project.data.barTitle ? `${project.data.barTitle} · ` : ''}${project.data.title} — rohan.jk`}
   description={project.data.summary}
   lineId="projects"
   hex={line.hex}
@@ -69,7 +78,14 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
     )}
 
     <article class="article">
-      <img class="article-banner" src={project.data.image} alt={`${project.data.title} banner`} />
+      {/* The project's drawing, played once on arrival (see play-drawing.ts).
+           Decorative: the title below names the project. `swiss-card` is the
+           hook the drawing's own hover rules key on. */}
+      {Drawing && (
+        <div class="swiss-card article-drawing" aria-hidden="true">
+          <Drawing viewBox={headerViewBoxFor(project.id)} />
+        </div>
+      )}
       <header class="article-header">
         <h1 class="article-title">{project.data.title}</h1>
         <p class="article-summary">{project.data.summary}</p>
@@ -88,6 +104,15 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
 <script>
   import '../../../scripts/article.ts';
   import '../../../scripts/article-widgets.ts';
+  import { playDrawingOnArrival } from '../../../lib/swiss/play-drawing';
+
+  let stopDrawing: (() => void) | undefined;
+  document.addEventListener('astro:page-load', () => {
+    stopDrawing?.();
+    const art = document.querySelector<HTMLElement>('.article-drawing');
+    stopDrawing = art ? playDrawingOnArrival(art) : undefined;
+  });
+  document.addEventListener('astro:before-swap', () => { stopDrawing?.(); stopDrawing = undefined; });
 </script>
 
 <style>
@@ -146,13 +171,26 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
     }
   }
 
-  .article-banner {
-    /* 3:2 reserves the box pre-load; every banner ships at that ratio. */
-    width: 100%; height: auto; aspect-ratio: 3 / 2; border-radius: var(--radius);
-    margin: 0 0 2rem; box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+  /* The drawing panel: a white card like the map's project cards, ink lines,
+     the projects line's red as the drawing's one accent. The fixed ratio
+     reserves the box before paint; the SVG is inline, so nothing loads late.
+     Top margin 1.5rem keeps the panel's top edge where the TOC rail starts
+     (--transit-toc-top below). Drawing labels take the page's face rather
+     than General Sans, which transit doesn't load. */
+  .article-drawing {
+    --accent: var(--line-projects);
+    --card-surface: #fff;
+    color: var(--ink);
+    background: var(--card-surface);
+    border: 1px solid rgba(26, 26, 26, 0.12);
+    border-radius: var(--radius);
+    aspect-ratio: 16 / 9;
+    margin: 1.5rem 0 2rem;
   }
+  .article-drawing :global(svg) { display: block; width: 100%; height: 100%; }
+  .article-drawing :global(text) { font-family: inherit; }
 
-  /* Title + blurb under the banner (mirrors the original site's detail header:
+  /* Title + blurb under the drawing (mirrors the original site's detail header:
      a large accent-coloured title, then an italic dimmed summary). The coloured
      sign-header bar now carries only the short barTitle label. */
   .article-header { margin: 0 0 2.4rem; }
@@ -184,7 +222,6 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
      original site — long lines fold rather than forcing a scrollbar). */
   .article :global(pre) { max-width: 100%; box-sizing: border-box; overflow-x: auto; }
   .article :global(pre code) { white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; }
-  .article :global(.article-banner) { cursor: zoom-in; }
 
   /* ------------------------------------------------------------
      Article body images — intrinsic-size reservation
@@ -273,16 +310,14 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
       display: flex;
       flex-direction: column;
       position: fixed;
-      /* The rail's top edge IS the banner's top edge. article.ts measures that
-         and writes it back; this resting value used to be a rough 11rem —
-         38px too low — so the rail visibly jumped up on every article load
-         once the measurement landed.
+      /* The rail's top edge IS the drawing panel's top edge. article.ts
+         measures that and writes it back; this resting value used to be a
+         rough 11rem — 38px too low — so the rail visibly jumped up on every
+         article load once the measurement landed.
 
-         The offset is entirely static, so it is now derived rather than
-         guessed: the sign-header is 74px tall, .page-body adds 40px of top
-         padding, and the banner picks up a 1.5rem top margin from the generic
-         `.article :global(img)` rule below (which out-specifies
-         `.article-banner`'s own `margin: 0 0 2rem`). 74 + 40 + 24 = 138px,
+         The offset is entirely static, so it is derived rather than guessed:
+         the sign-header is 74px tall, .page-body adds 40px of top padding, and
+         .article-drawing has a 1.5rem top margin. 74 + 40 + 24 = 138px,
          constant at every viewport width — verified at 1024/1280/1440/1920/
          2560. article.ts now measures the same number, so its write is a
          no-op on load and the rail never moves.
@@ -412,7 +447,7 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
 </style>
 
 <style is:global>
-  /* The PageLayout spine's station capsule sits right next to the banner and
+  /* The PageLayout spine's station capsule sits right next to the drawing and
      reads as a stray TOC tick on detail pages — the train-line TOC is the
      station marker here, so hide the spine's. */
   html.theme-transit body.page-projects .station-here { display: none; }
@@ -831,7 +866,7 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
   .qlf-sw-series { color: var(--w-accent); } /* primary series: projects red */
   .qlf-sw-accent { color: #33b4e5; } /* second series in comparisons: blue */
   .qlf-sw-warn { color: var(--line-projects); }
-  .qlf-sw-muted { color: var(--w-muted); }
+  .qlf-sw-muted, .qlf-sw-plain { color: var(--w-muted); }
   .qlf-legend-swatch.qla-sw-good { background: #66bb6a; }
   .qlf-legend-swatch.qla-sw-bad { background: var(--line-projects); }
   .qlf-legend-swatch.qlf-sw-gap { background: rgba(209,61,89,0.14); box-shadow: inset 0 0 0 1px rgba(209,61,89,0.45); }
@@ -918,11 +953,8 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
   .qlf-is-killed [data-buy] { opacity: 0.45; }
   .qlf-risk-buttons { display: flex; gap: 0.45rem; flex-wrap: wrap; }
   /* order buttons stay in one straight row; scroll if tight, wrap on mobile */
-  .qlf-risk-buttons.qlf-order-row { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: thin; scrollbar-color: rgba(0,0,0,0.25) transparent; }
-  .qlf-risk-buttons.qlf-order-row::-webkit-scrollbar { height: 5px; }
-  .qlf-risk-buttons.qlf-order-row::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.25); border-radius: 4px; }
+  /* the order buttons wrap: a horizontal scroller hid the sell buttons */
   .qlf-order-row .qlf-risk-btn { flex-shrink: 0; white-space: nowrap; }
-  @media (max-width: 480px) { .qlf-risk-buttons.qlf-order-row { flex-wrap: wrap; overflow-x: visible; } }
   .qlf-risk-btn { font-size: 0.8rem; padding: 0.38rem 0.85rem; }
   .qlf-risk-btn-warn { color: #b52e49; border-color: rgba(209,61,89,0.5); }
   .qlf-audit-log {

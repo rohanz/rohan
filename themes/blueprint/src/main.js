@@ -202,7 +202,7 @@ const articleReader = createArticleOverlay(PROJECTS, { onNavigate: (slug) => {
   syncUrl(slug);
   if (slug) {
     const project = PROJECTS.find((entry) => entry.slug === slug);
-    if (project) setDocTitle(project.title);
+    if (project) setDocTitle(project.name !== project.title ? `${project.name} · ${project.title}` : project.title);
   } else {
     setDocTitle(mode === 'home' ? null : SCENE_TITLES[mode]); // reader closed
   }

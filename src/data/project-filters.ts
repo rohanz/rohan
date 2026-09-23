@@ -9,11 +9,12 @@
 // grid cards, transit re-slices platform stop slots, blueprint repaginates the
 // 3D sheet wall.
 //
-// Why curated and not the raw tag union: with 10 listed projects the union is
-// ~36 tags across five rows — a wall where most filters match one project. One
-// row of skills-level pills, each aliasing one or more underlying technology
-// tags (the engines OR across a pill's aliases). Cards still show their full
-// technology lists.
+// Why curated and not the raw tag union: the union is ~50 tags, a wall where
+// most filters match one project. The pills are broad categories (AI work is
+// split finer: agents, agent tools, fine-tuning, RL, evals), each aliasing the
+// specific technology tags under it (the engines OR across a pill's aliases).
+// Cards and articles still show their full technology lists. A pill whose
+// projects are all unlisted stays hidden until one of them is published.
 //
 // Import-free by contract — see the note in music.ts.
 
@@ -31,15 +32,17 @@ export interface ProjectFilter {
  */
 export const PROJECT_FILTERS: ProjectFilter[] = [
   { label: 'ai agents', match: ['AI Agents'] },
+  { label: 'agent tools', match: ['MCP', 'Developer Tools'] },
   { label: 'fine-tuning', match: ['Fine-tuning', 'QLoRA'] },
+  { label: 'reinforcement learning', match: ['Reinforcement Learning', 'GRPO'] },
   { label: 'evals', match: ['Evals'] },
-  { label: 'machine learning', match: ['Machine Learning'] },
-  { label: 'finance', match: ['Finance', 'Backtesting'] },
-  { label: 'dsp', match: ['DSP'] },
-  { label: 'data pipelines', match: ['Data Pipelines'] },
-  { label: 'cloud infra', match: ['Cloud Infra'] },
-  { label: 'devops', match: ['DevOps'] },
-  { label: 'web scraping', match: ['Web Scraping'] },
+  { label: 'machine learning', match: ['Machine Learning', 'PyTorch', 'Recommender Systems'] },
+  { label: 'finance', match: ['Finance', 'Backtesting', 'Trading Systems'] },
+  { label: 'audio', match: ['JUCE', 'Web MIDI', 'Web Audio API', 'Music Theory'] },
+  { label: 'data engineering', match: ['Data Pipelines', 'Web Scraping', 'SQL', 'DuckDB'] },
+  { label: 'systems', match: ['C++', 'Real-Time'] },
+  { label: 'web & apps', match: ['React', 'Astro', 'React Native', 'Electron'] },
+  { label: 'cloud & devops', match: ['Cloud Infra', 'DevOps'] },
 ];
 
 /**

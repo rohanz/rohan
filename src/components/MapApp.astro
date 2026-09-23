@@ -4,6 +4,7 @@ import TransitMap from '../components/TransitMap.astro';
 import StationBoard from '../components/StationBoard.astro';
 import TransitThemeSwitch from '../components/TransitThemeSwitch.astro';
 import { getCollection } from 'astro:content';
+import { drawingFor, headerViewBoxFor } from '../lib/swiss/drawings';
 import { BIO_FULL } from '../data/bio';
 import { SONGS as music } from '../data/music';
 import { encodeFilter, visibleProjectFilters } from '../data/project-filters';
@@ -121,7 +122,9 @@ const tech = TECH_STACK.map((t) => t.name);
       </div>
 
       <div data-content="projects" hidden>
-        {projects.map((p) => (
+        {projects.map((p) => {
+          const Drawing = drawingFor(p.id);
+          return (
           <a
             class="platform-card card-project"
             data-card="projects"
@@ -130,9 +133,17 @@ const tech = TECH_STACK.map((t) => t.name);
            
           >
             <div class="card-inner">
-              <img class="thumb" src={p.data.image} alt="" loading="lazy" />
+              {/* The project's drawing, shown in its played state (is-hover is
+                   static here: at thumbnail size the finished picture reads
+                   better than the resting one, and the drawings gate that state
+                   on reduced motion themselves). Cropped to a 240-unit band so
+                   the lines keep weight at ~200px wide. Decorative like the
+                   image it replaced: the h3 names the card. */}
+              <div class="thumb swiss-card is-hover" aria-hidden="true">
+                {Drawing && <Drawing viewBox={headerViewBoxFor(p.id, 240)} />}
+              </div>
               <div class="body">
-                <h3>{p.data.title}</h3>
+                <h3>{p.data.barTitle ?? p.data.title}</h3>
                 <p class="summary">{p.data.summary}</p>
                 <ul class="tags">
                   {p.data.technologies.map((t) => <li>{t}</li>)}
@@ -140,7 +151,8 @@ const tech = TECH_STACK.map((t) => t.name);
               </div>
             </div>
           </a>
-        ))}
+          );
+        })}
       </div>
 
       <div data-content="about" hidden>
@@ -586,7 +598,14 @@ const tech = TECH_STACK.map((t) => t.name);
   }
   /* height is set inline by placeCards() to track the card's own (dynamic,
      now ~62% of the stop pitch) width; this is just a pre-JS fallback. */
-  .card-project .thumb { width: 100%; height: 100px; object-fit: cover; display: block; }
+  .card-project .thumb {
+    width: 100%; height: 100px; display: block;
+    --accent: var(--line-projects);
+    --card-surface: #fff;
+    color: var(--ink);
+    border-bottom: 1px solid rgba(26, 26, 26, 0.12);
+  }
+  .card-project .thumb :global(svg) { display: block; width: 100%; height: 100%; }
   /* Flex column so the tags pin to the BOTTOM of the (uniform-height) card while
      the title + summary sit at the top — mirroring the original site's cards. The
      min-height fixes every card to one size regardless of tag count. */

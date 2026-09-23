@@ -54,6 +54,11 @@ export interface BqstPalette {
    * value, while its canvas `aliasAudible` is theme-dependent.
    */
   legendAliasAudible: string;
+  /**
+   * The A/B demo's processed ("bqst") waveform. Its clean waveform, beat grid
+   * and bar lines reuse `seriesReference`, `ink` and `seriesPrimary`.
+   */
+  waveProcessed: string;
 }
 
 export interface QlaPalette {

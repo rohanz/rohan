@@ -9,6 +9,11 @@ html.theme-swiss {
   --w-good: #2f4a3a; /* pass/correct states in widgets: pine, distinct from the accent */
   --accent-on-ink: #9aa0dc; /* lighter periwinkle for accent marks on inverted (ink) surfaces */
   --nav-height: 4rem;
+  /* Motion tokens: one source for durations and the house curve. Colour
+     changes (card inversion, the playing music row and its meters) use
+     --dur-fade; scripts read the same token so canvases stay in step. */
+  --dur-fade: 250ms;
+  --ease-house: cubic-bezier(.2,.7,.2,1);
   --ink: #141414;
   --muted: #6b6b66;
   --hair: #d6d3cc;
@@ -92,15 +97,24 @@ html.theme-swiss .sw-nav { position: sticky; top: 0; z-index: 20; background: va
 html.theme-swiss.sw-home .sw-nav { position: fixed; inset-inline: 0; opacity: 0; transform: translateY(-100%); transition: opacity 250ms ease, transform 250ms ease; }
 html.theme-swiss.sw-home .sw-nav.is-visible, html.theme-swiss.sw-home .sw-nav:focus-within { opacity: 1; transform: none; }
 html.theme-swiss .sw-nav-inner { display: flex; align-items: center; justify-content: space-between; height: calc(var(--nav-height) - 1px); }
-html.theme-swiss .sw-wordmark { font-family: var(--font-display); font-weight: 600; font-size: 1.3rem; letter-spacing: -0.02em; }
-html.theme-swiss .sw-nav-links { display: flex; gap: clamp(1rem, 2.5vw, 2.5rem); font-size: 1rem; font-weight: 500; }
+html.theme-swiss .sw-wordmark { position: relative; font-family: var(--font-display); font-weight: 600; font-size: 1.3rem; letter-spacing: -0.02em; }
+/* The R mark hangs in the left margin, so the wordmark keeps its exact position.
+   It only shows where the page margin is wide enough to hold it. */
+html.theme-swiss .sw-logo { position: absolute; right: calc(100% + .45em); top: 50%; width: 1.25em; height: 1.25em; transform: translateY(-50%); display: none; }
+@media (min-width: 1200px) { html.theme-swiss .sw-logo { display: block; } }
+/* Phones have no margin to hang it in, so the mark sits inline before the name. */
+@media (max-width: 899px) {
+  html.theme-swiss .sw-wordmark { display: inline-flex; align-items: center; gap: .4em; }
+  html.theme-swiss .sw-logo { display: block; position: static; transform: none; flex: none; }
+}
+html.theme-swiss .sw-nav-links { display: flex; gap: clamp(1rem, 2.5vw, 2.5rem); font-size: 1rem; font-weight: 600; }
 html.theme-swiss .sw-nav-links a[aria-current="page"] { color: var(--accent); }
 html.theme-swiss .sw-menu-toggle, html.theme-swiss .sw-mobile-menu { display: none; }
 /* overflow: clip keeps tilted/lifted cards from growing the document (no scrollbar changes). */
 html.theme-swiss #sw-main { flex: 1 0 auto; overflow: clip; }
 html.theme-swiss .sw-footer { --footer-h: 6.5rem; margin-top: auto; border-top: 1px solid var(--hair); height: var(--footer-h); box-sizing: border-box; display: flex; align-items: center; font-size: 0.875rem; color: var(--muted); }
 html.theme-swiss .sw-footer > .sw-wrap { width: 100%; }
-html.theme-swiss .sw-footer-inner { display: flex; flex-wrap: wrap; gap: 1rem 2rem; justify-content: space-between; }
+html.theme-swiss .sw-footer-inner { display: flex; flex-wrap: wrap; gap: 1rem 2rem; justify-content: space-between; align-items: center; }
 html.theme-swiss .sw-themes { display: flex; flex-wrap: wrap; gap: .75rem 1.25rem; }
 
 /* Line wrappers preserve explicit breaks with reduced motion, too. */
@@ -158,15 +172,15 @@ html.theme-swiss .sw-section-head > h1, html.theme-swiss .sw-section-head > h2 {
   html.theme-swiss .sw-row-tags { margin-top: .25rem; }
 }
 
-/* Phone/tablet shell: the home navigation remains present, while the desktop
-   hero keeps its intentionally hidden-until-scroll treatment. */
+/* Phone shell. The phone home has no top bar: it is one screen whose four
+   quadrants already link to every section (the bar is hidden after the touch
+   rules below). */
 @media (max-width: 899px) {
-  html.theme-swiss.sw-home .sw-nav { opacity: 1; transform: none; }
   html.theme-swiss .sw-nav-links a { display: flex; align-items: center; min-height: 44px; }
 
-  /* One phone screen, split in two like the desktop split: copy on top,
-     the quadrants filling the lower half edge to edge. */
-  html.theme-swiss .sw-hero { height: 100svh; min-height: 0; grid-template-rows: minmax(0, 1fr) minmax(0, 1fr); }
+  /* One phone screen: the copy at its natural height on top, the quadrants
+     filling the rest edge to edge. */
+  html.theme-swiss .sw-hero { height: 100svh; min-height: 0; grid-template-rows: auto minmax(0, 1fr); }
   /* The phone home is one screen: no scroll, no rubber-band scrollbar. */
   html.theme-swiss.sw-home { overflow: hidden; overscroll-behavior: none; }
   /* Short viewports (phone landscape) cannot hold the one-screen split; size to content. */
@@ -179,8 +193,8 @@ html.theme-swiss .sw-section-head > h1, html.theme-swiss .sw-section-head > h2 {
   html.theme-swiss .sw-hero-copy {
     min-height: 0;
     justify-content: center;
-    /* Extra bottom padding biases the copy upward so the nav does not read as dead space above it. */
-    padding: calc(var(--nav-height) + .5rem) var(--gutter) 2.5rem;
+    /* Sized to its content (no bar above it): the quadrants take the rest. */
+    padding: calc(env(safe-area-inset-top, 0px) + 3rem) var(--gutter) 2.5rem;
   }
   html.theme-swiss .sw-hero-copy h1 {
     font-size: clamp(2.5rem, 11vw, 3.6rem);
@@ -222,7 +236,7 @@ html.theme-swiss .sw-section-head > h1, html.theme-swiss .sw-section-head > h2 {
     border: 0;
     background: transparent;
     color: var(--ink);
-    font: 500 1rem/1 var(--font-ui);
+    font: 600 1rem/1 var(--font-ui);
   }
   html.theme-swiss .sw-menu-toggle-mark { width: .65rem; height: .65rem; border-right: 1px solid currentColor; border-bottom: 1px solid currentColor; transform: rotate(45deg) translateY(-.15rem); transition: transform .2s ease; }
   html.theme-swiss .sw-menu-toggle[aria-expanded="true"] .sw-menu-toggle-mark { transform: rotate(225deg) translate(-.12rem, -.12rem); }
@@ -289,7 +303,7 @@ html.theme-swiss .sw-selected-work h2 { font-weight: 600; }
 /* Rail links as cells, echoing the home contact squares: socials 2x2, themes 1x4. */
 html.theme-swiss .sw-rail-links { display: grid; padding: 0; border-top: 1px solid var(--tint-hair); }
 html.theme-swiss .sw-rail-socials { display: grid; grid-template-columns: 1fr 1fr; }
-html.theme-swiss .sw-rail-socials a { display: flex; justify-content: space-between; align-items: center; gap: .5rem; padding: 1rem 1.25rem; min-height: 3.25rem; border-right: 1px solid var(--tint-hair); border-bottom: 1px solid var(--tint-hair); transition: background .25s ease, color .25s ease; }
+html.theme-swiss .sw-rail-socials a { display: flex; justify-content: space-between; align-items: center; gap: .5rem; padding: .5rem 1.25rem; min-height: 2.5rem; box-sizing: border-box; border-right: 1px solid var(--tint-hair); border-bottom: 1px solid var(--tint-hair); transition: background .25s ease, color .25s ease; }
 html.theme-swiss .sw-rail-socials a:nth-child(even) { border-right: 0; }
 html.theme-swiss .sw-rail-socials a:hover, html.theme-swiss .sw-rail-socials a:focus-visible { background: var(--ink); color: var(--paper); }
 html.theme-swiss .sw-rail-socials a .sw-arrow { transition: transform .3s ease; }
@@ -297,7 +311,7 @@ html.theme-swiss .sw-rail-socials a:hover .sw-arrow { transform: translate(2px, 
 /* Theme switch as three equal cells (rail on projects/music, footer elsewhere);
    the current theme is the inked cell. */
 html.theme-swiss :is(.sw-rail-links, .sw-footer) nav.sw-themes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; }
-html.theme-swiss :is(.sw-rail-links, .sw-footer) nav.sw-themes > * { display: flex; align-items: center; justify-content: center; padding: .85rem .25rem; min-height: 2.75rem; border-right: 1px solid var(--tint-hair); text-align: center; transition: background .25s ease, color .25s ease; }
+html.theme-swiss :is(.sw-rail-links, .sw-footer) nav.sw-themes > * { display: flex; align-items: center; justify-content: center; padding: .5rem .25rem; min-height: 2.5rem; box-sizing: border-box; border-right: 1px solid var(--tint-hair); text-align: center; transition: background .25s ease, color .25s ease; }
 html.theme-swiss :is(.sw-rail-links, .sw-footer) nav.sw-themes > *:last-child { border-right: 0; }
 html.theme-swiss :is(.sw-rail-links, .sw-footer) nav.sw-themes > span[aria-current] { background: var(--ink); color: var(--paper); }
 html.theme-swiss :is(.sw-rail-links, .sw-footer) nav.sw-themes > a:hover, html.theme-swiss :is(.sw-rail-links, .sw-footer) nav.sw-themes > a:focus-visible { background: var(--ink); color: var(--paper); }
@@ -308,9 +322,8 @@ html.theme-swiss .sw-footer nav.sw-themes > * { border-right-color: var(--hair);
 /* Sticky-rail heading shared by projects and music (projects is the reference). */
 html.theme-swiss .sw-rail-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; padding: 2rem var(--gutter); }
 html.theme-swiss .sw-rail-heading h1 { margin: 0; }
-html.theme-swiss .sw-rail-heading .sw-label { white-space: nowrap; color: var(--ink); }
 @media (min-width: 1100px) {
-  html.theme-swiss .sw-rail-heading { min-height: 9rem; flex-direction: column; align-items: flex-start; padding: 1.75rem 2rem; }
+  html.theme-swiss .sw-rail-heading { flex-direction: column; align-items: flex-start; padding: 1.75rem 2rem; }
 }
 
 /* Phones: no theme switcher anywhere, and no social links except the home contact
@@ -328,6 +341,9 @@ html.theme-swiss .sw-rail-heading .sw-label { white-space: nowrap; color: var(--
 @media (max-width: 1024px) and (hover: none), (max-width: 1024px) and (pointer: coarse) {
   html.theme-swiss.sw-home .sw-nav { opacity: 1; transform: none; }
   html.theme-swiss .sw-mobile-menu { max-height: calc(100dvh - var(--nav-height)); overflow-y: auto; }
+}
+@media (max-width: 899px) {
+  html.theme-swiss.sw-home .sw-nav { display: none; }
 }
 @media (hover: none), (pointer: coarse) {
   html.theme-swiss .sw-wordmark { display: inline-flex; align-items: center; min-width: 44px; min-height: 44px; }

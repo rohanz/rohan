@@ -1,13 +1,16 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
   <style>
+    /* Fades use paint opacity (fill-opacity), not `opacity`: an opacity
+       transition puts the text on its own layer and it re-sharpens when the
+       fade ends. */
     .swiss-research-honest { clip-path: inset(0 100% 0 0); }
-    .swiss-research-wedge, .swiss-research-label { opacity: 0; }
+    .swiss-research-wedge, .swiss-research-label { fill-opacity: 0; }
     @media (prefers-reduced-motion: no-preference) {
-      .swiss-research-honest { transition: clip-path .9s ease; }
-      .swiss-research-wedge, .swiss-research-label { transition: opacity .5s ease; }
+      .swiss-research-honest { transition: clip-path .9s cubic-bezier(.2,.7,.2,1); }
+      .swiss-research-wedge, .swiss-research-label { transition: fill-opacity .5s ease; }
       .swiss-card.is-hover .swiss-research-honest { clip-path: inset(0); }
-      .swiss-card.is-hover .swiss-research-wedge { opacity: .18; transition-delay: .9s; }
-      .swiss-card.is-hover .swiss-research-label { opacity: 1; transition-delay: .35s; }
+      .swiss-card.is-hover .swiss-research-wedge { fill-opacity: .18; transition-delay: .9s; }
+      .swiss-card.is-hover .swiss-research-label { fill-opacity: 1; transition-delay: .35s; }
     }
   </style>
   <g stroke-width="1.25" opacity=".12">

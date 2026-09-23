@@ -55,6 +55,10 @@ for (const phone of phones) {
       await expect(play).toHaveAttribute('aria-pressed', 'true');
       await expect(first).toHaveClass(/is-playing/);
 
+      // The row fades to its playing palette; read it once the fade has settled.
+      await expect.poll(() => first.evaluate((row) => new Set([
+        '.sw-track-title', '.sw-track-artist', '.sw-track-links a',
+      ].map((selector) => getComputedStyle(row.querySelector<HTMLElement>(selector)!).color)).size)).toBe(1);
       const activePalette = await first.evaluate((row) => {
         const title = row.querySelector<HTMLElement>('.sw-track-title')!;
         const artist = row.querySelector<HTMLElement>('.sw-track-artist')!;

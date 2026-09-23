@@ -1,64 +1,67 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
   <style>
+    /* One site, three themes: at rest a single window holds the shared content;
+       on hover it splits into classic (middle), transit (left) and blueprint
+       (right). The split runs through a registered property (--web-split in
+       drawing-properties.css) so the windows redraw as vectors and never soften. */
+    .swiss-web-window { fill: var(--card-surface, var(--paper)); }
+    .swiss-web-left { transform: translateX(calc(var(--web-split) * -123px)); }
+    .swiss-web-right { transform: translateX(calc(var(--web-split) * 123px)); }
+    /* Fades multiply each line's own strength by a registered 0..1 property
+       (--web-src, --web-cls), so faint lines fade in proportion too. */
+    .swiss-web-source { stroke-opacity: var(--web-src); }
+    .swiss-web-source .faint { stroke-opacity: calc(.45 * var(--web-src)); }
+    .swiss-web-classic { stroke-opacity: var(--web-cls); fill-opacity: var(--web-cls); }
+    .swiss-web-classic .faint { stroke-opacity: calc(.45 * var(--web-cls)); }
     @media (prefers-reduced-motion: no-preference) {
-      .swiss-card.is-hover .swiss-web-frame { animation: swiss-web-emphasis .22s ease both; }
-      .swiss-card.is-hover .swiss-web-two { animation-delay: .2s; }
-      .swiss-card.is-hover .swiss-web-three { animation-delay: .4s; }
-      .swiss-card.is-hover .swiss-web-four { animation: swiss-web-finish .22s ease .6s both; }
+      .swiss-web-left, .swiss-web-right { transition: --web-split .7s cubic-bezier(.2,.7,.2,1); }
+      .swiss-web-source { transition: --web-src .3s ease; }
+      .swiss-web-classic { transition: --web-cls .3s ease; }
+      .swiss-card.is-hover .swiss-web-left, .swiss-card.is-hover .swiss-web-right { --web-split: 1; }
+      .swiss-card.is-hover .swiss-web-source { --web-src: 0; }
+      .swiss-card.is-hover .swiss-web-classic { --web-cls: 1; transition-delay: .25s; }
     }
-    @keyframes swiss-web-emphasis { 0%, 100% { stroke: currentColor; } 50% { stroke: var(--accent); } }
-    @keyframes swiss-web-finish { from { stroke: currentColor; } to { stroke: var(--accent); } }
   </style>
-<rect class="swiss-web-frame swiss-web-one" x="38" y="77" width="151" height="91" rx="3"/>
-  <path d="M38 90h151" stroke-width="1.25" opacity=".5"/>
-  <g fill="currentColor" stroke="none" opacity=".5">
-  <circle cx="46" cy="84" r="1.5"/>
-  <circle cx="52" cy="84" r="1.5"/>
-  <circle cx="58" cy="84" r="1.5"/>
+
+  <!-- transit (slides left) -->
+  <g class="swiss-web-left">
+    <rect class="swiss-web-window swiss-surface" x="145" y="112" width="110" height="86" rx="3"/>
+    <path d="M145 123h110" stroke-width="1.25" stroke-opacity=".5"/>
+    <!-- two lines that cross once: ink runs flat through the interchange, the
+         accent line diagonally; every stop sits on its track -->
+    <path d="M156 186l28-28h32l20-20h8" stroke-width="1.5"/>
+    <path d="M156 136h22l44 44h24" stroke="var(--accent)" stroke-width="1.5"/>
+    <g fill="currentColor" stroke="none">
+      <circle cx="170" cy="172" r="2.5"/><circle cx="240" cy="138" r="2.5"/>
+      <circle cx="164" cy="136" r="2.5"/><circle cx="236" cy="180" r="2.5"/>
+    </g>
+    <circle class="swiss-surface" cx="200" cy="158" r="4.5" fill="var(--card-surface, var(--paper))" stroke-width="1.75"/>
   </g>
-  <rect class="swiss-web-frame swiss-web-two" x="211" y="77" width="151" height="91" rx="3"/>
-  <path d="M211 90h151" stroke-width="1.25" opacity=".5"/>
-  <g fill="currentColor" stroke="none" opacity=".5">
-  <circle cx="219" cy="84" r="1.5"/>
-  <circle cx="225" cy="84" r="1.5"/>
-  <circle cx="231" cy="84" r="1.5"/>
+
+  <!-- blueprint (slides right) -->
+  <g class="swiss-web-right">
+    <rect class="swiss-web-window swiss-surface" x="145" y="112" width="110" height="86" rx="3"/>
+    <path d="M145 123h110" stroke-width="1.25" stroke-opacity=".5"/>
+    <path d="M155 138h90M155 153h90M155 168h90M155 183h90M170 128v62M190 128v62M210 128v62M230 128v62" stroke-width="1" stroke-opacity=".2"/>
+    <path d="m180 150 20-11 20 11v22l-20 11-20-11Zm0 0 20 11 20-11M200 161v22" stroke-width="1.5"/>
+    <path d="m200 139 0 11" stroke="var(--accent)" stroke-width="1.5"/>
   </g>
-  <rect class="swiss-web-frame swiss-web-three" x="38" y="182" width="151" height="91" rx="3"/>
-  <path d="M38 195h151" stroke-width="1.25" opacity=".5"/>
-  <g fill="currentColor" stroke="none" opacity=".5">
-  <circle cx="46" cy="189" r="1.5"/>
-  <circle cx="52" cy="189" r="1.5"/>
-  <circle cx="58" cy="189" r="1.5"/>
-  </g>
-  <rect class="swiss-web-frame swiss-web-four" x="211" y="182" width="151" height="91" rx="3"/>
-  <path d="M211 195h151" stroke-width="1.25" opacity=".5"/>
-  <g fill="currentColor" stroke="none" opacity=".5">
-  <circle cx="219" cy="189" r="1.5"/>
-  <circle cx="225" cy="189" r="1.5"/>
-  <circle cx="231" cy="189" r="1.5"/>
-  </g>
-  <path d="M46 98h44v62H46Z" fill="currentColor"/>
-  <path d="M53 107h25M53 127h19M53 138h15M53 149h17" stroke="var(--accent)" stroke-width="1.25"/>
-  <path d="M100 105h64M100 112h40M100 124h77M100 132h67M100 140h72" stroke-width="1.25" opacity=".45"/>
-  <path d="m223 150 26-26h33l25-25h39M225 105h24l38 38h62"/>
-  <path d="M258 98v51h53l20 12" stroke-width="1.25" opacity=".45"/>
-  <g fill="currentColor" stroke="none">
-  <circle cx="241" cy="132" r="3"/>
-  <circle cx="276" cy="124" r="3"/>
-  <circle cx="318" cy="99" r="3"/>
-  <circle cx="238" cy="105" r="3"/>
-  <circle cx="299" cy="143" r="3"/>
-  <circle cx="334" cy="143" r="3"/>
-  </g>
-  <g stroke-width="1.25" opacity=".18">
-  <path d="M50 210h127M50 225h127M50 240h127M50 255h127M61 201v62M81 201v62M101 201v62M121 201v62M141 201v62M161 201v62"/>
-  </g>
-  <path d="m89 225 28-16 29 16v24l-29 16-28-16Zm0 0 28 16 29-16M117 241v24"/>
-  <path d="m117 209 0 15 29 17" stroke-width="1.25" opacity=".35"/>
-  <path d="M222 204h57v57h-57Z" fill="currentColor" opacity=".8"/>
-  <path d="M287 204h64v57h-64ZM319 204v57M287 232h64" stroke-width="1.25"/>
-  <path d="M229 213h39M229 220h25" stroke="var(--accent)" stroke-width="1.25"/>
-  <g stroke-width="1.25" opacity=".5">
-  <path d="M295 215h16M295 220h10M327 215h16M327 220h10M295 243h16M295 248h10M327 243h16M327 248h10"/>
+
+  <!-- the shared site, which becomes classic (stays in the middle) -->
+  <g>
+    <rect class="swiss-web-window swiss-surface" x="145" y="112" width="110" height="86" rx="3"/>
+    <path d="M145 123h110" stroke-width="1.25" stroke-opacity=".5"/>
+    <g class="swiss-web-source">
+      <path d="M157 137h42" stroke-width="3"/>
+      <path class="faint" d="M157 150h86M157 160h78M157 170h84M157 180h60" stroke-width="1.25"/>
+    </g>
+    <!-- classic home: hero copy on the left, 2x2 quadrants on the right with
+         the projects cell (top-left quadrant) in the accent, inset inside the lines -->
+    <g class="swiss-web-classic" stroke-width="1.25">
+      <rect x="200.6" y="123.6" width="26.8" height="36.4" fill="var(--accent)" stroke="none"/>
+      <path d="M200 123v75M227.5 123v75M200 160.6h55"/>
+      <path d="M154 158h30" stroke-width="2.5"/>
+      <path class="faint" d="M154 150h18M154 167h36M154 173h28"/>
+    </g>
   </g>
 </svg>

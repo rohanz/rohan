@@ -1,6 +1,7 @@
 ---
 import Analytics from '../components/Analytics.astro';
 import SwissThemeSwitch from '../components/SwissThemeSwitch.astro';
+import SwissLogo from '../components/SwissLogo.astro';
 import { ClientRouter } from 'astro:transitions';
 import { SOCIALS } from '../data/socials';
 import { DEFAULT_ACCENT } from '../lib/swiss/accents';
@@ -75,7 +76,7 @@ const nav = [
     <a href="#sw-main" class="sr-only">Skip to content</a>
     <header class="sw-nav">
       <div class="sw-wrap sw-nav-inner">
-        <a class="sw-wordmark" href="/" aria-label="rohan.jk — home">rohan.jk</a>
+        <a class="sw-wordmark" href="/" aria-label="rohan.jk — home"><SwissLogo class="sw-logo" />rohan.jk</a>
         <nav class="sw-nav-links" aria-label="Primary">
           {nav.map((n) => <a class="sw-link" href={n.href} aria-current={section === n.id ? 'page' : undefined}>{n.label}</a>)}
         </nav>

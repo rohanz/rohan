@@ -629,14 +629,30 @@
 /* ============================================================
    General Sans — swiss theme body/UI face (variable, 200–700)
    ============================================================
-   `optional` for the same reason as Chillax above: lay out once, never
-   re-lay out. The fallback is Arial-metric like Chillax's; size-adjust is
-   a starting estimate (General Sans runs ~2% wider than Arial at 400). */
+   `fallback`, not `optional`: the ClientRouter drops this stylesheet on a
+   switch to transit and re-adds it on the way back, which re-creates these
+   faces. An `optional` face that misses its ~100ms window then stays on the
+   fallback for the rest of the page, so classic came back from transit in
+   Arial. `fallback` keeps the same short block but still swaps in (from cache
+   that is a frame or two). The fallback is Arial-metric like Chillax's, with
+   a bold face for 600+ so weights survive even while it shows; size-adjust
+   is a starting estimate (General Sans runs ~2% wider than Arial at 400). */
 @font-face {
   font-family: 'General Sans Fallback';
   src: local('Arial'), local('ArialMT'), local('Liberation Sans'), local('LiberationSans'),
        local('Arimo'), local('Helvetica'), local('Nimbus Sans');
-  font-weight: 200 700;
+  font-weight: 200 500;
+  font-style: normal;
+  size-adjust: 102%;
+  ascent-override: 92%;
+  descent-override: 24%;
+  line-gap-override: 0%;
+}
+@font-face {
+  font-family: 'General Sans Fallback';
+  src: local('Arial Bold'), local('Arial-BoldMT'), local('Liberation Sans Bold'), local('LiberationSans-Bold'),
+       local('Arimo Bold'), local('Arimo-Bold'), local('Helvetica Bold'), local('Helvetica-Bold'), local('Nimbus Sans Bold');
+  font-weight: 600 700;
   font-style: normal;
   size-adjust: 102%;
   ascent-override: 92%;
@@ -648,12 +664,12 @@
   src: url('/fonts/GeneralSans-Variable.woff2') format('woff2');
   font-weight: 200 700;
   font-style: normal;
-  font-display: optional;
+  font-display: fallback;
 }
 @font-face {
   font-family: 'General Sans';
   src: url('/fonts/GeneralSans-VariableItalic.woff2') format('woff2');
   font-weight: 200 700;
   font-style: italic;
-  font-display: optional;
+  font-display: fallback;
 }

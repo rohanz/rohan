@@ -1,7 +1,7 @@
 // Shared BQST A/B demo engine: fetch/decode/retry, the dual-BufferSource
 // gain crossfade, mutual exclusion, the iOS silent-WAV unlock primer, and
-// Media Session wiring. Canvas drawing (waveform, progress bar) stays
-// theme-local, same as `src/lib/visuals/` — this owns audio state only.
+// Media Session wiring. Canvas drawing (waveform, progress bar) lives in
+// `src/lib/visuals/bqst-widgets.ts` — this owns audio state only.
 //
 // Consolidated from three near-identical forks:
 //   - `src/scripts/default/bqst-demo.js`        (classic — the feature-rich
@@ -71,6 +71,8 @@ export interface BqstEngineOptions {
 export class BqstEngine {
   private opts: BqstEngineOptions;
   private context: AudioContext | null = null;
+  /** rAF timestamp of the frame being drawn; 0 outside the progress loop. */
+  private frameTime = 0;
   private masterGain: GainNode | null = null;
   private cleanGain: GainNode | null = null;
   private processedGain: GainNode | null = null;
@@ -224,11 +226,27 @@ export class BqstEngine {
     }
   }
 
+  /** Audio clock for display. `currentTime` advances in render-quantum chunks
+   *  on the audio thread's own cadence, so reading it per animation frame
+   *  steps unevenly. getOutputTimestamp() pairs the audio clock with the
+   *  performance clock, which lets each frame extrapolate a smooth value that
+   *  also matches what is audible (it accounts for output latency). */
+  private smoothContextTime(): number {
+    const ctx = this.context;
+    if (!ctx) return 0;
+    const stamp = typeof ctx.getOutputTimestamp === 'function' ? ctx.getOutputTimestamp() : null;
+    if (stamp && stamp.contextTime !== undefined && stamp.performanceTime !== undefined && stamp.performanceTime > 0 && ctx.state === 'running') {
+      const at = this.frameTime > 0 ? this.frameTime : performance.now();
+      return stamp.contextTime + (at - stamp.performanceTime) / 1000;
+    }
+    return ctx.currentTime;
+  }
+
   private getPlaybackTime(): number {
     return computePlaybackTime({
       isPlaying: this.isPlaying_,
       hasContext: this.context !== null,
-      currentTime: this.context?.currentTime ?? 0,
+      currentTime: this.smoothContextTime(),
       startedAt: this.startedAt,
       pausedAt: this.pausedAt,
       duration: this.duration,
@@ -335,7 +353,10 @@ export class BqstEngine {
       });
     }
     if (this.rafId !== null) cancelAnimationFrame(this.rafId);
-    const tick = () => {
+    const tick = (frameTime: number) => {
+      // Sample the clock at the frame's own timestamp (when it will be shown),
+      // not whenever this callback happens to run.
+      this.frameTime = frameTime;
       const duration = this.duration;
       const ratio = duration > 0 ? (this.getPlaybackTime() % duration) / duration : 0;
       this.opts.onProgress?.(Math.max(0, Math.min(1, ratio)));
@@ -345,6 +366,7 @@ export class BqstEngine {
   }
 
   pause(): void {
+    this.frameTime = 0; // outside the loop, read the clock at the true current time
     this.pausedAt = this.getPlaybackTime();
     this.isPlaying_ = false;
     this.wantsToPlay = false;

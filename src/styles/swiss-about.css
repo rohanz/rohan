@@ -5,8 +5,9 @@ html.theme-swiss .sw-about-photo { position: relative; min-width: 0; min-height:
 html.theme-swiss .sw-about-photo img { position: absolute; width: 100%; height: 100%; object-fit: cover; object-position: center 60%; }
 html.theme-swiss .sw-about-caption { --cap-pad: 1.5rem; display: flex; flex-direction: column; justify-content: space-between; gap: 2rem; min-width: 0; padding: var(--cap-pad); }
 html.theme-swiss .sw-about-caption p { margin: 0; }
-html.theme-swiss .sw-about-caption a { justify-content: space-between; }
-html.theme-swiss .sw-about-caption .sw-arrow { font-size: 1.4rem; }
+/* The CV link is the whole cell: one large, easy target under the portrait. */
+html.theme-swiss .sw-about-caption a { flex: 1; justify-content: space-between; align-items: center; font-size: 1.05rem; color: var(--ink); }
+html.theme-swiss .sw-about-caption .sw-arrow { font-size: 1.6rem; }
 html.theme-swiss .sw-about-facts { display: grid; grid-template-columns: minmax(0, 1fr); }
 html.theme-swiss .sw-about-cell { min-width: 0; display: flex; flex-direction: column; gap: 1.25rem; padding: 1.5rem; border-bottom: 1px solid var(--tint-hair); background: var(--paper); transition: background .3s ease, color .3s ease; }
 html.theme-swiss .sw-about-cell > .sw-label, html.theme-swiss .sw-about-bio h1 { margin: 0; }

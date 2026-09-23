@@ -46,7 +46,8 @@ function shell(node: HTMLElement, kicker: string, meta: string) {
   node.textContent = '';
   const card = el('div', 'qla-visual');
   const header = el('div', 'qla-visual-header');
-  header.append(el('span', 'qla-visual-kicker', kicker), el('span', 'qla-visual-meta', meta));
+  header.append(el('span', 'qla-visual-kicker', kicker));
+  if (meta) header.append(el('span', 'qla-visual-meta', meta));
   const body = el('div', 'qla-visual-body');
   card.append(header, body);
   node.append(card);
@@ -80,8 +81,7 @@ const money = (v: number) => `$${Math.round(v).toLocaleString('en-US')}`;
 // 1. the order-book stepper
 // ============================================================
 function initBook(node: HTMLElement, options: QlsWidgetOptions, cleanups: Array<() => void>) {
-  const body = shell(node, 'inside the order book',
-    'a scripted order stream, one step at a time: the engine’s own test cases, replayed');
+  const body = shell(node, 'inside the order book', '');
   applyPalette(body, options.palette());
 
   const steps: LobStepState[] = replayScript(LOB_SCRIPT);
@@ -178,9 +178,7 @@ const BOOK_LABELS: Record<string, string> = {
 };
 
 function initAudit(node: HTMLElement, rows: AuditRow[], options: QlsWidgetOptions, cleanups: Array<() => void>) {
-  const rejected = rows.filter((r) => !r.approved).length;
-  const body = shell(node, 'the audit log, verbatim',
-    `every decision the risk layer has ever made · ${rows.length} lines, ${rejected} of them rejections`);
+  const body = shell(node, 'the audit log, verbatim', '');
   applyPalette(body, options.palette());
 
   const toggle = el('div', 'qlf-mode-toggle');
@@ -222,8 +220,8 @@ function initAudit(node: HTMLElement, rows: AuditRow[], options: QlsWidgetOption
           row.approved ? 'approved' : 'rejected'),
       );
       const meta = el('div', 'qls-audit-meta');
-      meta.append(el('span', 'qls-audit-book', BOOK_LABELS[row.book] ?? row.book),
-        el('span', 'qls-audit-file', row.log));
+      // The book name is enough; the log file it came from is one per book.
+      meta.append(el('span', 'qls-audit-book', BOOK_LABELS[row.book] ?? row.book));
       item.append(head, meta);
       if (row.reasons.length) {
         const why = el('div', 'qls-audit-reason');
@@ -247,7 +245,7 @@ function initAudit(node: HTMLElement, rows: AuditRow[], options: QlsWidgetOption
 // ============================================================
 function initBooks(node: HTMLElement, data: QlsData, options: QlsWidgetOptions, cleanups: Array<() => void>) {
   const body = shell(node, 'four books, one account',
-    `the real positions on ${data.snapshotTs.slice(0, 10)} · each book has its own limits, the broker sees only the net`);
+    `positions on ${data.snapshotTs.slice(0, 10)}`);
   applyPalette(body, options.palette());
 
   const toggle = el('div', 'qlf-mode-toggle');
@@ -321,8 +319,9 @@ function initBooks(node: HTMLElement, data: QlsData, options: QlsWidgetOptions, 
     netted.setAttribute('aria-pressed', String(mode === 'netted'));
     const total = data.books.reduce((n, b) => n + b.holdings.length, 0);
     caption.textContent = mode === 'books'
-      ? 'Each book keeps its own ledger and its own risk engine, so a book that blows its daily loss limit halts only itself. Note the two caps: the two factor books may put at most a quarter of their budget in any one name, while the single-symbol books are allowed to hold their whole budget in the one thing they are permitted to trade.'
-      : `${total} book-level orders became ${data.netted.length} broker orders. On this particular day nothing cancelled out: the four books happened to want twenty-two different symbols, so the netting layer passed everything through untouched. That is the correct outcome, not a broken one, and it is the real state of the exhibit.`;
+      ? ''
+      : `${total} book-level orders became ${data.netted.length} broker orders: nothing offset on this day.`;
+    caption.hidden = mode === 'books';
     if (mode === 'books') renderBooks(); else renderNetted();
   };
   perBook.addEventListener('click', () => select('books'));

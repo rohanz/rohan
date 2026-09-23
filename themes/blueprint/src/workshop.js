@@ -189,7 +189,7 @@ function buildDraftingTable() {
   return table;
 }
 
-// Banner images load once, shared across pages; sheets redraw on arrival.
+// Drawing images load once, shared across pages; sheets redraw on arrival.
 const imageCache = new Map();
 function loadImage(src, onReady) {
   let entry = imageCache.get(src);
@@ -240,29 +240,31 @@ function buildSheet(project, index) {
   // Mutable content: pagination re-points each sheet at a new project.
   let current = project;
   let number = index;
-  let bannerFade = 1; // 0..1 — crossfade from the X study into the banner
+  let drawingFade = 1; // 0..1 — crossfade from the X study into the drawing
   let fadeRaf = 0;
-  function startBannerFade() {
+  function startDrawingFade() {
     cancelAnimationFrame(fadeRaf);
     const t0 = performance.now();
-    bannerFade = 0;
+    drawingFade = 0;
     const step = (now) => {
-      bannerFade = Math.min(1, (now - t0) / 420);
+      drawingFade = Math.min(1, (now - t0) / 420);
       draw();
-      if (bannerFade < 1) fadeRaf = requestAnimationFrame(step);
+      if (drawingFade < 1) fadeRaf = requestAnimationFrame(step);
     };
     fadeRaf = requestAnimationFrame(step);
   }
+  // The frozen drawing in both inks (hover inverts the sheet), fetched
+  // together so a hover never waits on the second copy.
   function requestImage() {
-    if (current?.image) {
-      const target = current;
-      const cached = imageCache.get(current.image)?.ready;
-      loadImage(current.image, () => {
-        if (current !== target) return;
-        if (cached) { bannerFade = 1; draw(); } // instant when already in cache
-        else startBannerFade(); // fresh arrival: fade in over the placeholder
-      });
-    }
+    if (!current?.drawing) return;
+    const target = current;
+    const cached = imageCache.get(current.drawing)?.ready;
+    loadImage(current.drawingInverse, () => { if (current === target && hovered) draw(); });
+    loadImage(current.drawing, () => {
+      if (current !== target) return;
+      if (cached) { drawingFade = 1; draw(); } // instant when already in cache
+      else startDrawingFade(); // fresh arrival: fade in over the placeholder
+    });
   }
   function draw() {
     const paper = hovered ? COLORS.inkCss : COLORS.creamCss;
@@ -290,10 +292,13 @@ function buildSheet(project, index) {
     ctx.font = `600 24px ${FONT}`;
     ctx.fillText(`01 / SHEET ${String(number + 1).padStart(2, '0')}`, 50, 68);
 
-    // Banner panel: the article's real image, cover-fitted; a drafted
-    // construction study stands in until it arrives.
+    // Drawing panel: the project's drawing, its centred 400x240 band fitted
+    // to the panel's height; a drafted construction study stands in until it
+    // arrives (and for a project without a drawing). SVG sources rasterise at
+    // the 2x backing store's scale, so the lines stay vector-sharp.
     const px = 50, py = 88, pw = 590, ph = 148;
-    const entry = current.image ? imageCache.get(current.image) : null;
+    const src = current.drawing && (hovered ? current.drawingInverse : current.drawing);
+    const entry = src ? imageCache.get(src) : null;
     const drawPlaceholder = (alpha) => {
       ctx.globalAlpha = 0.55 * alpha;
       ctx.strokeRect(px, py, pw, ph);
@@ -304,28 +309,26 @@ function buildSheet(project, index) {
       ctx.globalAlpha = 1;
     };
     if (entry?.ready) {
-      if (bannerFade < 1) drawPlaceholder(1 - bannerFade);
+      if (drawingFade < 1) drawPlaceholder(1 - drawingFade);
       const img = entry.img;
-      const scale = Math.max(pw / img.width, ph / img.height);
-      const sw = pw / scale, sh = ph / scale;
-      ctx.save();
-      ctx.beginPath();
-      ctx.rect(px, py, pw, ph);
-      ctx.clip();
-      ctx.globalAlpha = bannerFade;
-      ctx.drawImage(img, (img.width - sw) / 2, (img.height - sh) / 2, sw, sh, px, py, pw, ph);
-      ctx.restore();
-      ctx.globalAlpha = 0.9 * bannerFade;
+      const sy = img.height * 0.1, sh = img.height * 0.8; // the 240-unit band
+      const dh = ph, dw = dh * (img.width / sh);
+      ctx.globalAlpha = drawingFade;
+      ctx.drawImage(img, 0, sy, img.width, sh, px + (pw - dw) / 2, py, dw, dh);
+      ctx.globalAlpha = 0.9 * drawingFade;
       ctx.strokeRect(px, py, pw, ph);
       ctx.globalAlpha = 1;
     } else {
       drawPlaceholder(1);
     }
 
-    // Summary — a short teaser that trails off, like the original site.
+    // Teaser: two lines that trail off (the article carries the full text).
     ctx.font = `500 17px ${FONT}`;
     const MAX_LINES = 2;
-    const words = (current.summary || '').split(' ');
+    // A project with a short name leads with it and uses its one-line title as
+    // the teaser; one without falls back to title + summary.
+    const teaser = current.name !== current.title ? current.title : current.summary;
+    const words = (teaser || '').split(' ');
     const sumLines = [];
     let line = '';
     let truncated = false;
@@ -369,7 +372,7 @@ function buildSheet(project, index) {
       tx += tw + 10;
     }
 
-    const title = titleLines(current.title, 560);
+    const title = titleLines(current.name ?? current.title, 560);
     const titleSize = title.size; // measured at draw size — no overflow bump
     ctx.font = `600 ${titleSize}px ${FONT}`;
     ctx.fillStyle = paper; // cream on the inverted cell
@@ -414,7 +417,7 @@ function buildSheet(project, index) {
       number = nextNumber;
       hovered = false;
       cancelAnimationFrame(fadeRaf); // a mid-fade from the old project stops
-      bannerFade = 1;
+      drawingFade = 1;
       hitbox.userData.slug = nextProject?.slug ?? null;
       group.visible = !!nextProject;
       draw();

@@ -1,9 +1,9 @@
 ---
-title: live chord monitor
+title: "naming the chord you play, in real time"
 barTitle: "live chord monitor"
 summary: "A real-time MIDI and computer-keyboard chord monitor: a root-agnostic chord-detection engine with correct enharmonic spelling, built as a signed and notarized macOS app in Electron, React, and TypeScript."
 image: /assets/images/projects/live-chord-monitor/banner.webp
-order: 8
+order: 11
 technologies:
   - TypeScript
   - React
@@ -14,7 +14,7 @@ technologies:
 ---
 
 <p class="download-actions">
-  <a href="https://github.com/rohanz/live-chord-monitor/releases/download/v0.1.0/Live-Chord-Monitor-0.1.0-universal.dmg" class="try-it-btn">download for macOS</a>
+  <a href="https://github.com/rohanz/live-chord-monitor/releases/download/v0.2.0/Live-Chord-Monitor-0.2.0-universal.dmg" class="try-it-btn">download for macOS</a>
   <a href="https://ko-fi.com/rohanjk" class="support-btn" target="_blank" rel="noopener noreferrer">buy me a coffee</a>
 </p>
 
@@ -24,7 +24,7 @@ Alongside making music, I teach music theory and production lessons online. A lo
 
 Paid tools exist that show chords from <span class="gloss-term" data-gloss="MIDI is a protocol that lets instruments and computers send note and control messages to each other. A MIDI keyboard sends 'note on'/'note off' events rather than audio.">MIDI</span>, but the ones I tried were rigid: one naming convention, one spelling, no say over inversions or how busy the readout got. In a lesson I want to control exactly how a chord is named and spelled to match whatever I'm teaching that day, so I built a tool with those controls.
 
-What surprised me was how deep the core problem went. Turning a handful of held keys into the chord name a musician would actually write down is much harder than it looks, and getting it right is what kept me going well past "good enough for a lesson."
+The core problem went deeper than I expected. Turning a handful of held keys into the chord name a musician would actually write down is much harder than it looks, and getting it right is what kept me going well past "good enough for a lesson."
 
 ## what is it?
 
@@ -44,23 +44,24 @@ That readout is doing more than looking notes up in a table. Working out a chord
 
 ## naming a chord from notes
 
-A handful of pressed keys is just a set of <span class="gloss-term" data-gloss="A pitch class is a note name regardless of octave. Every C is pitch class 0, every C# is 1, and so on up to 11. There are only 12.">pitch classes</span>. The same set can be several different chords depending on which note you treat as the <span class="gloss-term" data-gloss="The root is the note a chord is named from and built on. The root of a C major chord is C.">root</span>. C, E and G spell a C major chord; the notes A, C and E spell A minor, and the two overlap. So the engine doesn't assume the lowest note is the root. It treats every active pitch class as a candidate root, measures the <span class="gloss-term" data-gloss="An interval is the distance between two notes in semitones. A major third is 4 semitones; a perfect fifth is 7.">intervals</span> of the other notes against it, and tests that interval set against 34 chord templates, from triads up through 13th chords and altered dominants.
+A handful of pressed keys is just a set of <span class="gloss-term" data-gloss="A pitch class is a note name regardless of octave. Every C is pitch class 0, every C# is 1, and so on up to 11. There are only 12.">pitch classes</span>. The same set can be several different chords depending on which note you treat as the <span class="gloss-term" data-gloss="The root is the note a chord is named from and built on. The root of a C major chord is C.">root</span>. C, E and G spell a C major chord; the notes A, C and E spell A minor, and the two overlap. So the engine doesn't assume the lowest note is the root. It treats every active pitch class as a candidate root, measures the <span class="gloss-term" data-gloss="An interval is the distance between two notes in semitones. A major third is 4 semitones; a perfect fifth is 7.">intervals</span> of the other notes against it, and tests that interval set against 41 chord templates, from triads up through 13th chords and altered dominants.
 
 Plenty of candidates can fit at once. A busy voicing might match a dozen names, so each one gets a score and the highest wins:
 
 ```ts
 // Try every active note as a possible root; score how well each template fits.
-const exactness = 100 - missing.length * 11 - additions.length * 7;
-const score =
-  exactness +
-  template.priority +              // extensions outrank plain triads
-  (bass === root ? 8 : 0) +        // reward the name whose root is actually in the bass
-  template.intervals.length * 3;   // and the more complete, more specific name
+const score = 100
+  - missing.length * 11            // a missing tone (usually the fifth) costs a little
+  - additions.length * 14          // a note the name doesn't mention costs more
+  - contradictions * 12            // two thirds, two fifths or two sevenths cost more still
+  + template.priority              // extensions outrank plain triads
+  + (bass === root ? 8 : 0)        // reward the name whose root is actually in the bass
+  + matchedTones * 3;              // and the name that accounts for more sounding notes
 ```
 
-A few decisions live in that scoring. Incomplete or cluttered matches lose points, so a clean triad beats a triad with two stray notes hanging off it. The priority term lets a true `Cmaj9` outrank the plain `Cmaj7` sitting inside it. And the bass bonus is what produces <span class="gloss-term" data-gloss="A slash chord names the chord and then the bass note after a slash, like C/E for a C chord with E in the bass.">slash chords</span> on its own: play C-E-G with E at the bottom and `C/E` scores highest, ahead of any rootless reading.
+A few decisions live in that scoring. Incomplete or cluttered matches lose points, and a stray note costs more than a missing one, so a clean triad beats a triad with two notes hanging off it. The priority term lets a true `Cmaj9` outrank the plain `Cmaj7` sitting inside it. And the bass bonus is what produces <span class="gloss-term" data-gloss="A slash chord names the chord and then the bass note after a slash, like C/E for a C chord with E in the bass.">slash chords</span> on its own: play C-E-G with E at the bottom and `C/E` scores highest, ahead of any rootless reading.
 
-Real voicings often leave notes out, too. Jazz pianists drop the fifth all the time, since it adds little and frees up a finger, so the engine lets the perfect fifth go missing and still finds the chord. That is why C-E-Bb-D comes back as `C9` instead of matching nothing. When more than one name is defensible, the next four candidates show up under the primary as alternatives.
+Real voicings often leave notes out, too. Jazz pianists drop the fifth all the time, since it adds little and frees up a finger, so the engine lets the perfect fifth go missing and still finds the chord. That is why C-E-Bb-D comes back as `C9(no5)` instead of matching nothing. When more than one name is defensible, up to four runners-up within 20 points of the winner show up under it as alternatives.
 
 ## spelling it right
 
@@ -79,13 +80,13 @@ spelling[targetPitch] = `${letter}${accidental}`;
 
 The double-flat case is the one I find most satisfying. A `Cdim7` stacks minor thirds: C, Eb, Gb, and then a note that sounds like A but functions as a diminished seventh, so it has to be written B𝄫 to keep one letter per chord tone. The engine spells it that way, and that spelling flows into the notation, so the accidentals on the staff follow the theory instead of the raw key. You can see it in the demo above as the note row re-spells itself when the chord around it changes.
 
-One honest limit: the sharp-or-flat choice is a single global toggle, not full key-signature awareness. The engine spells correctly within a chord, but it doesn't know you're sitting in the key of Eb. I labeled the setting "Spelling" rather than "Key" so it doesn't claim more than it delivers.
+One limit: the sharp-or-flat choice is a single global toggle with no key-signature awareness. The engine spells correctly within a chord, but it doesn't know you're sitting in the key of Eb. I labeled the setting "Spelling" rather than "Key" so it doesn't claim more than it delivers.
 
 ## real time, with real hardware
 
 The input side has its own set of problems, and they only really surface once real hardware is involved.
 
-The first: the same note can arrive from more than one place at once. A MIDI keyboard, the computer keyboard, and a mouse click can all be holding middle C together. So the app doesn't track a note as simply down or up. It tracks the set of sources currently holding each note and releases it only when the last source lets go, so one input lifting off never cuts a note another input is still playing.
+The first: the same note can arrive from more than one place at once. A MIDI keyboard, the computer keyboard, and a mouse click can all be holding middle C together. So for each note the app tracks the set of sources currently holding each note and releases it only when the last source lets go, so one input lifting off never cuts a note another input is still playing.
 
 The second: hardware gets unplugged mid-chord. Pull out a controller while keys are down and those <span class="gloss-term" data-gloss="A stuck note is one the app thinks is still held because it never received the matching 'note off', often after a device disconnects mid-note.">notes would stick</span> forever, because the matching "note off" never arrives. The app listens for device disconnects over the <span class="gloss-term" data-gloss="The Web MIDI API lets a browser or Electron app talk to MIDI devices directly, including hot-plugging devices while running.">Web MIDI API</span> and fires the missing note-offs itself for whatever that device was holding.
 
@@ -101,19 +102,19 @@ Distribution is the stage where a lot of side projects stop. This one ships as a
 
 Live Chord Monitor is free to download. If it's useful to you and you'd like to support future work, you can <a href="https://ko-fi.com/rohanjk" target="_blank" rel="noopener noreferrer">buy me a coffee</a>.
 
-Underneath all of it sits a suite of about 50 tests. The chord engine is the most heavily covered: triads, sevenths, extensions, every naming and inversion mode, the fifth-omission cases, the ambiguous voicings, and spelling edge cases like `C7`→Bb and `Cdim7`→B𝄫. Plain functions with no UI are easy to test, which is part of why the chord logic lives completely apart from React.
+Underneath all of it sits a suite of 282 tests. The chord engine is the most heavily covered, including a corpus of 106 voicings with their expected names: triads, sevenths, extensions, every naming and inversion mode, the fifth-omission cases, the ambiguous voicings, and spelling edge cases like `C7`→Bb and `Cdim7`→B𝄫.
 
 ## what stuck with me
 
-**Chord naming is really a ranking problem.** The same notes can be several legitimate chords, so the engine never looks one up. It generates every defensible candidate and scores them, which is the same shape as search relevance or a classifier: the real work is in the scoring heuristic and the tie-breaks, not the data. Once I framed it that way, ambiguous voicings stopped being bugs. I just show the runner-up names underneath.
+**Chord naming is really a ranking problem.** The same notes can be several legitimate chords, so the engine never looks one up. It generates every defensible candidate and scores them, which is the same shape as search relevance or a classifier: the real work is in the scoring heuristic and the tie-breaks. Once I framed it that way, ambiguous voicings stopped being bugs. I just show the runner-up names underneath.
 
-**The hard part was perception, not math.** The chord theory was deterministic and working early on. What actually felt broken was the readout flickering as a chord was released, and the fix was a state machine that models the gap between what's held and what's shown. Responsiveness that feels right has to be designed in on purpose.
+**The hardest bug was about perception.** The chord theory was deterministic and working early on. What actually felt broken was the readout flickering as a chord was released, and the fix was a state machine that models the gap between what's held and what's shown. Responsiveness that feels right has to be designed in on purpose.
 
 **Correctness belongs in pure functions.** All the chord theory is plain functions with no React, no audio, no DOM, which is exactly why I could nail down dozens of edge cases in fast unit tests and rework the scoring without worrying about breaking something. The messy, mockable parts (MIDI, audio, rendering) stay at the edges. I let the question "what do I want to be able to test?" shape the architecture.
 
 **A desktop app has a security surface a web page doesn't.** Wrapping web code in Electron gives it a path to the operating system, so "finished" had to include sandboxing the renderer, serving the UI over a locked-down scheme, enforcing a CSP, and handing the renderer only the MIDI permission. None of it shows up in a screenshot, but once people install software instead of visiting a page, that surface is yours to defend.
 
 <p class="download-actions">
-  <a href="https://github.com/rohanz/live-chord-monitor/releases/download/v0.1.0/Live-Chord-Monitor-0.1.0-universal.dmg" class="try-it-btn">download for macOS</a>
+  <a href="https://github.com/rohanz/live-chord-monitor/releases/download/v0.2.0/Live-Chord-Monitor-0.2.0-universal.dmg" class="try-it-btn">download for macOS</a>
   <a href="https://ko-fi.com/rohanjk" class="support-btn" target="_blank" rel="noopener noreferrer">buy me a coffee</a>
 </p>

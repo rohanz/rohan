@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  <style>
+    /* Three agents' editors joined through one shared room. On hover the links
+       draw in, then the one change that breaks a teammate is flagged. Undrawn
+       dashes sit one unit past the path start so round caps leave no dot. */
+    .swiss-room-link { stroke-dasharray: 100 102; stroke-dashoffset: 101; }
+    .swiss-room-flag { fill-opacity: 0; stroke-opacity: 0; }
+    @media (prefers-reduced-motion: no-preference) {
+      .swiss-room-link { transition: stroke-dashoffset .45s cubic-bezier(.2,.7,.2,1); }
+      .swiss-room-hub { transition: stroke .3s ease; }
+      .swiss-card.is-hover .swiss-room-hub { stroke: var(--accent); transition-delay: .2s; }
+      .swiss-room-flag { transition: fill-opacity .3s ease, stroke-opacity .3s ease; }
+      .swiss-card.is-hover .swiss-room-link { stroke-dashoffset: 0; transition-delay: var(--d, 0s); }
+      .swiss-card.is-hover .swiss-room-flag { fill-opacity: 1; stroke-opacity: 1; transition-delay: .45s; }
+    }
+  </style>
+  <!-- the room: a shared hub -->
+  <circle class="swiss-room-hub" cx="200" cy="178" r="24"/>
+  <path d="M188 178h24M200 166v24" stroke-width="1.25" stroke-opacity=".45"/>
+  <!-- three agents' editors -->
+  <g stroke-width="1.5">
+    <rect x="40" y="90" width="92" height="64" rx="3"/><path d="M40 102h92" stroke-width="1.25" stroke-opacity=".5"/>
+    <path d="M50 114h40M50 124h56M50 134h32M50 144h48" stroke-width="1.25" stroke-opacity=".45"/>
+    <rect x="268" y="90" width="92" height="64" rx="3"/><path d="M268 102h92" stroke-width="1.25" stroke-opacity=".5"/>
+    <path d="M278 114h52M278 124h36M278 134h60M278 144h28" stroke-width="1.25" stroke-opacity=".45"/>
+    <rect x="154" y="226" width="92" height="52" rx="3"/><path d="M154 238h92" stroke-width="1.25" stroke-opacity=".5"/>
+    <path d="M164 250h48M164 260h64M164 268h30" stroke-width="1.25" stroke-opacity=".45"/>
+  </g>
+  <!-- faint routes at rest; they draw in on hover -->
+  <g stroke-width="1.25" stroke-opacity=".18" stroke-dasharray="2 5">
+    <path d="M132 130C160 130 168 160 180 166"/><path d="M268 130C240 130 232 160 220 166"/><path d="M200 202v24"/>
+  </g>
+  <g stroke-width="1.5" stroke="var(--accent)">
+    <path class="swiss-room-link" style="--d: 0s" pathLength="100" d="M132 130C160 130 168 160 180 166"/>
+    <path class="swiss-room-link" style="--d: .08s" pathLength="100" d="M268 130C240 130 232 160 220 166"/>
+    <path class="swiss-room-link" style="--d: .16s" pathLength="100" d="M200 202v24"/>
+  </g>
+  <!-- the change that would break a teammate, flagged in the accent -->
+  <g class="swiss-room-flag">
+    <rect x="276" y="119" width="46" height="10" fill="var(--accent)" stroke="none"/>
+    <circle cx="352" cy="86" r="9" fill="var(--accent)" stroke="none"/>
+    <path class="swiss-surface" d="M352 81v5M352 90v.5" stroke="var(--card-surface, var(--paper))" stroke-width="2"/>
+  </g>
+</svg>

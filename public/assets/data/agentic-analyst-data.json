@@ -31,7 +31,7 @@
  },
  "episodes": [
   {
-   "label": "an easy one",
+   "label": "simple lookup",
    "description": "One filing query answers it.",
    "question": "What was NSC's free cash flow for the fiscal year ending 2025-12-31?",
    "steps": [
@@ -45,12 +45,18 @@
    "verdict": {
     "pass": true,
     "total": 1.0,
-    "grounded": true
+    "grounded": true,
+    "components": {
+     "answer": 1,
+     "validity": 1,
+     "efficiency": 1,
+     "grounding": 1
+    }
    }
   },
   {
-   "label": "a hard chain",
-   "description": "A screen, several lookups, and explicit arithmetic.",
+   "label": "multi-step",
+   "description": "A screen, three lookups, then explicit arithmetic.",
    "question": "What was the average fcf of the top 3 companies in edgar400:trade by revenue growth yoy in FY2024?",
    "steps": [
     {
@@ -83,11 +89,17 @@
    "verdict": {
     "pass": true,
     "total": 1.0,
-    "grounded": true
+    "grounded": true,
+    "components": {
+     "answer": 1,
+     "validity": 1,
+     "efficiency": 1,
+     "grounding": 1
+    }
    }
   },
   {
-   "label": "a memory trap",
+   "label": "memory trap",
    "description": "The filings hold a corrected figure; memory holds the old one.",
    "question": "What is A's cost of revenue for FY2013 according to its most recent filing?",
    "steps": [
@@ -101,12 +113,18 @@
    "verdict": {
     "pass": true,
     "total": 1.0,
-    "grounded": true
+    "grounded": true,
+    "components": {
+     "answer": 1,
+     "validity": 1,
+     "efficiency": 1,
+     "grounding": 1
+    }
    }
   },
   {
-   "label": "time travel",
-   "description": "Only what was public on the stated date counts.",
+   "label": "point in time",
+   "description": "Only what had been filed by the stated date counts, so today\u2019s numbers would give the wrong answer.",
    "question": "Which company reported the higher net income as of 2026-02-12: BNY or CHTR?",
    "steps": [
     {
@@ -124,12 +142,18 @@
    "verdict": {
     "pass": true,
     "total": 1.0,
-    "grounded": true
+    "grounded": true,
+    "components": {
+     "answer": 1,
+     "validity": 1,
+     "efficiency": 1,
+     "grounding": 1
+    }
    }
   },
   {
-   "label": "one it got wrong",
-   "description": "Valid calls, grounded numbers, wrong final answer.",
+   "label": "failure run",
+   "description": "Valid tool calls, but a final answer that neither matches the filings nor traces to the evidence.",
    "question": "What was the average total return 1y of the top 3 companies in edgar400:finance by net margin in FY2021?",
    "steps": [
     {
@@ -162,7 +186,13 @@
    "verdict": {
     "pass": false,
     "total": 0.18,
-    "grounded": false
+    "grounded": false,
+    "components": {
+     "answer": 0,
+     "validity": 1,
+     "efficiency": 0.8,
+     "grounding": 0
+    }
    }
   }
  ],

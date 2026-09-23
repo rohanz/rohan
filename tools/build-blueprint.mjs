@@ -16,6 +16,8 @@ const registryFile = path.join(blueprintRoot, 'src', 'projects.generated.js');
 const siteDataFile = path.join(blueprintRoot, 'src', 'site-data.generated.js');
 const headingSlugsFile = path.join(blueprintRoot, 'src', 'heading-slugs.generated.js');
 const blueprintDistDir = path.join(blueprintRoot, 'dist');
+const sourceDrawingsDir = path.join(repoRoot, 'src', 'drawings', 'swiss');
+const drawingsDir = path.join(blueprintRoot, 'public', 'drawings');
 const siteBlueprintDir = path.join(repoRoot, 'dist', 'blueprint');
 
 // Datasets shared with the classic/transit themes (songs, testimonials, the
@@ -167,7 +169,44 @@ function extractHeadingSlugs(marked, markdown) {
   return ids;
 }
 
-async function syncProjectContent() {
+// The project drawings (src/drawings/swiss/<slug>.svg) are live inline SVGs
+// elsewhere: colours come from CSS tokens and motion from a hover class.
+// Blueprint uses them as plain images (the article reader's <img>, the
+// workshop wall's canvas textures), so each is frozen into a standalone SVG in
+// its played state with blueprint's own palette: ink on cream, plus an
+// inverted copy for the wall sheets' hover state. The freezer and the header
+// centring are shared with the Astro themes (src/lib/swiss/drawing-frame.ts).
+async function loadDrawingFrame() {
+  const source = await readFile(path.join(repoRoot, 'src', 'lib', 'swiss', 'drawing-frame.ts'), 'utf8');
+  const { code } = await transform(source, { loader: 'ts', format: 'esm', target: 'es2022' });
+  return import(`data:text/javascript,${encodeURIComponent(code)}`);
+}
+
+async function syncDrawings() {
+  const { freezeDrawing, propertyDefaults } = await loadDrawingFrame();
+  const { COLORS } = await import(pathToFileURL(path.join(blueprintRoot, 'src', 'constants.js')).href);
+  const defaults = propertyDefaults(await readFile(path.join(repoRoot, 'src', 'styles', 'drawing-properties.css'), 'utf8'));
+  const palettes = {
+    '': { ink: COLORS.inkCss, paper: COLORS.creamCss, accent: COLORS.accentCss },
+    '.inverse': { ink: COLORS.creamCss, paper: COLORS.inkCss, accent: COLORS.accentCss },
+  };
+
+  await rm(drawingsDir, { recursive: true, force: true });
+  await mkdir(drawingsDir, { recursive: true });
+  const slugs = new Set();
+  for (const name of await readdir(sourceDrawingsDir)) {
+    if (!name.endsWith('.svg')) continue;
+    const slug = name.slice(0, -'.svg'.length);
+    const svg = await readFile(path.join(sourceDrawingsDir, name), 'utf8');
+    for (const [suffix, colours] of Object.entries(palettes)) {
+      await writeFile(path.join(drawingsDir, `${slug}${suffix}.svg`), freezeDrawing(svg, slug, colours, defaults));
+    }
+    slugs.add(slug);
+  }
+  return slugs;
+}
+
+async function syncProjectContent(drawingSlugs) {
   const names = (await readdir(sourceProjectsDir))
     .filter((name) => name.endsWith('.md'))
     .sort((left, right) => left.localeCompare(right));
@@ -185,12 +224,15 @@ async function syncProjectContent() {
     await writeFile(path.join(articlesDir, name), body);
     headingSlugsByProject[slug] = extractHeadingSlugs(marked, body);
 
+    const title = requireField(frontmatter, 'title', file);
     projects.push({
-      title: requireField(frontmatter, 'title', file),
+      title,
+      // Short project name (the card wordmark's source); falls back to the title.
+      name: frontmatter.barTitle ?? title,
       slug,
       summary: requireField(frontmatter, 'summary', file),
       tech: requireField(frontmatter, 'technologies', file),
-      image: requireField(frontmatter, 'image', file),
+      drawing: drawingSlugs.has(slug) ? `drawings/${slug}` : null,
       order: requireField(frontmatter, 'order', file),
       ...(frontmatter.unlisted === true ? { unlisted: true } : {}),
     });
@@ -204,7 +246,9 @@ async function syncProjectContent() {
     `export const PROJECTS = PROJECT_DATA.map((project) => ({\n` +
     `  ...project,\n` +
     `  url: \`https://www.rohanjk.xyz/projects/\${project.slug}\`,\n` +
-    `  image: asset(project.image),\n` +
+    `  // Frozen drawing (ink on cream) and its inverse (cream on ink), or null.\n` +
+    `  drawing: project.drawing && asset(\`\${project.drawing}.svg\`),\n` +
+    `  drawingInverse: project.drawing && asset(\`\${project.drawing}.inverse.svg\`),\n` +
     `}));\n`;
   await writeFile(registryFile, generated);
 
@@ -353,7 +397,7 @@ async function main() {
     await run('npm', ['ci'], blueprintRoot);
   }
 
-  const projects = await syncProjectContent();
+  const projects = await syncProjectContent(await syncDrawings());
   await syncSiteData();
   await injectFooterSocials();
   await run('npx', ['vite', 'build'], blueprintRoot);

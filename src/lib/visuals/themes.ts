@@ -34,6 +34,7 @@ export function classicPalette(isLight: boolean): VisualPalette {
       aliasBandAudible: isLight ? 'rgba(255, 204, 128, 0.16)' : 'rgba(255, 204, 128, 0.08)',
       aliasBandHeadroom: isLight ? 'rgba(141, 110, 99, 0.10)' : 'rgba(141, 110, 99, 0.09)',
       legendAliasAudible: CLASSIC_BROWN,
+      waveProcessed: '#FFADCB', // classic's bqst-demo.js still paints its own
     },
     qla: {
       compoundCurve: accent,
@@ -86,6 +87,7 @@ export const transitPalette: VisualPalette = (() => {
       aliasBandAudible: 'rgba(51,180,229, 0.16)',
       aliasBandHeadroom: 'rgba(138,133,120, 0.1)',
       legendAliasAudible: TRANSIT_MUTED,
+      waveProcessed: '#e488ad',
     },
     qla: {
       compoundCurve: TRANSIT_RED,
@@ -143,6 +145,7 @@ export const blueprintPalette: VisualPalette = (() => {
       aliasBandAudible: 'rgba(199,75,80, 0.10)',
       aliasBandHeadroom: 'rgba(116,117,124, 0.1)',
       legendAliasAudible: BP_LIGHT_NAVY,
+      waveProcessed: '#e488ad', // the original bqst pink
     },
     qla: {
       compoundCurve: BP_RED,
@@ -191,6 +194,7 @@ export function swissPalette(accent = '#5f66c2'): VisualPalette {
       aliasBandAudible: 'rgba(47,74,58,0.08)',
       aliasBandHeadroom: 'rgba(107,107,102,0.10)',
       legendAliasAudible: '#2f4a3a',
+      waveProcessed: accent,
     },
     qla: {
       compoundCurve: accent,

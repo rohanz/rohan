@@ -65,16 +65,21 @@ html.theme-swiss .bqst-audio-toggle button {
   }
 html.theme-swiss .bqst-audio-toggle button.is-active { background: var(--w-accent); color: var(--paper); box-shadow: 0 0 18px var(--w-accent-glow); }
 html.theme-swiss .bqst-audio-wave {
-    position: relative; height: 68px; border: 1px solid var(--w-border); border-radius: 8px; overflow: hidden;
-    background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 6%, transparent), color-mix(in srgb, var(--accent) 2%, transparent));
+    position: relative; height: 68px; border: 1px solid var(--w-border); border-radius: 0; overflow: hidden;
+    container-type: inline-size; /* 100cqw = the waveform's width, for the playhead */
+    background: color-mix(in srgb, var(--accent) 4%, var(--paper));
   }
 html.theme-swiss .bqst-audio-wave canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 html.theme-swiss .bqst-audio-wave span { position: absolute; inset: 50% 0 auto; height: 1px; background: rgba(0,0,0,0.16); }
 html.theme-swiss .bqst-audio-wave i {
     position: absolute; top: 0; bottom: 0; left: 0; width: 100%; display: block; pointer-events: none;
-    background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 22%, transparent), color-mix(in srgb, var(--accent) 5%, transparent));
-    border-right: 2px solid var(--w-accent);
+    background: color-mix(in srgb, var(--accent) 14%, transparent);
     transform: scaleX(0); transform-origin: left; will-change: transform;
+  }
+/* The playhead: a fixed 2px line that slides, never scales. */
+html.theme-swiss .bqst-audio-head {
+    position: absolute; top: 0; bottom: 0; left: -1px; width: 2px; display: block; pointer-events: none;
+    background: var(--w-accent); visibility: hidden; will-change: transform;
   }
 html.theme-swiss .lcm-demo { margin: 1.5rem 0 0.5rem; }
 html.theme-swiss .lcm-readout { height: 6.5rem; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; margin-bottom: 1.25rem; overflow: hidden; }
@@ -131,8 +136,6 @@ html.theme-swiss .qla-btn {
   }
 html.theme-swiss .qla-btn:hover { border-color: rgba(0,0,0,0.28); background: var(--paper); }
 html.theme-swiss .qla-btn:focus-visible { outline: 2px solid var(--w-accent); outline-offset: 2px; }
-html.theme-swiss .qla-btn-accent { background: var(--line-projects); color: #fff; border-color: transparent; }
-html.theme-swiss .qla-btn-accent:hover { background: var(--line-projects); border-color: transparent; filter: brightness(1.08); }
 @media (prefers-reduced-motion: reduce) { html.theme-swiss .qla-btn { transition: none; } }
 html.theme-swiss .qla-compound-takeaway { margin: 0.4rem 0 0.8rem; min-height: 2.9em; color: rgba(20,20,20,0.72); font-size: 0.92rem; font-style: italic; }
 html.theme-swiss .qla-compound-canvas { display: block; width: 100%; max-width: 100%; }
@@ -178,11 +181,11 @@ html.theme-swiss .qla-judge-panel-label {
 html.theme-swiss .qla-judge-panel-body { padding: 0.8rem 0.9rem; white-space: pre-wrap; font-size: 0.83rem; line-height: 1.55; color: rgba(20,20,20,0.78); overflow: hidden; }
 html.theme-swiss .qla-judge-guess:disabled { opacity: 0.45; cursor: default; }
 html.theme-swiss .qla-judge-guess:disabled:hover { border-color: var(--w-border); background: var(--paper); }
-html.theme-swiss .qla-judge-controls { justify-content: center; min-height: 2.6em; display: flex; gap: 0.6rem; flex-wrap: wrap; margin-top: 0.2rem; }
-html.theme-swiss .qla-judge-feedback { min-height: 1.7em; line-height: 1.7; text-align: center; color: var(--w-ink); font-size: 0.92rem; font-weight: 700; margin: 0.3rem 0 0; }
+html.theme-swiss .qla-judge-controls { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: .5rem 1rem; min-height: 2.75rem; margin-top: .6rem; }
+html.theme-swiss .qla-judge-actions { display: flex; gap: .6rem; }
+html.theme-swiss .qla-judge-feedback { margin: 0; text-align: center; color: var(--w-ink); font-size: 0.92rem; font-weight: 700; }
 html.theme-swiss .qla-judge-feedback.is-correct { color: var(--w-good, #2f4a3a); }
 html.theme-swiss .qla-judge-feedback.is-wrong { color: var(--accent); }
-html.theme-swiss .qla-judge-score { margin: 0; min-height: 1.7em; line-height: 1.7; text-align: center; color: var(--w-ink); font-weight: 600; font-size: 0.9rem; }
 html.theme-swiss .qla-roster-controls { display: flex; align-items: center; gap: 0.6rem; margin: 0.7rem 0 0.5rem; }
 html.theme-swiss .qla-roster-label { color: var(--w-muted); font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
 html.theme-swiss .qla-roster-select {
@@ -218,7 +221,7 @@ html.theme-swiss .qlf-legend-swatch { display: inline-block; width: 9px; height:
 html.theme-swiss .qlf-sw-series { color: var(--w-accent); }
 html.theme-swiss .qlf-sw-accent { color: var(--w-good, #2f4a3a); }
 html.theme-swiss .qlf-sw-warn { color: var(--line-projects); }
-html.theme-swiss .qlf-sw-muted { color: var(--w-muted); }
+html.theme-swiss .qlf-sw-muted, html.theme-swiss .qlf-sw-plain { color: var(--w-muted); }
 html.theme-swiss .qlf-legend-swatch.qla-sw-good { background: var(--w-good, #2f4a3a); }
 html.theme-swiss .qlf-legend-swatch.qla-sw-bad { background: var(--line-projects); }
 html.theme-swiss .qlf-legend-swatch.qlf-sw-gap { background: color-mix(in srgb, var(--accent) 14%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent); }
@@ -295,11 +298,8 @@ html.theme-swiss .qlf-status-strip.is-tripped { background: color-mix(in srgb, v
 html.theme-swiss .qla-visual.qlf-is-killed { border-color: var(--line-projects); }
 html.theme-swiss .qlf-is-killed [data-buy] { opacity: 0.45; }
 html.theme-swiss .qlf-risk-buttons { display: flex; gap: 0.45rem; flex-wrap: wrap; }
-html.theme-swiss .qlf-risk-buttons.qlf-order-row { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: thin; scrollbar-color: rgba(0,0,0,0.25) transparent; }
-html.theme-swiss .qlf-risk-buttons.qlf-order-row::-webkit-scrollbar { height: 5px; }
-html.theme-swiss .qlf-risk-buttons.qlf-order-row::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.25); border-radius: 4px; }
-html.theme-swiss .qlf-order-row .qlf-risk-btn { flex-shrink: 0; white-space: nowrap; }
-@media (max-width: 480px) { html.theme-swiss .qlf-risk-buttons.qlf-order-row { flex-wrap: wrap; overflow-x: visible; } }
+/* Order buttons wrap onto a new line rather than scrolling sideways. */
+html.theme-swiss .qlf-risk-buttons.qlf-order-row { flex-wrap: wrap; overflow-x: visible; }
 html.theme-swiss .qlf-risk-btn { font-size: 0.8rem; padding: 0.38rem 0.85rem; }
 html.theme-swiss .qlf-risk-btn-warn { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 50%, transparent); }
 html.theme-swiss .qlf-audit-log {
@@ -387,3 +387,24 @@ html.theme-swiss .article #demo-player-placeholder:empty {
   min-height: 7.5rem;
   margin: 1rem 0 1.5rem;
 }
+
+/* Widget buttons, one rule for every article.
+   - Actions (step forward, place an order, make a guess) wear the accent wash,
+     so anything that does something reads as pressable.
+   - Backward moves (back, restart) are solid ink.
+   - Mode switches (views, filters) stay on paper; their selected state is the
+     accent border set elsewhere. Disabled buttons fade. */
+html.theme-swiss .article :is(.qla2-next, .qla-btn-accent, .qlf-risk-btn:not(.qlf-risk-btn-warn), .qla-judge-guess) {
+  background: color-mix(in srgb, var(--accent) 16%, var(--paper));
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--paper));
+  color: var(--ink);
+  transition: background .2s ease, border-color .2s ease;
+}
+html.theme-swiss .article :is(.qla2-next, .qla-btn-accent, .qlf-risk-btn:not(.qlf-risk-btn-warn), .qla-judge-guess):hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 28%, var(--paper));
+  border-color: var(--accent);
+}
+html.theme-swiss .article :is(.qla2-back, .qls-step-btn:not(.qla-btn-accent)) { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+html.theme-swiss .article :is(.qla2-back, .qls-step-btn:not(.qla-btn-accent)):hover:not(:disabled) { background: color-mix(in srgb, var(--ink) 82%, var(--paper)); }
+html.theme-swiss .article :is(.qla2-step-controls, .qls-step-controls, .qls-controls) .qla-btn:disabled,
+html.theme-swiss .article .qls-step-btn:disabled { opacity: .35; cursor: default; }

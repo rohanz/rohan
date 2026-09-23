@@ -121,7 +121,7 @@ export function createArticleOverlay(projects, { onNavigate } = {}) {
       </aside>
       <article class="article-page">
         <header class="article-title-block"></header>
-        <div class="article-banner-wrap"><img class="article-banner" alt="" /></div>
+        <div class="article-drawing-wrap"><img class="article-drawing" alt="" /></div>
         <div class="article-body"></div>
       </article>
     </div>`;
@@ -131,7 +131,8 @@ export function createArticleOverlay(projects, { onNavigate } = {}) {
   const toc = overlay.querySelector('.article-toc');
   const projectNav = overlay.querySelector('.article-project-nav');
   const titleBlock = overlay.querySelector('.article-title-block');
-  const banner = overlay.querySelector('.article-banner');
+  const drawingWrap = overlay.querySelector('.article-drawing-wrap');
+  const drawing = overlay.querySelector('.article-drawing');
   const body = overlay.querySelector('.article-body');
   let activeProject = null;
   let previousFocus = null;
@@ -241,16 +242,21 @@ export function createArticleOverlay(projects, { onNavigate } = {}) {
       <div class="article-meta">
         <div class="article-tags">${project.tech.map((tag) => `<span>${tag}</span>`).join('')}</div>
       </div>`;
-    // Drop the previous article's banner IMMEDIATELY (it used to linger
-    // until the new image decoded), show the drafted-X placeholder, and
-    // fade the real banner in once it has pixels.
-    banner.classList.remove('is-loaded');
-    banner.removeAttribute('src');
-    banner.alt = project.title;
-    banner.src = project.image;
-    const reveal = () => banner.classList.add('is-loaded');
-    if (banner.complete && banner.naturalWidth) requestAnimationFrame(reveal);
-    else banner.onload = reveal;
+    // The project's drawing (frozen in its played state by
+    // tools/build-blueprint.mjs). Drop the previous article's drawing
+    // IMMEDIATELY, show the drafted-X placeholder, and fade the new one in once
+    // it has pixels. Decorative (alt=""): the h1 above names the project. A
+    // project without a drawing shows no frame at all.
+    drawing.classList.remove('is-loaded');
+    drawing.removeAttribute('src');
+    drawing.onload = null;
+    drawingWrap.hidden = !project.drawing;
+    if (project.drawing) {
+      drawing.src = project.drawing;
+      const reveal = () => drawing.classList.add('is-loaded');
+      if (drawing.complete && drawing.naturalWidth) requestAnimationFrame(reveal);
+      else drawing.onload = reveal;
+    }
     // Parse into a template first: article markdown was written against the
     // live site's root, so links/images/widget audio need rebasing to this
     // app's mount point BEFORE the DOM starts fetching them (images inside a

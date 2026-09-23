@@ -14,6 +14,8 @@ export const CARD_TEXT: Record<string, string> = {
   patentease: 'PatentEase',
   'tesla-feed': 'tesla charger tracker',
   'this-website': 'rohan.jk',
+  room: 'room',
+  'mle-agent': 'ml research agent',
 };
 
 export function cardTextFor(slug: string): string | null {

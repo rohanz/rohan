@@ -134,17 +134,18 @@ function initToc(article: HTMLElement) {
     .filter((h): h is HTMLElement => !!h);
   if (!headings.length) return;
 
-  // The fixed rail begins at the banner's top edge, mirroring the original
-  // site where the TOC column and the content column share a top. Measured
-  // from the banner's initial document offset (scroll is 0 on page load).
-  const banner = article.querySelector<HTMLElement>('.article-banner');
+  // The fixed rail begins at the transit drawing panel's top edge, mirroring
+  // the original site where the TOC column and the content column share a
+  // top. Measured from the panel's initial document offset (scroll is 0 on
+  // page load). Classic has no .article-drawing, so this never runs there.
+  const panel = article.querySelector<HTMLElement>('.article-drawing');
   const alignTop = () => {
-    if (!banner) return;
-    const top = Math.round(banner.getBoundingClientRect().top + window.scrollY);
+    if (!panel) return;
+    const top = Math.round(panel.getBoundingClientRect().top + window.scrollY);
     if (top <= 0) return;
     // Only write when the CSS resting value is actually wrong. The template's
     // --transit-toc-top is derived from the same constants (sign-header +
-    // page-body padding + the banner's own top margin), so on load this is a
+    // page-body padding + the panel's own top margin), so on load this is a
     // no-op and the rail never moves. It used to overwrite the resting 176px
     // with 138px a frame after paint — a visible 38px jump on every article
     // load. The write survives as a self-heal for the day those constants

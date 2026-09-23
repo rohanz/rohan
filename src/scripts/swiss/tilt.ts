@@ -1,5 +1,10 @@
 // One binding per card, with frame-coalesced pointer updates and live capability checks.
 const MAX_DEG = 6;
+// The card is a frozen compositor layer only while it moves (.is-tilting): no
+// glyph shimmer mid-tilt, and once the pointer rests Chrome re-rasterises at
+// the real transform, so thin strokes stay crisp instead of a stretched bitmap.
+const SETTLE_MS = 160;
+const LEAVE_MS = 450; // outlasts the .4s transform transition back to flat
 const fine = window.matchMedia('(hover: hover) and (pointer: fine)');
 const touch = window.matchMedia('(hover: none)');
 const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -13,6 +18,12 @@ function bindCard(card: HTMLElement) {
   let raf = 0;
   let nx = 0, ny = 0;
   let rect: DOMRect | null = null;
+  let settle = 0;
+  const moving = (ms: number) => {
+    card.classList.add('is-tilting');
+    clearTimeout(settle);
+    settle = window.setTimeout(() => card.classList.remove('is-tilting'), ms);
+  };
   const apply = () => {
     raf = 0;
     card.style.setProperty('--rx', (-ny * MAX_DEG).toFixed(2));
@@ -23,6 +34,7 @@ function bindCard(card: HTMLElement) {
     card.classList.remove('is-hover');
     nx = 0; ny = 0; rect = null;
     apply();
+    moving(LEAVE_MS);
   };
   const move = (event: PointerEvent) => {
     if (!enabled() || event.pointerType === 'touch') return;
@@ -32,6 +44,7 @@ function bindCard(card: HTMLElement) {
     nx = Math.max(-1, Math.min(1, ((event.clientX - rect.left) / rect.width) * 2 - 1));
     ny = Math.max(-1, Math.min(1, ((event.clientY - rect.top) / rect.height) * 2 - 1));
     if (!raf) raf = requestAnimationFrame(apply);
+    moving(SETTLE_MS);
   };
   card.addEventListener('pointerenter', move);
   card.addEventListener('pointermove', move);
@@ -39,6 +52,8 @@ function bindCard(card: HTMLElement) {
   card.addEventListener('pointercancel', reset);
   cleanups.push(() => {
     reset();
+    clearTimeout(settle);
+    card.classList.remove('is-tilting');
     card.removeEventListener('pointerenter', move);
     card.removeEventListener('pointermove', move);
     card.removeEventListener('pointerleave', reset);

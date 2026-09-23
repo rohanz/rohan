@@ -1,0 +1,174 @@
+{
+ "source": "techjam2026/mle-agent/site/rundata.json (run_bigclock_07)",
+ "meta": {
+  "run": "run_bigclock_07",
+  "stop": "converged",
+  "iterations": 6,
+  "best": 0.605575,
+  "tokens": 115315,
+  "wall_s": 1019
+ },
+ "baseline": 0.601838,
+ "iterations": [
+  {
+   "i": 0,
+   "accepted": true,
+   "primary": 0.601838,
+   "void": false,
+   "diagnosis": null,
+   "method": null,
+   "alternatives": [],
+   "why": "",
+   "recipe": [
+    {
+     "t": "FM \u00b7 k=16 \u00b7 BCE",
+     "k": "base"
+    }
+   ],
+   "gain": null,
+   "gateNote": null
+  },
+  {
+   "i": 1,
+   "accepted": false,
+   "primary": 0.601962,
+   "void": false,
+   "diagnosis": "overfit",
+   "method": "stage-matrix-sweep",
+   "alternatives": [
+    "package-dial-sweep",
+    "regularization-schedule",
+    "seed-ensemble"
+   ],
+   "why": "Validation peaks at epoch 8 and then declines while training loss continues downward, indicating overfit. A cross-stage matrix directly addresses the prior run's attribution failure by testing architecture, loss, recency weighting, and regularization combinations under comparable probes.",
+   "recipe": [
+    {
+     "t": "factorial screen of 4 factors",
+     "k": "rej"
+    }
+   ],
+   "gain": 0.000124,
+   "gateNote": "gained +0.0001, which is in the grey zone, so it was retrained on fresh seeds. The average gain there was +0.0006, not enough to pass, so it was rejected."
+  },
+  {
+   "i": 2,
+   "accepted": false,
+   "primary": 0.601681,
+   "void": false,
+   "diagnosis": "overfit",
+   "method": "recency-weighting",
+   "alternatives": [
+    "regularization-schedule",
+    "package-dial-sweep",
+    "session-time-features"
+   ],
+   "why": "Validation peaks at epoch 8 and declines through epoch 10 while training loss generally falls, diagnosing overfit. However, overfit and underfit families are portfolio-excluded, and recency-weighting is the eligible active data-shift method. The temporal next-week split makes recent behavior more predictive than stale rows.",
+   "recipe": [
+    {
+     "t": "recency weighting alone",
+     "k": "rej"
+    }
+   ],
+   "gain": -0.000157,
+   "gateNote": "scored below the best so far, so it was rejected."
+  },
+  {
+   "i": 3,
+   "accepted": true,
+   "primary": 0.604237,
+   "void": false,
+   "diagnosis": "overfit",
+   "method": "package-dial-sweep",
+   "alternatives": [
+    "regularization-schedule",
+    "stage-matrix-sweep",
+    "recency-weighting",
+    "seed-ensemble"
+   ],
+   "why": "Validation peaks at epoch 8 and then declines while training loss continues downward, indicating overfit. With two convergence strikes already spent, isolated regularization or recency changes have an honest expected gain below the 0.002 reset threshold.",
+   "recipe": [
+    {
+     "t": "DCN-lite",
+     "k": "add"
+    },
+    {
+     "t": "0.5 BCE + 0.5 BPR",
+     "k": "add"
+    },
+    {
+     "t": "recency, 7-day half-life",
+     "k": "add"
+    },
+    {
+     "t": "dropout .18 \u00b7 wd 9e-5 \u00b7 lr decay \u00d7.57",
+     "k": "add"
+    }
+   ],
+   "gain": 0.002399,
+   "gateNote": "gained +0.0024, clearing the 0.002 bar, so it was accepted outright."
+  },
+  {
+   "i": 4,
+   "accepted": false,
+   "primary": null,
+   "void": true,
+   "diagnosis": null,
+   "method": null,
+   "alternatives": [],
+   "why": "",
+   "recipe": [
+    {
+     "t": "proposal failed",
+     "k": "void"
+    }
+   ],
+   "gain": null,
+   "gateNote": "failed before training, so it has no score."
+  },
+  {
+   "i": 5,
+   "accepted": false,
+   "primary": 0.602957,
+   "void": false,
+   "diagnosis": null,
+   "method": null,
+   "alternatives": [],
+   "why": "Adding a validation-selected cumulative ordinal watch-ratio auxiliary loss to the accepted regularized DCN-lite 0.5-BPR hybrid will improve validation primary by at least 0.002 by learning duration-aware engagement structure without using watch-time outcomes at inference.",
+   "recipe": [
+    {
+     "t": "watch-time auxiliary head",
+     "k": "rej"
+    }
+   ],
+   "gain": -0.00128,
+   "gateNote": "scored below the best so far, so it was rejected."
+  },
+  {
+   "i": 6,
+   "accepted": true,
+   "primary": 0.605575,
+   "void": false,
+   "diagnosis": "overfit",
+   "method": "ensemble-design-sweep",
+   "alternatives": [
+    "combo-sweep",
+    "seed-ensemble",
+    "duration-regime-heads"
+   ],
+   "why": "The journal reports validation peaking and then declining, and the accepted regularized package at 0.6042 is already near the benchmark ceiling. With a two-strike convergence streak and only small gains realistically remaining, this is a closing variance-reduction move.",
+   "recipe": [
+    {
+     "t": "3-seed per-user rank ensemble",
+     "k": "add"
+    }
+   ],
+   "gain": 0.001338,
+   "gateNote": "gained +0.0013, which is in the grey zone, so it was retrained on fresh seeds. The gain held up, so it was accepted."
+  }
+ ],
+ "gate": {
+  "epsilon": 0.002,
+  "sigma": 0.0001,
+  "source": "harness/loop.py: accept if gain >= max(2*sigma, 0.002); a positive gain below that is reseeded and must still hold up"
+ }
+}

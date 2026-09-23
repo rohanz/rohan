@@ -1,8 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
   <style>
-    .swiss-systems-depth { transform: scaleX(0); transform-origin: var(--swiss-systems-origin) 0; transition: transform 0.6s cubic-bezier(.2,.7,.2,1); }
+    .swiss-systems-depth { transform: scaleX(var(--systems-depth)); transform-origin: var(--swiss-systems-origin) 0; transition: --systems-depth 0.6s cubic-bezier(.2,.7,.2,1); }
     @media (prefers-reduced-motion: no-preference) {
-      .swiss-card.is-hover .swiss-systems-depth { transform: scaleX(1); transition-delay: var(--swiss-systems-delay); }
+      .swiss-card.is-hover .swiss-systems-depth { --systems-depth: 1; transition-delay: var(--swiss-systems-delay); }
     }
     @media (prefers-reduced-motion: reduce) { .swiss-systems-depth { transition: none; } }
   </style>

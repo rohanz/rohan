@@ -1694,34 +1694,12 @@
     flex-wrap: wrap;
 }
 
-/* order buttons stay in one straight row; scroll horizontally if tight,
-   wrap only at true mobile widths */
-.article-overlay .qlf-risk-buttons.qlf-order-row {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    scrollbar-width: thin;
-    scrollbar-color: var(--border-hover) transparent;
-}
-
-.article-overlay .qlf-risk-buttons.qlf-order-row::-webkit-scrollbar {
-    height: 5px;
-}
-
-.article-overlay .qlf-risk-buttons.qlf-order-row::-webkit-scrollbar-thumb {
-    background: var(--border-hover);
-    border-radius: 4px;
-}
-
+/* the order buttons wrap: the row used to scroll horizontally, which hid the
+   sell buttons off the right edge — every proposal has to be visible to be
+   proposed */
 .article-overlay .qlf-order-row .qlf-risk-btn {
     flex-shrink: 0;
     white-space: nowrap;
-}
-
-@media (max-width: 480px) {
-    .article-overlay .qlf-risk-buttons.qlf-order-row {
-        flex-wrap: wrap;
-        overflow-x: visible;
-    }
 }
 
 .article-overlay .qlf-risk-btn {

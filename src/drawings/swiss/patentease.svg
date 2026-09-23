@@ -1,30 +1,26 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
   <style>
-    .swiss-patent-fill { transform: scaleX(0); transform-origin: 120px 210px; transition: transform 0.9s cubic-bezier(.2,.7,.2,1); }
-    .swiss-patent-score { opacity: 0; transition: opacity 0.4s ease; }
-    .swiss-patent-tick { stroke-dasharray: 100; stroke-dashoffset: 100; }
+    .swiss-patent-fill { transform: scaleX(var(--patent-fill)); transform-origin: 120px 210px; transition: --patent-fill 0.9s cubic-bezier(.2,.7,.2,1); }
+    .swiss-patent-score { fill-opacity: 0; transition: fill-opacity 0.4s ease; }
+    .swiss-patent-tick { stroke-dasharray: 100 102; stroke-dashoffset: 101; }
     @media (prefers-reduced-motion: no-preference) {
       .swiss-patent-tick { transition: stroke-dashoffset .35s ease; }
       .swiss-card.is-hover .swiss-patent-tick { stroke-dashoffset: 0; transition-delay: .9s; }
-      .swiss-card.is-hover .swiss-patent-fill { transform: scaleX(.78); }
-      .swiss-card.is-hover .swiss-patent-score { opacity: 1; transition-delay: 0.45s; }
+      .swiss-card.is-hover .swiss-patent-fill { --patent-fill: .78; }
+      .swiss-card.is-hover .swiss-patent-score { fill-opacity: 1; transition-delay: 0.45s; }
     }
     @media (prefers-reduced-motion: reduce) { .swiss-patent-fill, .swiss-patent-score { transition: none; } }
   </style>
-  <g fill="currentColor" stroke="none" font-family="'General Sans', sans-serif" font-size="10" letter-spacing="1.5" opacity=".55">
-    
-    
-  </g>
   <path d="M104 78h112l32 32v66M104 78v154h144v-8"/>
   <path d="M216 78v32h32"/>
   <path d="M124 106h62M124 130h102M124 142h82M124 154h94" stroke-opacity=".35"/>
   <path d="M92 90H80v142h12" stroke-opacity=".2"/>
-  <g fill="currentColor" stroke="none" font-family="'General Sans', sans-serif" font-size="10" letter-spacing="1.5">
-    
-    <text class="swiss-patent-score" x="320" y="190" text-anchor="end">78%</text>
+  <g fill="currentColor" stroke="none" font-family="'General Sans', sans-serif" font-size="12" font-weight="500" letter-spacing="1">
+    <text x="120" y="191" fill-opacity=".8">similarity</text>
+    <text class="swiss-patent-score" x="320" y="191" text-anchor="end">78%</text>
   </g>
   <rect x="120" y="202" width="200" height="16" stroke-opacity=".35"/>
   <rect class="swiss-patent-fill" x="120" y="202" width="200" height="16" fill="var(--accent)" stroke="none"/>
   <path d="M120 224v4M170 224v4M220 224v4M270 224v4M320 224v4" stroke-opacity=".2"/>
-  <path class="swiss-patent-tick" pathLength="100" d="m272 178 7 7 14-16" stroke="var(--accent)"/>
+  <path class="swiss-patent-tick" pathLength="100" d="m264 178 7 7 14-16" stroke="var(--accent)" stroke-width="2.5"/>
 </svg>

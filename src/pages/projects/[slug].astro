@@ -3,10 +3,17 @@ import SwissLayout from '../../layouts/SwissLayout.astro';
 import { getCollection, render } from 'astro:content';
 import { getProjectNav, type NavItem } from '../../lib/projectNav';
 import { cardTextFor } from '../../lib/swiss/card-text';
-import { drawingFor } from '../../lib/swiss/drawings';
+import { drawingFor, headerViewBoxFor } from '../../lib/swiss/drawings';
 import '../../styles/swiss-cards.css';
 import '../../styles/swiss-article.css';
 import '../../styles/swiss-widgets.css';
+// The shared widget modules import these too (blueprint relies on that). Importing
+// them from the page as well puts them in the page's own head, so the dev server's
+// ClientRouter keeps them across navigations; builds dedupe the two imports.
+import '../../styles/qla2-widgets.css';
+import '../../styles/qls-widgets.css';
+import '../../styles/mle-replay.css';
+import '../../styles/room-run.css';
 
 export async function getStaticPaths() {
   const projects = (await getCollection('projects')).sort((a, b) => a.data.order - b.data.order);
@@ -25,7 +32,7 @@ const h2h3 = headings.filter((h) => h.depth === 2 || h.depth === 3);
 const firstH2 = h2h3.findIndex((h) => h.depth === 2);
 const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
 ---
-<SwissLayout title={`${project.data.title} — rohan.jk`} description={project.data.summary} section="projects" ogImage={`/assets/images/og/${project.id}.png`}>
+<SwissLayout title={`${project.data.barTitle ? `${project.data.barTitle} · ` : ''}${project.data.title} — rohan.jk`} description={project.data.summary} section="projects" ogImage={`/assets/images/og/${project.id}.png`}>
   <header class="sw-article-head">
     <div class="sw-article-head-inner">
       <div class="sw-article-head-title">
@@ -37,7 +44,8 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
       </div>
       <div class="swiss-card sw-article-art" aria-hidden="true">
         <div class="swiss-card-art">
-          {Drawing ? <Drawing /> : <div class="swiss-card-placeholder"></div>}
+          {/* Centred per drawing: see headerViewBoxFor in lib/swiss/drawings.ts. */}
+          {Drawing ? <Drawing viewBox={headerViewBoxFor(project.id)} /> : <div class="swiss-card-placeholder"></div>}
         </div>
       </div>
     </div>
@@ -85,6 +93,7 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
   <script>
     import '../../scripts/article.ts';
     import '../../scripts/article-widgets.ts';
+    import { playDrawingOnArrival } from '../../lib/swiss/play-drawing';
 
     let cleanupSections: (() => void) | undefined;
     function initSections() {
@@ -113,25 +122,7 @@ const sections = firstH2 === -1 ? [] : h2h3.slice(firstH2);
     function initArt() {
       cleanupArt?.();
       const art = document.querySelector<HTMLElement>('.sw-article-art');
-      if (!art) return;
-      const start = window.setTimeout(() => art.classList.add('is-hover'), 500);
-      const stop = window.setTimeout(() => {
-        if (!art.matches(':hover')) art.classList.remove('is-hover');
-      }, 3000);
-      const enter = () => art.classList.add('is-hover');
-      const leave = () => {
-        window.clearTimeout(start);
-        art.classList.remove('is-hover');
-      };
-      art.addEventListener('pointerenter', enter);
-      art.addEventListener('pointerleave', leave);
-      cleanupArt = () => {
-        window.clearTimeout(start);
-        window.clearTimeout(stop);
-        art.removeEventListener('pointerenter', enter);
-        art.removeEventListener('pointerleave', leave);
-        art.classList.remove('is-hover');
-      };
+      cleanupArt = art ? playDrawingOnArrival(art) : undefined;
     }
     document.addEventListener('astro:page-load', initArt);
     document.addEventListener('astro:before-swap', () => { cleanupArt?.(); cleanupArt = undefined; });

@@ -37,8 +37,8 @@ const selected = (await getCollection('projects'))
     <div class="sw-rows" data-reveal-group>
       {selected.map((p) => (
         <a class="sw-row" href={`/projects/${p.id}`} data-reveal="block">
-          <span class="sw-row-title">{p.data.title}</span>
-          <span class="sw-row-summary">{p.data.summary}</span>
+          <span class="sw-row-title">{p.data.barTitle ?? p.data.title}</span>
+          <span class="sw-row-summary">{p.data.barTitle ? p.data.title : p.data.summary}</span>
           <span class="sw-row-tags">{p.data.technologies.slice(0, 3).map((t) => <span class="sw-label">{t}</span>)}</span>
         </a>
       ))}

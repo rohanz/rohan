@@ -282,8 +282,8 @@ describe('testimonials', () => {
 });
 
 describe('project filters', () => {
-  it('are ten uniquely-labelled pills with at least one alias each', () => {
-    expect(PROJECT_FILTERS).toHaveLength(10);
+  it('are twelve uniquely-labelled pills with at least one alias each', () => {
+    expect(PROJECT_FILTERS).toHaveLength(12);
     expect(new Set(PROJECT_FILTERS.map((f) => f.label)).size).toBe(PROJECT_FILTERS.length);
     for (const filter of PROJECT_FILTERS) {
       expect(filter.label).toBe(filter.label.toLowerCase());
@@ -320,12 +320,11 @@ describe('project filters', () => {
     expect(visibleProjectFilters(['QLoRA']).map((f) => f.label)).toEqual(['fine-tuning']);
   });
 
-  it('every curated alias is still carried by a listed project', () => {
+  it('every pill is backed by a project (unlisted ones wait, hidden, for publication)', () => {
     const projectsDir = join(repoRoot, 'src', 'content', 'projects');
     const tags = new Set<string>();
     for (const name of readdirSync(projectsDir).filter((n) => n.endsWith('.md'))) {
       const frontmatter = readFileSync(join(projectsDir, name), 'utf8').split(/^---$/m)[1] ?? '';
-      if (/^unlisted:\s*true\s*$/m.test(frontmatter)) continue;
       const block = frontmatter.match(/^technologies:\n((?:\s+-\s+.*\n?)+)/m)?.[1] ?? '';
       for (const line of block.split('\n')) {
         const tag = line.match(/^\s+-\s+(.*)$/)?.[1]?.trim().replace(/^['"]|['"]$/g, '');

@@ -1,0 +1,31 @@
+/* Room widgets. Theme-neutral: shared --text/--border tokens plus the
+   palette-driven --room-accent set by room-run.ts. */
+
+/* architecture diagram */
+.room-run .room-tabs { margin-bottom: .9rem; }
+.room-run .room-arch { display: block; width: 100%; height: auto; margin: 0 0 .75rem; }
+.room-run .room-node rect { fill: var(--bg-card, #fff); stroke: var(--border-subtle); stroke-width: 1.25; transition: stroke .2s ease; }
+.room-run .room-node-label { fill: var(--text-secondary); font-size: 13px; font-weight: 700; text-anchor: middle; transition: fill .2s ease; }
+.room-run .room-node-sub { fill: var(--text-secondary); font-size: 11px; text-anchor: middle; opacity: .8; }
+.room-run .room-node.is-lit rect { stroke: var(--room-accent); stroke-width: 2; }
+.room-run .room-node.is-lit .room-node-label { fill: var(--text-primary); }
+.room-run .room-link { fill: none; stroke: var(--border-subtle); stroke-width: 1.5; transition: stroke .2s ease; }
+.room-run .room-link.is-lit { stroke: var(--room-accent); stroke-width: 2; }
+.room-run .room-caption { margin: 0; min-height: 3em; color: var(--text-primary); line-height: 1.5; }
+
+/* contract detector */
+.room-run .room-diff { margin: 0 0 .9rem; padding: .8rem 1rem; background: var(--bg-card, #fff); border: 1px solid var(--border-subtle); font-size: .82rem; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
+.room-run .room-diff-line { display: block; font-family: var(--font-mono, ui-monospace, monospace); color: var(--text-secondary); }
+.room-run .room-diff-line.is-del { text-decoration: line-through; }
+.room-run .room-diff-line.is-add { color: var(--text-primary); background: color-mix(in srgb, var(--room-accent) 12%, transparent); }
+.room-run .room-files-row { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: .6rem; }
+.room-run .room-file { padding: .2rem .5rem; border: 1px solid var(--border-subtle); font-family: var(--font-mono, ui-monospace, monospace); font-size: .78rem; color: var(--text-secondary); transition: border-color .2s ease, color .2s ease; }
+.room-run .room-file.is-source { color: var(--text-primary); }
+.room-run .room-file.is-notified { border-color: var(--room-accent); color: var(--text-primary); }
+.room-run .room-label { display: block; margin: .8rem 0 .25rem; color: var(--text-secondary); font-size: .72rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; }
+.room-run .room-observed { margin: 0; font-family: var(--font-mono, ui-monospace, monospace); font-size: .85rem; color: var(--room-accent); }
+.room-run .room-observed.is-quiet { font-family: inherit; font-size: inherit; color: var(--text-secondary); }
+.room-run .room-notified { margin: 0; color: var(--text-primary); line-height: 1.5; min-height: 3em; }
+/* Phones: the diagram is scaled down, so its labels step up to stay legible. */
+@media (max-width: 640px) { .room-run .room-node-label { font-size: 14.5px; } .room-run .room-node-sub { display: none; } }
+@media (prefers-reduced-motion: reduce) { .room-run :is(.room-node rect, .room-link, .room-file) { transition: none; } }

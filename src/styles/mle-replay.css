@@ -1,0 +1,74 @@
+/* mle-agent run replay. Theme-neutral: colours come from the palette-driven
+   --mle-* properties set by mle-replay.ts and the shared --text/--border tokens. */
+.qla-visual.mle-replay .mle-chart { display: block; width: 100%; height: auto; margin: 0 0 1rem; overflow: visible; }
+.mle-replay .mle-axis { stroke: var(--mle-hair); stroke-width: 1.25; fill: none; }
+.mle-replay .mle-tick { fill: var(--mle-muted); font-size: 11px; text-anchor: middle; font-variant-numeric: tabular-nums; }
+.mle-replay .mle-score { fill: var(--mle-ink); font-size: 11px; font-weight: 600; text-anchor: middle; font-variant-numeric: tabular-nums; }
+.mle-replay .mle-champion { fill: none; stroke: var(--mle-accent); stroke-width: 2; stroke-linejoin: round; }
+.mle-replay .mle-mark.is-accepted { fill: var(--mle-accent); stroke: none; }
+.mle-replay .mle-mark.is-rejected { fill: var(--bg-card, #fff); stroke: var(--mle-muted); stroke-width: 1.5; }
+.mle-replay .mle-mark.is-void { fill: none; stroke: var(--mle-muted); stroke-width: 1.5; stroke-linecap: round; }
+.mle-replay .mle-ring { fill: none; stroke: var(--mle-ink); stroke-width: 1.25; opacity: .6; pointer-events: none; transition: cx .2s ease, cy .2s ease; }
+/* Pickable points: a generous invisible hit circle, pointer cursor, keyboard focus ring. */
+.mle-replay .mle-pick { cursor: pointer; outline: none; }
+.mle-replay .mle-hit { fill: transparent; stroke: none; }
+.mle-replay .mle-pick:hover .mle-mark.is-rejected, .mle-replay .mle-pick.is-selected .mle-mark.is-rejected { stroke: var(--mle-ink); }
+.mle-replay .mle-pick:focus-visible .mle-hit { stroke: var(--mle-ink); stroke-width: 1.5; }
+/* the acceptance gate */
+.mle-replay .mle-zone { stroke: none; }
+.mle-replay .mle-zone.is-reject { fill: transparent; }
+.mle-replay .mle-zone.is-grey { fill: var(--mle-wash); }
+.mle-replay .mle-zone.is-accept { fill: var(--mle-accent); fill-opacity: .14; }
+.mle-replay .mle-zone-label { fill: var(--mle-muted); font-size: 11px; font-weight: 600; text-anchor: middle; letter-spacing: .04em; }
+.mle-replay .mle-dot { stroke-width: 1.5; }
+.mle-replay .mle-dot.is-accepted { fill: var(--mle-accent); stroke: var(--mle-accent); }
+.mle-replay .mle-dot.is-rejected { fill: var(--bg-card, #fff); stroke: var(--mle-muted); }
+.mle-replay .mle-dot-label { fill: var(--mle-ink); font-size: 11px; font-weight: 700; text-anchor: middle; pointer-events: none; }
+.mle-replay .mle-dot-label.is-accepted { fill: var(--bg-card, #fff); }
+.mle-replay .mle-pick.is-selected .mle-dot { stroke: var(--mle-ink); stroke-width: 2.5; }
+.mle-replay .mle-gate + .mle-headline { margin-top: .25rem; }
+
+.mle-replay .mle-entry { display: grid; gap: .35rem; min-height: 9.5rem; align-content: start; padding-top: .25rem; }
+.mle-replay .mle-verdict { justify-self: start; font-size: .72rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--mle-muted); }
+.mle-replay .mle-verdict.is-accepted { color: var(--mle-accent); }
+.mle-replay .mle-headline { margin: 0; color: var(--text-primary); font-weight: 600; line-height: 1.45; }
+.mle-replay .mle-label { color: var(--text-secondary); font-size: .72rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; margin-top: .35rem; }
+.mle-replay .mle-label:empty { display: none; }
+.mle-replay .mle-why { margin: 0; color: var(--text-secondary); line-height: 1.55; }
+.mle-replay .mle-alts { margin: 0; color: var(--text-secondary); font-size: .88rem; }
+.mle-replay :is(.mle-why, .mle-alts):empty { display: none; }
+
+.mle-replay .mle-model { display: grid; gap: .45rem; margin-top: 1rem; padding-top: .9rem; border-top: 1px solid var(--border-subtle); }
+.mle-replay .mle-chips { display: flex; flex-wrap: wrap; gap: .4rem; min-height: 2rem; }
+.mle-replay .mle-chip { display: inline-flex; align-items: baseline; gap: .45rem; padding: .3rem .6rem; border: 1px solid var(--border-subtle); color: var(--text-primary); font-size: .85rem; }
+.mle-replay .mle-chip i { font-style: normal; font-size: .7rem; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.mle-replay .mle-chip.is-add { border-color: var(--mle-accent); }
+.mle-replay .mle-chip.is-rej, .mle-replay .mle-chip.is-void { color: var(--text-secondary); text-decoration: line-through; }
+@media (prefers-reduced-motion: reduce) { .mle-replay .mle-ring { transition: none; } }
+
+/* the iteration slider under the run chart */
+.mle-replay .mle-pick { cursor: pointer; }
+/* The slider spans exactly the chart's axis (padding 34 of 640 on each side,
+   less half the thumb) so notch n sits under iteration n. */
+.mle-replay .mle-slider-row { margin: -.25rem 0 1rem; }
+.mle-replay .mle-slider-row .mle-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+/* Swiss slider: a hairline track, the travelled part in the accent, and a
+   small square thumb. The input stays 44px tall for touch. --fill is set by
+   mle-replay.ts as the selected fraction. */
+.mle-replay .mle-slider {
+  -webkit-appearance: none; appearance: none; display: block; background: transparent;
+  width: calc(100% - 2 * (34 / 640 * 100%) + 16px); margin: 0 calc(34 / 640 * 100% - 8px);
+  height: 44px; cursor: pointer;
+  --track: linear-gradient(to right, var(--mle-accent) 0 var(--fill, 100%), var(--mle-hair) var(--fill, 100%) 100%);
+}
+.mle-replay .mle-slider::-webkit-slider-runnable-track { height: 2px; background: var(--track); border: 0; }
+.mle-replay .mle-slider::-moz-range-track { height: 2px; background: var(--mle-hair); border: 0; }
+.mle-replay .mle-slider::-moz-range-progress { height: 2px; background: var(--mle-accent); }
+.mle-replay .mle-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 16px; height: 16px; margin-top: -7px; border: 0; border-radius: 0; background: var(--mle-accent); transition: transform .15s ease; }
+.mle-replay .mle-slider::-moz-range-thumb { width: 16px; height: 16px; border: 0; border-radius: 0; background: var(--mle-accent); }
+.mle-replay .mle-slider:hover::-webkit-slider-thumb, .mle-replay .mle-slider:active::-webkit-slider-thumb { transform: scale(1.15); }
+.mle-replay .mle-slider:focus { outline: none; }
+/* Keyboard focus rings the thumb rather than boxing the whole control. */
+.mle-replay .mle-slider:focus-visible { outline: none; }
+.mle-replay .mle-slider:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px var(--bg-card, #fff), 0 0 0 4.5px var(--mle-ink); }
+.mle-replay .mle-slider:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 3px var(--bg-card, #fff), 0 0 0 4.5px var(--mle-ink); }

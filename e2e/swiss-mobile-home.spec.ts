@@ -1,6 +1,8 @@
 import { expect, test, type Page } from '@playwright/test';
 
 const routes = ['/', '/projects', '/music', '/about'];
+// The phone home has no top bar (its quadrants link every section).
+const barRoutes = routes.filter((route) => route !== '/');
 const phones = [
   { name: 'iPhone 13', viewport: { width: 390, height: 844 }, deviceScaleFactor: 3 },
   { name: 'small phone', viewport: { width: 375, height: 667 }, deviceScaleFactor: 2 },
@@ -22,14 +24,14 @@ for (const phone of phones) {
       isMobile: true,
     });
 
-    test('home stacks into a phone-first hero and keeps navigation visible', async ({ page }, testInfo) => {
+    test('home stacks into a phone-first hero with no top bar', async ({ page }, testInfo) => {
       const errors: string[] = [];
       page.on('pageerror', (error) => errors.push(error.message));
       page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()); });
 
       await page.goto('/');
-      await expect(page.locator('.sw-nav')).toBeVisible();
-      await expect(page.locator('.sw-nav')).toHaveCSS('opacity', '1');
+      // The quadrants link every section, so the phone home drops the bar.
+      await expect(page.locator('.sw-nav')).toBeHidden();
       // One screen: copy fills the upper part, the quads the rest; nothing to scroll.
       expect(await page.evaluate(() => document.documentElement.scrollHeight - innerHeight)).toBeLessThanOrEqual(0);
       const copyBox = (await page.locator('.sw-hero-copy').boundingBox())!;
@@ -53,7 +55,7 @@ for (const phone of phones) {
       page.on('pageerror', (error) => errors.push(error.message));
       page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()); });
 
-      for (const route of routes) {
+      for (const route of barRoutes) {
         await page.goto(route);
         await expect(page.locator('.sw-nav')).toBeVisible();
         const menu = page.getByRole('button', { name: 'menu', exact: true });
@@ -78,7 +80,7 @@ test.describe('compact fine-pointer navigation', () => {
   test.use({ viewport: { width: 540, height: 720 }, hasTouch: false, isMobile: false });
 
   test('keeps the 16px primary links in one tappable row when they fit', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/projects'); // the home at this width has no bar
     const primary = page.getByRole('navigation', { name: 'Primary' });
     await expect(primary).toBeVisible();
     await expect(page.getByRole('button', { name: 'menu', exact: true })).toBeHidden();
@@ -88,7 +90,7 @@ test.describe('compact fine-pointer navigation', () => {
       await expect(link).toHaveCSS('font-size', '16px');
       expect((await link.boundingBox())?.height).toBeGreaterThanOrEqual(44);
     }
-    await expectNoHorizontalOverflow(page, '/ at 540px');
+    await expectNoHorizontalOverflow(page, '/projects at 540px');
   });
 });
 
@@ -96,7 +98,7 @@ for (const viewport of [{ width: 844, height: 390 }, { width: 915, height: 412 }
   test.describe(`touch landscape chrome ${viewport.width}`, () => {
     test.use({ viewport, hasTouch: true, isMobile: true });
     test('keeps phone navigation and hides desktop chrome on every route', async ({ page }) => {
-      for (const route of routes) {
+      for (const route of barRoutes) {
         await page.goto(route);
         await expect(page.locator('.sw-nav')).toHaveCSS('opacity', '1');
         await expect(page.locator('.sw-nav-links')).toBeHidden();

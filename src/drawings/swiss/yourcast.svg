@@ -1,10 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
   <style>
-    .swiss-yourcast-playhead { transition: transform 0.9s linear; }
+    .swiss-yourcast-playhead { transform: translateX(var(--yourcast-x)); transition: --yourcast-x 0.9s linear; }
     .swiss-yourcast-played { clip-path: inset(0 100% 0 0); transition: clip-path 0.9s linear; }
     .swiss-yourcast-ink { clip-path: inset(0 0 0 0); transition: clip-path 0.9s linear; }
     @media (prefers-reduced-motion: no-preference) {
-      .swiss-card.is-hover .swiss-yourcast-playhead { transform: translateX(340px); }
+      .swiss-card.is-hover .swiss-yourcast-playhead { --yourcast-x: 340px; }
       .swiss-card.is-hover .swiss-yourcast-played { clip-path: inset(0 0 0 0); }
       .swiss-card.is-hover .swiss-yourcast-ink { clip-path: inset(0 0 0 100%); }
     }

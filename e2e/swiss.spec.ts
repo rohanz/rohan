@@ -45,7 +45,8 @@ test('classic cards match listed content and tilt on hover', async ({ page }) =>
     .map(name => `/projects/${name.slice(0, -3)}`).sort();
   await page.goto('/projects');
   const cards = page.locator('.swiss-card');
-  const targets = await cards.evaluateAll(links => links.map(link => new URL((link as HTMLAnchorElement).href).pathname).sort());
+  // Dev also renders unlisted drafts (tagged); production never does. Compare listed cards only.
+  const targets = await cards.evaluateAll(links => links.filter(link => !link.querySelector('.swiss-card-unlisted')).map(link => new URL((link as HTMLAnchorElement).href).pathname).sort());
   expect(targets).toEqual(listed);
   const first = cards.first();
   await expect(first).toHaveClass(/is-in/);

@@ -473,6 +473,10 @@ function initQlfRiskGate(node) {
     makeBtn(orderRow, '+$15k AAPL', () => placeOrder('AAPL', 15000), null, true);
     makeBtn(orderRow, '+$40k SPY', () => placeOrder('SPY', 40000), null, true);
     makeBtn(orderRow, '+$10k TSLA', () => placeOrder('TSLA', 10000), null, true);
+    // the sells exist to make the two asymmetries testable: a risk-reducing
+    // order skips the kill switch, and the caps only bite when exposure grows
+    makeBtn(orderRow, '−$25k AAPL', () => placeOrder('AAPL', -25000));
+    makeBtn(orderRow, '−$40k SPY', () => placeOrder('SPY', -40000));
 
     makeBtn(controlRow, 'simulate a -$6k day', () => { engine.markPnl(-6000).forEach(logEntry); renderState(); }, 'qlf-risk-btn-warn');
     makeBtn(controlRow, 'simulate +$3k day', () => { engine.markPnl(3000).forEach(logEntry); renderState(); });
