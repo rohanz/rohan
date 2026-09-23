@@ -234,7 +234,8 @@ test.describe('interrupting a projects page-turn never strands state', () => {
         // POPULATED and the camera at rest — never a stranded blank/drifting state
         // (the bug this guards: untracked page-turn tweens surviving
         // finishRide/dispose).
-        const path = new URL(page.url()).pathname;
+        // Static directory entries end in /; rides update history without it.
+        const path = new URL(page.url()).pathname.replace(/\/$/, '');
         if (path === '/transit/projects') {
           expect(await visCards(page, 'projects')).toBeGreaterThan(0);
         } else if (path !== '/transit') {

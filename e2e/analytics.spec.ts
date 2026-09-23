@@ -11,6 +11,9 @@ test('delayed analytics SDK flushes page paths and events once across router nav
     ` });
   });
   await page.goto('/about', { waitUntil: 'domcontentloaded' });
+  // Pages redirects directory URLs to a trailing slash; dev does not. The
+  // analytics contract is the actual visited path, including that redirect.
+  const aboutPath = new URL(page.url()).pathname;
   await expect(page.locator('[data-testimonial-toggle]')).toBeVisible();
   await page.locator('.sw-about-caption a').evaluate((el) => {
     el.addEventListener('click', (event) => event.preventDefault(), { once: true });
@@ -18,14 +21,17 @@ test('delayed analytics SDK flushes page paths and events once across router nav
   });
   await page.locator('.sw-nav-links a[href="/projects"]').click();
   await expect(page).toHaveURL(/\/projects\/?$/);
+  const projectsPath = new URL(page.url()).pathname;
   release();
   const counts = () => page.evaluate(() => (window as unknown as { testCounts: unknown[] }).testCounts);
   await expect.poll(counts).toEqual([
-    { path: '/about' }, { path: 'resume-download', event: true }, { path: '/projects' },
+    { path: aboutPath }, { path: 'resume-download', event: true }, { path: projectsPath },
   ]);
   await page.evaluate(() => document.dispatchEvent(new Event('goatcounter:ready')));
   await page.locator('.sw-nav-links a[href="/about"]').click();
+  await expect(page).toHaveURL(/\/about\/?$/);
+  const returnedAboutPath = new URL(page.url()).pathname;
   await expect.poll(counts).toEqual([
-    { path: '/about' }, { path: 'resume-download', event: true }, { path: '/projects' }, { path: '/about' },
+    { path: aboutPath }, { path: 'resume-download', event: true }, { path: projectsPath }, { path: returnedAboutPath },
   ]);
 });

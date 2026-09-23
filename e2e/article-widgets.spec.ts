@@ -36,8 +36,15 @@ for (const theme of ['', '/transit']) {
     const widths = () => canvases.evaluateAll((els) => els.map((el) => el.getBoundingClientRect().width));
     await expect.poll(async () => (await widths()).every((width) => width > 350)).toBe(true);
     const wide = await widths();
-    await page.setViewportSize({ width: 700, height: 900 });
+    // At 700px the classic TOC disappears: the 72ch desktop article can be
+    // only 91px wider on Linux. Use a phone width for the >100px shrink check.
+    await page.setViewportSize({ width: 390, height: 900 });
     await expect.poll(async () => (await widths())[0]).toBeLessThan(wide[0] - 100);
+    // Canvas sizing rounds to whole CSS pixels; max-width can clip that last
+    // fraction back to the cell. Every chart must still fill its current cell.
+    await expect.poll(() => canvases.evaluateAll((els) => els.every((el) =>
+      Math.abs(el.getBoundingClientRect().width - el.parentElement!.getBoundingClientRect().width) <= 0.5,
+    ))).toBe(true);
     await page.setViewportSize({ width: 1440, height: 900 });
     await expect.poll(widths).toEqual(wide);
   });
@@ -125,7 +132,7 @@ for (const theme of ['classic', 'transit']) {
       document.body.appendChild(link);
       link.click();
     });
-    await expect(page).toHaveURL(/\/projects\/bqst$/);
+    await expect(page).toHaveURL(/\/projects\/bqst\/?$/);
     await expect.poll(() => audio!.evaluate((el) => el.parentNode === null)).toBe(true);
     expect(await audio!.evaluate((el) => el.paused)).toBe(true);
     if (theme === 'transit') {
