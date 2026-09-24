@@ -1,6 +1,4 @@
-import { marked } from 'marked';
 import { withBase, asset } from './base.js';
-import { cleanupWidgets, initWidgets } from './article-widgets.ts';
 import { createLightbox } from '../../../src/lib/chrome/lightbox';
 import { installCopyLines } from '../../../src/lib/chrome/copy-lines';
 import { linksHtml } from '../../../src/lib/project-links';
@@ -11,6 +9,33 @@ import './article-widgets.css';
 import '../../../src/styles/copy-lines.css';
 
 import { ARTICLES } from './articles.generated.js';
+
+// Article rendering is not needed by the floor plan or the three rooms.
+// Warm it on project-navigation intent; cold deep links load it in parallel
+// with their one markdown module. Cache successes, but allow failed loads to retry.
+let articleRuntime;
+let marked;
+let widgets;
+function loadArticleRuntime() {
+  return articleRuntime ??= Promise.all([
+    import('marked'), import('./article-widgets.ts'),
+  ]).then(([parser, loadedWidgets]) => {
+    marked = parser.marked;
+    widgets = loadedWidgets;
+  }).catch((error) => { articleRuntime = undefined; throw error; });
+}
+function cleanupWidgets() { widgets?.cleanupWidgets(); }
+function initWidgets(body) { widgets.initWidgets(body); }
+if (typeof document !== 'undefined') {
+  const WARM_EVENTS = ['pointerover', 'focusin'];
+  const warmOnProjectsIntent = (event) => {
+    if (!event.target.closest?.('#nav-projects, #menu-projects')) return;
+    loadArticleRuntime().then(() => {
+      for (const type of WARM_EVENTS) document.removeEventListener(type, warmOnProjectsIntent);
+    }, () => {}); // a failed warm-up is retried on the next intent or open
+  };
+  for (const type of WARM_EVENTS) document.addEventListener(type, warmOnProjectsIntent);
+}
 
 // wave3: heading ids now come from HEADING_SLUGS (tools/build-blueprint.mjs,
 // see the comment on extractHeadingSlugs there), pre-slugged with
@@ -65,8 +90,9 @@ function captionImages(body) {
   });
   // Portrait shots stay narrow and centred instead of stretching to the
   // column (the lightbox still expands them full-size) — like the original
-  // site. Classify now AND on load/decode: cached images can be complete
-  // but unmeasurable at swap time.
+  // site. Classify cached images now and lazy images when they load. Do not
+  // call decode() on lazy images: an off-screen image removed with the article
+  // may never start loading, leaving its decode promise retaining the figure.
   body.querySelectorAll('figure img').forEach((img) => {
     const classify = () => {
       if (img.naturalWidth && img.naturalHeight > img.naturalWidth * 1.3) {
@@ -75,7 +101,6 @@ function captionImages(body) {
     };
     classify();
     img.addEventListener('load', classify);
-    img.decode?.().then(classify).catch(() => {});
   });
 }
 
@@ -181,13 +206,22 @@ export function createArticleOverlay(projects, { onNavigate, onRequestNavigate }
   let revision = 0;
   let swapTimer = 0;
   let closeTimer = 0;
-  function open(slug) {
+  async function open(slug) {
     const project = projects.find((entry) => entry.slug === slug);
-    const markdown = ARTICLES[slug];
-    if (!project || !markdown) return;
+    const loadMarkdown = ARTICLES[slug];
+    if (!project || !loadMarkdown) return;
     const token = ++revision;
     clearTimeout(swapTimer);
     clearTimeout(closeTimer); // a just-closed overlay must not hide the reopened one
+    let markdown;
+    try {
+      [markdown] = await Promise.all([loadMarkdown(), loadArticleRuntime()]);
+    } catch (error) {
+      // Keep the current article usable if a request fails; a later open retries.
+      console.error('Unable to load project article', error);
+      return;
+    }
+    if (token !== revision) return;
     // Already open (prev/next): dip the sheet out, swap at the midpoint.
     if (!overlay.hidden && activeProject && activeProject.slug !== slug) {
       overlay.classList.add('is-swapping');

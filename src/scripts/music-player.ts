@@ -58,7 +58,12 @@ function sizeCanvas(canvas: HTMLCanvasElement, w: number, h: number): CanvasRend
   // expensive part. Skip it when the size is unchanged so a redundant resize
   // (e.g. the ResizeObserver re-firing after we've already primed the size) is
   // cheap and can't produce the long frame that stalls a ride.
-  if (canvas.width === cw && canvas.height === ch) return ctx;
+  if (canvas.width === cw && canvas.height === ch) {
+    // A newly visible canvas may already have these intrinsic dimensions but
+    // still have a fresh context's identity transform.
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return ctx;
+  }
   canvas.width = cw;
   canvas.height = ch;
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -124,6 +129,7 @@ class RowPlayer {
 
   waveCanvas: HTMLCanvasElement;
   waveCtx: CanvasRenderingContext2D;
+  private wavePainted = false;
   vecCanvas: HTMLCanvasElement | null;
   vecCtx: CanvasRenderingContext2D | null;
   freqCanvas: HTMLCanvasElement | null;
@@ -181,30 +187,20 @@ class RowPlayer {
     this.waveCtx = this.waveCanvas.getContext('2d')!;
 
     this.vecCanvas = el.querySelector<HTMLCanvasElement>('.row-vec');
-    this.vecCtx = this.vecCanvas ? sizeCanvas(this.vecCanvas, this.vecW, this.vecH) : null;
+    this.vecCtx = null;
     this.freqCanvas = el.querySelector<HTMLCanvasElement>('.row-freq');
-    this.freqCtx = this.freqCanvas ? sizeCanvas(this.freqCanvas, this.freqW, this.freqH) : null;
+    this.freqCtx = null;
     this.vuCanvas = el.querySelector<HTMLCanvasElement>('.row-vu');
-    this.vuCtx = this.vuCanvas ? sizeCanvas(this.vuCanvas, this.vuW, this.vuH) : null;
-    // Then immediately sync with the real rendered boxes (no-op while hidden).
+    this.vuCtx = null;
+    // Hidden platforms need no backing stores or initial painting. The existing
+    // sizing hooks initialize each canvas once its real box is visible.
     this.resizeMeters();
 
     this.resizeWaveCanvas();
-    this.drawIdle();
-    this.drawMetersIdle();
-
     this.btn.addEventListener('click', () => this.onClick());
 
-    // The row is built while the music platform is still hidden (display:
-    // none ancestors), so the very first resizeWaveCanvas() above sees a
-    // zero-width rect and falls back to a default backing-store size. A
-    // plain `window.resize` listener never fires when the platform later
-    // becomes visible at its *real* width, so the canvas's backing store
-    // stays stuck at the fallback size — the browser then stretches that
-    // stale bitmap into the actual (narrower) CSS box, leaving a leftover
-    // edge from the old draw visible as a stray vertical seam. A
-    // ResizeObserver catches every real layout-size change (visibility
-    // toggles included), not just window resizes.
+    // Visibility changes do not fire window.resize. Observe the real boxes so
+    // opening the music platform initializes hidden canvases at their final size.
     if (typeof ResizeObserver !== 'undefined') {
       this.ro = new ResizeObserver(() => {
         this.resizeWaveCanvas();
@@ -244,17 +240,21 @@ class RowPlayer {
     this.waveCtx = sizeCanvas(this.waveCanvas, w, h);
     // Only redraw when the size actually changed, so a redundant ResizeObserver
     // fire (after the ride engine has already primed the size) is a true no-op.
-    if (!unchanged && !this.isPlaying) this.drawIdle();
+    if ((!unchanged || !this.wavePainted) && !this.isPlaying) {
+      this.drawIdle();
+      this.wavePainted = true;
+    }
   }
 
   /** Sync each meter canvas's CSS-px dimensions + backing store with its
-   *  rendered box. Falls back to the field defaults while the platform is
-   *  hidden (display:none → zero rect). Skips the (destructive) backing-store
-   *  rewrite when nothing changed, so observer churn never blanks a frame. */
+   *  rendered box. Hidden canvases wait until first shown. Skips destructive
+   *  backing-store rewrites when nothing changed, so observer churn never blanks
+   *  a frame. */
   resizeMeters(): void {
     const apply = (
       canvas: HTMLCanvasElement | null,
       defH: number,
+      context: CanvasRenderingContext2D | null,
     ): [number, number, CanvasRenderingContext2D] | null => {
       if (!canvas) return null;
       const rect = canvas.getBoundingClientRect();
@@ -262,21 +262,21 @@ class RowPlayer {
       const w = rect.width;
       const h = rect.height || defH;
       const dpr = window.devicePixelRatio || 1;
-      if (canvas.width === Math.round(w * dpr) && canvas.height === Math.round(h * dpr)) return null;
+      if (context && canvas.width === Math.round(w * dpr) && canvas.height === Math.round(h * dpr)) return null;
       return [w, h, sizeCanvas(canvas, w, h)];
     };
     let changed = false;
-    const vec = apply(this.vecCanvas, this.vecH);
+    const vec = apply(this.vecCanvas, this.vecH, this.vecCtx);
     if (vec) {
       [this.vecW, this.vecH, this.vecCtx] = vec;
       changed = true;
     }
-    const freq = apply(this.freqCanvas, this.freqH);
+    const freq = apply(this.freqCanvas, this.freqH, this.freqCtx);
     if (freq) {
       [this.freqW, this.freqH, this.freqCtx] = freq;
       changed = true;
     }
-    const vu = apply(this.vuCanvas, this.vuH);
+    const vu = apply(this.vuCanvas, this.vuH, this.vuCtx);
     if (vu) {
       [this.vuW, this.vuH, this.vuCtx] = vu;
       changed = true;

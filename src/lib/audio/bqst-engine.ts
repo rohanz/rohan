@@ -422,6 +422,7 @@ export class BqstEngine {
 
   dispose(): void {
     this.disposed = true;
+    this.unlocker.dispose();
     if (this.rafId !== null) cancelAnimationFrame(this.rafId);
     this.clearStopTimer();
     if (this.mutexToken) releasePlayback(this.mutexToken);

@@ -367,9 +367,10 @@ function drawFrequency(ctx, w, h, data, t, fs) {
   }
 
   // points evenly spaced across the width
-  const pts = [];
+  const pts = fs.points;
   for (let b = 0; b < N; b++) {
-    pts.push([(b / (N - 1)) * w, base - vals[b] * amp]);
+    pts[b][0] = (b / (N - 1)) * w;
+    pts[b][1] = base - vals[b] * amp;
   }
 
   // Catmull-Rom-style bezier through the points
@@ -1084,7 +1085,9 @@ export function buildMeterBridge(songs, { width = 2.9 } = {}) {
     hl: new Float32Array(FREQ_NBANDS),       // drawn glow levels
     clamped: new Float32Array(FREQ_NBANDS),  // per-frame scratch (no realloc)
     vals: new Float32Array(FREQ_NBANDS),     // per-frame scratch (no realloc)
+    points: Array.from({ length: FREQ_NBANDS }, () => [0, 0]),
   };
+  let spectrumSettled = false;
   let time = 0;
   let currentSong = null;
   let currentIndex = null;
@@ -1235,11 +1238,24 @@ export function buildMeterBridge(songs, { width = 2.9 } = {}) {
     let lr = playing && audio.getTimeDomainLR ? audio.getTimeDomainLR() : null;
     if (!lr && td) lr = { l: td, r: td };
 
-    // Scopes: every frame, no throttle.
+    // The idle waveform and dot breathe; preserve their animation. Only
+    // the spectrum can rest once its decaying signal is below a canvas pixel.
     drawWaveform(screens[0].ctx, screens[0].cw, SCOPE_CANVAS_H, td, time);
     drawVectorscope(screens[1].ctx, screens[1].cw, SCOPE_CANVAS_H, lr, time);
-    drawFrequency(screens[2].ctx, screens[2].cw, SCOPE_CANVAS_H, fq, time, freqState);
-    for (const s of screens) s.texture.needsUpdate = true;
+    screens[0].texture.needsUpdate = true;
+    screens[1].texture.needsUpdate = true;
+    if (playing || !spectrumSettled) {
+      spectrumSettled = !playing && freqState.sm.every((v) => v < 1e-6)
+        && freqState.targets.every((v) => v < 1e-6)
+        && freqState.hl.every((v) => v < 1e-6);
+      if (spectrumSettled) {
+        freqState.sm.fill(0);
+        freqState.targets.fill(0);
+        freqState.hl.fill(0);
+      }
+      drawFrequency(screens[2].ctx, screens[2].cw, SCOPE_CANVAS_H, fq, time, freqState);
+      screens[2].texture.needsUpdate = true;
+    }
 
     // Tape reels: spin while a song is playing, freeze when idle. The
     // supply reel runs slightly slower than the take-up reel.
@@ -1256,6 +1272,7 @@ export function buildMeterBridge(songs, { width = 2.9 } = {}) {
     // VU needles: real per-channel levels, fast attack / slow fall.
     const levels = playing && audio.levelLR ? audio.levelLR() : { l: 0, r: 0 };
     vus.forEach((vu, i) => {
+      const previousValue = vu.value;
       const raw = i === 0 ? levels.l : levels.r;
       // Soft VU law: typical music rides 40-80%%, only true peaks kiss the red.
       const target = Math.tanh(raw * 1.15) * 0.92;
@@ -1264,8 +1281,13 @@ export function buildMeterBridge(songs, { width = 2.9 } = {}) {
       } else {
         vu.value += (target - vu.value) * Math.min(1, dt * 4);  // slow fall
       }
-      drawVUNeedle(vu.ctx, vu.face, vu.value);
-      vu.texture.needsUpdate = true;
+      // Finish the exponential tail below subpixel precision, then keep the
+      // already-drawn resting face instead of uploading it every frame.
+      if (!playing && vu.value < 1e-6) vu.value = 0;
+      if (vu.value !== previousValue) {
+        drawVUNeedle(vu.ctx, vu.face, vu.value);
+        vu.texture.needsUpdate = true;
+      }
 
       // clip LED: light on over-level, then hold-decay over ~350ms
       // Clip watches the RAW level — the soft display law tops out below

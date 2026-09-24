@@ -798,7 +798,7 @@ function frame() {
   if (mode !== 'home' && !transitioning) rig.tick(dt);
   // Per-frame canvas redraws (meters, scopes, panel) only run while their
   // scene can actually be seen — same gating idea as updateLabels below.
-  if (mode === 'music' || transitioning) {
+  if (room.group.visible) {
     consoleKit.tick(dt);
     bridge.tick(dt, player);
     scenePanel.tick(dt);

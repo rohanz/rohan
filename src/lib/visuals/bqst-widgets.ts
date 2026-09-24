@@ -98,6 +98,8 @@ export function initBqstDspLab({ root, palette, sizeCanvas, onThemeChange }: Bqs
         ${legendForBqstVisual(slot.type, palette()) && `<div class="bqst-legend">${legendForBqstVisual(slot.type, palette())}</div>`}
       </div>`;
     slot.canvas = slot.node.querySelector<HTMLCanvasElement>('.bqst-visual-canvas');
+    // Reserve the final chart height before deferring its backing store/paint.
+    if (slot.canvas) slot.canvas.style.height = `${HEIGHTS[slot.type]}px`;
   });
 
   const driveState: Record<DriveType, number> = { transfer: 0, harmonics: 0 };
@@ -147,8 +149,9 @@ export function initBqstDspLab({ root, palette, sizeCanvas, onThemeChange }: Bqs
   // Sized contexts are cached: a drive change redraws its own canvas in place,
   // and only a full pass (first paint, resize, theme) re-measures and re-sizes.
   const sized = new Map<HTMLCanvasElement, { ctx: CanvasRenderingContext2D; w: number }>();
+  const paintable = new Set<(typeof slots)[number]>();
   function drawSlot(slot: (typeof slots)[number], resize: boolean) {
-    if (!slot.canvas) return;
+    if (!slot.canvas || !paintable.has(slot)) return;
     let entry = sized.get(slot.canvas);
     if (resize || !entry) {
       const ctx = resizeCanvas(slot.canvas, HEIGHTS[slot.type]);
@@ -244,7 +247,22 @@ export function initBqstDspLab({ root, palette, sizeCanvas, onThemeChange }: Bqs
       dirtyDrive.clear();
     });
   }
-  requestBqstDraw();
+  // The article can contain several charts far below the fold. Mount controls
+  // now, but size and draw each chart only as it approaches the viewport. Once
+  // activated it keeps the existing resize/font/control redraw behaviour.
+  const paintObserver = typeof IntersectionObserver === 'undefined' ? null : new IntersectionObserver((entries) => {
+    if (!isActive) return;
+    for (const entry of entries) {
+      if (!entry.isIntersecting) continue;
+      const slot = slots.find((candidate) => candidate.node === entry.target);
+      if (slot) paintable.add(slot);
+      paintObserver?.unobserve(entry.target);
+    }
+    fullRedraw = true;
+    requestBqstDraw();
+  }, { rootMargin: `${window.innerHeight}px 0px` });
+  if (paintObserver) slots.forEach((slot) => paintObserver.observe(slot.node));
+  else { slots.forEach((slot) => paintable.add(slot)); requestBqstDraw(); }
   const unsubscribeRedraw = onThemeChange?.(() => { fullRedraw = true; requestBqstDraw(); });
   let resizeTimer: number | undefined;
   const onResize = () => { clearTimeout(resizeTimer); resizeTimer = window.setTimeout(() => { fullRedraw = true; requestBqstDraw(); }, 150); };
@@ -290,6 +308,7 @@ export function initBqstDspLab({ root, palette, sizeCanvas, onThemeChange }: Bqs
     if (osTween !== null) cancelAnimationFrame(osTween);
     unsubscribeRedraw?.();
     resizeObserver.disconnect();
+    paintObserver?.disconnect();
     isActive = false;
     if (bqstDrawId !== null) cancelAnimationFrame(bqstDrawId);
     clearTimeout(resizeTimer);
@@ -358,6 +377,7 @@ export function initBqstAudioDemo(options: BqstAudioDemoOptions): () => void {
   let previousWaveVersion: BqstVersion | null = null;
   let waveFadeId: number | null = null;
   let waveFadeStart = 0;
+  let wavePaintable = typeof IntersectionObserver === 'undefined';
 
   const waveformForVersion = (version: BqstVersion) => (version === 'clean' ? cleanWaveform : processedWaveform);
 
@@ -417,6 +437,7 @@ export function initBqstAudioDemo(options: BqstAudioDemoOptions): () => void {
   }
 
   function drawWaveform(blend = 1) {
+    if (!wavePaintable) return;
     const rect = waveCanvas.getBoundingClientRect();
     const dpr = options.dpr();
     const width = Math.max(1, Math.floor(rect.width * dpr));
@@ -539,6 +560,13 @@ export function initBqstAudioDemo(options: BqstAudioDemoOptions): () => void {
     },
   });
 
+  const paintObserver = typeof IntersectionObserver === 'undefined' ? null : new IntersectionObserver((entries) => {
+    if (!entries.some((entry) => entry.isIntersecting)) return;
+    paintObserver?.disconnect();
+    wavePaintable = true;
+    drawWaveform();
+  }, { rootMargin: `${window.innerHeight}px 0px` });
+  paintObserver?.observe(placeholder);
   drawWaveform();
 
   // Fetch only near the demo. start() also loads, so an early play gesture and
@@ -551,6 +579,9 @@ export function initBqstAudioDemo(options: BqstAudioDemoOptions): () => void {
   loadObserver?.observe(placeholder);
 
   const onPlayClick = () => {
+    paintObserver?.disconnect();
+    wavePaintable = true;
+    drawWaveform();
     loadObserver?.disconnect();
     if (engine.isPlaying) engine.pause();
     else {
@@ -571,6 +602,7 @@ export function initBqstAudioDemo(options: BqstAudioDemoOptions): () => void {
   window.addEventListener('resize', onResize);
 
   return () => {
+    paintObserver?.disconnect();
     loadObserver?.disconnect();
     if (waveFadeId) cancelAnimationFrame(waveFadeId);
     window.removeEventListener('resize', onResize);

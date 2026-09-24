@@ -12,5 +12,8 @@ it('includes a nonempty article for every source project, including unlisted wor
     .filter((name) => name.endsWith('.md')).map((name) => name.slice(0, -3)).sort();
   expect(Object.keys(ARTICLES).sort()).toEqual(sourceSlugs);
   expect(PROJECTS.map((project: { slug: string }) => project.slug).sort()).toEqual(sourceSlugs);
-  for (const slug of sourceSlugs) expect((ARTICLES as Record<string, string>)[slug].trim().length, slug).toBeGreaterThan(0);
+  for (const slug of sourceSlugs) {
+    const markdown = await (ARTICLES as Record<string, () => Promise<string>>)[slug]();
+    expect(markdown.trim().length, slug).toBeGreaterThan(0);
+  }
 });

@@ -23,6 +23,10 @@
 export interface UnlockAudioLike {
   loop: boolean;
   play(): Promise<void>;
+  pause(): void;
+  removeAttribute(name: string): void;
+  load(): void;
+  removeEventListener(type: 'ended', listener: () => void): void;
   addEventListener(type: 'ended', listener: () => void, options: { once: boolean }): void;
 }
 
@@ -33,6 +37,8 @@ export interface UnlockDeps {
   buildSilentWavUrl: (seconds: number) => string;
   /** Schedule `fn` after `ms` — injected so tests can run it synchronously. */
   setTimeout: (fn: () => void, ms: number) => unknown;
+  clearTimeout: (id: unknown) => void;
+  revokeObjectURL: (url: string) => void;
 }
 
 const defaultDeps = (): UnlockDeps => ({
@@ -44,6 +50,8 @@ const defaultDeps = (): UnlockDeps => ({
     throw new Error('buildSilentWavUrl dependency not provided');
   },
   setTimeout: (fn, ms) => setTimeout(fn, ms),
+  clearTimeout: (id) => clearTimeout(id as ReturnType<typeof setTimeout>),
+  revokeObjectURL: (url) => URL.revokeObjectURL(url),
 });
 
 export class SilentWavUnlocker {
@@ -52,6 +60,10 @@ export class SilentWavUnlocker {
   private unlockPromise: Promise<void> | null = null;
   private primer: UnlockAudioLike | null = null;
   private keepaliveLoop: UnlockAudioLike | null = null;
+  private disposed = false;
+  private urls = new Set<string>();
+  private timers = new Set<unknown>();
+  private finishUnlock: (() => void) | null = null;
 
   constructor(deps: Partial<UnlockDeps> = {}) {
     this.deps = { ...defaultDeps(), ...deps };
@@ -64,16 +76,19 @@ export class SilentWavUnlocker {
   /** Idempotent: repeated calls before completion return the same in-flight
    *  promise; after completion, an already-resolved one. */
   unlock(): Promise<void> {
-    if (this.isUnlocked) return Promise.resolve();
+    if (this.disposed || this.isUnlocked) return Promise.resolve();
     if (this.unlockPromise) return this.unlockPromise;
 
     this.unlockPromise = new Promise((resolve) => {
       const done = () => {
+        if (this.disposed) { resolve(); return; }
         if (this.isUnlocked) return;
         this.isUnlocked = true;
+        this.clearPending();
+        this.finishUnlock = null;
         try {
           if (!this.keepaliveLoop) {
-            this.keepaliveLoop = this.deps.createAudio(this.deps.buildSilentWavUrl(5));
+            this.keepaliveLoop = this.createAudio(5);
             this.keepaliveLoop.loop = true;
           }
           this.keepaliveLoop.play().catch(() => {});
@@ -82,18 +97,62 @@ export class SilentWavUnlocker {
         }
         resolve();
       };
+      this.finishUnlock = done;
       try {
         if (!this.primer) {
-          this.primer = this.deps.createAudio(this.deps.buildSilentWavUrl(0.1));
+          this.primer = this.createAudio(0.1);
           this.primer.loop = false;
         }
         this.primer.addEventListener('ended', done, { once: true });
-        this.primer.play().catch(() => this.deps.setTimeout(done, 60));
-        this.deps.setTimeout(done, 250);
+        this.primer.play().catch(() => this.schedule(done, 60));
+        this.schedule(done, 250);
       } catch {
         done();
       }
     });
     return this.unlockPromise;
+  }
+
+  /** Final teardown only: the silent loop must survive pauses and replays. */
+  dispose(): void {
+    if (this.disposed) return;
+    this.disposed = true;
+    this.clearPending();
+    this.finishUnlock?.(); // settle a pending unlock(), which checks disposed
+    this.finishUnlock = null;
+    for (const audio of [this.primer, this.keepaliveLoop]) {
+      if (!audio) continue;
+      audio.pause();
+      audio.removeAttribute('src');
+      audio.load();
+    }
+    this.primer = this.keepaliveLoop = null;
+    this.urls.forEach((url) => this.deps.revokeObjectURL(url));
+    this.urls.clear();
+  }
+
+  private createAudio(seconds: number): UnlockAudioLike {
+    const url = this.deps.buildSilentWavUrl(seconds);
+    this.urls.add(url);
+    return this.deps.createAudio(url);
+  }
+
+  private schedule(done: () => void, ms: number): void {
+    if (this.disposed || this.isUnlocked) return;
+    // Injected schedulers may run synchronously in tests.
+    let fired = false;
+    let id: unknown;
+    id = this.deps.setTimeout(() => {
+      fired = true;
+      this.timers.delete(id);
+      done();
+    }, ms);
+    if (!fired) this.timers.add(id);
+  }
+
+  private clearPending(): void {
+    this.timers.forEach((id) => this.deps.clearTimeout(id));
+    this.timers.clear();
+    if (this.finishUnlock) this.primer?.removeEventListener('ended', this.finishUnlock);
   }
 }
