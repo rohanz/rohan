@@ -1,11 +1,11 @@
 ---
 title: "shared context for coding agents"
 barTitle: "room"
-summary: "A plugin for Claude Code and Codex that gives every coding agent on a repository a shared room: they see each other's uncommitted edits, announce changes before making them, and preview the merged result before anyone commits. Placed third at the OpenAI x ClickHouse x OpenRouter x AI Tinkerers Singapore hackathon."
+summary: "A plugin for Claude Code and Codex that gives every coding agent on a repository a shared room: they see each other's uncommitted edits, announce changes before making them, and preview the merged result before anyone commits. Placed third at the OpenAI x OpenRouter x ClickHouse x AI Tinkerers hackathon."
 image: /assets/images/projects/website/banner.webp
 order: 2
 award: "3rd place · hackathon"
-awardEvent: "OpenAI x ClickHouse x OpenRouter x AI Tinkerers Singapore hackathon"
+awardEvent: "OpenAI x OpenRouter x ClickHouse x AI Tinkerers hackathon"
 technologies:
   - TypeScript
   - Node.js
