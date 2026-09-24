@@ -191,7 +191,11 @@ export function wrapZoomableImages(
       };
       classify();
       img.addEventListener('load', classify);
-      img.decode?.().then(classify).catch(() => {});
+      // decode() only for images already fetched (the cached, client-side
+      // restored case). On a lazy image that has not started loading, the
+      // promise never settles once the page is swapped out, and its callback
+      // then keeps the whole old page's DOM alive.
+      if (img.complete) img.decode?.().then(classify).catch(() => {});
       cleanups.push(() => img.removeEventListener('load', classify));
     }
 
