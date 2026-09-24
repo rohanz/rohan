@@ -18,6 +18,9 @@ function fadeMs(): number {
   const ms = raw.endsWith('ms') ? parseFloat(raw) : raw.endsWith('s') ? parseFloat(raw) * 1000 : NaN;
   return Number.isFinite(ms) && ms > 0 ? ms : 250;
 }
+// Inset for trace amplitude, the scope's scale, the VU dial and the correlation
+// track. Axes and traces still run the full width of their cell, edge to edge,
+// so the meters read as part of the grid.
 const METER_PADDING = 12;
 const outros = new Map<HTMLElement, number>();
 function cancelOutro(row: HTMLElement) {
@@ -56,26 +59,27 @@ function drawGrid(surface: Surface, hair: string) {
   ctx.strokeStyle = hair;
   ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.moveTo(METER_PADDING, h / 2); ctx.lineTo(w - METER_PADDING, h / 2);
+  ctx.moveTo(0, h / 2); ctx.lineTo(w, h / 2);
   if (canvas.dataset.viz === 'stereo') {
     // The correlation meter's track is part of the face, like the axes: it
-    // stays when playback stops; only the marker on it is signal. The axes
-    // stop on it rather than crossing it: the vertical axis lands on its
-    // midpoint and the diagonals end on the line.
-    const { x0, x1, y } = corrTrack(w, h);
-    ctx.moveTo(w / 2, h - y); ctx.lineTo(w / 2, y);
-    // L and R axes at 45°, as on a real goniometer; they give the wide cell its structure.
-    const d = Math.min(Math.min(w, h) / 2 - METER_PADDING, y - h / 2);
-    ctx.moveTo(w / 2 - d, h / 2 - d); ctx.lineTo(w / 2 + d, h / 2 + d);
-    ctx.moveTo(w / 2 - d, h / 2 + d); ctx.lineTo(w / 2 + d, h / 2 - d);
-    ctx.moveTo(x0, y); ctx.lineTo(x1, y);
+    // stays when playback stops; only the marker on it is signal. Every axis
+    // runs to the cell's edges: the vertical and the 45° L/R diagonals (as on
+    // a real goniometer) go top to bottom and cut through the track.
+    const { y } = corrTrack(w, h);
+    ctx.moveTo(w / 2, 0); ctx.lineTo(w / 2, h);
+    const d = h / 2;
+    ctx.moveTo(w / 2 - d, 0); ctx.lineTo(w / 2 + d, h);
+    ctx.moveTo(w / 2 - d, h); ctx.lineTo(w / 2 + d, 0);
+    // Snapped to one pixel row (y..y+1) so the marker's top edge can match it.
+    ctx.moveTo(0, y + .5); ctx.lineTo(w, y + .5);
   }
   ctx.stroke();
 }
 
-/** Correlation meter geometry: a line along the scope's bottom edge. */
+/** Correlation meter geometry: a line along the scope's bottom edge. The track
+ * spans the cell; the marker's travel stops 4px short so it stays whole. */
 function corrTrack(w: number, h: number) {
-  return { x0: METER_PADDING + 4, x1: w - METER_PADDING - 4, y: h - METER_PADDING - 3 };
+  return { x0: 4, x1: w - 4, y: Math.round(h - METER_PADDING - 3) };
 }
 
 function drawVu(surface: Surface, db: number, inkIn: string, hair: string, accentIn: string, rest = 0) {
@@ -232,14 +236,14 @@ export function attachViz(row: HTMLElement, audio: HTMLAudioElement): () => void
       ctx.beginPath();
       if (canvas.dataset.viz === 'wave') {
         for (let i = 0; i < wave.length; i++) {
-          const x = METER_PADDING + i / (wave.length - 1) * (w - 2 * METER_PADDING);
+          const x = i / (wave.length - 1) * w;
           const y = h / 2 + (wave[i] / 128 - 1) * (h / 2 - METER_PADDING);
           if (!i) ctx.moveTo(x, y); else ctx.lineTo(x, y);
         }
       } else if (canvas.dataset.viz === 'freq') {
         // One continuous line; no highlighted peak.
         for (let i = 0; i < curve.length; i++) {
-          const x = METER_PADDING + i / (curve.length - 1) * (w - 2 * METER_PADDING);
+          const x = i / (curve.length - 1) * w;
           const y = h - METER_PADDING - curve[i] * (h - 2 * METER_PADDING);
           if (!i) ctx.moveTo(x, y); else ctx.lineTo(x, y);
         }
@@ -273,9 +277,6 @@ export function attachViz(row: HTMLElement, audio: HTMLAudioElement): () => void
           dc.globalCompositeOperation = 'source-over';
         }
         dc.save();
-        dc.beginPath();
-        dc.rect(METER_PADDING, METER_PADDING, w - 2 * METER_PADDING, h - 2 * METER_PADDING);
-        dc.clip();
         dc.fillStyle = ink;
         // Batch each size at one opacity; no per-dot state changes or shadows.
         if (!reduced.matches) {
@@ -297,12 +298,13 @@ export function attachViz(row: HTMLElement, audio: HTMLAudioElement): () => void
         dc.restore();
         dc.globalAlpha = 1;
         if (persist) ctx.drawImage(trail!.canvas, 0, 0, w, h);
-        // Correlation marker: -1 left, +1 right. Its track is drawn with the grid.
+        // Correlation marker: -1 left, +1 right. It fills the strip below the
+        // track (drawn with the grid), covering the track line where it sits.
         const { x0: bx0, x1: bx1, y: by } = corrTrack(w, h);
         const mx = bx0 + (bx1 - bx0) * (corrSmoothed + 1) / 2;
         ctx.globalAlpha = alpha;
         ctx.fillStyle = corrSmoothed < 0 ? accent : ink;
-        ctx.fillRect(Math.round(mx) - 1.5, by - 5, 3, 10);
+        ctx.fillRect(Math.round(mx) - 2, by, 4, h - by); // top flush with the track
         ctx.globalAlpha = 1;
         continue;
       }
