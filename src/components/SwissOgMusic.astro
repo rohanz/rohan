@@ -15,11 +15,11 @@ const point = (fraction: number, radius: number) => {
 ---
 <svg class="og-music-viz" viewBox="0 0 600 630" fill="none" xmlns="http://www.w3.org/2000/svg">
   <g stroke="currentColor" stroke-opacity=".22" stroke-width="1">
-    <path d="M0 435H600 M48 231H552 M300 66V392 M148 79L452 383 M148 383L452 79 M64 399H536" />
+    <path d="M0 435H600 M0 231H600 M300 0V435 M69 0L504 435 M531 0L96 435 M0 399.5H600" />
     <path d={`M${point(0, 137)} A137 137 0 0 1 ${point(1, 137)}`} />
   </g>
   <path d={scope} stroke="var(--accent)" stroke-width="1.6" stroke-opacity=".85" />
-  <path d="M442 394V404" stroke="var(--accent)" stroke-width="3" />
+  <path d="M442 399V435" stroke="var(--accent)" stroke-width="4" />
   <g stroke="currentColor" stroke-width="1.5">
     {Array.from({ length: 21 }, (_, i) => <path d={`M${point(i / 20, i % 5 === 0 ? 127 : 132)} L${point(i / 20, 142)}`} />)}
     <path d={`M300 591 L${point(.69, 125)}`} stroke-width="2.5" />
