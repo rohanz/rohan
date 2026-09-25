@@ -10,15 +10,20 @@ export function playDrawingOnArrival(art: HTMLElement): () => void {
     if (!art.matches(':hover')) art.classList.remove('is-hover');
   }, 3000);
   // Mouse: play while hovered. Touch has no hover, so a tap replays the
-  // animation from the start instead of toggling it.
+  // animation from the start instead of toggling it. The replay waits for the
+  // click, which the browser only fires for a tap: a touch that turns into a
+  // scroll is cancelled and must not restart the drawing. Not every browser's
+  // click carries pointerType, so the press records it.
+  let lastPointer = '';
+  const press = (e: PointerEvent) => { lastPointer = e.pointerType; };
   const enter = (e: PointerEvent) => { if (e.pointerType !== 'touch') art.classList.add('is-hover'); };
   const leave = (e: PointerEvent) => {
     if (e.pointerType === 'touch') return;
     window.clearTimeout(start);
     art.classList.remove('is-hover');
   };
-  const replay = (e: PointerEvent) => {
-    if (e.pointerType !== 'touch') return;
+  const replay = () => {
+    if (lastPointer !== 'touch') return;
     window.clearTimeout(start);
     window.clearTimeout(stop);
     art.classList.add('is-resetting');
@@ -29,13 +34,15 @@ export function playDrawingOnArrival(art: HTMLElement): () => void {
   };
   art.addEventListener('pointerenter', enter);
   art.addEventListener('pointerleave', leave);
-  art.addEventListener('pointerdown', replay);
+  art.addEventListener('pointerdown', press);
+  art.addEventListener('click', replay);
   return () => {
     window.clearTimeout(start);
     window.clearTimeout(stop);
     art.removeEventListener('pointerenter', enter);
     art.removeEventListener('pointerleave', leave);
-    art.removeEventListener('pointerdown', replay);
+    art.removeEventListener('pointerdown', press);
+    art.removeEventListener('click', replay);
     art.classList.remove('is-hover', 'is-resetting');
   };
 }

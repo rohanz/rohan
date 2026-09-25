@@ -110,6 +110,9 @@ const photo = await portrait();
       import '../lib/theme-switch.ts';
       import { installCopyLines } from '../lib/chrome/copy-lines';
       installCopyLines();
+      // iOS Safari only applies :active (the touch pressed states) when a touch
+      // listener is present; a passive no-op is the standard enabler.
+      document.addEventListener('touchstart', () => {}, { passive: true });
 
       // Page prefetch fetches HTML only, so the about portrait would still start
       // downloading on arrival. Once per session, at idle and not on data saver,

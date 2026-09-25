@@ -1,0 +1,48 @@
+---
+// The static face of one music meter: grids, axes and the VU dial. Rendered in
+// the page so it paints with the first frame and follows the row's colour
+// tokens through hover and playback; the canvas above draws only live signal.
+import { VU_HOT_FROM_DB, VU_NEEDLE_LENGTH, VU_PIVOT_RADIUS, VU_RADIUS, VU_TICKS, VU_VIEWBOX, vuPoint } from '../lib/visuals/vu-face';
+
+interface Props { kind: 'wave' | 'freq' | 'stereo' | 'vu' }
+const { kind } = Astro.props;
+
+const pt = (db: number, r: number) => {
+  const p = vuPoint(db, r);
+  return `${p.x.toFixed(2)} ${p.y.toFixed(2)}`;
+};
+const arc = (from: number, to: number) => `M${pt(from, VU_RADIUS)} A${VU_RADIUS} ${VU_RADIUS} 0 0 1 ${pt(to, VU_RADIUS)}`;
+const viewBox = `${VU_VIEWBOX.x} ${VU_VIEWBOX.y} ${VU_VIEWBOX.width} ${VU_VIEWBOX.height}`;
+const rest = vuPoint(-40, VU_NEEDLE_LENGTH);
+---
+<div class="sw-meter-face" aria-hidden="true">
+  {(kind === 'wave' || kind === 'stereo') && <i class="sw-face-line sw-face-h"></i>}
+  {kind === 'stereo' && (
+    <>
+      <i class="sw-face-line sw-face-v"></i>
+      <i class="sw-face-line sw-face-corr"></i>
+      {/* L/R axes at 45 degrees, as on a goniometer: a square as tall as the
+          cell, centred, so the diagonals run top to bottom. */}
+      <svg class="sw-face-x" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <path d="M0 0L100 100M0 100L100 0" vector-effect="non-scaling-stroke" />
+      </svg>
+    </>
+  )}
+  {kind === 'vu' && (
+    <svg class="sw-vu-face" viewBox={viewBox} preserveAspectRatio="xMidYMid meet">
+      <path class="sw-vu-arc" d={arc(-40, 0)} vector-effect="non-scaling-stroke" />
+      <path class="sw-vu-hot" d={arc(VU_HOT_FROM_DB, 0)} vector-effect="non-scaling-stroke" />
+      {VU_TICKS.map(({ db, major }) => {
+        const inner = vuPoint(db, VU_RADIUS - (major ? 7 : 3));
+        const outer = vuPoint(db, VU_RADIUS + 3);
+        return <line class:list={['sw-vu-tick', { 'is-major': major }]} x1={inner.x.toFixed(2)} y1={inner.y.toFixed(2)} x2={outer.x.toFixed(2)} y2={outer.y.toFixed(2)} vector-effect="non-scaling-stroke" />;
+      })}
+      {VU_TICKS.filter((tick) => tick.major).map(({ db }) => {
+        const p = vuPoint(db, VU_RADIUS + 15);
+        return <text class="sw-vu-label" x={p.x.toFixed(2)} y={p.y.toFixed(2)}>{db}</text>;
+      })}
+      <line class="sw-vu-needle" x1="0" y1="0" x2={rest.x.toFixed(2)} y2={rest.y.toFixed(2)} vector-effect="non-scaling-stroke" />
+      <circle class="sw-vu-needle" cx="0" cy="0" r={VU_PIVOT_RADIUS} />
+    </svg>
+  )}
+</div>

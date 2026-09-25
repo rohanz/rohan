@@ -45,7 +45,8 @@
 #qla2-episode .qla2-episode-picker { display: flex; flex-wrap: wrap; gap: .4rem; }
 #qla2-episode .qla2-episode-picker .qla-btn { flex: 1 1 auto; min-height: 44px; padding-inline: .65rem; background: var(--bg-card); color: var(--text-primary); }
 #qla2-episode .qla2-episode-picker .qla-btn.is-active { background: var(--bg-card); color: var(--accent); border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
-#qla2-episode .qla2-episode-picker .qla-btn:hover { border-color: var(--accent); }
+#qla2-episode .qla2-episode-picker .qla-btn:active { border-color: var(--accent); }
+@media (hover: hover) { #qla2-episode .qla2-episode-picker .qla-btn:hover { border-color: var(--accent); } }
 #qla2-episode :is(.qla-btn, .gloss-term):focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 #qla2-episode .qla2-question { margin: 0 0 .8rem; color: var(--text-primary); font-weight: 600; line-height: 1.5; }
 #qla2-episode ol.qla2-story { margin: 0; padding: 0; list-style: none; counter-reset: qla2step; }

@@ -13,7 +13,8 @@ html.theme-swiss .sw-project-rail { min-width: 0; background: var(--tint); posit
 
 html.theme-swiss .sw-filters { display: flex; overflow-x: auto; border-top: 1px solid var(--tint-hair); }
 html.theme-swiss .sw-filter { flex: 0 0 auto; border: 0; border-right: 1px solid var(--tint-hair); border-radius: 0; min-height: 2.75rem; padding: .9rem 1.25rem; text-align: left; color: var(--ink); background: transparent; cursor: pointer; transition: background .2s ease, color .2s ease; }
-html.theme-swiss .sw-filter:hover { background: var(--paper); }
+html.theme-swiss .sw-filter:active { background: var(--paper); }
+@media (hover: hover) { html.theme-swiss .sw-filter:hover { background: var(--paper); } }
 html.theme-swiss .sw-filter[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
 html.theme-swiss .sw-filter:focus-visible { outline-offset: -3px; }
 @media (min-width: 1100px) {

@@ -33,14 +33,17 @@ html.theme-swiss .sw-tracks { min-width: 0; }
 @property --t-hair { syntax: '<color>'; inherits: true; initial-value: #d6d3cc; }
 @property --t-muted { syntax: '<color>'; inherits: true; initial-value: #6b6b66; }
 @property --t-accent { syntax: '<color>'; inherits: true; initial-value: #5f66c2; }
-html.theme-swiss .sw-tracks { --t-ink: var(--ink); --t-paper: var(--paper); --t-hair: var(--hair); --t-muted: var(--muted); --t-accent: var(--accent); }
+/* The VU dial's marks and red zone: grey at rest, lit while playing. */
+@property --t-vu-mark { syntax: '<color>'; inherits: true; initial-value: #d6d3cc; }
+@property --t-vu-hot { syntax: '<color>'; inherits: true; initial-value: #d6d3cc; }
+html.theme-swiss .sw-tracks { --t-ink: var(--ink); --t-paper: var(--paper); --t-hair: var(--hair); --t-muted: var(--muted); --t-accent: var(--accent); --t-vu-mark: var(--hair); --t-vu-hot: var(--hair); }
 html.theme-swiss .sw-track {
   --ink: var(--t-ink);
   --paper: var(--t-paper);
   --hair: var(--t-hair);
   --muted: var(--t-muted);
   --accent: var(--t-accent);
-  transition-property: --t-ink, --t-paper, --t-hair, --t-muted, --t-accent, background-color;
+  transition-property: --t-ink, --t-paper, --t-hair, --t-muted, --t-accent, --t-vu-mark, --t-vu-hot, background-color;
   transition-duration: var(--dur-fade);
   /* ease-out cubic: the same curve the meters fade with in music-viz.ts */
   transition-timing-function: cubic-bezier(.33, 1, .68, 1);
@@ -52,17 +55,33 @@ html.theme-swiss .sw-track {
   border-bottom: 1px solid var(--cell-hair);
   background: var(--paper);
 }
-html.theme-swiss .sw-track:hover,
-html.theme-swiss .sw-track:focus-within { background: var(--tint); --cell-hair: var(--tint-hair); }
+/* Hover and keyboard focus invert the row to ink, as project cards do; playing
+   keeps the ink and adds the periwinkle play cell and live meters. */
+@media (hover: hover) {
+  html.theme-swiss .sw-track:hover {
+    --t-ink: var(--music-paper);
+    --t-paper: var(--music-ink);
+    --t-hair: color-mix(in srgb, var(--music-paper) 30%, var(--music-ink));
+    --t-muted: var(--music-paper);
+    --t-accent: var(--accent-on-ink);
+    --t-vu-mark: color-mix(in srgb, var(--music-paper) 30%, var(--music-ink));
+    --t-vu-hot: color-mix(in srgb, var(--music-paper) 30%, var(--music-ink));
+  }
+}
+html.theme-swiss .sw-track:has(:focus-visible),
 html.theme-swiss .sw-track.is-playing {
   --t-ink: var(--music-paper);
   --t-paper: var(--music-ink);
   --t-hair: color-mix(in srgb, var(--music-paper) 30%, var(--music-ink));
   --t-muted: var(--music-paper);
   --t-accent: var(--accent-on-ink);
+  --t-vu-mark: color-mix(in srgb, var(--music-paper) 30%, var(--music-ink));
+  --t-vu-hot: color-mix(in srgb, var(--music-paper) 30%, var(--music-ink));
   --cell-hair: var(--hair);
   background: var(--paper);
 }
+/* Playing also lights the VU dial's marks and red zone. */
+html.theme-swiss .sw-track.is-playing { --t-vu-mark: var(--music-paper); --t-vu-hot: var(--accent-on-ink); }
 html.theme-swiss .sw-track > * { min-width: 0; }
 html.theme-swiss .sw-play {
   width: 6rem;
@@ -78,8 +97,11 @@ html.theme-swiss .sw-play {
   place-items: center;
   transition: background-color var(--dur-fade) ease, color var(--dur-fade) ease;
 }
-html.theme-swiss .sw-track.is-playing .sw-play:not(:hover) { background: var(--music-accent); color: var(--music-paper); }
-html.theme-swiss .sw-play:hover { background: var(--ink); color: var(--paper); }
+/* The play cell: a periwinkle wash under the pointer, solid periwinkle while
+   playing (washed again when hovered, as a stop hint). */
+html.theme-swiss .sw-track.is-playing .sw-play { background: var(--music-accent); color: var(--music-paper); }
+html.theme-swiss :is(.sw-play, .sw-track.is-playing .sw-play):is(:active, :focus-visible) { background: color-mix(in srgb, var(--music-accent) 45%, var(--music-paper)); color: var(--music-ink); }
+@media (hover: hover) { html.theme-swiss :is(.sw-play, .sw-track.is-playing .sw-play):hover { background: color-mix(in srgb, var(--music-accent) 45%, var(--music-paper)); color: var(--music-ink); } }
 html.theme-swiss .sw-play:focus-visible,
 html.theme-swiss .sw-track-links a:focus-visible { outline-offset: -4px; }
 html.theme-swiss .sw-play-icon { width: 0; height: 0; border-left: 12px solid currentColor; border-top: 7px solid transparent; border-bottom: 7px solid transparent; margin-left: 3px; }
@@ -90,11 +112,30 @@ html.theme-swiss .sw-track-artist { color: var(--muted); font-size: .8125rem; }
 html.theme-swiss .sw-track-links { grid-column: 3; grid-row: 1; display: grid; border-left: 1px solid var(--cell-hair); }
 html.theme-swiss .sw-track-links a { display: flex; justify-content: space-between; align-items: center; padding: .35rem .8rem; font-size: .625rem; }
 html.theme-swiss .sw-track-links a + a { border-top: 1px solid var(--cell-hair); }
-html.theme-swiss .sw-track-links a:hover { background: var(--ink); color: var(--paper); }
+html.theme-swiss .sw-track-links a:is(:active, :focus-visible) { background: var(--ink); color: var(--paper); }
+@media (hover: hover) { html.theme-swiss .sw-track-links a:hover { background: var(--ink); color: var(--paper); } }
 html.theme-swiss .sw-track-viz { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid var(--cell-hair); }
 html.theme-swiss .sw-meter { position: relative; min-width: 0; height: 7rem; }
 html.theme-swiss .sw-meter + .sw-meter { border-left: 1px solid var(--cell-hair); }
-html.theme-swiss .sw-meter canvas { display: block; width: 100%; height: 100%; border: 0; background: transparent; }
+html.theme-swiss .sw-meter canvas { position: relative; display: block; width: 100%; height: 100%; border: 0; background: transparent; }
+/* Static meter faces (SwissMeterFace.astro), under the live canvas. */
+html.theme-swiss .sw-meter-face { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+html.theme-swiss .sw-face-line { position: absolute; background: var(--hair); }
+html.theme-swiss .sw-face-h { left: 0; right: 0; top: calc(50% - .5px); height: 1px; }
+html.theme-swiss .sw-face-v { top: 0; bottom: 0; left: calc(50% - .5px); width: 1px; }
+/* The correlation track: one pixel row, 15px above the bottom (music-viz.ts corrTrack). */
+html.theme-swiss .sw-face-corr { left: 0; right: 0; bottom: 14px; height: 1px; }
+html.theme-swiss .sw-face-x { position: absolute; top: 0; left: 50%; height: 100%; width: auto; aspect-ratio: 1; transform: translateX(-50%); fill: none; stroke: var(--hair); overflow: visible; }
+html.theme-swiss .sw-vu-face { position: absolute; inset: 12px; width: calc(100% - 24px); height: calc(100% - 24px); overflow: visible; fill: none; stroke: var(--hair); }
+html.theme-swiss .sw-vu-label { font: 500 12px var(--font-ui); text-anchor: middle; dominant-baseline: central; fill: var(--t-vu-mark); stroke: none; }
+html.theme-swiss circle.sw-vu-needle { fill: var(--hair); stroke: none; }
+html.theme-swiss line.sw-vu-needle { stroke-width: 1.5; }
+html.theme-swiss .sw-vu-hot { stroke: var(--t-vu-hot); stroke-width: 2; }
+html.theme-swiss .sw-vu-tick.is-major { stroke: var(--t-vu-mark); }
+/* The canvas draws the live needle while playing; the printed one returns once
+   the outro has eased it home. */
+html.theme-swiss .sw-vu-needle { transition: opacity 0s linear var(--dur-fade); }
+html.theme-swiss .sw-track.is-playing .sw-vu-needle { opacity: 0; transition-delay: 0s; }
 @media (min-width: 1100px) {
   html.theme-swiss .sw-music { grid-template-columns: minmax(0, 3fr) minmax(0, 9fr); }
   html.theme-swiss .sw-music-rail { border-bottom: 0; border-right: 1px solid var(--tint-hair); }

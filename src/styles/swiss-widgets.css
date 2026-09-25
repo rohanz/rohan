@@ -37,7 +37,8 @@ html.theme-swiss .bqst-interactive-row { grid-template-columns: 1fr; }
 html.theme-swiss .bqst-visual-canvas { height: 300px; }
 }
 html.theme-swiss .bqst-audio-play { border-radius: var(--widget-radius); border: 2px solid var(--w-accent); background: transparent; color: var(--line-projects); font-size: 1rem; font-weight: 700; flex-shrink: 0; }
-html.theme-swiss .bqst-audio-play:hover { background: var(--w-accent); color: var(--paper); box-shadow: var(--widget-decoration); }
+html.theme-swiss .bqst-audio-play:active { background: var(--w-accent); color: var(--paper); box-shadow: var(--widget-decoration); }
+@media (hover: hover) { html.theme-swiss .bqst-audio-play:hover { background: var(--w-accent); color: var(--paper); box-shadow: var(--widget-decoration); } }
 html.theme-swiss .bqst-audio-play.playing { background: var(--w-accent); color: var(--paper); box-shadow: var(--widget-decoration); }
 html.theme-swiss .bqst-audio-toggle { border: 1px solid var(--w-border); border-radius: var(--widget-radius); background: rgba(0,0,0,0.03); }
 html.theme-swiss .bqst-audio-toggle button { border: 0; border-radius: var(--widget-radius); background: transparent; color: var(--w-muted); }
@@ -79,7 +80,8 @@ html.theme-swiss .qla-visual-header { border-bottom: 1px solid var(--w-border); 
 html.theme-swiss .qla-visual-kicker { font-family: var(--font-ui); color: var(--line-projects); }
 html.theme-swiss .qla-visual-meta { color: var(--w-muted); }
 html.theme-swiss .qla-btn { font-family: var(--font-ui); border: 1px solid var(--w-border); background: var(--paper); color: var(--w-ink); }
-html.theme-swiss .qla-btn:hover { border-color: rgba(0,0,0,0.28); background: var(--paper); }
+html.theme-swiss .qla-btn:active { border-color: rgba(0,0,0,0.28); background: var(--paper); }
+@media (hover: hover) { html.theme-swiss .qla-btn:hover { border-color: rgba(0,0,0,0.28); background: var(--paper); } }
 html.theme-swiss .qla-btn:focus-visible { outline: 2px solid var(--w-accent); outline-offset: 2px; }
 html.theme-swiss .qla-compound-takeaway { color: rgba(20,20,20,0.72); }
 html.theme-swiss .qla-compound-canvas-wrap.qlf-cross-focus { outline: 2px solid var(--w-accent); outline-offset: 3px; border-radius: var(--widget-radius); }
@@ -102,7 +104,8 @@ html.theme-swiss .qla-judge-panel.is-pick-correct { border-color: var(--w-good, 
 html.theme-swiss .qla-judge-panel.is-pick-wrong { border-color: var(--line-projects); box-shadow: var(--widget-decoration); }
 html.theme-swiss .qla-judge-panel-label { font-family: var(--font-ui); color: var(--line-projects); border-bottom: 1px solid var(--w-border); }
 html.theme-swiss .qla-judge-panel-body { color: rgba(20,20,20,0.78); overflow: hidden; }
-html.theme-swiss .qla-judge-guess:disabled:hover { border-color: var(--w-border); background: var(--paper); }
+html.theme-swiss .qla-judge-guess:disabled:active { border-color: var(--w-border); background: var(--paper); }
+@media (hover: hover) { html.theme-swiss .qla-judge-guess:disabled:hover { border-color: var(--w-border); background: var(--paper); } }
 html.theme-swiss .qla-judge-controls { align-items: center; gap: .5rem 1rem; min-height: 2.75rem; margin-top: .6rem; }
 html.theme-swiss .qla-judge-actions { display: flex; gap: .6rem; }
 html.theme-swiss .qla-judge-feedback { margin: 0; color: var(--w-ink); }
@@ -119,7 +122,8 @@ html.theme-swiss .qla-roster-memo { overflow-y: auto; scrollbar-color: rgba(0,0,
 html.theme-swiss .qla-roster-memo::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.18); border-radius: 3px; }
 html.theme-swiss .qla-roster-grip { border-radius: var(--widget-radius); }
 html.theme-swiss .qla-roster-grip::before { width: 42px; height: 5px; border-radius: 999px; background: rgba(107,107,102,0.55); transition: background 0.15s ease, transform 0.15s ease; }
-html.theme-swiss .qla-roster-grip:hover::before { background: color-mix(in srgb, var(--accent) 78%, transparent); transform: scaleX(1.08); }
+html.theme-swiss .qla-roster-grip:active::before { background: color-mix(in srgb, var(--accent) 78%, transparent); transform: scaleX(1.08); }
+@media (hover: hover) { html.theme-swiss .qla-roster-grip:hover::before { background: color-mix(in srgb, var(--accent) 78%, transparent); transform: scaleX(1.08); } }
 html.theme-swiss .qla-roster-grip:focus-visible::before { background: color-mix(in srgb, var(--accent) 78%, transparent); transform: scaleX(1.08); }
 html.theme-swiss .qla-roster-grip.is-dragging::before { background: color-mix(in srgb, var(--accent) 78%, transparent); transform: scaleX(1.08); }
 html.theme-swiss .qla-roster-grip:focus-visible { outline: 2px solid var(--w-accent); outline-offset: 1px; }
@@ -227,8 +231,10 @@ html.theme-swiss .article #bqst-oversampling-visual:empty { min-height: 525px; }
 }
 html.theme-swiss .article #demo-player-placeholder:empty { min-height: 7.5rem; margin: 1rem 0 1.5rem; }
 html.theme-swiss .article :is(.qla-btn-accent, .qlf-risk-btn:not(.qlf-risk-btn-warn), .qla-judge-guess) { background: color-mix(in srgb, var(--accent) 16%, var(--paper)); border-color: color-mix(in srgb, var(--accent) 45%, var(--paper)); color: var(--ink); transition: background .2s ease, border-color .2s ease; }
-html.theme-swiss .article :is(.qla-btn-accent, .qlf-risk-btn:not(.qlf-risk-btn-warn), .qla-judge-guess):hover:not(:disabled) { background: color-mix(in srgb, var(--accent) 28%, var(--paper)); border-color: var(--accent); }
+html.theme-swiss .article :is(.qla-btn-accent, .qlf-risk-btn:not(.qlf-risk-btn-warn), .qla-judge-guess):active:not(:disabled) { background: color-mix(in srgb, var(--accent) 28%, var(--paper)); border-color: var(--accent); }
+@media (hover: hover) { html.theme-swiss .article :is(.qla-btn-accent, .qlf-risk-btn:not(.qlf-risk-btn-warn), .qla-judge-guess):hover:not(:disabled) { background: color-mix(in srgb, var(--accent) 28%, var(--paper)); border-color: var(--accent); } }
 html.theme-swiss .article :is(.qls-step-btn:not(.qla-btn-accent)) { background: var(--ink); border-color: var(--ink); color: var(--paper); }
-html.theme-swiss .article :is(.qls-step-btn:not(.qla-btn-accent)):hover:not(:disabled) { background: color-mix(in srgb, var(--ink) 82%, var(--paper)); }
+html.theme-swiss .article :is(.qls-step-btn:not(.qla-btn-accent)):active:not(:disabled) { background: color-mix(in srgb, var(--ink) 82%, var(--paper)); }
+@media (hover: hover) { html.theme-swiss .article :is(.qls-step-btn:not(.qla-btn-accent)):hover:not(:disabled) { background: color-mix(in srgb, var(--ink) 82%, var(--paper)); } }
 html.theme-swiss .article :is(.qls-step-controls, .qls-controls) .qla-btn:disabled { opacity: .35; cursor: default; }
 html.theme-swiss .article .qls-step-btn:disabled { opacity: .35; cursor: default; }

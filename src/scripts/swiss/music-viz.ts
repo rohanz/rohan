@@ -1,13 +1,14 @@
 import { buildAnalyserGraph, ensureAudioContext, type AnalyserGraph } from '../../lib/audio/graph';
-import { FREQ_BANDS, RED_THRESHOLD_DB, computeBands, smoothCurve, vuDbFromStereo, dbToFrac, onePole } from '../../lib/audio/analysis';
+import { FREQ_BANDS, computeBands, smoothCurve, vuDbFromStereo, onePole } from '../../lib/audio/analysis';
 import { deviceDpr, sizeCanvasWithDpr } from '../../lib/visuals/canvas';
+import { VU_NEEDLE_LENGTH, VU_PIVOT_RADIUS, fitVuFace, vuAngle } from '../../lib/visuals/vu-face';
 
 let context: AudioContext | null = null;
 // A media element can be connected only once, including after route swaps.
 const graphs = new WeakMap<HTMLAudioElement, AnalyserGraph | null>();
-// The scope keeps its phosphor trail on its own offscreen layer so the decay
-// never touches the grid (redrawing the grid over its own fading copy thickened
-// its antialiased edges over about a second).
+// The scope keeps its phosphor trail on its own offscreen layer: the visible
+// canvas is cleared every frame for the correlation marker, and the decaying
+// trail is composited onto it.
 type Layer = { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D };
 type Surface = { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D; w: number; h: number; trail?: Layer };
 const surfaces = new WeakMap<HTMLElement, Surface[]>();
@@ -48,32 +49,15 @@ function resize(row: HTMLElement) {
 
 // Phosphor persistence for the scope: the trail layer erases this fraction of
 // its previous frame (destination-out, toward transparent) so old dots decay
-// over ~8 frames, and is composited over the freshly drawn grid.
+// over ~8 frames, and is composited onto the freshly cleared canvas.
 const PHOSPHOR_DECAY = 0.22;
 
-function drawGrid(surface: Surface, hair: string) {
-  const { ctx, w, h, canvas } = surface;
-  ctx.globalAlpha = 1; // the outro leaves this canvas faded; the grid never is
-  ctx.clearRect(0, 0, w, h);
-  if (canvas.dataset.viz === 'freq' || canvas.dataset.viz === 'vu') return;
-  ctx.strokeStyle = hair;
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(0, h / 2); ctx.lineTo(w, h / 2);
-  if (canvas.dataset.viz === 'stereo') {
-    // The correlation meter's track is part of the face, like the axes: it
-    // stays when playback stops; only the marker on it is signal. Every axis
-    // runs to the cell's edges: the vertical and the 45° L/R diagonals (as on
-    // a real goniometer) go top to bottom and cut through the track.
-    const { y } = corrTrack(w, h);
-    ctx.moveTo(w / 2, 0); ctx.lineTo(w / 2, h);
-    const d = h / 2;
-    ctx.moveTo(w / 2 - d, 0); ctx.lineTo(w / 2 + d, h);
-    ctx.moveTo(w / 2 - d, h); ctx.lineTo(w / 2 + d, 0);
-    // Snapped to one pixel row (y..y+1) so the marker's top edge can match it.
-    ctx.moveTo(0, y + .5); ctx.lineTo(w, y + .5);
-  }
-  ctx.stroke();
+// The meters' static faces (grids, axes, the VU dial) are rendered in the page
+// by SwissMeterFace.astro, so they paint with the first frame and follow the
+// row's colour tokens. The canvas above each face carries only live signal.
+function clearSurface(surface: Surface) {
+  surface.ctx.globalAlpha = 1; // the outro leaves this canvas faded
+  surface.ctx.clearRect(0, 0, surface.w, surface.h);
 }
 
 /** Correlation meter geometry: a line along the scope's bottom edge. The track
@@ -82,79 +66,36 @@ function corrTrack(w: number, h: number) {
   return { x0: 4, x1: w - 4, y: Math.round(h - METER_PADDING - 3) };
 }
 
-function drawVu(surface: Surface, db: number, inkIn: string, hair: string, accentIn: string, rest = 0) {
+/** The live VU needle, on the printed dial's pivot (see lib/visuals/vu-face.ts).
+ *  `rest` (0..1) greys it toward the grid-line colour over the same fade as the
+ *  row's colours; at rest the page's own needle takes over. */
+function drawVuNeedle(surface: Surface, db: number, inkIn: string, hair: string, rest = 0) {
   const { ctx, w, h } = surface;
-  // `rest` (0..1) greys the whole meter toward the grid-line colour: 1 at rest,
-  // 0 while playing, and in between during the same fade as the row's colours.
-  const toward = (c: string) => rest <= 0 ? c : rest >= 1 ? hair : `color-mix(in srgb, ${hair} ${Math.round(rest * 100)}%, ${c})`;
-  const ink = toward(inkIn);
-  const accent = toward(accentIn);
-  // Centre the complete face (outer labels through needle pivot) in the cell.
-  const labelPx = Math.round(parseFloat(getComputedStyle(document.documentElement).fontSize) * 0.5) || 8;
-  const labelInset = 11 + labelPx / 2;
-  const radius = .88 * Math.max(1, Math.min(w / 2 - METER_PADDING - labelInset, h - 2 * METER_PADDING - labelInset - 2));
-  const cx = w / 2, cy = (h + radius + labelInset - 2) / 2;
-  const angleFor = (value: number) => -Math.PI * .85 + dbToFrac(value) * Math.PI * .7;
+  const ink = rest <= 0 ? inkIn : rest >= 1 ? hair : `color-mix(in srgb, ${hair} ${Math.round(rest * 100)}%, ${inkIn})`;
+  const { cx, cy, scale } = fitVuFace(w, h);
+  const angle = vuAngle(db);
+  const length = VU_NEEDLE_LENGTH * scale;
   ctx.save();
   ctx.globalAlpha = 1;
-  ctx.strokeStyle = hair;
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.arc(cx, cy, radius, angleFor(-40), angleFor(0));
-  ctx.stroke();
-  ctx.strokeStyle = accent;
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.arc(cx, cy, radius, angleFor(RED_THRESHOLD_DB), angleFor(0));
-  ctx.stroke();
-  // Sparse labels keep the small face legible; minor ticks retain the hot scale.
-  const marks = [-40, -20, -10, 0];
-  // Scale the tiny labels with the root font size so they track the fluid type.
-  ctx.font = `500 ${labelPx}px 'General Sans', 'General Sans Fallback', system-ui, sans-serif`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  for (let value = -40; value <= 0; value++) {
-    if (value < RED_THRESHOLD_DB && value % 5 !== 0) continue;
-    const major = marks.includes(value);
-    const angle = angleFor(value);
-    const cos = Math.cos(angle), sin = Math.sin(angle);
-    ctx.strokeStyle = major ? ink : hair;
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(cx + (radius - (major ? 5 : 2)) * cos, cy + (radius - (major ? 5 : 2)) * sin);
-    ctx.lineTo(cx + (radius + 2) * cos, cy + (radius + 2) * sin);
-    ctx.stroke();
-    if (major) {
-      ctx.fillStyle = ink;
-      ctx.fillText(String(value), cx + (radius + 11) * cos, cy + (radius + 11) * sin);
-    }
-  }
-  const needle = angleFor(db);
   ctx.strokeStyle = ink;
+  ctx.fillStyle = ink;
   ctx.lineWidth = 1.5;
   ctx.beginPath();
   ctx.moveTo(cx, cy);
-  ctx.lineTo(cx + (radius - 3) * Math.cos(needle), cy + (radius - 3) * Math.sin(needle));
+  ctx.lineTo(cx + length * Math.cos(angle), cy + length * Math.sin(angle));
   ctx.stroke();
   ctx.beginPath();
-  ctx.arc(cx, cy, 2, 0, Math.PI * 2);
+  ctx.arc(cx, cy, VU_PIVOT_RADIUS * scale, 0, Math.PI * 2);
   ctx.fill();
   ctx.restore();
 }
 
+/** At rest the canvases are empty: the page's static faces show through. */
 function idle(row: HTMLElement) {
-  const style = getComputedStyle(row);
-  const hair = style.getPropertyValue('--hair').trim();
-  const ink = style.getPropertyValue('--ink').trim();
-  const accent = style.getPropertyValue('--accent').trim();
-  surfaces.get(row)?.forEach((surface) => {
-    drawGrid(surface, hair);
-    // At rest the VU keeps its full face with the needle home, like the other meters keep their grids.
-    if (surface.canvas.dataset.viz === 'vu') drawVu(surface, -40, ink, hair, accent, 1);
-  });
+  surfaces.get(row)?.forEach(clearSurface);
 }
 
-/** Initialise quiet grids without creating an audio context. */
+/** Size the canvases without creating an audio context. */
 export function observeViz(row: HTMLElement): () => void {
   resize(row);
   idle(row);
@@ -176,7 +117,7 @@ export function observeViz(row: HTMLElement): () => void {
   return () => { observer.disconnect(); dprQuery?.removeEventListener('change', onDpr); cancelOutro(row); surfaces.delete(row); };
 }
 
-/** Attach only the playing row; cleanup restores its quiet grids. */
+/** Attach only the playing row; cleanup clears back to the static faces. */
 export function attachViz(row: HTMLElement, audio: HTMLAudioElement): () => void {
   try {
     context = ensureAudioContext(context);
@@ -205,7 +146,7 @@ export function attachViz(row: HTMLElement, audio: HTMLAudioElement): () => void
   let corrSmoothed = 1; // Pearson correlation of L and R (+1 mono, 0 wide, -1 out of phase)
 
   // Paints one frame from the current buffers. `alpha` scales the signal ink
-  // (the outro fades it over the grid); `vuDb` drives the needle.
+  // (the outro fades it over the static face); `vuDb` drives the needle.
   // Correlation of the current buffers; NaN-safe for silence.
   function correlation(): number {
     const n = Math.min(left.length, right.length);
@@ -228,8 +169,7 @@ export function attachViz(row: HTMLElement, audio: HTMLAudioElement): () => void
     smoothCurve(bands.freqSmoothed, curve);
     for (const surface of surfaces.get(row) ?? []) {
       const { ctx, canvas, w, h } = surface;
-      ctx.globalAlpha = 1;
-      drawGrid(surface, hair);
+      clearSurface(surface);
       ctx.globalAlpha = alpha;
       ctx.strokeStyle = ink;
       ctx.lineWidth = 1.5;
@@ -250,8 +190,7 @@ export function attachViz(row: HTMLElement, audio: HTMLAudioElement): () => void
         ctx.stroke();
         continue;
       } else if (canvas.dataset.viz === 'vu') {
-        ctx.globalAlpha = 1;
-        drawVu(surface, vuDb, ink, hair, accent, 1 - alpha);
+        drawVuNeedle(surface, vuDb, ink, hair, 1 - alpha);
         continue;
       } else {
         // Uniform scale on both axes (a true goniometer); the wide cell just gives
@@ -299,7 +238,7 @@ export function attachViz(row: HTMLElement, audio: HTMLAudioElement): () => void
         dc.globalAlpha = 1;
         if (persist) ctx.drawImage(trail!.canvas, 0, 0, w, h);
         // Correlation marker: -1 left, +1 right. It fills the strip below the
-        // track (drawn with the grid), covering the track line where it sits.
+        // track (part of the static face), covering the track line where it sits.
         const { x0: bx0, x1: bx1, y: by } = corrTrack(w, h);
         const mx = bx0 + (bx1 - bx0) * (corrSmoothed + 1) / 2;
         ctx.globalAlpha = alpha;
@@ -316,7 +255,7 @@ export function attachViz(row: HTMLElement, audio: HTMLAudioElement): () => void
   function draw() {
     if (stopped || audio.ended) return;
     // While the audio is still starting, keep painting through the intro so the
-    // grids follow the row's colour fade instead of holding the old palette.
+    // signal follows the row's colour fade instead of holding the old palette.
     if (audio.paused && performance.now() - introStart > fade) return;
     if (!document.hidden) {
       analyser!.getByteTimeDomainData(wave);
@@ -345,7 +284,7 @@ export function attachViz(row: HTMLElement, audio: HTMLAudioElement): () => void
     // A previous track's queued pause event can arrive after the next play.
     if (audio.paused) cleanup();
   }
-  // Graceful reset: the signals fade over the grid and the needle eases home
+  // Graceful reset: the signals fade over the static face and the needle eases home
   // over the fade, then the row settles on its idle drawing.
   function outro() {
     cancelOutro(row);

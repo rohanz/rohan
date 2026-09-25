@@ -12,7 +12,8 @@
 /* Pickable points: a generous invisible hit circle, pointer cursor, keyboard focus ring. */
 .mle-replay .mle-pick { cursor: pointer; outline: none; }
 .mle-replay .mle-hit { fill: transparent; stroke: none; }
-.mle-replay .mle-pick:hover .mle-mark.is-rejected, .mle-replay .mle-pick.is-selected .mle-mark.is-rejected { stroke: var(--mle-ink); }
+.mle-replay .mle-pick.is-selected .mle-mark.is-rejected { stroke: var(--mle-ink); }
+@media (hover: hover) { .mle-replay .mle-pick:hover .mle-mark.is-rejected { stroke: var(--mle-ink); } }
 .mle-replay .mle-pick:focus-visible .mle-hit { stroke: var(--mle-ink); stroke-width: 1.5; }
 /* the acceptance gate */
 .mle-replay .mle-zone { stroke: none; }
@@ -66,7 +67,8 @@
 .mle-replay .mle-slider::-moz-range-progress { height: 2px; background: var(--mle-accent); }
 .mle-replay .mle-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 16px; height: 16px; margin-top: -7px; border: 0; border-radius: 0; background: var(--mle-accent); transition: transform .15s ease; }
 .mle-replay .mle-slider::-moz-range-thumb { width: 16px; height: 16px; border: 0; border-radius: 0; background: var(--mle-accent); }
-.mle-replay .mle-slider:hover::-webkit-slider-thumb, .mle-replay .mle-slider:active::-webkit-slider-thumb { transform: scale(1.15); }
+.mle-replay .mle-slider:active::-webkit-slider-thumb { transform: scale(1.15); }
+@media (hover: hover) { .mle-replay .mle-slider:hover::-webkit-slider-thumb { transform: scale(1.15); } }
 .mle-replay .mle-slider:focus { outline: none; }
 /* Keyboard focus rings the thumb rather than boxing the whole control. */
 .mle-replay .mle-slider:focus-visible { outline: none; }

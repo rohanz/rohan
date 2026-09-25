@@ -2,6 +2,7 @@
 import '../styles/swiss-music.css';
 import SwissLayout from '../layouts/SwissLayout.astro';
 import SwissRailLinks from '../components/SwissRailLinks.astro';
+import SwissMeterFace from '../components/SwissMeterFace.astro';
 import { SONGS } from '../data/music';
 import { MUSIC_DESCRIPTION } from '../data/page-meta';
 ---
@@ -31,6 +32,7 @@ import { MUSIC_DESCRIPTION } from '../data/page-meta';
           <div class="sw-track-viz">
             {['wave', 'freq', 'stereo', 'vu'].map((kind) => (
               <div class={`sw-meter sw-meter-${kind}`}>
+                <SwissMeterFace kind={kind as 'wave' | 'freq' | 'stereo' | 'vu'} />
                 <canvas data-viz={kind} role="img" aria-label={`${s.title} ${kind === 'wave' ? 'waveform' : kind === 'freq' ? 'frequency spectrum' : kind === 'stereo' ? 'stereo scope' : 'VU meter'}`}></canvas>
               </div>
             ))}

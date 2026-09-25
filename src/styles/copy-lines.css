@@ -26,8 +26,10 @@ html body .copy-lines .copy-line-btn::before {
 html body .copy-lines .copy-line-btn.is-copied::before {
   --copy-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='square'%3E%3Cpath d='m3 8.5 3 3 7-7'/%3E%3C/svg%3E");
 }
-html body .copy-lines .copy-line-btn:hover { border-color: currentColor; background: color-mix(in srgb, currentColor 6%, transparent); }
+html body .copy-lines .copy-line-btn:active { border-color: currentColor; background: color-mix(in srgb, currentColor 6%, transparent); }
+@media (hover: hover) { html body .copy-lines .copy-line-btn:hover { border-color: currentColor; background: color-mix(in srgb, currentColor 6%, transparent); } }
 html body .copy-lines .copy-line-btn:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
 /* Classic: inverted square, ink with a paper icon. */
 html.theme-swiss body .copy-lines .copy-line-btn { border-color: var(--ink); background: var(--ink); color: var(--paper); }
-html.theme-swiss body .copy-lines .copy-line-btn:hover { border-color: var(--accent); background: var(--accent); }
+html.theme-swiss body .copy-lines .copy-line-btn:active { border-color: var(--accent); background: var(--accent); }
+@media (hover: hover) { html.theme-swiss body .copy-lines .copy-line-btn:hover { border-color: var(--accent); background: var(--accent); } }
