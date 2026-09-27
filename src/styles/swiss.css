@@ -149,7 +149,7 @@ html.theme-swiss .sw-quad:active, html.theme-swiss .sw-quad:is(:focus-visible, :
 @media (hover: hover) { html.theme-swiss .sw-quad:hover { background: var(--ink); color: var(--paper); } }
 html.theme-swiss .sw-quad:active .sw-label, html.theme-swiss .sw-quad:is(:focus-visible, :has(:focus-visible)) .sw-label { color: inherit; }
 @media (hover: hover) { html.theme-swiss .sw-quad:hover .sw-label { color: inherit; } }
-html.theme-swiss .sw-quad-title { font-family: var(--font-ui); font-weight: 500; font-size: clamp(1.6rem, 2.6vw, 2.8rem); letter-spacing: -0.02em; }
+html.theme-swiss .sw-quad-title { font-family: var(--font-ui); font-weight: 600; font-size: clamp(1.6rem, 2.6vw, 2.8rem); letter-spacing: -0.02em; }
 /* contact quadrant: a 2x2 grid of small squares echoing the outer grid */
 html.theme-swiss .sw-quad-contact { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; padding: 0; }
 html.theme-swiss .sw-quad-contact:active, html.theme-swiss .sw-quad-contact:is(:focus-visible, :has(:focus-visible)) { background: var(--tint); color: var(--ink); }
