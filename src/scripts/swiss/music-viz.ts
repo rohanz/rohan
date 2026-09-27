@@ -130,6 +130,9 @@ export function attachViz(row: HTMLElement, audio: HTMLAudioElement): () => void
   if (context.state === 'suspended') void context.resume().catch(() => {});
   if (!graph?.analyser) return () => {};
   cancelOutro(row);
+  // The canvas draws the needle from here until the outro ends; the printed
+  // one hides for exactly that span (see .has-live-needle in swiss-music.css).
+  row.classList.add('has-live-needle');
   const { analyser, analyserL, analyserR } = graph;
   const wave = new Uint8Array(analyser.frequencyBinCount);
   const freq = new Uint8Array(analyser.frequencyBinCount);
@@ -288,17 +291,23 @@ export function attachViz(row: HTMLElement, audio: HTMLAudioElement): () => void
   // over the fade, then the row settles on its idle drawing.
   function outro() {
     cancelOutro(row);
-    if (reduced.matches) { idle(row); return; }
+    if (reduced.matches) { settle(); return; }
     const fromDb = vuSmoothed;
     const t0 = performance.now();
     const step = (now: number) => {
-      const t = Math.min(1, (now - t0) / fade);
+      const t = (now - t0) / fade;
+      if (t >= 1) { outros.delete(row); settle(); return; }
       const e = 1 - Math.pow(1 - t, 3);
       paint(1 - e, fromDb + (-40 - fromDb) * e);
-      if (t < 1) outros.set(row, requestAnimationFrame(step));
-      else { outros.delete(row); idle(row); }
+      outros.set(row, requestAnimationFrame(step));
     };
     outros.set(row, requestAnimationFrame(step));
+  }
+  // Clearing the canvas and showing the printed needle in the same frame hands
+  // the needle over with no blank or doubled frame between them.
+  function settle() {
+    idle(row);
+    row.classList.remove('has-live-needle');
   }
   function cleanup() {
     stopped = true;

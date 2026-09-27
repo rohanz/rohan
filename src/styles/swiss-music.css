@@ -132,10 +132,10 @@ html.theme-swiss circle.sw-vu-needle { fill: var(--hair); stroke: none; }
 html.theme-swiss line.sw-vu-needle { stroke-width: 1.5; }
 html.theme-swiss .sw-vu-hot { stroke: var(--t-vu-hot); stroke-width: 2; }
 html.theme-swiss .sw-vu-tick.is-major { stroke: var(--t-vu-mark); }
-/* The canvas draws the live needle while playing; the printed one returns once
-   the outro has eased it home. */
-html.theme-swiss .sw-vu-needle { transition: opacity 0s linear var(--dur-fade); }
-html.theme-swiss .sw-track.is-playing .sw-vu-needle { opacity: 0; transition-delay: 0s; }
+/* While the canvas draws the live needle the printed one hides. music-viz.ts
+   sets the class and removes it in the frame the outro clears the canvas, so
+   the handoff runs on one clock. */
+html.theme-swiss .sw-track.has-live-needle .sw-vu-needle { opacity: 0; }
 @media (min-width: 1100px) {
   html.theme-swiss .sw-music { grid-template-columns: minmax(0, 3fr) minmax(0, 9fr); }
   html.theme-swiss .sw-music-rail { border-bottom: 0; border-right: 1px solid var(--tint-hair); }
