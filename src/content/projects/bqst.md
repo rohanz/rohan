@@ -10,7 +10,7 @@ technologies:
   - DSP
   - Product Design
 links:
-  - "download bqst for macOS | /downloads/bqst/BQST-1.0.3-macOS-universal.pkg"
+  - "download bqst for macOS | /downloads/bqst/BQST-1.1.2-macOS-universal.pkg"
   - "buy me a coffee | https://ko-fi.com/rohanjk"
 ---
 
@@ -42,7 +42,7 @@ Before getting into the sound design, there was one engineering constraint that 
 
 A plugin's <span class="gloss-term" data-gloss="In JUCE, processBlock is the callback where the DAW gives the plugin a block of audio samples to transform and return.">processBlock</span> runs on a high-priority <span class="gloss-term" data-gloss="The audio thread is the time-critical thread that fills audio buffers for the host. If it stalls, the listener can hear clicks, gaps, or dropouts.">audio thread</span> that the DAW calls every few milliseconds with a <span class="gloss-term" data-gloss="A buffer is a small chunk of audio samples processed together, instead of processing the whole song at once.">buffer</span> to fill. Miss that deadline and the user hears a click or a dropout; there is no retry button. That makes the audio callback a <span class="gloss-term" data-gloss="A real-time context has a hard deadline. Code in it should avoid anything with unpredictable timing, because being late is audible.">real-time context</span>: no <span class="gloss-term" data-gloss="Locks coordinate access between threads, but they can stall a high-priority audio thread if another thread is holding the lock.">locks</span> that might stall the thread, no file or network I/O, and no per-sample <span class="gloss-term" data-gloss="Allocations ask the memory manager for new memory. That can be unpredictable, so audio plugins avoid allocations in the hot audio path.">allocations</span> in the hot path. BQST reads host parameters through JUCE's <span class="gloss-term" data-gloss="JUCE's AudioProcessorValueTreeState is a parameter and state system that connects plugin controls, host automation, presets, and the audio processor.">AudioProcessorValueTreeState</span>, smooths gain, mix, and bypass changes, and only recalculates filter coefficients while a smoothed value is still moving, so automation does not <span class="gloss-term" data-gloss="Zipper noise is audible stepping or clicking caused by abrupt parameter changes instead of smooth movement.">zipper</span>. It also uses `juce::ScopedNoDenormals` in `processBlock` to avoid CPU slowdowns from <span class="gloss-term" data-gloss="Subnormal floating-point values are extremely tiny numbers that can make some CPUs run much slower unless the plugin flushes them away.">subnormal floating-point values</span>. The <span class="gloss-term" data-gloss="The GUI thread handles drawing, mouse input, menus, and other visual work. It can be slower because it is not directly responsible for filling the next audio buffer.">GUI thread</span> handles presets, file access, and drawing; the audio thread only does the work needed to produce the next block of samples.
 
-Getting there took more than one pass. In version 1.0.3 I found that if the DAW sent a block larger than the plugin had prepared for, it could write past the end of the oversampler's buffer. Splitting oversized blocks into smaller ones fixed that crash and removed the last two allocations from the audio thread. The same discipline shows up in game engines, embedded firmware, and low-latency networking: anywhere a callback has a deadline it cannot miss.
+Hosts don't always send the block size they promised, either. When a DAW sends a block larger than the plugin prepared for, BQST splits it into smaller ones, so the oversampler never writes past the end of its buffer and the audio thread never has to allocate. The same discipline shows up in game engines, embedded firmware, and low-latency networking: anywhere a callback has a deadline it cannot miss.
 
 Let's start with the left half: the EQ module.
 
@@ -63,7 +63,7 @@ The shelves are <span class="gloss-term" data-gloss="IIR means infinite impulse 
 
 Under the hood, each shelf is a <span class="gloss-term" data-gloss="A two-pole/two-zero digital filter building block used for EQs, shelves, and tone controls.">biquad</span> coefficient set. During a gain move, the gain value is smoothed sample-by-sample, and the coefficients are recalculated only while that smoother is still moving toward its target. Once the knob has settled, the filter reuses the same coefficient set. That keeps automation from zippering without recalculating coefficients when nothing is changing.
 
-The coefficients themselves took a second attempt. The standard digital shelf recipe (the <span class="gloss-term" data-gloss="Robert Bristow-Johnson's Audio EQ Cookbook: the widely used set of formulas for turning an analog EQ shape into biquad coefficients.">RBJ cookbook</span>) squeezes the whole curve below the Nyquist limit (half the sample rate), so the high shelf measured differently at 44.1 kHz than at an oversampled rate, and a render at 4x did not match playback at 2x. In 1.0.3 I replaced it with my own design: each biquad is fitted to the analog shelf's response, matching its level exactly at the bottom and top of the spectrum and at one point in between. Across all 16 shelf positions, four sample rates and the full +/-6 dB range, the worst error against the analog curve is 0.24 dB, down from 1.21 dB with the cookbook design. The EQ also runs at the host rate, before the oversampler, so its curve no longer depends on the oversampling setting at all.
+The coefficients are my own design. The standard digital shelf recipe (the <span class="gloss-term" data-gloss="Robert Bristow-Johnson's Audio EQ Cookbook: the widely used set of formulas for turning an analog EQ shape into biquad coefficients.">RBJ cookbook</span>) squeezes the whole curve below the Nyquist limit (half the sample rate), so the high shelf would measure differently at 44.1 kHz than at an oversampled rate, and a render at 4x would not match playback at 2x. Instead, each biquad is fitted to the analog shelf's response, matching its level exactly at the bottom and top of the spectrum and at one point in between. Across all 16 shelf positions, four sample rates and the full +/-6 dB range, the worst error against the analog curve is 0.24 dB, down from 1.21 dB with the cookbook design. The EQ also runs at the host rate, before the oversampler, so its curve no longer depends on the oversampling setting at all.
 
 The right half of BQST is trickier, because saturation is less about a perfect-looking curve and more about how the algorithm behaves when real audio hits it.
 
@@ -81,35 +81,38 @@ The graph below isolates the waveshaping part of that chain: it sweeps an input 
 
 <div id="bqst-transfer-visual"></div>
 
-As the drive increases, the straight dry signal starts to bend. That bend is the whole point: the peaks are rounded instead of chopped flat, which is what creates the extra harmonic content without immediately sounding like hard clipping.
+As the drive increases, the straight dry signal starts to bend. That bend is the whole point: the peaks are rounded instead of chopped flat, which is what creates the extra harmonic content without immediately sounding like hard clipping. The two modes bend differently. Cream stays a straight line through the middle and only rounds what is near the top, so quiet material passes through almost untouched. Grit pushes the whole signal harder into its curve, so it colours more of the signal at the same Drive setting.
 
 The two algorithms, cream and grit, both use soft nonlinear transfer curves, but the surrounding tone network is different.
 
 ## saturation algorithms
 ### cream
 
-Cream is the smoother mode. The algorithm combines:
+Cream is the mode I reach for on a mix bus, and it is built from measurement rather than by ear. It is fitted to before/after recordings of a boutique analog unit known for exactly this kind of density: the same audio with the unit bypassed, then engaged at several settings. The model was fitted on part of each recording and scored on the rest, and blind listening rounds against the hardware recordings decided between the closest candidates.
 
-- a soft asymmetric <span class="gloss-term" data-gloss="tanh is the hyperbolic tangent function. In audio, it is often used as a smooth S-shaped curve that rounds peaks instead of chopping them flat.">tanh</span> curve
-- a small even-harmonic <span class="gloss-term" data-gloss="Bias means slightly offsetting the waveshaper instead of keeping it perfectly centered. That asymmetry tends to create more even harmonics, which often read as warmth or density.">bias</span> term
-- <span class="gloss-term" data-gloss="Cubic weighting adds a small third-order term to the signal before shaping. As drive rises, it encourages stronger odd harmonics without jumping straight into hard clipping.">cubic weighting</span> for odd harmonics at higher drive
-- <span class="gloss-term" data-gloss="Pre/de-emphasis means boosting or shaping a frequency range before processing, then counter-shaping it afterward. It lets the saturator react differently to part of the spectrum without leaving the final tone overly hyped.">pre/de-emphasis</span> around the upper treble
-- a low-end guard before and after the nonlinear stage
+The result is a small chain. Its curve, tone shaping and gains all came out of the fit:
 
-The pre/de-emphasis matters because full-band saturation can make treble harsh very quickly. Cream shapes what enters and exits the saturator, so the result feels more like analog density than a clipper. The core waveshaper uses drive-dependent terms for the knee, asymmetry, odd-harmonic push, and wet blend. Here, `drive01` is the Drive knob normalized to a 0-1 range:
+<div class="bqst-chain" role="img" aria-label="Cream signal chain: pre-emphasis, drive, then a soft-knee clip summed with a low-end even-harmonic path, then de-emphasis and a DC blocker">
+  <span class="bqst-chain-io">in</span>
+  <span class="bqst-chain-block gloss-term" data-gloss="A gentle +0.4 dB high shelf around 1.2 kHz, so the upper mids and top reach the clipper slightly hotter than the lows.">pre-emphasis</span>
+  <span class="bqst-chain-block gloss-term" data-gloss="The Drive knob sets how hard the signal hits the clipper. Its taper is generated so each step of the knob adds an even amount of saturation, measured as new harmonic energy on real music.">drive</span>
+  <span class="bqst-chain-split">
+    <span class="bqst-chain-block gloss-term" data-gloss="x / (1 + |x|^k)^(1/k), with a fitted knee k of about 4.1 and a tiny bias. Quiet material passes almost linearly; peaks round off smoothly instead of clipping flat.">soft-knee clip</span>
+    <span class="bqst-chain-block gloss-term" data-gloss="The content below about 58 Hz is squared and added back in. That adds 2nd-harmonic thickness to the low end, and it grows faster than the drive, so it mostly shows up when Cream is pushed.">low-end even path</span>
+  </span>
+  <span class="bqst-chain-block gloss-term" data-gloss="Undoes most of the pre-emphasis. The small difference left over is part of the fitted tone.">de-emphasis</span>
+  <span class="bqst-chain-block gloss-term" data-gloss="A 5 Hz high-pass that removes the offset the even-harmonic path creates.">dc blocker</span>
+  <span class="bqst-chain-io">out</span>
+</div>
 
-```cpp
-const auto push = drive01 * drive01;
-const auto maxPush = push * drive01;
-const auto asymmetry = drive01 * (0.016f + drive01 * 0.045f + push * 0.040f);
-const auto oddWeight = drive01 * (0.032f + drive01 * 0.095f + push * 0.115f + maxPush * 0.135f);
-const auto softKnee = 0.80f + drive01 * 0.42f + push * 0.36f + maxPush * 0.60f;
+The tone shaping and the DC blocker fade in with drive, reaching full strength at 6 dB, so a tiny Drive setting stays transparent instead of switching a tilt on. The plugin's C++ model is tested against the Python reference sample for sample, to within a billionth of the signal level.
 
-const auto driven = sample * softKnee + oddWeight * sample * sample * sample + asymmetry;
-const auto shaped = (std::tanh(driven) - std::tanh(asymmetry)) * (1.0f + 0.07f * drive01 + 0.13f * maxPush);
-const auto blend = drive01 * 0.39f + push * 0.16f + maxPush * 0.15f;
-return sample * (1.0f - blend) + shaped * blend;
-```
+The chart below shows how close it gets. It compares BQST against the hardware in five frequency regions, measured only on the part of each recording the fit never saw. **Switch between the two drive settings, then flip between saturation and tone.** Saturation shows how much new harmonic content each region gets. Tone shows how each region's level shifts against the dry input, in tenths of a dB.
+
+<div id="bqst-match-visual"></div>
+
+At 14.2 dB, BQST lands within 1.4 dB of the hardware's saturation in every region and within about a quarter of a dB in tone. The lighter 9.3 dB setting tells the honest story: there BQST runs up to 2.6 dB lighter in the mids and presence, so at low settings it is a little more polite than the real thing.
+
 ### grit
 
 Grit is transformer-inspired: a little firmer and more forward. It uses:
@@ -120,31 +123,34 @@ Grit is transformer-inspired: a little firmer and more forward. It uses:
 - partial low-end restore and mild top rounding after saturation
 - the same low-end guard structure
 
-That pre/post tone path is what makes Grit feel less like a generic clipper. The low and low-mid content pushes into the nonlinear stage a little harder, then some of that tonal tilt is restored afterward, leaving more transformer-like weight without simply EQ-boosting the final signal. Those design choices show up more clearly in the harmonic fingerprint graph below. It feeds a simple 1 kHz tone through both modes and shows how strong each resulting harmonic is. Lower harmonics tend to read as thickness or warmth; stronger upper harmonics can read as edge or bite.
+That pre/post tone path is what makes Grit feel less like a generic clipper. The low and low-mid content pushes into the nonlinear stage a little harder, then some of that tonal tilt is restored afterward, leaving more transformer-like weight without simply EQ-boosting the final signal.
 
-This one is interactive too. **Turn the Drive knob** to see how the harmonic balance shifts between gentle density and more obvious saturation.
+The harmonic fingerprint graph below runs a sine tone through both modes, the full chains with their filters as the plugin runs them, and shows how strong each resulting harmonic is. Lower harmonics tend to read as thickness or warmth; stronger upper harmonics can read as edge or bite. Cream is mostly odd harmonics (3rd, 5th, 7th), from its symmetric soft knee. Grit adds more of everything, including more even harmonics.
+
+**Turn the Drive knob** to see the balance shift between gentle density and obvious saturation. **Then push Drive to 18 dB and slide the test tone down towards 40 Hz:** Cream's 2nd harmonic climbs by about 16 dB as its low-end even path kicks in, while Grit barely changes.
 
 <div id="bqst-harmonics-visual"></div>
 
-<span class="gloss-term" data-gloss="Related to the Fletcher-Munson or equal-loudness curves: our ears do not hear all frequencies equally at every volume. Louder playback can feel fuller and more exciting even when the processing itself has not really improved the sound.">Humans often perceive louder music as better music</span>, which makes drive controls easy to misjudge. If a saturation stage gets louder as it gets pushed, it can feel like an improvement even when the main change is just extra volume. BQST has <span class="gloss-term" data-gloss="Autogain automatically compensates for the level added by processing, so the before/after volume stays roughly consistent and the tone change is easier to judge.">autogain</span> enabled by default to make that comparison fairer. Instead of chasing the signal level live, it uses a static compensation curve calibrated offline against sine tones, bass, drums, and full mixes near commercial loudness. I rendered each source through both saturation modes at fixed drive values, measured the output level against the dry input, and fit one compensation curve per algorithm. That compensation is applied to the wet path before the Mix control, so turning up Drive changes the tone more than it changes the loudness.
+<span class="gloss-term" data-gloss="Related to the Fletcher-Munson or equal-loudness curves: our ears do not hear all frequencies equally at every volume. Louder playback can feel fuller and more exciting even when the processing itself has not really improved the sound.">Humans often perceive louder music as better music</span>, which makes drive controls easy to misjudge. If a saturation stage gets louder as it gets pushed, it can feel like an improvement even when the main change is just extra volume. BQST has <span class="gloss-term" data-gloss="Autogain automatically compensates for the level added by processing, so the before/after volume stays roughly consistent and the tone change is easier to judge.">autogain</span> enabled by default to make that comparison fairer. Instead of chasing the signal level live, it uses static compensation calibrated offline against sine tones, bass, drums, and full mixes near commercial loudness, applied to the wet path before the Mix control, so turning up Drive changes the tone more than the loudness.
 
-The table shows the result in dB of gain compensation. "Compensation" is the curve baked into the plugin; "target" is the average level reduction suggested by the calibration material. Negative numbers mean the plugin turns the wet signal down by that amount. No static curve can match every source, so the goal was to land within about half a dB on average without adding a live level detector into the audio path.
+The two modes are calibrated differently. For Grit, I rendered each source at fixed drive values, measured the output level against the dry input, and fit one compensation curve. Cream's compensation is generated alongside its model: one value per half dB of Drive, set so the median <span class="gloss-term" data-gloss="LUFS: loudness units relative to full scale, the standard loudness measure used by streaming platforms. It weights frequencies roughly the way ears do, unlike a plain level meter.">loudness</span> change across the calibration material is exactly zero.
+
+The table shows the result in dB of gain compensation. Grit gets louder as it saturates, so it is turned down; its "target" column is the average reduction the calibration material suggested. Cream does the opposite: rounding peaks costs it a little loudness, so it is turned up slightly. No static curve can match every source, so the goal was to land within about half a dB on average without adding a live level detector into the audio path.
 
 <table class="bqst-data-table">
   <thead>
     <tr>
       <th>Drive</th>
       <th>Cream Compensation</th>
-      <th>Cream Target</th>
       <th>Grit Compensation</th>
       <th>Grit Target</th>
     </tr>
   </thead>
   <tbody>
-    <tr><td>3 dB</td><td>-0.8 dB</td><td>-1.3 dB</td><td>-1.5 dB</td><td>-1.7 dB</td></tr>
-    <tr><td>6 dB</td><td>-2.4 dB</td><td>-2.5 dB</td><td>-3.7 dB</td><td>-3.5 dB</td></tr>
-    <tr><td>12 dB</td><td>-6.2 dB</td><td>-5.8 dB</td><td>-7.9 dB</td><td>-7.8 dB</td></tr>
-    <tr><td>18 dB</td><td>-9.7 dB</td><td>-10.1 dB</td><td>-11.4 dB</td><td>-11.5 dB</td></tr>
+    <tr><td>3 dB</td><td>+0.4 dB</td><td>-1.5 dB</td><td>-1.7 dB</td></tr>
+    <tr><td>6 dB</td><td>+0.7 dB</td><td>-3.7 dB</td><td>-3.5 dB</td></tr>
+    <tr><td>12 dB</td><td>+1.7 dB</td><td>-7.9 dB</td><td>-7.8 dB</td></tr>
+    <tr><td>18 dB</td><td>+3.7 dB</td><td>-11.4 dB</td><td>-11.5 dB</td></tr>
   </tbody>
 </table>
 
@@ -164,9 +170,11 @@ Oversampling gives those new harmonics more room to exist before the <span class
 
 ## demo
 
-Finally, let's actually listen to it. The player below has the same drum loop in two versions: one clean, with no processing, and one processed through BQST. Headphones or monitors are ideal here, because the changes are more about weight, transient shape, and tone. The processed version uses a +2.2 dB high-shelf boost at 2.1 kHz, a +1.7 dB low-shelf boost at 116 Hz, and Cream Drive around 14 dB. **Press play, then flip between Clean and BQST while it is playing.** Listen for added thickness and a touch more edge on the <span class="gloss-term" data-gloss="Transients are the short initial peaks of sounds like drum hits. They strongly affect punch, clarity, and perceived attack.">transients</span>, even though the peak level is lower after processing: roughly -1.7 to -2.5 <span class="gloss-term" data-gloss="dBFS means decibels relative to full scale. In digital audio, 0 dBFS is the maximum level before clipping.">dBFS</span> peak.
+Finally, let's actually listen to it. The player below has the same drum loop in two versions: one clean, with no processing, and one processed through BQST. Headphones or monitors are ideal here, because the changes are more about weight, transient shape, and tone. The processed version uses a +2.2 dB high-shelf boost at 2.1 kHz, a +1.7 dB low-shelf boost at 116 Hz, and Cream Drive at 9.7 dB, rendered through the current release. **Press play, then flip between Clean and BQST while it is playing.** Listen for added thickness and a touch more edge on the <span class="gloss-term" data-gloss="Transients are the short initial peaks of sounds like drum hits. They strongly affect punch, clarity, and perceived attack.">transients</span>, even though the peaks come out lower after processing: -1.7 <span class="gloss-term" data-gloss="dBFS means decibels relative to full scale. In digital audio, 0 dBFS is the maximum level before clipping.">dBFS</span> clean, -3.8 dBFS through BQST.
 
-<div id="bqst-audio-demo" data-clean="assets/audio/bqst/drums-clean.wav" data-processed="assets/audio/bqst/drums-bqst.wav" data-bpm="90" data-settings="2.1 kHz +2.2 dB · 116 Hz +1.7 dB · Cream Drive ~14 dB"></div>
+The meters beside the player read the audio you are hearing, with BQST's own ballistics (0 VU at -18 dBFS). They go dark while the clean take plays, as if the plugin were bypassed.
+
+<div id="bqst-audio-demo" data-clean="assets/audio/bqst/drums-clean.wav" data-processed="assets/audio/bqst/drums-bqst.wav" data-bpm="90" data-settings="2.1 kHz +2.2 dB · 116 Hz +1.7 dB · Cream Drive 9.7 dB"></div>
 
 ## taste matters
 
@@ -176,7 +184,7 @@ The first working version of BQST already had the core idea: EQ, saturation, ove
 
 It worked, but visually, it left a lot to be desired.
 
-I started designing all the assets myself. I wanted the plugin to borrow from the timeless, familiar language of analog hardware: big cream knobs, physical markings, screws, <span class="gloss-term" data-gloss="A VU meter is a slower level meter originally used in analog audio equipment. It responds more like perceived loudness than a fast peak meter.">VU meters</span>, and textured anodized faceplates, but I also wanted it to feel modern. So I kept the shapes simple, the shadows restrained, and the layout minimal. Those choices make the interface inviting but readable. The VU meters also do a job: they give a slower, more musical sense of level than a twitchy digital peak meter, calibrated so 0 VU sits at -18 dBFS.
+I started designing all the assets myself. I wanted the plugin to borrow from the timeless, familiar language of analog hardware: big cream knobs, physical markings, screws, <span class="gloss-term" data-gloss="A VU meter is a slower level meter originally used in analog audio equipment. It responds more like perceived loudness than a fast peak meter.">VU meters</span>, and textured anodized faceplates, but I also wanted it to feel modern. So I kept the shapes simple, the shadows restrained, and the layout minimal. Those choices make the interface inviting but readable. The VU meters also do a job: they give a slower, more musical sense of level than a twitchy digital peak meter, calibrated so 0 VU sits at -18 dBFS. Their faces are lit like real backlit meters: off-white paper, brightest just above the bottom bar where the bulb would sit, with the scale numbers centred on their ticks.
 
 <div class="bqst-asset-strip">
   <div class="bqst-asset-card">
@@ -210,6 +218,6 @@ Designing BQST became a bigger lesson about software in general. A product can b
 **Production readiness is a system problem.** The plugin wasn't "done" when it made sound. It needed automation names, undo behavior, presets, AU/VST3 validation, signing, install paths, latency handling, and DAW testing. The VST3 and AU builds pass `pluginval` at strictness level 10, chain-level tests run the whole processing chain in CI, and in Ableton I checked both builds for state recall, automation, bypass behavior, sample-rate changes, buffer-size changes, fixed UI sizes, and offline render settings.
 
 <p class="bqst-download-actions">
-  <a href="/downloads/bqst/BQST-1.0.3-macOS-universal.pkg" class="try-it-btn" data-astro-prefetch="false" download>download bqst for macOS</a>
+  <a href="/downloads/bqst/BQST-1.1.2-macOS-universal.pkg" class="try-it-btn" data-astro-prefetch="false" download>download bqst for macOS</a>
   <a href="https://ko-fi.com/rohanjk" class="support-btn" target="_blank" rel="noopener noreferrer">buy me a coffee</a>
 </p>

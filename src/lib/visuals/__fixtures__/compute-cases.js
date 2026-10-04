@@ -10,8 +10,6 @@ export const SHELF_GAINS = [-6, 6];
 export const PROBE_HZ = [20, 60, 200, 1000, 4800, 12000, 20000, 95808];
 export const DRIVE01S = [0, 0.001, 0.25, 0.5, 0.75, 1];
 export const SAMPLES = [-1.5, -1, -0.6, -0.25, 0, 0.25, 0.6, 1, 1.5];
-export const HARMONIC_DRIVES = [0, 4.5, 9.3, 18];
-export const HARMONICS = [2, 3, 5, 9, 10];
 export const FOLD_FREQS = [0, 6000, 22050, 22051, 30000, 44100, 48000, 66150, 88200, 100000];
 
 // ---- quantlab-analyst ---------------------------------------------------

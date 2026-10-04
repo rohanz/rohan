@@ -9,9 +9,9 @@
 // laid out against the raw width and the <520px caption variants depend on it.
 
 import {
-  biquadResponse, densitySaturate, transformerSaturate, harmonicDb, foldFrequency,
-  gainToDb, drive01From,
+  biquadResponse, transformerSaturate, foldFrequency, gainToDb, drive01From,
 } from './dsp';
+import { CreamModel, toneHarmonicsDb } from './bqst-sat';
 import type { VisualPalette } from './palette';
 
 export interface BqstDrawOptions {
@@ -23,6 +23,7 @@ export const BQST_EQ_HEIGHT = 360;
 export const BQST_TRANSFER_HEIGHT = 340;
 export const BQST_HARMONICS_HEIGHT = 340;
 export const BQST_ALIASING_HEIGHT = 300;
+export const BQST_MATCH_HEIGHT = 320;
 
 export function drawEq(ctx: CanvasRenderingContext2D, { w, palette }: BqstDrawOptions): void {
   const p = palette.bqst;
@@ -148,10 +149,17 @@ export function drawTransfer(
     ctx.setLineDash([]);
   }
 
-  plot((x) => x, p.seriesReference, 1.8, true);
   const drive01 = drive01From(driveDb);
-  plot((x) => densitySaturate(x, drive01), p.seriesPrimary, 3, false);
+  // All three lines end at the same plot edge: the input sweep (+/-1.5) is
+  // wider than the output axis (+/-1.35), so unclipped lines overran it.
+  ctx.save();
+  ctx.beginPath(); ctx.rect(pad.l, pad.t, plotW, plotH); ctx.clip();
+  plot((x) => x, p.seriesReference, 1.8, true);
+  // Each mode's waveshaper alone, for a slow input: Cream's soft knee with its
+  // low even-harmonic path, and Grit's curve.
+  plot((x) => CreamModel.staticCurve(x, driveDb), p.seriesPrimary, 3, false);
   plot((x) => transformerSaturate(x, drive01), p.seriesComparison, 3, false);
+  ctx.restore();
 
   ctx.fillStyle = textColor(0.58);
   ctx.font = tickFont;
@@ -173,16 +181,13 @@ export function drawTransfer(
   ctx.fillText('output level', 0, 0);
   ctx.restore();
 
-  ctx.fillStyle = textColor(0.82);
-  ctx.font = `700 ${w < 520 ? 12 : 14}px ${palette.fonts.title}`;
-  ctx.textAlign = 'left';
-  ctx.fillText(w < 520 ? 'rounded peaks, not hard clipping' : 'rounded peaks create density without hard clipping', pad.l, 18);
 }
 
 export function drawHarmonics(
   ctx: CanvasRenderingContext2D,
   { w, palette }: BqstDrawOptions,
   driveDb: number,
+  toneHz = 1000,
 ): void {
   const p = palette.bqst;
   const gridColor = palette.ink;
@@ -208,8 +213,8 @@ export function drawHarmonics(
   });
 
   const harmonics = [2, 3, 4, 5, 6, 7, 8, 9, 10];
-  const cream = harmonics.map((hn) => harmonicDb(densitySaturate, hn, driveDb));
-  const grit = harmonics.map((hn) => harmonicDb(transformerSaturate, hn, driveDb));
+  const cream = toneHarmonicsDb('cream', driveDb, toneHz, harmonics);
+  const grit = toneHarmonicsDb('grit', driveDb, toneHz, harmonics);
   const groupW = plotW / harmonics.length;
   const barW = Math.min(16, groupW * 0.26);
   const yFor = (db: number) => pad.t + ((0 - Math.max(minHarmonicDb, db)) / Math.abs(minHarmonicDb)) * plotH;
@@ -242,6 +247,89 @@ export function drawHarmonics(
   ctx.font = `700 ${w < 520 ? 12 : 14}px ${palette.fonts.title}`;
   ctx.textAlign = 'left';
   ctx.fillText(w < 520 ? 'relative harmonic energy' : 'relative harmonic energy below the fundamental', pad.l, 22);
+}
+
+export interface BqstMatchSetting {
+  driveDb: number;
+  vintage: boolean;
+  hardware: { toneDb: number[]; saturationDb: number[] };
+  bqst: { toneDb: number[]; saturationDb: number[] };
+}
+
+/**
+ * BQST against the hardware it was fitted to, per region, on held-out audio.
+ * `metric` 'tone' plots each region's level change against the dry input;
+ * 'saturation' plots how far below the signal the new harmonic energy sits
+ * (taller bar = more saturation).
+ */
+export function drawMatch(
+  ctx: CanvasRenderingContext2D,
+  { w, palette }: BqstDrawOptions,
+  regions: string[],
+  setting: BqstMatchSetting,
+  metric: 'tone' | 'saturation',
+): void {
+  const p = palette.bqst;
+  const ink = palette.ink;
+  const h = BQST_MATCH_HEIGHT;
+  const narrow = w < 520;
+  const pad = { l: narrow ? 50 : 62, r: 16, t: 34, b: 52 };
+  const plotW = w - pad.l - pad.r;
+  const plotH = h - pad.t - pad.b;
+  const tone = metric === 'tone';
+  // Tone: +/-1.5 dB around no change. Saturation: new energy from -30 dB (none) up to -10 dB.
+  const [lo, hi] = tone ? [-1.5, 1.5] : [-30, -10];
+  const yFor = (v: number) => pad.t + ((hi - Math.max(lo, Math.min(hi, v))) / (hi - lo)) * plotH;
+  const base = tone ? yFor(0) : pad.t + plotH;
+  const hw = tone ? setting.hardware.toneDb : setting.hardware.saturationDb;
+  const ours = tone ? setting.bqst.toneDb : setting.bqst.saturationDb;
+
+  ctx.clearRect(0, 0, w, h);
+  const ticks = tone ? [-1.5, -1, -0.5, 0, 0.5, 1, 1.5] : [-30, -25, -20, -15, -10];
+  const labelled = tone ? [-1, 0, 1] : ticks;
+  ctx.lineWidth = 1;
+  ctx.font = `600 12px ${palette.fonts.ui}`;
+  ctx.textAlign = 'right';
+  ticks.forEach((v) => {
+    const y = Math.round(yFor(v)) + 0.5;
+    ctx.strokeStyle = ink(v === 0 && tone ? 0.45 : 0.12);
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(pad.l + plotW, y); ctx.stroke();
+    if (!labelled.includes(v)) return;
+    ctx.fillStyle = ink(0.55);
+    ctx.fillText(`${v > 0 ? '+' : ''}${v}`, pad.l - 8, y + 4);
+  });
+
+  const groupW = plotW / regions.length;
+  const barW = Math.min(26, groupW * 0.3);
+  regions.forEach((name, i) => {
+    const x = pad.l + i * groupW + groupW / 2;
+    const bars: Array<[number, string, number]> = [[hw[i], p.seriesReference, x - barW - 2], [ours[i], p.seriesPrimary, x + 2]];
+    bars.forEach(([v, color, bx]) => {
+      const y = yFor(v);
+      ctx.fillStyle = color;
+      ctx.fillRect(bx, Math.min(y, base), barW, Math.max(1, Math.abs(base - y)));
+    });
+    ctx.fillStyle = ink(0.62);
+    ctx.font = `600 ${narrow ? 11 : 12}px ${palette.fonts.ui}`;
+    ctx.textAlign = 'center';
+    ctx.fillText(name, x, h - 30);
+  });
+
+  ctx.save();
+  ctx.translate(16, pad.t + plotH / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.textAlign = 'center';
+  ctx.fillStyle = ink(0.72);
+  ctx.font = `700 ${narrow ? 12 : 14}px ${palette.fonts.ui}`;
+  ctx.fillText(tone ? 'level change (dB)' : 'new harmonic energy (dB)', 0, 0);
+  ctx.restore();
+
+  ctx.fillStyle = ink(0.82);
+  ctx.font = `700 ${narrow ? 12 : 14}px ${palette.fonts.title}`;
+  ctx.textAlign = 'left';
+  ctx.fillText(tone
+    ? (narrow ? 'tone change per region' : 'how each region\'s level changes against the dry input')
+    : (narrow ? 'saturation per region' : 'how much new harmonic content each region gets'), pad.l, 20);
 }
 
 /** Harmonics drawn in the aliasing chart: a 6 kHz tone up to its 7th (42 kHz). */
@@ -416,5 +504,8 @@ export function legendForBqstVisual(type: string, palette: VisualPalette): strin
     return `<span><i style="background:${p.seriesReference}"></i>dry signal</span><span><i style="background:${p.seriesPrimary}"></i>cream</span><span><i style="background:${p.seriesComparison}"></i>grit</span>`;
   }
   if (type === 'aliasing') return ''; // labelled directly on the chart
+  if (type === 'match') {
+    return `<span><i style="background:${p.seriesReference}"></i>hardware</span><span><i style="background:${p.seriesPrimary}"></i>bqst cream</span>`;
+  }
   return `<span><i style="background:${p.seriesPrimary}"></i>cream</span><span><i style="background:${p.seriesComparison}"></i>grit</span>`;
 }

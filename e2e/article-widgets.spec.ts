@@ -32,7 +32,7 @@ for (const theme of ['', '/transit']) {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto(`${theme}/projects/bqst`);
     const canvases = page.locator('.bqst-visual-canvas');
-    await expect(canvases).toHaveCount(4);
+    await expect(canvases).toHaveCount(5);
     const widths = () => canvases.evaluateAll((els) => els.map((el) => el.getBoundingClientRect().width));
     await expect.poll(async () => (await widths()).every((width) => width > 350)).toBe(true);
     const wide = await widths();

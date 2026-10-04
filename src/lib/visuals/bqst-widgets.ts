@@ -6,14 +6,16 @@
 import type { VisualPalette } from './palette';
 import { withAlpha } from './color';
 import {
-  drawEq, drawTransfer, drawHarmonics, drawAliasing, bqstKnobTicks, legendForBqstVisual,
-  BQST_EQ_HEIGHT, BQST_TRANSFER_HEIGHT, BQST_HARMONICS_HEIGHT, BQST_ALIASING_HEIGHT,
+  drawEq, drawTransfer, drawHarmonics, drawAliasing, drawMatch, bqstKnobTicks, legendForBqstVisual,
+  BQST_EQ_HEIGHT, BQST_TRANSFER_HEIGHT, BQST_HARMONICS_HEIGHT, BQST_ALIASING_HEIGHT, BQST_MATCH_HEIGHT,
 } from './bqst-render';
+import matchData from '../../data/bqst-match.json';
 import type { SizeCanvas } from './quantlab-dom';
 import { BqstEngine } from '../audio/bqst-engine';
 import { hasWebAudio, sharedAudioContext } from '../audio/shared-context';
 import type { BqstVersion } from '../audio/bqst-transport';
 import type { WavWaveform } from '../audio/bqst-wav';
+import { createVuStrip, VuChannel } from './bqst-vu';
 
 export interface BqstLabOptions {
   root: ParentNode;
@@ -31,13 +33,14 @@ export interface BqstAudioDemoOptions {
   playhead?: boolean;
 }
 
-type LabType = 'eq' | 'transfer' | 'harmonics' | 'aliasing';
+type LabType = 'eq' | 'transfer' | 'harmonics' | 'aliasing' | 'match';
 type DriveType = 'transfer' | 'harmonics';
 
 const LAB_SLOTS: Array<{ id: string; type: LabType; title: string; meta: string; label: string }> = [
   { id: 'bqst-eq-visual', type: 'eq', title: 'baxandall-style eq curves', meta: 'q 0.38 · all stepped shelf positions · +/-6 db', label: 'BQST low and high shelf frequency response' },
   { id: 'bqst-transfer-visual', type: 'transfer', title: 'saturation transfer curve', meta: 'static input sweep · follows the drive control', label: 'BQST Cream and Grit saturation transfer curves' },
-  { id: 'bqst-harmonics-visual', type: 'harmonics', title: 'harmonic fingerprint', meta: '1 khz sine · follows the drive control above', label: 'BQST Cream and Grit harmonic profile' },
+  { id: 'bqst-harmonics-visual', type: 'harmonics', title: 'harmonic fingerprint', meta: 'sine at the test tone · follows the drive control', label: 'BQST Cream and Grit harmonic profile' },
+  { id: 'bqst-match-visual', type: 'match', title: 'bqst against the hardware', meta: 'held-out audio · five regions', label: 'BQST Cream compared with the hardware it was fitted to, per frequency region' },
   { id: 'bqst-oversampling-visual', type: 'aliasing', title: 'why oversampling matters', meta: '6 khz tone · saturated · 44.1 khz session', label: 'BQST oversampling and aliasing visualization' },
 ];
 
@@ -52,7 +55,17 @@ const HEIGHTS: Record<LabType, number> = {
   transfer: BQST_TRANSFER_HEIGHT,
   harmonics: BQST_HARMONICS_HEIGHT,
   aliasing: BQST_ALIASING_HEIGHT,
+  match: BQST_MATCH_HEIGHT,
 };
+
+// Test-tone slider: 0..1000 maps logarithmically onto 40 Hz..5 kHz.
+const TONE_MIN_HZ = 40;
+const TONE_MAX_HZ = 5000;
+const toneHzFor = (v: number) => TONE_MIN_HZ * Math.pow(TONE_MAX_HZ / TONE_MIN_HZ, v / 1000);
+const toneSliderFor = (hz: number) => Math.round((1000 * Math.log(hz / TONE_MIN_HZ)) / Math.log(TONE_MAX_HZ / TONE_MIN_HZ));
+const toneLabel = (hz: number) => (hz < 1000 ? `${Math.round(hz)} Hz` : `${(hz / 1000).toFixed(hz < 2000 ? 2 : 1)} kHz`);
+
+const MATCH_NOTE = 'Measured on the last third of each recording, which the fit never saw. Same input, the plugin at the matching drive, autogain off.';
 
 // ============================================================
 // BQST DSP LAB
@@ -85,7 +98,25 @@ export function initBqstDspLab({ root, palette, sizeCanvas, onThemeChange }: Bqs
                   <input type="range" min="0" max="18" value="0" step="0.1" aria-label="BQST saturation drive">
                 </div>
                 <div class="bqst-chart-cell" style="width:100%;min-width:0"><canvas class="bqst-visual-canvas" aria-label="${slot.label}"></canvas></div>
-              </div>`
+              </div>${slot.type === 'harmonics'
+                ? `<div class="bqst-tone-control">
+                    <label for="bqst-tone-input">test tone</label>
+                    <input id="bqst-tone-input" class="bqst-tone-slider" type="range" min="0" max="1000" step="1" value="${toneSliderFor(1000)}" aria-valuetext="1.00 kHz">
+                    <output for="bqst-tone-input">1.00 kHz</output>
+                  </div>`
+                : ''}`
+            : slot.type === 'match'
+              ? `<div class="bqst-match-controls">
+                  <div class="bqst-audio-toggle bqst-match-toggle" role="group" aria-label="Drive setting">
+                    ${matchData.settings.map((m, i) => `<button type="button" data-match-setting="${i}" aria-pressed="false">${m.driveDb.toFixed(1)} dB${m.vintage ? ' + vintage' : ''}</button>`).join('')}
+                  </div>
+                  <div class="bqst-audio-toggle bqst-match-toggle" role="group" aria-label="Measurement">
+                    <button type="button" data-match-metric="saturation" aria-pressed="false">saturation</button>
+                    <button type="button" data-match-metric="tone" aria-pressed="false">tone</button>
+                  </div>
+                </div>
+                <div class="bqst-chart-cell" style="width:100%;min-width:0"><canvas class="bqst-visual-canvas" aria-label="${slot.label}"></canvas></div>
+                <p class="bqst-os-note">${MATCH_NOTE}</p>`
             : slot.type === 'aliasing'
               ? `<div class="bqst-audio-toggle bqst-os-toggle" role="group" aria-label="Oversampling">
                   <button type="button" class="is-active" data-os="1" aria-pressed="true">no oversampling</button>
@@ -103,6 +134,9 @@ export function initBqstDspLab({ root, palette, sizeCanvas, onThemeChange }: Bqs
   });
 
   const driveState: Record<DriveType, number> = { transfer: 0, harmonics: 0 };
+  let toneHz = 1000;
+  let matchSetting = matchData.settings.length - 1;
+  let matchMetric: 'tone' | 'saturation' = 'saturation';
   // Aliasing chart: 0 = no oversampling, 1 = 4x; tweened when switched.
   let osMix = 0;
   let osTween: number | null = null;
@@ -119,6 +153,9 @@ export function initBqstDspLab({ root, palette, sizeCanvas, onThemeChange }: Bqs
     // The cell follows the grid, independently of the canvas’s pinned CSS width.
     const rect = canvas.parentElement!.getBoundingClientRect();
     canvas.style.height = `${height}px`;
+    // The pinned whole-pixel box may be a fraction wider than the cell; let the cell
+    // clip that fraction rather than max-width squeezing (and resampling) the canvas.
+    canvas.style.maxWidth = 'none';
     return sizeCanvas(canvas, Math.max(1, rect.width), height);
   }
   const driveDbFor = (type: DriveType) => driveState[type] ?? 0;
@@ -164,7 +201,8 @@ export function initBqstDspLab({ root, palette, sizeCanvas, onThemeChange }: Bqs
     if (!resize) ctx.clearRect(0, 0, slot.canvas.width, slot.canvas.height);
     if (slot.type === 'eq') drawEq(ctx, opts);
     else if (slot.type === 'transfer') drawTransfer(ctx, opts, driveDbFor('transfer'));
-    else if (slot.type === 'harmonics') drawHarmonics(ctx, opts, driveDbFor('harmonics'));
+    else if (slot.type === 'harmonics') drawHarmonics(ctx, opts, driveDbFor('harmonics'), toneHz);
+    else if (slot.type === 'match') drawMatch(ctx, opts, matchData.regions, matchData.settings[matchSetting], matchMetric);
     else drawAliasing(ctx, opts, osMix);
   }
   const drawAll = () => slots.forEach((slot) => drawSlot(slot, true));
@@ -303,8 +341,46 @@ export function initBqstDspLab({ root, palette, sizeCanvas, onThemeChange }: Bqs
     return () => b.removeEventListener('click', onClick);
   });
 
+  // Test tone: redraws the harmonic chart through the same per-frame coalescing as the knob.
+  const toneInput = root.querySelector<HTMLInputElement>('.bqst-tone-slider');
+  const toneOutput = toneInput?.parentElement?.querySelector('output');
+  const onToneInput = () => {
+    if (!toneInput) return;
+    toneHz = toneHzFor(Number(toneInput.value));
+    const label = toneLabel(toneHz);
+    if (toneOutput) toneOutput.textContent = label;
+    toneInput.setAttribute('aria-valuetext', label);
+    toneInput.style.setProperty('--fill', `${Number(toneInput.value) / 10}%`);
+    dirtyDrive.add('harmonics');
+    requestBqstDraw();
+  };
+  toneInput?.addEventListener('input', onToneInput);
+  if (toneInput) toneInput.style.setProperty('--fill', `${Number(toneInput.value) / 10}%`);
+
+  // Hardware comparison: a setting switch and a tone/saturation switch.
+  const matchSlot = slots.find((slot) => slot.type === 'match');
+  const matchButtons = Array.from(matchSlot?.node.querySelectorAll<HTMLButtonElement>('button[data-match-setting], button[data-match-metric]') ?? []);
+  const syncMatchButtons = () => matchButtons.forEach((b) => {
+    const on = b.dataset.matchSetting !== undefined ? Number(b.dataset.matchSetting) === matchSetting : b.dataset.matchMetric === matchMetric;
+    b.classList.toggle('is-active', on);
+    b.setAttribute('aria-pressed', String(on));
+  });
+  syncMatchButtons();
+  const matchListeners = matchButtons.map((b) => {
+    const onClick = () => {
+      if (b.dataset.matchSetting !== undefined) matchSetting = Number(b.dataset.matchSetting);
+      else matchMetric = b.dataset.matchMetric === 'tone' ? 'tone' : 'saturation';
+      syncMatchButtons();
+      if (matchSlot) drawSlot(matchSlot, false);
+    };
+    b.addEventListener('click', onClick);
+    return () => b.removeEventListener('click', onClick);
+  });
+
   return () => {
     osListeners.forEach((off) => off());
+    matchListeners.forEach((off) => off());
+    toneInput?.removeEventListener('input', onToneInput);
     if (osTween !== null) cancelAnimationFrame(osTween);
     unsubscribeRedraw?.();
     resizeObserver.disconnect();
@@ -336,6 +412,7 @@ export function initBqstAudioDemo(options: BqstAudioDemoOptions): () => void {
   const cleanUrl = abs(placeholder.dataset.clean);
   const processedUrl = abs(placeholder.dataset.processed);
   const bpm = Number.parseFloat(placeholder.dataset.bpm || '90');
+  const settings = placeholder.dataset.settings ?? '';
   if (!cleanUrl || !processedUrl || !hasWebAudio()) return () => {};
 
   const PLAY = '<span aria-hidden="true">▶</span>';
@@ -345,6 +422,7 @@ export function initBqstAudioDemo(options: BqstAudioDemoOptions): () => void {
     <div class="bqst-audio-demo">
       <div class="bqst-audio-demo-header">
         <span class="bqst-lab-kicker">drum loop a/b test</span>
+        ${settings ? `<span class="bqst-lab-meta">${settings.replace(/[<>&]/g, '')}</span>` : ''}
       </div>
       <div class="bqst-audio-demo-body">
         <div class="bqst-audio-main">
@@ -357,6 +435,7 @@ export function initBqstAudioDemo(options: BqstAudioDemoOptions): () => void {
           </div>
           <div class="bqst-audio-wave" aria-hidden="true"><canvas></canvas><span></span><i></i>${options.playhead ? '<b class="bqst-audio-head"></b>' : ''}</div>
         </div>
+        <div class="bqst-audio-meters is-bypassed"></div>
       </div>
     </div>`;
 
@@ -536,12 +615,15 @@ export function initBqstAudioDemo(options: BqstAudioDemoOptions): () => void {
       playButton.removeAttribute('aria-busy');
     },
     onPlayStateChange(isPlaying) {
+      requestMeterFrame();
       playButton.classList.toggle('playing', isPlaying);
       playButton.setAttribute('aria-pressed', String(isPlaying));
       playButton.innerHTML = isPlaying ? PAUSE : PLAY;
       if (isPlaying) playButton.removeAttribute('aria-busy');
     },
-    onVersionChange(_version, previous) {
+    onVersionChange(version, previous) {
+      metersBox.classList.toggle('is-bypassed', version === 'clean');
+      requestMeterFrame();
       setActiveButton();
       animateWaveformChange(previous);
     },
@@ -560,11 +642,60 @@ export function initBqstAudioDemo(options: BqstAudioDemoOptions): () => void {
     },
   });
 
+  // -- VU meters on the audio being heard, with the plugin's ballistics;
+  // shown as bypassed while the clean take is selected. --
+  const meterChannels = [new VuChannel(), new VuChannel()];
+  const metersBox = root.querySelector('.bqst-audio-meters') as HTMLElement;
+  const strip = createVuStrip();
+  metersBox.append(strip.element);
+  strip.update(0, 0);
+  let meterFrameId: number | null = null;
+  let meterLastTime = 0;
+  let meterLastPos: number | null = null;
+  let metersVisible = typeof IntersectionObserver === 'undefined';
+
+  // Rectified average of `channel` between two loop positions (wrapping at the end).
+  function rectifiedAverage(buffer: AudioBuffer, channel: number, from: number, to: number): number {
+    const data = buffer.getChannelData(Math.min(channel, buffer.numberOfChannels - 1));
+    const a = Math.floor(from * buffer.sampleRate), b = Math.floor(to * buffer.sampleRate);
+    const indices = b >= a ? [[a, b]] : [[a, data.length], [0, b]];
+    let sum = 0, count = 0;
+    for (const [s0, s1] of indices) for (let i = Math.max(0, s0); i < Math.min(data.length, s1); i++) { sum += Math.abs(data[i]); count++; }
+    return count ? sum / count : 0;
+  }
+
+  function meterFrame(now: number) {
+    meterFrameId = null;
+    const dt = meterLastTime ? (now - meterLastTime) / 1000 : 0;
+    meterLastTime = now;
+    const buffer = engine.getBuffer(engine.version);
+    if (engine.isPlaying && buffer) {
+      const pos = engine.getPlaybackSeconds() % buffer.duration;
+      const from = meterLastPos ?? pos;
+      const span = pos >= from ? pos - from : buffer.duration - from + pos;
+      meterChannels.forEach((ch, i) => ch.feed(span > 0 ? rectifiedAverage(buffer, i, from, pos) : 0, span));
+      meterLastPos = pos;
+    } else {
+      meterChannels.forEach((ch) => ch.feed(0, dt));
+      meterLastPos = null;
+    }
+    let moving = false;
+    meterChannels.forEach((ch) => { if (ch.step(dt)) moving = true; });
+    strip.update(meterChannels[0].needle, meterChannels[1].needle);
+    if (engine.isPlaying || moving) requestMeterFrame();
+    else meterLastTime = 0;
+  }
+  function requestMeterFrame() {
+    if (meterFrameId === null && metersVisible) meterFrameId = requestAnimationFrame(meterFrame);
+  }
+
   const paintObserver = typeof IntersectionObserver === 'undefined' ? null : new IntersectionObserver((entries) => {
     if (!entries.some((entry) => entry.isIntersecting)) return;
     paintObserver?.disconnect();
     wavePaintable = true;
+    metersVisible = true;
     drawWaveform();
+    requestMeterFrame();
   }, { rootMargin: `${window.innerHeight}px 0px` });
   paintObserver?.observe(placeholder);
   drawWaveform();
@@ -598,10 +729,11 @@ export function initBqstAudioDemo(options: BqstAudioDemoOptions): () => void {
     button.addEventListener('click', handler);
     return { button, handler };
   });
-  const onResize = () => drawWaveform();
+  const onResize = () => { drawWaveform(); requestMeterFrame(); };
   window.addEventListener('resize', onResize);
 
   return () => {
+    if (meterFrameId !== null) cancelAnimationFrame(meterFrameId);
     paintObserver?.disconnect();
     loadObserver?.disconnect();
     if (waveFadeId) cancelAnimationFrame(waveFadeId);

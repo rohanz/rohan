@@ -29,6 +29,76 @@
 
 /* Oversampling switch and its caption (aliasing chart). The switch reuses the
    A/B demo's .bqst-audio-toggle look in every theme; only its size differs. */
-.bqst-os-toggle { width: auto; max-width: calc(100% - 2rem); grid-template-columns: repeat(2, auto); margin: 1rem 1rem 0; }
-.bqst-os-toggle button { padding: 0 1rem; white-space: nowrap; }
+.bqst-os-toggle, .bqst-match-toggle { width: auto; max-width: calc(100% - 2rem); grid-template-columns: repeat(2, auto); margin: 1rem 1rem 0; }
+.bqst-os-toggle button, .bqst-match-toggle button { padding: 0 1rem; white-space: nowrap; }
 .bqst-os-note { margin: 0; padding: 0.75rem 1rem 1rem; border-top: 1px solid var(--w-border, rgba(0,0,0,0.12)); font-size: 0.92rem; line-height: 1.5; min-height: 4.4em; }
+
+/* Test-tone slider under the harmonic chart: hairline track, accent fill,
+   square thumb, 44px tall for touch. --fill is set by bqst-widgets.ts. */
+.bqst-tone-control { display: grid; grid-template-columns: auto minmax(0, 1fr) 5.6rem; align-items: center; gap: 0.8rem; padding: 0.2rem 1rem 0.4rem; }
+.bqst-tone-control label { font-weight: 700; font-size: 0.92rem; }
+.bqst-tone-control output { font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+.bqst-tone-slider {
+  -webkit-appearance: none; appearance: none; display: block; width: 100%; height: 44px; margin: 0; background: transparent; cursor: pointer;
+  --track: linear-gradient(to right, var(--w-accent, currentColor) 0 var(--fill, 50%), var(--w-border, rgba(0,0,0,0.18)) var(--fill, 50%) 100%);
+}
+.bqst-tone-slider::-webkit-slider-runnable-track { height: 2px; background: var(--track); border: 0; }
+.bqst-tone-slider::-moz-range-track { height: 2px; background: var(--w-border, rgba(0,0,0,0.18)); border: 0; }
+.bqst-tone-slider::-moz-range-progress { height: 2px; background: var(--w-accent, currentColor); }
+.bqst-tone-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 16px; height: 16px; margin-top: -7px; border: 0; border-radius: 0; background: var(--w-accent, currentColor); }
+.bqst-tone-slider::-moz-range-thumb { width: 16px; height: 16px; border: 0; border-radius: 0; background: var(--w-accent, currentColor); }
+.bqst-tone-slider:focus { outline: none; }
+.bqst-tone-slider:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px var(--bg-card, #fff), 0 0 0 4.5px var(--w-accent, currentColor); }
+.bqst-tone-slider:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 3px var(--bg-card, #fff), 0 0 0 4.5px var(--w-accent, currentColor); }
+
+/* Hardware comparison: its two switches wrap side by side. */
+.bqst-match-controls { display: flex; flex-wrap: wrap; gap: 0 0.6rem; }
+.bqst-match-controls .bqst-match-toggle { margin-right: 0; }
+
+/* A/B demo: the VU strip beside the player, wrapping below it on narrow
+   screens. Colours derive from the text colour and the theme accent. Active
+   (bqst take): full ink frame and marks, accent zone and lit lamp. Bypassed
+   (clean take): hairline frame on a tinted field, everything muted, lamp out. */
+.bqst-audio-demo-body { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem 1.2rem; }
+.bqst-audio-demo-body .bqst-audio-main { flex: 1 1 18rem; }
+.bqst-audio-meters { flex: 0 1 20rem; max-width: 20rem; margin: 0 auto; --vu-hot: var(--w-accent, var(--accent, currentColor)); --vu-fade: var(--dur-fade, 250ms); --vu-ease: var(--ease-house, ease); }
+.bqst-vu { display: block; width: 100%; height: auto; }
+/* Only opacities change between the states, so every part fades together. */
+.bqst-vu * { transition: fill-opacity var(--vu-fade) var(--vu-ease), stroke-opacity var(--vu-fade) var(--vu-ease); }
+.bqst-vu text { font-family: inherit; font-variant-numeric: tabular-nums; text-anchor: middle; dominant-baseline: middle; fill: currentColor; }
+.bqst-vu-window { fill: currentColor; fill-opacity: 0; stroke: currentColor; stroke-width: 1; }
+.bqst-vu-rule { stroke: currentColor; stroke-opacity: 0.25; stroke-width: 1; }
+.bqst-vu-mark { fill: none; stroke: currentColor; stroke-width: 0.7; }
+.bqst-vu-zone { stroke-width: 1.1; }
+.bqst-vu .bqst-vu-hot { stroke: var(--vu-hot); }
+.bqst-vu text.bqst-vu-hot { fill: var(--vu-hot); }
+.bqst-vu .bqst-vu-hot-off { stroke-opacity: 0; }
+.bqst-vu text.bqst-vu-hot-off { fill-opacity: 0; }
+.bqst-vu-num { font-size: 6.4px; font-weight: 400; }
+.bqst-vu-sign { font-size: 8px; font-weight: 400; }
+.bqst-vu-label { font-size: 7px; font-weight: 500; letter-spacing: 1.4px; }
+.bqst-vu-side { font-size: 7px; font-weight: 500; letter-spacing: 1.2px; fill-opacity: 0.6; }
+.bqst-vu-needle line { stroke: currentColor; stroke-width: 1; stroke-linecap: square; }
+.bqst-vu-lamp { fill: var(--vu-hot); stroke: var(--vu-hot); stroke-width: 1; }
+.bqst-vu-lamp-off { fill: none; stroke: currentColor; stroke-width: 1; stroke-opacity: 0; }
+.is-bypassed .bqst-vu-window { fill-opacity: 0.05; stroke-opacity: 0.28; }
+.is-bypassed .bqst-vu-mark, .is-bypassed .bqst-vu-needle line { stroke-opacity: 0.35; }
+.is-bypassed .bqst-vu text { fill-opacity: 0.4; }
+.is-bypassed .bqst-vu .bqst-vu-hot { stroke-opacity: 0; }
+.is-bypassed .bqst-vu text.bqst-vu-hot { fill-opacity: 0; }
+.is-bypassed .bqst-vu .bqst-vu-hot-off { stroke-opacity: 0.35; }
+.is-bypassed .bqst-vu text.bqst-vu-hot-off { fill-opacity: 0.4; }
+.is-bypassed .bqst-vu-side { fill-opacity: 0.3; }
+.is-bypassed .bqst-vu-lamp { fill-opacity: 0; stroke-opacity: 0; }
+.is-bypassed .bqst-vu-lamp-off { stroke-opacity: 0.4; }
+
+/* Cream's signal chain in the article: hairline blocks joined by arrows,
+   wrapping on narrow screens. Colours derive from the text colour so every
+   theme's palette applies; the blocks are glossary terms (hover/tap notes). */
+.bqst-chain { display: flex; flex-wrap: wrap; align-items: center; gap: 0.55rem 1.5rem; margin: 1.4rem 0 1.6rem; padding-left: 1.4rem; font-size: 0.92rem; line-height: 1.2; }
+.bqst-chain > * { position: relative; }
+.bqst-chain > * + *::before { content: '→'; position: absolute; left: -1.15rem; top: 50%; transform: translateY(-50%); color: color-mix(in srgb, currentColor 55%, transparent); font-weight: 400; text-decoration: none; }
+.bqst-chain-block { display: inline-block; padding: 0.45rem 0.7rem; border: 1px solid color-mix(in srgb, currentColor 35%, transparent); font-weight: 600; white-space: nowrap; }
+/* The clip and the even path run in parallel and are summed: bracketed on both sides. */
+.bqst-chain-split { display: grid; gap: 0.35rem; padding: 0 0.6rem; border: solid color-mix(in srgb, currentColor 35%, transparent); border-width: 0 1px; }
+.bqst-chain-io { color: color-mix(in srgb, currentColor 60%, transparent); font-weight: 600; }

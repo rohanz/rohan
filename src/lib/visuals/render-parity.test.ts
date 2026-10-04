@@ -4,7 +4,7 @@ import * as S from './__fixtures__/scenarios.js';
 import { createRecordingCanvas, digest } from './ctx-recorder.js';
 import { classicPalette, transitPalette, blueprintPalette } from './themes';
 import type { VisualPalette } from './palette';
-import { drawEq, drawTransfer, drawHarmonics } from './bqst-render';
+import { drawEq } from './bqst-render';
 import {
   drawCompound, drawRoster, drawQuant, COMPOUND_HEIGHT, ROSTER_HEIGHT, QUANT_HEIGHT,
 } from './qla-render';
@@ -31,7 +31,9 @@ import { QUANT_BLOCKS, fitLadders, beeswarmLevels, lookaheadSeries } from './qua
 //
 // The aliasing chart was later redesigned on purpose (one axis, a 1x/4x
 // switch, nested fold arcs), so its cases were retired from the fixtures; its
-// behaviour is covered by bqst-aliasing.test.ts instead.
+// behaviour is covered by bqst-aliasing.test.ts instead. Likewise the transfer
+// and harmonic charts, redrawn for BQST 1.1's Cream: `bqst-sat.test.ts` pins
+// the maths they plot to the plugin itself.
 
 const PALETTES: Record<string, VisualPalette> = {
   'classic-light': classicPalette(true),
@@ -61,8 +63,6 @@ function render(caseKey: string, palette: VisualPalette) {
 
   switch (name) {
     case 'eq': drawEq(ctx, { w: bqstW, palette }); break;
-    case 'transfer': drawTransfer(ctx, { w: bqstW, palette }, Number(arg)); break;
-    case 'harmonics': drawHarmonics(ctx, { w: bqstW, palette }, Number(arg)); break;
     case 'compound': drawCompound(ctx, { w: qlW, palette }, cursor); break;
     case 'roster':
       drawRoster(ctx, { w: rosterW, palette }, S.ROSTER_MODELS, S.ROSTER_TEACHER, Number(arg));
@@ -95,7 +95,7 @@ describe('shared renderers reproduce each fork exactly', () => {
   for (const [fork, palette] of Object.entries(PALETTES)) {
     const cases = (goldens as Record<string, Record<string, unknown>>)[fork];
     it(`${fork} has recorded cases`, () => {
-      expect(Object.keys(cases).length).toBeGreaterThan(30);
+      expect(Object.keys(cases).length).toBeGreaterThan(20);
     });
     for (const caseKey of Object.keys(cases)) {
       it(`${fork} · ${caseKey}`, () => {

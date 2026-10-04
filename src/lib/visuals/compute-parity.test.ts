@@ -2,8 +2,7 @@ import { describe, it, expect } from 'vitest';
 import goldens from './__fixtures__/compute-goldens.json';
 import * as C from './__fixtures__/compute-cases.js';
 import {
-  dbToGain, gainToDb, biquadResponse, densitySaturate, transformerSaturate,
-  harmonicDb, foldFrequency,
+  dbToGain, gainToDb, biquadResponse, transformerSaturate, foldFrequency,
 } from './dsp';
 import {
   survival, qlaTokenize, deriveGateMarks, trimJudgePairs, QUANT_BLOCKS, fitLadders,
@@ -50,28 +49,15 @@ describe('dsp.ts matches the pre-refactor forks', () => {
     expect(deep(out)).toEqual(g.biquadResponse);
   });
 
-  it('densitySaturate / transformerSaturate across the drive range', () => {
-    const density: number[] = [];
+  // Cream (`densitySaturate`) and the memoryless `harmonicDb` were replaced on
+  // purpose by the stateful plugin port in `bqst-sat.ts` (BQST 1.1), so their
+  // cases were retired; `bqst-sat.test.ts` pins the port to the plugin instead.
+  it('transformerSaturate across the drive range', () => {
     const transformer: number[] = [];
     for (const d of C.DRIVE01S) {
-      for (const s of C.SAMPLES) {
-        density.push(densitySaturate(s, d));
-        transformer.push(transformerSaturate(s, d));
-      }
+      for (const s of C.SAMPLES) transformer.push(transformerSaturate(s, d));
     }
-    expect(deep(density)).toEqual(g.densitySaturate);
     expect(deep(transformer)).toEqual(g.transformerSaturate);
-  });
-
-  it('harmonicDb for both shapers at four drive settings', () => {
-    const out: number[] = [];
-    for (const db of C.HARMONIC_DRIVES) {
-      for (const hn of C.HARMONICS) {
-        out.push(harmonicDb(densitySaturate, hn, db));
-        out.push(harmonicDb(transformerSaturate, hn, db));
-      }
-    }
-    expect(deep(out)).toEqual(g.harmonicDb);
   });
 
   it('foldFrequency around and beyond Nyquist', () => {

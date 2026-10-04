@@ -63,20 +63,6 @@ export function biquadResponse(
 
 export type Shaper = (sample: number, drive01: number) => number;
 
-/** BQST "Cream": soft-knee density with a touch of asymmetry. */
-export const densitySaturate: Shaper = (sample, drive01) => {
-  if (drive01 <= 0) return sample;
-  const push = drive01 * drive01;
-  const maxPush = push * drive01;
-  const asymmetry = drive01 * (0.016 + drive01 * 0.045 + push * 0.040);
-  const oddWeight = drive01 * (0.032 + drive01 * 0.095 + push * 0.115 + maxPush * 0.135);
-  const softKnee = 0.80 + drive01 * 0.42 + push * 0.36 + maxPush * 0.60;
-  const driven = sample * softKnee + oddWeight * sample * sample * sample + asymmetry;
-  const shaped = (Math.tanh(driven) - Math.tanh(asymmetry)) * (1 + 0.07 * drive01 + 0.13 * maxPush);
-  const blend = drive01 * 0.39 + push * 0.16 + maxPush * 0.15;
-  return sample * (1 - blend) + shaped * blend;
-};
-
 /** BQST "Grit": transformer-style rounding. */
 export const transformerSaturate: Shaper = (sample, drive01) => {
   if (drive01 <= 0) return sample;
@@ -91,28 +77,6 @@ export const transformerSaturate: Shaper = (sample, drive01) => {
   const blend = drive01 * 0.43 + push * 0.12 + maxPush * 0.14;
   return sample * (1 - blend) + rounded * blend;
 };
-
-/**
- * Level of `harmonic` relative to the fundamental, in dB, for a 0.55-amplitude
- * sine pushed through `shaper` at `driveDb`. A 4096-point single-bin DFT.
- */
-export function harmonicDb(shaper: Shaper, harmonic: number, driveDb: number): number {
-  const n = 4096;
-  const drive01 = drive01From(driveDb);
-  const driveGain = dbToGain(driveDb * 0.40);
-  let re = 0, im = 0, fundamentalRe = 0, fundamentalIm = 0;
-  for (let i = 0; i < n; i++) {
-    const phase = 2 * Math.PI * i / n;
-    const y = shaper(Math.sin(phase) * 0.55 * driveGain, drive01);
-    re += y * Math.cos(harmonic * phase);
-    im -= y * Math.sin(harmonic * phase);
-    fundamentalRe += y * Math.cos(phase);
-    fundamentalIm -= y * Math.sin(phase);
-  }
-  const mag = Math.sqrt(re * re + im * im);
-  const fundamental = Math.sqrt(fundamentalRe * fundamentalRe + fundamentalIm * fundamentalIm);
-  return gainToDb(mag / Math.max(1e-12, fundamental));
-}
 
 /** Where `freq` lands after mirroring around Nyquist (aliasing foldback). */
 export function foldFrequency(freq: number, sampleRate: number): number {

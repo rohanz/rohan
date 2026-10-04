@@ -1,0 +1,109 @@
+{
+  "source": "github.com/rohanz/bqst v1.1.2 VST3 rendered against the reference hardware captures by the private model repo's site_export tool; held-out last third of each capture",
+  "regions": [
+    "bass",
+    "low mids",
+    "mids",
+    "presence",
+    "air"
+  ],
+  "regionHz": [
+    [
+      20,
+      120
+    ],
+    [
+      120,
+      500
+    ],
+    [
+      500,
+      2000
+    ],
+    [
+      2000,
+      6000
+    ],
+    [
+      6000,
+      16000
+    ]
+  ],
+  "notes": "Held-out last third of each capture (not used for fitting). toneDb: third-octave level change vs dry, averaged per region, normalised to 0 over 200 Hz-2 kHz. saturationDb: incoherent (new) energy as a share of the region's energy, from magnitude-squared coherence with the dry input.",
+  "settings": [
+    {
+      "driveDb": 9.3,
+      "vintage": true,
+      "hardware": {
+        "toneDb": [
+          0.034,
+          -0.089,
+          0.028,
+          -0.639,
+          -0.711
+        ],
+        "saturationDb": [
+          -21.95,
+          -19.51,
+          -15.18,
+          -16.7,
+          -18.12
+        ]
+      },
+      "bqst": {
+        "toneDb": [
+          -0.039,
+          -0.138,
+          0.014,
+          -0.564,
+          -0.678
+        ],
+        "saturationDb": [
+          -22.08,
+          -19.7,
+          -17.79,
+          -18.97,
+          -19.02
+        ]
+      },
+      "nullDb": -21.2
+    },
+    {
+      "driveDb": 14.21,
+      "vintage": false,
+      "hardware": {
+        "toneDb": [
+          -0.114,
+          -0.273,
+          0.059,
+          -0.386,
+          0.518
+        ],
+        "saturationDb": [
+          -18.27,
+          -15.51,
+          -12.31,
+          -13.57,
+          -14.61
+        ]
+      },
+      "bqst": {
+        "toneDb": [
+          -0.233,
+          -0.417,
+          0.067,
+          -0.336,
+          0.751
+        ],
+        "saturationDb": [
+          -16.95,
+          -14.13,
+          -12.36,
+          -13.58,
+          -14.13
+        ]
+      },
+      "nullDb": -19.4
+    }
+  ]
+}
