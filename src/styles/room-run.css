@@ -5,8 +5,8 @@
 .room-run .room-tabs { margin-bottom: .9rem; }
 .room-run .room-arch { display: block; width: 100%; height: auto; margin: 0 0 .75rem; }
 .room-run .room-node rect { fill: var(--bg-card, #fff); stroke: var(--border-subtle); stroke-width: 1.25; transition: stroke .2s ease; }
-.room-run .room-node-label { fill: var(--text-secondary); font-size: 13px; font-weight: 700; text-anchor: middle; transition: fill .2s ease; }
-.room-run .room-node-sub { fill: var(--text-secondary); font-size: 11px; text-anchor: middle; opacity: .8; }
+.room-run .room-node-label { fill: var(--text-primary); font-size: 13px; font-weight: 700; text-anchor: middle; transition: fill .2s ease; }
+.room-run .room-node-sub { fill: var(--text-secondary); font-size: 11px; text-anchor: middle; }
 .room-run .room-node.is-lit rect { stroke: var(--room-accent); stroke-width: 2; }
 .room-run .room-node.is-lit .room-node-label { fill: var(--text-primary); }
 .room-run .room-link { fill: none; stroke: var(--border-subtle); stroke-width: 1.5; transition: stroke .2s ease; }
@@ -15,17 +15,91 @@
 
 /* contract detector */
 .room-run .room-diff { margin: 0 0 .9rem; padding: .8rem 1rem; background: var(--bg-card, #fff); border: 1px solid var(--border-subtle); font-size: .82rem; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
-.room-run .room-diff-line { display: block; font-family: var(--font-mono, ui-monospace, monospace); color: var(--text-secondary); }
-.room-run .room-diff-line.is-del { text-decoration: line-through; }
-.room-run .room-diff-line.is-add { color: var(--text-primary); background: color-mix(in srgb, var(--room-accent) 12%, transparent); }
-.room-run .room-files-row { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: .6rem; }
-.room-run .room-file { padding: .2rem .5rem; border: 1px solid var(--border-subtle); font-family: var(--font-mono, ui-monospace, monospace); font-size: .78rem; color: var(--text-secondary); transition: border-color .2s ease, color .2s ease; }
-.room-run .room-file.is-source { color: var(--text-primary); }
-.room-run .room-file.is-notified { border-color: var(--room-accent); color: var(--text-primary); }
 .room-run .room-label { display: block; margin: .8rem 0 .25rem; color: var(--text-secondary); font-size: .72rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; }
-.room-run .room-observed { margin: 0; font-family: var(--font-mono, ui-monospace, monospace); font-size: .85rem; color: var(--room-accent); }
-.room-run .room-observed.is-quiet { font-family: inherit; font-size: inherit; color: var(--text-secondary); }
-.room-run .room-notified { margin: 0; color: var(--text-primary); line-height: 1.5; min-height: 3em; }
-/* Phones: the diagram is scaled down, so its labels step up to stay legible. */
-@media (max-width: 640px) { .room-run .room-node-label { font-size: 14.5px; } .room-run .room-node-sub { display: none; } }
-@media (prefers-reduced-motion: reduce) { .room-run :is(.room-node rect, .room-link, .room-file) { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .room-run :is(.room-node rect, .room-link) { transition: none; } }
+
+/* Interactive editorial examples: shared edges, paper and a single meaningful accent. */
+.room-run .room-story-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1px solid var(--border-subtle); margin: 1rem 0; }
+.room-run .room-story-cell { min-width: 0; padding: 1rem; }
+.room-run .room-story-cell + .room-story-cell { border-left: 1px solid var(--border-subtle); }
+.room-run .room-story-cell p { margin: .65rem 0 0; font-size: .9rem; }
+.room-run .room-story-cell .room-label { margin: 0 0 .65rem; }
+.room-run .is-relevant { background: color-mix(in srgb, var(--room-accent) 7%, transparent); }
+.room-run .room-story-message { font-size: .9rem; min-height: 3em; }
+@media (max-width: 640px) {
+  .room-run .room-story-grid { grid-template-columns: 1fr; }
+  .room-run .room-story-cell + .room-story-cell { border-left: 0; border-top: 1px solid var(--border-subtle); }
+}
+.room-run .room-worker-grid { margin-top: 2rem; position: relative; }
+.room-run .room-worker-grid::before { content: ''; position: absolute; left: 16.66%; right: 16.66%; top: -1rem; border-top: 1px solid var(--room-accent); }
+.room-run .room-worker-grid .room-story-cell { position: relative; transition: background 250ms ease; }
+.room-run .room-worker-grid .room-story-cell::before { content: ''; position: absolute; left: 50%; top: -1rem; height: 1rem; border-left: 1px solid var(--room-accent); }
+.room-run .room-worker-status::before { content: ''; display: inline-block; width: .4rem; height: .4rem; background: var(--room-accent); margin-right: .4rem; vertical-align: .15em; }
+@media (max-width: 640px) {
+  .room-run .room-worker-grid { margin-top: 1rem; }
+  .room-run .room-worker-grid::before, .room-run .room-worker-grid .room-story-cell::before { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .room-run .room-worker-grid .room-story-cell { transition: none; } }
+
+/* Keep Room view controls on the page paper on hover, including shared widget overrides. */
+html.theme-swiss .article .room-run .room-tabs button,
+html.theme-swiss .article .room-run .room-tabs button:active { background: var(--paper); color: var(--ink); box-shadow: none; }
+html.theme-swiss .article .room-run .room-tabs button.is-active { border-color: var(--accent); color: var(--accent); }
+@media (hover: hover) and (pointer: fine) {
+  html.theme-swiss .article .room-run .room-tabs button:hover { background: var(--paper); border-color: var(--accent); color: var(--accent); box-shadow: none; }
+}
+html.theme-swiss .article .room-run .room-tabs button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.room-run .room-tabs { flex-wrap: wrap; }
+.room-run .room-tabs button { min-height: 44px; white-space: normal; }
+@media (max-width: 640px) { .room-run .room-story-cell p, .room-run .room-story-message { font-size: 1rem; } }
+.room-run .room-diagram-key { font-size: .8rem; color: var(--text-secondary); margin: 0 0 .7rem; }
+
+/* The narrow layout uses real text, rather than shrinking SVG labels. */
+.room-run { container-type: inline-size; }
+.room-run [hidden] { display: none !important; }
+.room-run .room-mode-note { margin: 0 0 1.2rem; font-size: 1rem; line-height: 1.5; }
+.room-run .room-arch-mobile { display: none; }
+:is(#room-arch, #room-contract, #room-lifecycle) { scroll-margin-top: 6rem; }
+@container (max-width: 600px) {
+  .room-run .room-arch { display: none; }
+  .room-run .room-arch-mobile { display: grid; gap: 1.25rem; margin-bottom: 1rem; }
+  .room-run .room-mobile-peers, .room-run .room-mobile-outputs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; position: relative; }
+  .room-run .room-mobile-peer { border: 1px solid var(--border-subtle); }
+  .room-run .room-mobile-node { padding: .75rem; border: 1px solid var(--border-subtle); background: var(--bg-card, #fff); min-width: 0; }
+  .room-run .room-mobile-peer .room-mobile-node { border: 0; border-left: 2px solid transparent; }
+  .room-run .room-mobile-peer .room-mobile-node + .room-mobile-node { border-top: 1px solid var(--border-subtle); }
+  .room-run .room-mobile-node strong, .room-run .room-mobile-node span { display: block; font-size: 1rem; overflow-wrap: anywhere; }
+  .room-run .room-mobile-node span { color: var(--text-secondary); margin-top: .3rem; line-height: 1.4; }
+  .room-run .room-mobile-node.is-lit { border-color: var(--room-accent); }
+  .room-run .room-mobile-peer .room-mobile-node.is-lit { border-left-color: var(--room-accent); }
+  .room-run .room-mobile-peers::after { content: ''; position: absolute; height: 1.25rem; width: 50%; left: 25%; border-left: 1px solid var(--border-subtle); border-right: 1px solid var(--border-subtle); }
+  .room-run .room-mobile-peers::after { top: 100%; }
+  .room-run .room-mobile-peers.is-lit::after { border-color: var(--room-accent); }
+}
+
+/* Explain the situation and outcome before offering implementation detail. */
+.room-run .room-example-intro { margin: 0 0 1.25rem; font-size: 1rem; line-height: 1.55; }
+.room-run .room-example-action { font-size: 1.1rem; line-height: 1.5; font-weight: 600; margin: .4rem 0 1rem; }
+.room-run .room-comparison { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--border-subtle); margin: 1rem 0; }
+.room-run .room-comparison > div { padding: 1rem; min-width: 0; }
+.room-run .room-comparison > div + div { border-left: 1px solid var(--border-subtle); }
+.room-run .room-comparison .room-label { margin: 0 0 .5rem; }
+.room-run .room-comparison p { margin: 0; font-size: 1rem; line-height: 1.5; }
+.room-run .room-example-result, .room-run .room-example-note { font-size: 1rem; line-height: 1.55; }
+.room-run .room-example-note { color: var(--text-secondary); }
+.room-run .room-audience .room-story-cell p { font-size: 1rem; line-height: 1.5; }
+.room-run .room-code-details { border-top: 1px solid var(--border-subtle); margin-top: 1.25rem; padding-top: .5rem; }
+.room-run .room-code-details summary { display: flex; align-items: center; justify-content: space-between; gap: 1rem; cursor: pointer; list-style: none; padding: .7rem 0; min-height: 44px; font-size: 1rem; color: var(--text-primary); }
+.room-run .room-code-details summary::-webkit-details-marker { display: none; }
+.room-run .room-code-details summary::after { content: '+'; flex: 0 0 1.5rem; text-align: center; color: var(--room-accent); font-size: 1.25rem; line-height: 1; }
+.room-run .room-code-details[open] summary::after { content: '−'; }
+@media (hover: hover) and (pointer: fine) {
+  .room-run .room-code-details summary:hover { color: var(--room-accent); }
+}
+.room-run .room-code-details summary:focus-visible { outline: 2px solid var(--room-accent); outline-offset: 2px; }
+.room-run .room-code-details p { font-size: 1rem; line-height: 1.5; }
+.room-run .room-caption + .room-arch, .room-run .room-caption + .room-arch + .room-arch-mobile { margin-top: 1.25rem; }
+@media (max-width: 640px) {
+  .room-run .room-comparison { grid-template-columns: 1fr; }
+  .room-run .room-comparison > div + div { border-left: 0; border-top: 1px solid var(--border-subtle); }
+}

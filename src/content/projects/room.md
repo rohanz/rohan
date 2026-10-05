@@ -37,7 +37,7 @@ Nobody copied messages between chat windows, and nobody found out about the clas
 
 ## what room does
 
-Each agent that uses the plugin joins a shared room. Inside it, an agent can:
+Once connected through the plugin, agents share a room. Inside it, an agent can:
 
 - see which files the others have changed, and read their live, uncommitted versions;
 - declare its **scope**, the area of the code it's working in, and **claim** the lines it's about to edit, with a line saying why;
@@ -47,7 +47,7 @@ Each agent that uses the plugin joins a shared room. Inside it, an agent can:
 - preview a merge of everyone's work and run the tests on the combined code before anyone commits;
 - start Claude or Codex workers in their own worktrees and collect their finished work.
 
-Claims are advisory. An edit inside someone else's claim raises an **interrupt**, a message that reaches the agent mid-task, but nothing is ever blocked. Developers keep their own editors, agents and Git workflow. room only adds context: it never writes a teammate's edits into your working tree, and it never commits or pushes on its own. It installs in one line per host:
+Claims are advisory. An edit inside someone else's claim raises an **interrupt**, a message that reaches the agent mid-task, but the claim does not block the edit. A separate, optional review checkpoint can hold collection until a reviewer releases it. Developers keep their own editors, agents and Git workflow. Live sharing never overwrites your working files. Explicit worker collection brings finished changes into your checkout for review; Room never commits or pushes on its own. It installs in one line per host:
 
 <div class="copy-lines">
   <p class="copy-lines-label">Claude Code</p>
@@ -66,7 +66,7 @@ I built the first version with [Kieran Ho](https://www.linkedin.com/in/kieranhch
 
 Here's what using it is like day to day.
 
-**Alone, it stays out of the way.** With no server set up, a session starts in a local room: no account, and nothing leaves the machine. Sessions in the same clone or its worktrees share that local room. In Codex, saying “show room state” establishes the connection if it has not started yet. While an agent works alone, room stays quiet. Areas of the code come from the project's `CODEOWNERS` file where there is one.
+**Alone, it stays out of the way.** With no server set up, a session starts in a local room: no Room account, with Room’s coordination traffic staying on the machine. Your coding agents still use their configured model providers. Sessions in the same clone or its worktrees share that local room. In Codex, saying “show room state” establishes the connection if it has not started yet. While an agent works alone, room stays quiet. Areas of the code come from the project's `CODEOWNERS` file where there is one.
 
 **Changing your mind is a first-class event.** At agent speed, plans change constantly, so revising or cancelling one is announced like any other change (more on that below). When a human changes an agent's instructions midway, as I did in the shop run, the agent announces its revised plan to the room. And finishing a task releases its claims automatically.
 
@@ -74,7 +74,7 @@ Here's what using it is like day to day.
 
 **You can watch it live.** A browser view shows the room as it happens, including a dependency map Kieran built for each participant: what their work depends on, what they're changing, and which files downstream it could reach. The whole record can be exported afterwards.
 
-**You choose what to share.** A team room sees the full text of the files you change by default. You can narrow that to your declared scope, or to plans and claims with no file text at all, and change it live. Team rooms need a GitHub login and push access, so a public repository isn't an open room.
+**You choose what to share.** Joining a team room is an explicit choice. It sees the full text of the files you change by default. You can narrow that to your declared scope, or to plans and claims with no file text at all, and change it live. Team rooms need a GitHub login and push access, so a public repository isn't an open room. Reconnecting preserves the sharing level you chose; it must not silently turn plans-only sharing back into full file sharing.
 
 ## announcing a contract before it exists
 
@@ -82,15 +82,15 @@ The most useful coordination happens before any code is written. When an agent i
 
 room sends that plan straight away to everyone whose code uses `checkout`, found through its index of which code uses which symbols. They don't have to wait for the change to land to learn about it. The agent building the new version and the agents calling it can work at the same time, against the same agreed interface, instead of discovering the new shape at merge time and patching around it.
 
-Plans can change, and that matters as much as the announcement. If the agent revises or cancels its plan, the same people get an interrupt, so nobody keeps building on a design that was dropped. That's the direct answer to the skeletons problem: code written for an interface that no longer exists is usually code nobody was told to stop writing.
+Plans can change, and that matters as much as the announcement. If the agent revises or cancels its plan, the same people get an interrupt, so they can stop building against a design that was dropped. That's the direct answer to the skeletons problem: code written for an interface that no longer exists is usually code nobody was told to stop writing.
 
 A plan is still only a promise. room doesn't yet link a declaration to the code that eventually lands, so it can't tell a proposed contract from an implemented one on its own; the tests on the combined code are the real check. Making that link explicit, with each plan's history and the commits that fulfil it, is on the roadmap.
 
 ## catching a contract change nobody announced
 
-Announcing only works if agents do it. In every live run they claimed files with a line of intent and almost never declared a plan, so the part of the browser view that shows who a change will affect stayed empty.
+Announcing only works if agents do it. In early live runs they claimed files with a line of intent and almost never declared a plan, so the part of the browser view that shows who a change will affect stayed empty.
 
-So room now also reads contract changes from the diff. For each person, it compares a file's definitions in the commit they started from with the same file in their live, uncommitted version. If a definition's <span class="gloss-term" data-gloss="The part of a function or class declaration that callers depend on: its name, parameters and return type, without the body.">signature</span> changed or a definition was removed, that counts as an observed contract change, and anyone whose changed or claimed files use the symbol gets a notice. An added definition is recorded but notifies nobody, since nothing uses it yet. Edits inside a function body produce nothing, by design. That's where the notice in the shop run came from. The core of it is in `packages/shared/src/graph.ts`:
+So room now also reads contract changes from the diff. For each person, it compares a file's definitions in the commit they started from with the same file in their live, uncommitted version. If a definition's <span class="gloss-term" data-gloss="The part of a function or class declaration that callers depend on: its name, parameters and return type, without the body.">signature</span> changed or a definition was removed, that counts as an observed contract change, and anyone whose changed or claimed files use the symbol gets a notice. An added definition is recorded but does not trigger these notices. Edits inside a function body produce no contract notice, by design; the file changes are still shared. That's where the notice in the shop run came from. The core of it is in `packages/shared/src/graph.ts`:
 
 ```ts
 for (const [symbol, oldLines] of before) {
@@ -107,7 +107,7 @@ Comparing sets of signatures per symbol, rather than single lines, is what handl
 
 The index is name-based. It has no type resolution and matches method calls by method name, so common names like `get` would connect everything to everything. To keep that noise down, a name defined in more than five files only creates an edge when the consumer imports the defining module.
 
-The widget below applies those rules to a small example: a tax function, and a handler file in another agent's work that calls it. Pick an edit to see what room reads from the diff and which agent gets a notice.
+The example below follows three agents building a shop. One writes the tax calculator, another uses it at checkout, and a third works on customer profiles. Choose **planned change** to explore what agents announce before editing, or **detected change** to see what Room notices in the code. Each example explains who needs to know and why; the code is optional.
 
 <div id="room-contract"></div>
 
@@ -115,15 +115,25 @@ The widget below applies those rules to a small example: a tax function, and a h
 
 The case I hit most isn't working with other people. It's me running several agents at once, as I mentioned in the intro. Through room, a lead agent can dispatch workers and treat them like teammates, whether they're Claude or Codex, and see their work while it happens rather than when they return.
 
-`room_spawn` creates a <span class="gloss-term" data-gloss="A second working directory attached to the same Git repository, on its own branch, so two agents can edit in parallel without touching each other's files.">Git worktree</span> on a `room/<tag>` branch and starts a Claude Code or Codex worker in it, up to eight at once, each with a thread limit and lower CPU priority. A worker starts with the lead's eligible uncommitted work. Tracked changes are carried in a commit on the worker branch; non-ignored untracked files are copied without committing them. Oversized files and unsafe links are skipped and reported. Workers join the lead's room, so two workers touching the same function get the same claims and conflict notices two humans would. When one finishes, its `room_done` reaches the lead, which calls `room_collect` to bring all finished work into its tree as uncommitted, unstaged edits. If any collected files conflict, nothing is written and the paths are named. If the lead changes a function a worker relies on while it works, the worker is told. For a large batch, the lead can hand the whole job to a background lead that runs the workers and hands back one set of uncommitted edits. A human decides what to commit.
+This delegation is opt-in: ask for “Room workers” or “use Room to have Codex do part of it.” An ordinary request for another agent stays with the host's normal delegation. The lead chooses how many workers the job needs; eight is the default concurrent limit, not a fixed team size.
 
-All of it works in a local room, with nothing leaving the machine, and that's how much of this site's recent redesign was built. Claude planned and reviewed, and Codex workers took self-contained jobs, such as a mobile accessibility pass or moving a theme to new routes, in parallel worktrees.
+`room_spawn` creates a <span class="gloss-term" data-gloss="A second working directory attached to the same Git repository, on its own branch, so two agents can edit in parallel without touching each other's files.">Git worktree</span> on a `room/<tag>` branch and starts a Claude Code or Codex worker in it. Each starts with the lead's eligible uncommitted work, so a task doesn't begin against yesterday's code. Oversized files and unsafe links are skipped and reported. Workers join the lead's room: they can ask each other questions, see ongoing edits, and receive the same claims and contract notices as human teammates.
+
+Finishing isn't the end of the conversation. A follow-up from the lead resumes the same worker session in the same worktree, with its context and edits intact. Restarting the lead does not automatically restart old tasks. The lead can test the combined work in a merge preview, then use `room_collect` to bring finished changes into its tree as uncommitted, unstaged edits. Conflicting files leave the destination untouched. Once collected or discarded, a worker cannot be resumed through Room. A human decides what to commit.
+
+An optional **review hold** keeps that follow-up window open. A reviewer establishes it in the destination checkout, and new collection calls are blocked until the hold is released. Previewing, testing and asking workers for corrections still work. It doesn't stop a collection already underway or prevent ordinary file edits; it's a specific checkpoint before integration.
+
+The example below shows a lead agent coordinating three workers. Choose a view to see them work together, return for a correction, test their combined changes, wait for review, or bring the work back. These are illustrations of the workflow, not live agents.
+
+<div id="room-lifecycle"></div>
+
+All of it works with Room’s coordination kept in a local room, and that's how much of this site's recent redesign was built. Claude planned and reviewed, and Codex workers took self-contained jobs, such as a mobile accessibility pass or moving a theme to new routes, in parallel worktrees.
 
 ## how it works
 
 An agent in a room keeps asking the same questions: who else is editing this file, what are they about to change, and does it affect my work? The answers sit in other people's working copies, uncommitted and changing by the minute. room combines four sources to answer them: a file watcher on each clone, Git state, what each agent says it intends to do, and an index of which code uses which symbols.
 
-With those, room does five jobs: publish what changed, share it, route it to the right people, deliver it to their agents, and help integrate the result. The diagram below shows room's parts across two developers' clones: a file watcher, a room process and an agent on each side, joined through the shared room. Pick a job to highlight the path it takes through them.
+The diagram brings together both inputs: file changes from watchers, and plans, claims and questions from agents. Room shares that state, checks overlapping work and possible downstream effects, and delivers relevant messages. Choose **local room** or **team room** to see how the agents connect, then pick an action to highlight the parts involved. “Room MCP” groups the tools, file watcher and code index running beside each agent. A merge preview is a separate working copy where agents can test everyone’s changes together.
 
 <div id="room-arch"></div>
 
@@ -135,19 +145,13 @@ The details that make it work:
 - **Waking agents.** An idle Codex agent is woken through `codex queue`. Claude Code is woken through its built-in inbox for messages between sessions (since Claude Code 2.1.224, no flag), with <span class="gloss-term" data-gloss="Model Context Protocol: a standard way to give an AI agent a set of tools it can call. room's tools (room_claim, room_read and so on) are served this way.">MCP</span> channels as a fallback.
 - **Working across branches.** One room covers the repository, with each participant reporting their own branch and base commit. Checks between people on different branches use their common ancestor, and a push tells teammates on the same branch to catch up.
 
-## what real use showed
+## built through real work
 
-The best way to test a tool is to use it for real work. So I went through the logs of the longest session I've run with room: one Claude lead and 38 spawned workers on a private repository for about 20 hours. The good news: all 38 spawns worked, the lead answered all 15 worker questions, and 265 claims produced no tool failures.
+We dogfooded room on this portfolio’s redesign, long-running work in private repositories, and local tasks on established projects including Flask, Werkzeug, HTTPX and Zod. Those jobs involved existing tests, unfamiliar code, shared files and changes that depended on each other. They exposed problems a tidy demo missed: workers starting without the lead’s uncommitted edits, stale claims, and sharing choices that needed to survive reconnects.
 
-The bad news:
+The shop run near the start of this article is a smaller example of tightly coupled work. One agent changed the tax and shipping interfaces while another was building pricing tiers in a handler that called both. A third changed where order currency came from. They had separate tasks, but their changes met in the same checkout flow. Room let them see the new interfaces and each other’s unfinished code before checking the combined result.
 
-- **Every conflict alarm was false: 16 of 16.** The causes were mundane: the lead copying a worker's files while the worker's claims were still open, workers that exited without releasing their claims, and a Codex session whose writes were blamed on the lead because room attributed writes by folder. All three are fixed.
-- **The merge preview was never used.** The lead copied work out of worktrees with `cp` and `rsync` about 17 times instead, because the preview couldn't see the workers' untracked files. That's where `room_collect` came from.
-- **The lead was deaf for twelve hours.** It hadn't been started with the flag that lets Claude Code be woken, so three worker questions waited 22 minutes each, until someone happened to type something. `room_spawn` now warns about this up front.
-
-Later audits found two more. A solo task made zero room calls, as it should, but with company, agents ran a claim-and-release ritual on every edit, so the rule became: declare scope once, and claim only where someone else is near the file. And the hosted server once crashed seconds after every start because each agent kept writing its whole symbol graph into the shared document; shared state is now capped.
-
-The redesign of this site was a second test, and room lost the job twice. First, workers started from the last commit while a day's rewrites sat uncommitted, so the lead agent used plain subagents instead. That's why workers now start from the lead's uncommitted code. Second, a restart silently left the session outside the room, and rejoining took 86 seconds because room was hashing 13 GB of untracked 3D art one file at a time. It now rejoins by itself, and the same join takes 2.2 seconds.
+The larger local evaluations are recorded in the [Flask](https://github.com/rohanz/room/blob/main/docs/superpowers/rehearsals/2026-10-04-flask-fault-rehearsal.md) and [Zod](https://github.com/rohanz/room/blob/main/docs/superpowers/rehearsals/2026-10-04-zod-historical.md) reports. These were development trials, not upstream contributions.
 
 ## limitations
 
@@ -155,17 +159,9 @@ The redesign of this site was a second test, and room lost the job twice. First,
 - **Claims depend on cooperation.** An agent that ignores room can still write anywhere.
 - **Instant wake-ups need a recent Claude Code.** On Claude Code 2.1.224 or later, room wakes an idle session through Claude Code's built-in inbox for messages between sessions, with no flag; older versions fall back to channels (a research-preview flag). Codex is woken with `codex queue`. A running session picks up plugin updates only when it restarts.
 
-## what stuck with me
+## the design principle
 
-**A false alarm costs more than a missed one.** Sixteen false conflicts out of sixteen taught the lead to ignore conflicts, which is worse than having no conflict detection at all. Every alarm has to be right, or people and agents stop reading the channel it arrives on. Fixing attribution mattered more than any new feature.
-
-**Read the logs of real use.** None of these problems showed up in rehearsed demos. They showed up in a 20-hour session where nobody was performing, and the only way to see them was to count: how many merge previews, how many alarms, how long a question waited. Those numbers decided the next release.
-
-**Benchmark on a real, messy repository.** The test fixture had 5,000 tidy files. The repository that broke room had 399 files and 13 GB of art nobody had committed.
-
-**Sending a wake-up proves nothing.** One regression came from marking a message as seen when a wake-up was sent, which could make an interrupt vanish if the wake-up never landed. Distributed systems classes teach this about networks: a message sent is not a message received. It holds just as well for agents.
-
-**Coordination should cost nothing when there is nothing to coordinate.** The measure I ended up designing against was how rarely anyone notices room. Cost should scale with overlap: silent when you are alone, a single line when someone is near your file, and an interrupt only when your next action should change.
+Room should stay quiet when there is nothing to coordinate. What mattered most in real use was getting the right change to the right agent, early enough to affect its next decision. Shared context is useful only if agents can trust it without reading a second inbox all day.
 
 <p class="download-actions">
   <a href="https://github.com/rohanz/room" class="support-btn" target="_blank" rel="noopener noreferrer">view source</a>
