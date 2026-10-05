@@ -107,11 +107,11 @@ The result is a small chain. Its curve, tone shaping and gains all came out of t
 
 The tone shaping and the DC blocker fade in with drive, reaching full strength at 6 dB, so a tiny Drive setting stays transparent instead of switching a tilt on. The plugin's C++ model is tested against the Python reference sample for sample, to within a billionth of the signal level.
 
-The chart below shows how close it gets. It plots Cream against the hardware across the spectrum, measured only on the part of each recording the fit never saw. **Switch between the two drive settings, then flip between saturation and tone.** Saturation shows how much new harmonic content each part of the spectrum gets. Tone shows how the level at each frequency shifts against the dry input, in tenths of a dB.
+The chart below shows how close it gets. It plots Cream against the hardware across the spectrum at 14.2 dB of drive, the one recording with nothing else engaged on the unit, measured only on the part of it the fit never saw. **Flip between saturation and tone.** Saturation shows how much new harmonic content each part of the spectrum gets. Tone shows how the level at each frequency shifts against the dry input, in tenths of a dB.
 
 <div id="bqst-match-visual"></div>
 
-At 14.2 dB, the tone curves stay within a third of a dB of each other from 40 Hz to 12.7 kHz, and the saturation curves within 2 dB (typically 0.3 dB), with Cream slightly heavier in the bass. The lighter 9.3 dB setting tells the honest story: the tone still tracks within 0.2 dB, but Cream runs up to 2.7 dB lighter from the upper mids through the presence range, so at low settings it is a little more polite than the real thing.
+The tone curves stay within a third of a dB of each other from 40 Hz to 12.7 kHz, and the saturation curves within 2 dB (typically 0.3 dB), with Cream slightly heavier in the bass. Lighter settings are less exact: in a 9.3 dB recording, made with the unit's Vintage filter on, the tone still tracks within 0.2 dB, but Cream runs up to 2.7 dB lighter from the upper mids through the presence range, so at low settings it is a little more polite than the real thing.
 
 ### grit
 

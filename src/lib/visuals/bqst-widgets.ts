@@ -40,7 +40,7 @@ const LAB_SLOTS: Array<{ id: string; type: LabType; title: string; meta: string;
   { id: 'bqst-eq-visual', type: 'eq', title: 'baxandall-style eq curves', meta: 'q 0.38 · all stepped shelf positions · +/-6 db', label: 'BQST low and high shelf frequency response' },
   { id: 'bqst-transfer-visual', type: 'transfer', title: 'saturation transfer curve', meta: 'static input sweep · follows the drive control', label: 'BQST Cream and Grit saturation transfer curves' },
   { id: 'bqst-harmonics-visual', type: 'harmonics', title: 'harmonic fingerprint', meta: 'sine at the test tone · follows the drive control', label: 'BQST Cream and Grit harmonic profile' },
-  { id: 'bqst-match-visual', type: 'match', title: 'cream against the hardware', meta: 'held-out audio · 40 hz to 12.7 khz', label: 'BQST Cream compared with the hardware it was fitted to, across the spectrum' },
+  { id: 'bqst-match-visual', type: 'match', title: 'cream against the hardware', meta: 'held-out audio · drive 14.2 db', label: 'BQST Cream compared with the hardware it was fitted to, across the spectrum, at 14.2 dB of drive' },
   { id: 'bqst-oversampling-visual', type: 'aliasing', title: 'why oversampling matters', meta: '6 khz tone · saturated · 44.1 khz session', label: 'BQST oversampling and aliasing visualization' },
 ];
 
@@ -65,7 +65,7 @@ const toneHzFor = (v: number) => TONE_MIN_HZ * Math.pow(TONE_MAX_HZ / TONE_MIN_H
 const toneSliderFor = (hz: number) => Math.round((1000 * Math.log(hz / TONE_MIN_HZ)) / Math.log(TONE_MAX_HZ / TONE_MIN_HZ));
 const toneLabel = (hz: number) => (hz < 1000 ? `${Math.round(hz)} Hz` : `${(hz / 1000).toFixed(hz < 2000 ? 2 : 1)} kHz`);
 
-const MATCH_NOTE = 'Measured on the last third of each recording, which the fit never saw. Same input, the plugin at the matching drive, autogain off.';
+const MATCH_NOTE = 'Measured on the last third of the recording, which the fit never saw. Same input, the plugin at the same drive, autogain off.';
 
 // ============================================================
 // BQST DSP LAB
@@ -107,9 +107,6 @@ export function initBqstDspLab({ root, palette, sizeCanvas, onThemeChange }: Bqs
                 : ''}`
             : slot.type === 'match'
               ? `<div class="bqst-match-controls">
-                  <div class="bqst-audio-toggle bqst-match-toggle" role="group" aria-label="Drive setting">
-                    ${matchData.settings.map((m, i) => `<button type="button" data-match-setting="${i}" aria-pressed="false">${m.driveDb.toFixed(1)} dB${m.vintage ? ' + vintage' : ''}</button>`).join('')}
-                  </div>
                   <div class="bqst-audio-toggle bqst-match-toggle" role="group" aria-label="Measurement">
                     <button type="button" data-match-metric="saturation" aria-pressed="false">saturation</button>
                     <button type="button" data-match-metric="tone" aria-pressed="false">tone</button>
@@ -135,7 +132,6 @@ export function initBqstDspLab({ root, palette, sizeCanvas, onThemeChange }: Bqs
 
   const driveState: Record<DriveType, number> = { transfer: 0, harmonics: 0 };
   let toneHz = 1000;
-  let matchSetting = matchData.settings.length - 1;
   let matchMetric: 'tone' | 'saturation' = 'saturation';
   // Aliasing chart: 0 = no oversampling, 1 = 4x; tweened when switched.
   let osMix = 0;
@@ -202,7 +198,7 @@ export function initBqstDspLab({ root, palette, sizeCanvas, onThemeChange }: Bqs
     if (slot.type === 'eq') drawEq(ctx, opts);
     else if (slot.type === 'transfer') drawTransfer(ctx, opts, driveDbFor('transfer'));
     else if (slot.type === 'harmonics') drawHarmonics(ctx, opts, driveDbFor('harmonics'), toneHz);
-    else if (slot.type === 'match') drawMatch(ctx, opts, matchData.centresHz, matchData.settings[matchSetting], matchMetric);
+    else if (slot.type === 'match') drawMatch(ctx, opts, matchData.centresHz, matchData.settings[0], matchMetric);
     else drawAliasing(ctx, opts, osMix);
   }
   const drawAll = () => slots.forEach((slot) => drawSlot(slot, true));
@@ -357,19 +353,18 @@ export function initBqstDspLab({ root, palette, sizeCanvas, onThemeChange }: Bqs
   toneInput?.addEventListener('input', onToneInput);
   if (toneInput) toneInput.style.setProperty('--fill', `${Number(toneInput.value) / 10}%`);
 
-  // Hardware comparison: a setting switch and a tone/saturation switch.
+  // Hardware comparison: a tone/saturation switch.
   const matchSlot = slots.find((slot) => slot.type === 'match');
-  const matchButtons = Array.from(matchSlot?.node.querySelectorAll<HTMLButtonElement>('button[data-match-setting], button[data-match-metric]') ?? []);
+  const matchButtons = Array.from(matchSlot?.node.querySelectorAll<HTMLButtonElement>('button[data-match-metric]') ?? []);
   const syncMatchButtons = () => matchButtons.forEach((b) => {
-    const on = b.dataset.matchSetting !== undefined ? Number(b.dataset.matchSetting) === matchSetting : b.dataset.matchMetric === matchMetric;
+    const on = b.dataset.matchMetric === matchMetric;
     b.classList.toggle('is-active', on);
     b.setAttribute('aria-pressed', String(on));
   });
   syncMatchButtons();
   const matchListeners = matchButtons.map((b) => {
     const onClick = () => {
-      if (b.dataset.matchSetting !== undefined) matchSetting = Number(b.dataset.matchSetting);
-      else matchMetric = b.dataset.matchMetric === 'tone' ? 'tone' : 'saturation';
+      matchMetric = b.dataset.matchMetric === 'tone' ? 'tone' : 'saturation';
       syncMatchButtons();
       if (matchSlot) drawSlot(matchSlot, false);
     };
