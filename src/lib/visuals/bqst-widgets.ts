@@ -40,7 +40,7 @@ const LAB_SLOTS: Array<{ id: string; type: LabType; title: string; meta: string;
   { id: 'bqst-eq-visual', type: 'eq', title: 'baxandall-style eq curves', meta: 'q 0.38 · all stepped shelf positions · +/-6 db', label: 'BQST low and high shelf frequency response' },
   { id: 'bqst-transfer-visual', type: 'transfer', title: 'saturation transfer curve', meta: 'static input sweep · follows the drive control', label: 'BQST Cream and Grit saturation transfer curves' },
   { id: 'bqst-harmonics-visual', type: 'harmonics', title: 'harmonic fingerprint', meta: 'sine at the test tone · follows the drive control', label: 'BQST Cream and Grit harmonic profile' },
-  { id: 'bqst-match-visual', type: 'match', title: 'bqst against the hardware', meta: 'held-out audio · five regions', label: 'BQST Cream compared with the hardware it was fitted to, per frequency region' },
+  { id: 'bqst-match-visual', type: 'match', title: 'cream against the hardware', meta: 'held-out audio · 40 hz to 12.7 khz', label: 'BQST Cream compared with the hardware it was fitted to, across the spectrum' },
   { id: 'bqst-oversampling-visual', type: 'aliasing', title: 'why oversampling matters', meta: '6 khz tone · saturated · 44.1 khz session', label: 'BQST oversampling and aliasing visualization' },
 ];
 
@@ -202,7 +202,7 @@ export function initBqstDspLab({ root, palette, sizeCanvas, onThemeChange }: Bqs
     if (slot.type === 'eq') drawEq(ctx, opts);
     else if (slot.type === 'transfer') drawTransfer(ctx, opts, driveDbFor('transfer'));
     else if (slot.type === 'harmonics') drawHarmonics(ctx, opts, driveDbFor('harmonics'), toneHz);
-    else if (slot.type === 'match') drawMatch(ctx, opts, matchData.regions, matchData.settings[matchSetting], matchMetric);
+    else if (slot.type === 'match') drawMatch(ctx, opts, matchData.centresHz, matchData.settings[matchSetting], matchMetric);
     else drawAliasing(ctx, opts, osMix);
   }
   const drawAll = () => slots.forEach((slot) => drawSlot(slot, true));
