@@ -33,7 +33,10 @@ import { QUANT_BLOCKS, fitLadders, beeswarmLevels, lookaheadSeries } from './qua
 // switch, nested fold arcs), so its cases were retired from the fixtures; its
 // behaviour is covered by bqst-aliasing.test.ts instead. Likewise the transfer
 // and harmonic charts, redrawn for BQST 1.1's Cream: `bqst-sat.test.ts` pins
-// the maths they plot to the plugin itself.
+// the maths they plot to the plugin itself. One deliberate edit to the recorded
+// EQ cases: the chart heading's weight moved from 700 to 600 (title font), because
+// Chillax 700 is font-display: optional and not preloaded, and WebKit then draws
+// canvas text in a fallback face; geometry and every other call are unchanged.
 
 const PALETTES: Record<string, VisualPalette> = {
   'classic-light': classicPalette(true),

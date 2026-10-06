@@ -241,7 +241,7 @@ export function drawCosts(
   });
   ctx.fillStyle = palette.ink(0.5); ctx.font = `600 13px ${palette.fonts.ui}`;
   ctx.textAlign = 'left'; ctx.fillText('share of all-in cost', x0, 24);
-  ctx.fillStyle = palette.ink(0.82); ctx.font = `700 18px ${palette.fonts.title}`;
+  ctx.fillStyle = palette.ink(0.82); ctx.font = `600 18px ${palette.fonts.title}`;
   ctx.textAlign = 'right'; ctx.fillText(`$${total} total`, w - 12, 25);
 }
 

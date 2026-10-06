@@ -105,7 +105,7 @@ export function drawEq(ctx: CanvasRenderingContext2D, { w, palette }: BqstDrawOp
   plotCurve('high', 4800, -6, p.seriesReference, p.seriesReferenceAlpha, 2.0, true);
 
   ctx.fillStyle = textColor(0.82);
-  ctx.font = `700 ${w < 520 ? 12 : 14}px ${palette.fonts.title}`;
+  ctx.font = `600 ${w < 520 ? 12 : 14}px ${palette.fonts.title}`;
   ctx.textAlign = 'left';
   ctx.fillText(w < 520 ? 'broad shelf curves' : 'broad shelf curves, not surgical bands', pad.l, 22);
 }
@@ -244,7 +244,7 @@ export function drawHarmonics(
   ctx.restore();
 
   ctx.fillStyle = textColor(0.82);
-  ctx.font = `700 ${w < 520 ? 12 : 14}px ${palette.fonts.title}`;
+  ctx.font = `600 ${w < 520 ? 12 : 14}px ${palette.fonts.title}`;
   ctx.textAlign = 'left';
   ctx.fillText(w < 520 ? 'relative harmonic energy' : 'relative harmonic energy below the fundamental', pad.l, 22);
 }
