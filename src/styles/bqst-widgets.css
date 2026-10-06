@@ -105,7 +105,7 @@
 .bqst-chain-split { display: grid; gap: 0.35rem; padding: 0 0.5rem; border: solid color-mix(in srgb, currentColor 35%, transparent); border-width: 0 1px; }
 .bqst-chain-io { color: color-mix(in srgb, currentColor 60%, transparent); font-weight: 600; }
 @media (max-width: 720px) {
-  .bqst-chain { flex-direction: column; align-items: flex-start; gap: 1.15rem; }
-  .bqst-chain > * + *::before { content: '\2193'; left: 1rem; top: -0.58rem; }
+  .bqst-chain { flex-direction: column; align-items: center; gap: 1.15rem; }
+  .bqst-chain > * + *::before { content: '\2193'; left: 50%; top: -0.58rem; }
   .bqst-chain-split { grid-template-columns: auto auto; padding: 0; border: 0; }
 }
