@@ -149,7 +149,7 @@ function mountArch(node: HTMLElement, options: RoomRunOptions, cleanups: Array<(
     parts.get('watchB')!.querySelector('.room-node-label')!.textContent = 'project files';
     mobileRoom.querySelector('strong')!.textContent = i ? 'Team server' : 'Local room';
     modeNote.textContent = i
-      ? 'A team room connects separate clones through a shared server. You choose to join and what to share. Joining requires GitHub login and permission to push to the repository.'
+      ? 'A team room connects separate clones through a server your team chooses and hosts. Its operator can restrict which repos are opened. Once a GitHub repo is open, joining requires GitHub login and permission to push. You choose what to share.'
       : 'A local room connects agents in the same checkout and its linked worktrees (separate working copies of the same repository) on your machine. No Room account is needed. Separately cloned copies get separate local rooms.';
   }
   const key = el('p', 'room-diagram-key', 'Accent marks the parts involved in this job. Other parts remain available.');

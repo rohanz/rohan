@@ -74,7 +74,9 @@ Here's what using it is like day to day.
 
 **You can watch it live.** A browser view shows the room as it happens, including a dependency map Kieran built for each participant: what their work depends on, what they're changing, and which files downstream it could reach. The whole record can be exported afterwards.
 
-**You choose what to share.** Joining a team room is an explicit choice. It sees the full text of the files you change by default. You can narrow that to your declared scope, or to plans and claims with no file text at all, and change it live. Team rooms need a GitHub login and push access, so a public repository isn't an open room. Reconnecting preserves the sharing level you chose; it must not silently turn plans-only sharing back into full file sharing.
+**Your team chooses the server.** Local rooms need no hosted service. To connect separate clones, someone on the team [hosts a Room server](https://github.com/rohanz/room/blob/main/deploy/self-hosting.md) and shares its URL. Room does not send new users to a default public server. The operator chooses the hosting provider, machine size and server limits. They can also enable operator approval for opening and closing repository rooms. Once a GitHub repository is open, collaborators join by signing in to GitHub and proving push access to that repo; there is no separate teammate list to maintain. A public repository alone does not grant access. This works on a single server today; automatic scaling across multiple machines is future work.
+
+**You choose what to share.** Joining a team room is an explicit choice. It sees the full text of the files you change by default. You can narrow that to your declared scope, or to plans and claims with no file text at all, and change it live. Reconnecting preserves the sharing level you chose; it must not silently turn plans-only sharing back into full file sharing.
 
 ## announcing a contract before it exists
 
