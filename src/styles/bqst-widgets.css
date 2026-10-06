@@ -92,13 +92,20 @@
 .is-bypassed .bqst-vu-lamp { fill-opacity: 0; stroke-opacity: 0; }
 .is-bypassed .bqst-vu-lamp-off { stroke-opacity: 0.4; }
 
-/* Cream's signal chain in the article: hairline blocks joined by arrows,
-   wrapping on narrow screens. Colours derive from the text colour so every
-   theme's palette applies; the blocks are glossary terms (hover/tap notes). */
-.bqst-chain { display: flex; flex-wrap: wrap; align-items: center; gap: 0.55rem 1.5rem; margin: 1.4rem 0 1.6rem; padding-left: 1.4rem; font-size: 0.92rem; line-height: 1.2; }
+/* Cream's signal chain in the article: hairline blocks joined by arrows on
+   one line. Colours derive from the text colour so every theme's palette
+   applies; the blocks are glossary terms (hover/tap notes). The row is sized
+   to fit the article column with room to spare; where it cannot (phones) it
+   becomes a vertical chain instead of wrapping mid-row. */
+.bqst-chain { display: flex; align-items: center; gap: 0.55rem 1.5rem; margin: 1.4rem 0 1.6rem; font-size: 0.9rem; line-height: 1.2; }
 .bqst-chain > * { position: relative; }
-.bqst-chain > * + *::before { content: '→'; position: absolute; left: -1.15rem; top: 50%; transform: translateY(-50%); color: color-mix(in srgb, currentColor 55%, transparent); font-weight: 400; text-decoration: none; }
-.bqst-chain-block { display: inline-block; padding: 0.45rem 0.7rem; border: 1px solid color-mix(in srgb, currentColor 35%, transparent); font-weight: 600; white-space: nowrap; }
+.bqst-chain > * + *::before { content: '\2192'; position: absolute; left: -0.75rem; top: 50%; transform: translate(-50%, -50%); color: color-mix(in srgb, currentColor 55%, transparent); font-weight: 400; text-decoration: none; }
+.bqst-chain-block { display: inline-block; padding: 0.42rem 0.62rem; border: 1px solid color-mix(in srgb, currentColor 35%, transparent); font-weight: 600; white-space: nowrap; }
 /* The clip and the even path run in parallel and are summed: bracketed on both sides. */
-.bqst-chain-split { display: grid; gap: 0.35rem; padding: 0 0.6rem; border: solid color-mix(in srgb, currentColor 35%, transparent); border-width: 0 1px; }
+.bqst-chain-split { display: grid; gap: 0.35rem; padding: 0 0.5rem; border: solid color-mix(in srgb, currentColor 35%, transparent); border-width: 0 1px; }
 .bqst-chain-io { color: color-mix(in srgb, currentColor 60%, transparent); font-weight: 600; }
+@media (max-width: 720px) {
+  .bqst-chain { flex-direction: column; align-items: flex-start; gap: 1.15rem; }
+  .bqst-chain > * + *::before { content: '\2193'; left: 1rem; top: -0.58rem; }
+  .bqst-chain-split { grid-template-columns: auto auto; padding: 0; border: 0; }
+}
