@@ -47,7 +47,11 @@ export function drawLadder(
   ctx.clearRect(0, 0, w, h);
 
   ctx.font = `600 13px ${palette.fonts.ui}`;
-  const tickStep = (max - min) > 0.12 ? 0.05 : 0.02;
+  // The usual step, widened only when its labels would collide (phones leave the
+  // axis under 100px: 5% steps put "80%85%90%" edge to edge).
+  const baseStep = (max - min) > 0.12 ? 0.05 : 0.02;
+  const minGap = ctx.measureText('100%').width + 12;
+  const tickStep = [baseStep, 0.05, 0.1, 0.2].find((s) => s >= baseStep && (s / (max - min)) * pw >= minGap) ?? 0.2;
   const ticks: number[] = [];
   for (let t = Math.ceil(min / tickStep) * tickStep; t <= max + 1e-9; t += tickStep) ticks.push(t);
   ticks.forEach((tick) => {
