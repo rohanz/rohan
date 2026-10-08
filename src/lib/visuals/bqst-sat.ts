@@ -5,8 +5,9 @@
 // Cream is `src/BqtCreamModel.h` with the constants of the generated
 // `src/BqtCreamParams.h`; `bqst-sat.test.ts` pins it to a slice of the
 // plugin's own port fixture (`tests/data/cream_fixture.bin`). Grit is the
-// coloured filter chain around `transformerSaturate` in
-// `src/BqtProcessorDsp.cpp`. Both run at 4x a 44.1 kHz session, the plugin's
+// original (Legacy) coloured filter chain around `transformerSaturate` in
+// `src/BqtProcessorDsp.cpp`, unchanged in v1.2.0, where it is 75% of the
+// default Hybrid Grit; the captured LA500A branch is not ported. Both run at 4x a 44.1 kHz session, the plugin's
 // default render rate.
 
 import { dbToGain, transformerSaturate, DRIVE_MAX_DB } from './dsp';

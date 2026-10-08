@@ -503,11 +503,11 @@ export function legendForBqstVisual(type: string, palette: VisualPalette): strin
     return `<span><i style="background:${p.seriesPrimary}"></i>low shelf positions</span><span><i style="background:${p.seriesComparison}"></i>high shelf positions</span><span><i style="background:${p.seriesReference}"></i>cut reference</span>`;
   }
   if (type === 'transfer') {
-    return `<span><i style="background:${p.seriesReference}"></i>dry signal</span><span><i style="background:${p.seriesPrimary}"></i>cream</span><span><i style="background:${p.seriesComparison}"></i>grit</span>`;
+    return `<span><i style="background:${p.seriesReference}"></i>dry signal</span><span><i style="background:${p.seriesPrimary}"></i>cream</span><span><i style="background:${p.seriesComparison}"></i>original grit</span>`;
   }
   if (type === 'aliasing') return ''; // labelled directly on the chart
   if (type === 'match') {
     return `<span><i style="background:${p.seriesReference}"></i>hardware</span><span><i style="background:${p.seriesPrimary}"></i>cream</span>`;
   }
-  return `<span><i style="background:${p.seriesPrimary}"></i>cream</span><span><i style="background:${p.seriesComparison}"></i>grit</span>`;
+  return `<span><i style="background:${p.seriesPrimary}"></i>cream</span><span><i style="background:${p.seriesComparison}"></i>original grit</span>`;
 }

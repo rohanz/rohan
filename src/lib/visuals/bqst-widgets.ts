@@ -38,8 +38,8 @@ type DriveType = 'transfer' | 'harmonics';
 
 const LAB_SLOTS: Array<{ id: string; type: LabType; title: string; meta: string; label: string }> = [
   { id: 'bqst-eq-visual', type: 'eq', title: 'baxandall-style eq curves', meta: 'q 0.38 · all stepped shelf positions · +/-6 db', label: 'BQST low and high shelf frequency response' },
-  { id: 'bqst-transfer-visual', type: 'transfer', title: 'saturation transfer curve', meta: 'static input sweep · follows the drive control', label: 'BQST Cream and Grit saturation transfer curves' },
-  { id: 'bqst-harmonics-visual', type: 'harmonics', title: 'harmonic fingerprint', meta: 'sine at the test tone · follows the drive control', label: 'BQST Cream and Grit harmonic profile' },
+  { id: 'bqst-transfer-visual', type: 'transfer', title: 'saturation transfer curve', meta: 'static input sweep · follows the drive control', label: 'BQST Cream and original Grit saturation transfer curves' },
+  { id: 'bqst-harmonics-visual', type: 'harmonics', title: 'harmonic fingerprint', meta: 'sine at the test tone · follows the drive control', label: 'BQST Cream and original Grit harmonic profile' },
   { id: 'bqst-match-visual', type: 'match', title: 'cream against the hardware', meta: 'held-out audio · drive 14.2 db', label: 'BQST Cream compared with the hardware it was fitted to, across the spectrum, at 14.2 dB of drive' },
   { id: 'bqst-oversampling-visual', type: 'aliasing', title: 'why oversampling matters', meta: '6 khz tone · saturated · 44.1 khz session', label: 'BQST oversampling and aliasing visualization' },
 ];
