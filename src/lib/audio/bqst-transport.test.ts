@@ -4,6 +4,7 @@ import {
   computePlaybackTime,
   linearRampValue,
   crossfadeTargets,
+  BQST_VERSIONS,
 } from './bqst-transport';
 
 describe('computeStartOffset', () => {
@@ -51,7 +52,7 @@ describe('linearRampValue', () => {
     expect(linearRampValue(0, 1, 1, 2, 1.25)).toBeCloseTo(0.25, 10);
   });
   test('matches the engine\'s crossfade schedule sampled at timestamps', () => {
-    // crossfadeTo('processed') schedules: cleanGain 1 -> 0 and processedGain
+    // crossfadeTo('cream') schedules: the clean gain 1 -> 0 and the cream gain
     // 0 -> 1, both over CROSSFADE_SECONDS = 0.075s starting "now" = t0.
     const t0 = 10;
     const t1 = t0 + 0.075;
@@ -76,8 +77,16 @@ describe('linearRampValue', () => {
 });
 
 describe('crossfadeTargets', () => {
-  test('exactly one version is 1, the other 0', () => {
-    expect(crossfadeTargets('clean')).toEqual({ clean: 1, processed: 0 });
-    expect(crossfadeTargets('processed')).toEqual({ clean: 0, processed: 1 });
+  test('exactly one version is 1, every other 0', () => {
+    expect(crossfadeTargets('clean')).toEqual({ clean: 1, cream: 0, grit: 0 });
+    expect(crossfadeTargets('cream')).toEqual({ clean: 0, cream: 1, grit: 0 });
+    expect(crossfadeTargets('grit')).toEqual({ clean: 0, cream: 0, grit: 1 });
+  });
+  test('covers every version, and the targets always sum to 1', () => {
+    for (const version of BQST_VERSIONS) {
+      const targets = crossfadeTargets(version);
+      expect(Object.keys(targets).sort()).toEqual([...BQST_VERSIONS].sort());
+      expect(Object.values(targets).reduce((a, b) => a + b, 0)).toBe(1);
+    }
   });
 });

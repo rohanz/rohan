@@ -60,17 +60,40 @@ test('BQST defers WAVs on phones, then plays and switches versions', async ({ pa
   await expect(play).toBeAttached();
   expect(wavRequests).toEqual([]);
   await demo.scrollIntoViewIfNeeded();
-  await expect.poll(() => wavRequests.length).toBe(2);
+  await expect.poll(() => wavRequests.length).toBe(3);
+  expect(wavRequests.map((url) => new URL(url).pathname).sort()).toEqual([
+    '/assets/audio/bqst/drums-bqst.wav', '/assets/audio/bqst/drums-clean.wav', '/assets/audio/bqst/drums-grit.wav',
+  ]);
+  const toggle = demo.locator('.bqst-audio-toggle button');
+  await expect(toggle).toHaveText(['clean', 'cream', 'grit']);
+  // All three on one row beside the play button, inside the demo at phone width.
+  const boxes = await Promise.all([play, ...await toggle.all()].map(async (el) => (await el.boundingBox())!));
+  const demoBox = (await demo.boundingBox())!;
+  for (const box of boxes) {
+    expect(Math.abs(box.y + box.height / 2 - (boxes[0].y + boxes[0].height / 2))).toBeLessThan(2);
+    expect(box.x + box.width).toBeLessThanOrEqual(demoBox.x + demoBox.width);
+  }
+  const meta = demo.locator('.bqst-lab-meta');
+  await expect(meta).toHaveText('2.1 kHz +2.2 dB · 116 Hz +1.7 dB · Cream Drive 9.7 dB');
+  const meters = demo.locator('.bqst-audio-meters');
+  await expect(meters).toHaveClass(/is-bypassed/);
   await play.click();
   await expect(play).toHaveAttribute('aria-pressed', 'true');
   const head = demo.locator('.bqst-audio-head');
   const before = await head.evaluate((el) => getComputedStyle(el).transform);
   await expect.poll(() => head.evaluate((el) => getComputedStyle(el).transform)).not.toBe(before);
-  await demo.getByRole('button', { name: 'bqst', exact: true }).click();
-  await expect(demo.getByRole('button', { name: 'bqst', exact: true })).toHaveAttribute('aria-pressed', 'true');
-  await expect(play).toHaveAttribute('aria-pressed', 'true');
+  for (const [name, mode, drive] of [['cream', 'Cream', '9.7'], ['grit', 'Grit', '11.5']]) {
+    await demo.getByRole('button', { name, exact: true }).click();
+    await expect(demo.getByRole('button', { name, exact: true })).toHaveAttribute('aria-pressed', 'true');
+    await expect(demo.locator('.bqst-audio-toggle [aria-pressed="true"]')).toHaveCount(1);
+    await expect(meta).toHaveText(`2.1 kHz +2.2 dB · 116 Hz +1.7 dB · ${mode} Drive ${drive} dB`);
+    await expect(meters).not.toHaveClass(/is-bypassed/);
+    await expect(play).toHaveAttribute('aria-pressed', 'true');
+  }
   await demo.getByRole('button', { name: 'clean', exact: true }).click();
   await expect(demo.getByRole('button', { name: 'clean', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(meters).toHaveClass(/is-bypassed/);
+  await expect(meta).toHaveText('2.1 kHz +2.2 dB · 116 Hz +1.7 dB · Grit Drive 11.5 dB');
   await play.click();
   await expect(play).toHaveAttribute('aria-pressed', 'false');
 });

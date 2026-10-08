@@ -3,6 +3,10 @@
 // — this file exists to name them, not to change them.
 
 import type { VisualPalette } from './palette';
+import { withOklchHue } from './color';
+
+// The A/B demo's Grit take: the red twin (OKLCH hue 25) of the Cream colour.
+const gritTwin = (cream: string) => withOklchHue(cream, 25);
 
 // ------------------------------------------------------------
 // classic (the default theme) — the ONLY fork with dark mode
@@ -33,6 +37,7 @@ export function classicPalette(isLight: boolean): VisualPalette {
       aliasWarn: CLASSIC_RED,
       aliasBandHeadroom: isLight ? 'rgba(141, 110, 99, 0.10)' : 'rgba(141, 110, 99, 0.09)',
       waveProcessed: '#FFADCB', // classic's bqst-demo.js still paints its own
+      waveGrit: gritTwin('#FFADCB'),
     },
     qla: {
       compoundCurve: accent,
@@ -84,6 +89,7 @@ export const transitPalette: VisualPalette = (() => {
       aliasWarn: TRANSIT_RED,
       aliasBandHeadroom: 'rgba(138,133,120, 0.1)',
       waveProcessed: '#e488ad',
+      waveGrit: gritTwin('#e488ad'),
     },
     qla: {
       compoundCurve: TRANSIT_RED,
@@ -140,6 +146,7 @@ export const blueprintPalette: VisualPalette = (() => {
       aliasWarn: BP_RED,
       aliasBandHeadroom: 'rgba(116,117,124, 0.1)',
       waveProcessed: '#e488ad', // the original bqst pink
+      waveGrit: gritTwin('#e488ad'),
     },
     qla: {
       compoundCurve: BP_RED,
@@ -187,6 +194,7 @@ export function swissPalette(accent = '#5f66c2'): VisualPalette {
       aliasWarn: SWISS_COMPARE,
       aliasBandHeadroom: 'rgba(20,20,20,0.045)',
       waveProcessed: accent,
+      waveGrit: gritTwin(accent),
     },
     qla: {
       compoundCurve: accent,

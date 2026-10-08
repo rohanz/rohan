@@ -40,12 +40,14 @@ export function linearRampValue(v0: number, t0: number, v1: number, t1: number, 
   return v0 + ((v1 - v0) * (t - t0)) / (t1 - t0);
 }
 
-export type BqstVersion = 'clean' | 'processed';
+/** The drum-loop takes: the unprocessed loop and one per BQST saturation mode. */
+export const BQST_VERSIONS = ['clean', 'cream', 'grit'] as const;
+export type BqstVersion = (typeof BQST_VERSIONS)[number];
 
 /** Per-version gain targets for a crossfade: 1 for the version becoming
- *  active, 0 for the other. */
-export function crossfadeTargets(version: BqstVersion): { clean: number; processed: number } {
-  return { clean: version === 'clean' ? 1 : 0, processed: version === 'processed' ? 1 : 0 };
+ *  active, 0 for every other. */
+export function crossfadeTargets(version: BqstVersion): Record<BqstVersion, number> {
+  return { clean: version === 'clean' ? 1 : 0, cream: version === 'cream' ? 1 : 0, grit: version === 'grit' ? 1 : 0 };
 }
 
 /** Seconds a version-toggle crossfade ramps over. */

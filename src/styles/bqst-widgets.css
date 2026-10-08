@@ -17,10 +17,15 @@
 .bqst-legend { display: flex; flex-wrap: wrap; gap: 0.7rem; font-size: 0.82rem; }
 .bqst-legend span { display: inline-flex; align-items: center; gap: 0.35rem; }
 .bqst-legend i { width: 0.75rem; height: 0.75rem; display: inline-block; }
-.bqst-audio-main { display: grid; gap: 0.8rem; min-width: 0; }
-.bqst-audio-controls { display: flex; align-items: center; gap: 0.85rem; }
-.bqst-audio-play { width: 58px; height: 58px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: background 180ms ease, color 180ms ease, box-shadow 180ms ease; }
-.bqst-audio-toggle { display: inline-grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: min(100%, 280px); padding: 0.2rem; }
+.bqst-audio-main { display: grid; gap: 0.75rem; min-width: 0; }
+.bqst-audio-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 0.85rem; }
+/* The play button and the version toggle share one height. */
+.bqst-audio-demo { --bqst-control-h: 52px; }
+.bqst-audio-play { box-sizing: border-box; width: var(--bqst-control-h); height: var(--bqst-control-h); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: background 180ms ease, color 180ms ease, box-shadow 180ms ease; }
+.bqst-audio-toggle { box-sizing: border-box; height: var(--bqst-control-h); display: inline-grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: min(100%, 280px); padding: 0.2rem; }
+/* clean / cream / grit: grows to 330px beside the play button, shrinks to fit
+   a phone, and wraps under the button only below ~250px of row. */
+.bqst-audio-toggle.bqst-audio-toggle-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); flex: 1 1 11rem; width: auto; max-width: 330px; }
 .bqst-audio-toggle button { min-height: 34px; font-weight: 700; font-size: 0.92rem; cursor: pointer; transition: background 160ms ease, color 160ms ease, box-shadow 160ms ease; }
 .bqst-audio-wave { position: relative; height: 68px; overflow: hidden; }
 .bqst-audio-wave canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
@@ -61,7 +66,17 @@
    (clean take): hairline frame on a tinted field, everything muted, lamp out. */
 .bqst-audio-demo-body { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem 1.2rem; }
 .bqst-audio-demo-body .bqst-audio-main { flex: 1 1 18rem; }
-.bqst-audio-meters { flex: 0 1 20rem; max-width: 20rem; margin: 0 auto; --vu-hot: var(--w-accent, var(--accent, currentColor)); --vu-fade: var(--dur-fade, 250ms); --vu-ease: var(--ease-house, ease); }
+/* Side by side, the meters set the row's height: the controls' top meets the
+   meters' top and the waveform stretches so its lower edge meets theirs.
+   Narrower, the meters wrap below and the waveform keeps its own height. */
+.bqst-audio-demo { container-type: inline-size; }
+@container (min-width: 40rem) {
+  .bqst-audio-demo-body { flex-wrap: nowrap; align-items: stretch; }
+  .bqst-audio-demo-body .bqst-audio-main { grid-template-rows: auto minmax(0, 1fr); }
+  .bqst-audio-demo-body .bqst-audio-wave { height: auto; }
+  .bqst-audio-demo-body .bqst-audio-meters { flex: 0 0 22rem; margin: 0; }
+}
+.bqst-audio-meters { flex: 0 1 22rem; max-width: 22rem; margin: 0 auto; --vu-hot: var(--w-accent, var(--accent, currentColor)); --vu-fade: var(--dur-fade, 250ms); --vu-ease: var(--ease-house, ease); }
 .bqst-vu { display: block; width: 100%; height: auto; }
 /* Only opacities change between the states, so every part fades together. */
 .bqst-vu * { transition: fill-opacity var(--vu-fade) var(--vu-ease), stroke-opacity var(--vu-fade) var(--vu-ease); }
@@ -71,11 +86,13 @@
 .bqst-vu-mark { fill: none; stroke: currentColor; stroke-width: 0.7; }
 .bqst-vu-zone { stroke-width: 1.1; }
 .bqst-vu .bqst-vu-hot { stroke: var(--vu-hot); }
-.bqst-vu text.bqst-vu-hot { fill: var(--vu-hot); }
+/* Scale text is never stroked: the hot numbers only change colour, so every
+   number keeps one weight whether the meters are active or bypassed. */
+.bqst-vu text.bqst-vu-hot { fill: var(--vu-hot); stroke: none; }
 .bqst-vu .bqst-vu-hot-off { stroke-opacity: 0; }
 .bqst-vu text.bqst-vu-hot-off { fill-opacity: 0; }
-.bqst-vu-num { font-size: 6.4px; font-weight: 400; }
-.bqst-vu-sign { font-size: 8px; font-weight: 400; }
+.bqst-vu-num { font-size: 6.4px; font-weight: 600; }
+.bqst-vu-sign { font-size: 8px; font-weight: 600; }
 .bqst-vu-label { font-size: 7px; font-weight: 500; letter-spacing: 1.4px; }
 .bqst-vu-side { font-size: 7px; font-weight: 500; letter-spacing: 1.2px; fill-opacity: 0.6; }
 .bqst-vu-needle line { stroke: currentColor; stroke-width: 1; stroke-linecap: square; }

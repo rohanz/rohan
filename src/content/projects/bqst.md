@@ -81,7 +81,7 @@ The graph below isolates the waveshaping part of that chain: it sweeps an input 
 
 <div id="bqst-transfer-visual"></div>
 
-As the drive increases, the straight dry signal starts to bend. That bend is the whole point: the peaks are rounded instead of chopped flat, which is what creates the extra harmonic content without immediately sounding like hard clipping. The two modes bend differently. Cream stays a straight line through the middle and only rounds what is near the top, so quiet material passes through almost untouched. Grit pushes the whole signal harder into its curve, so it colours more of the signal at the same Drive setting. The Grit drawn here and in the harmonic chart below is the original Grit curve, which is three quarters of Grit since version 1.2.0; the captured path covered in the grit section is not drawn.
+As the drive increases, the straight dry signal starts to bend. That bend is the whole point: the peaks are rounded instead of chopped flat, which is what creates the extra harmonic content without immediately sounding like hard clipping. The two modes bend differently. Cream stays a straight line through the middle and only rounds what is near the top, so quiet material passes through almost untouched. Grit pushes the whole signal harder into its curve, so it colours more of the signal at the same Drive setting. For Grit, the curve drawn is its waveshaper, the larger of its two algorithms. The other one, covered below, has memory, so it has no single curve to draw.
 
 The two algorithms, cream and grit, both use soft nonlinear transfer curves, but the surrounding tone network is different.
 
@@ -115,7 +115,9 @@ The tone curves stay within a third of a dB of each other from 40 Hz to 12.7 kHz
 
 ### grit
 
-Grit started out transformer-inspired: a little firmer and more forward. The original Grit uses:
+Grit is the firmer, more forward mode: more low-mid weight and a little edge and bite. It is a blend of two algorithms running side by side.
+
+The first is a waveshaper. It uses:
 
 - a firmer tanh transfer curve
 - a small bias term
@@ -123,52 +125,48 @@ Grit started out transformer-inspired: a little firmer and more forward. The ori
 - partial low-end restore and mild top rounding after saturation
 - the same low-end guard structure
 
-That pre/post tone path is what makes Grit feel less like a generic clipper. The low and low-mid content pushes into the nonlinear stage a little harder, then some of that tonal tilt is restored afterward, leaving more transformer-like weight without simply EQ-boosting the final signal.
+That pre/post tone path is what makes it feel less like a generic clipper. The low and low-mid content pushes into the nonlinear stage a little harder, then some of that tonal tilt is restored afterward, leaving more transformer-like weight without simply EQ-boosting the final signal.
 
-In 1.2.0, Grit got the measurement treatment too. I recorded an LA500A, a 500-series compressor, with its whole signal path engaged but compression meant to be inactive, at minimum makeup gain and at three makeup settings, then fitted a model to the tone recordings: seven filtered odd-harmonic shaping curves, four low-frequency nonlinear paths and an output knee for the limiting the unit showed when pushed. It is a capture of the whole path, not a transformer simulation or a model of the compressor itself: the recordings cannot tell whether the limiting comes from the transformer or the amplifier stages, and attack, release and overload recovery are not modelled. On drum loops the fit never saw, it brought the difference from the hardware down to about -21 dB, against -12 to -14 dB for the unprocessed signal. Closer, but not a clone.
+The second comes from measurement, like Cream. I recorded a boutique hardware compressor set up so it does no gain reduction, which leaves mainly the sound of its output transformer, at its lowest makeup gain and at three higher settings. Then I fitted a model to tones recorded through it: seven filtered odd-harmonic shaping curves, four low-frequency nonlinear paths, and an output knee for the way it limits when pushed. On drum loops the fit never saw, it brought the difference from the hardware down to about -21 dB, against -12 to -14 dB for the unprocessed signal: close, but not a clone.
 
-Rather than replacing the original Grit, the default is now a blend of two complete, independent paths:
+The two run independently and only meet at the end:
 
-<div class="bqst-chain" role="img" aria-label="Hybrid Grit signal chain: the original Grit at 75% and the captured LA500A path at 25%, summed, then static autogain">
+<div class="bqst-chain" role="img" aria-label="Grit signal chain: the waveshaper at 75% and the hardware model at 25%, summed, then autogain">
   <span class="bqst-chain-io">in</span>
   <span class="bqst-chain-split">
-    <span class="bqst-chain-block gloss-term" data-gloss="The original Grit chain, unchanged, at the original Drive mapping: tone filters, pre-gain, tanh curve and DC blocker.">original grit · 75%</span>
-    <span class="bqst-chain-block gloss-term" data-gloss="The fitted LA500A whole-path model, with its own filter state and Vintage. Its Drive is remapped so it reaches its denser settings sooner: Drive 9, 12 and 15 dB run it at its own 15, 16 and 17 dB. It is level-matched to the original branch before the blend, so its quarter share is actually audible.">captured la500a · 25%</span>
+    <span class="bqst-chain-block gloss-term" data-gloss="The waveshaper chain above: tone filters, pre-gain, tanh curve and DC blocker.">waveshaper · 75%</span>
+    <span class="bqst-chain-block gloss-term" data-gloss="The model fitted to the hardware recordings, with its own filter state. Its drive runs ahead of the knob so it reaches its denser settings sooner: Drive 9, 12 and 15 dB run it at its own 15, 16 and 17 dB. It is level-matched to the waveshaper before the blend, so its quarter share is clearly audible.">hardware model · 25%</span>
   </span>
   <span class="bqst-chain-block gloss-term" data-gloss="The two outputs are added. Neither path feeds the other.">sum</span>
-  <span class="bqst-chain-block gloss-term" data-gloss="A static compensation table measured on the built plugin for this blend; see autogain below.">autogain</span>
+  <span class="bqst-chain-block gloss-term" data-gloss="A static compensation table for the blend; see autogain below.">autogain</span>
   <span class="bqst-chain-io">out</span>
 </div>
 
-Sessions and presets saved before 1.2.0 keep the original Grit, so old mixes do not change. A host parameter, Grit Model, switches between the original (Legacy), the captured path on its own (Captured) and the blend (Hybrid).
+The harmonic fingerprint graph below runs a sine tone through both modes as the plugin runs them, and shows how strong each resulting harmonic is. Lower harmonics tend to read as thickness or warmth; stronger upper harmonics can read as edge or bite. Cream is mostly odd harmonics (3rd, 5th, 7th), from its symmetric soft knee. Grit adds more of everything: its odd harmonics stay strong much further up the series, and it carries more even harmonics too.
 
-The harmonic fingerprint graph below runs a sine tone through both modes, the full chains with their filters as the plugin runs them, and shows how strong each resulting harmonic is. Lower harmonics tend to read as thickness or warmth; stronger upper harmonics can read as edge or bite. Cream is mostly odd harmonics (3rd, 5th, 7th), from its symmetric soft knee. The original Grit adds more of everything, including more even harmonics.
-
-**Turn the Drive knob** to see the balance shift between gentle density and obvious saturation. **Then push Drive to 18 dB and slide the test tone down towards 40 Hz:** Cream's 2nd harmonic climbs by about 16 dB as its low-end even path kicks in, while the original Grit barely changes.
+**Turn the Drive knob** to see the balance shift between gentle density and obvious saturation. **Then push Drive to 18 dB and slide the test tone down towards 40 Hz:** Cream's 2nd harmonic climbs by about 16 dB as its low-end even path kicks in, while Grit's barely moves.
 
 <div id="bqst-harmonics-visual"></div>
 
 <span class="gloss-term" data-gloss="Related to the Fletcher-Munson or equal-loudness curves: our ears do not hear all frequencies equally at every volume. Louder playback can feel fuller and more exciting even when the processing itself has not really improved the sound.">Humans often perceive louder music as better music</span>, which makes drive controls easy to misjudge. If a saturation stage gets louder as it gets pushed, it can feel like an improvement even when the main change is just extra volume. BQST has <span class="gloss-term" data-gloss="Autogain automatically compensates for the level added by processing, so the before/after volume stays roughly consistent and the tone change is easier to judge.">autogain</span> enabled by default to make that comparison fairer. Instead of chasing the signal level live, it uses static compensation calibrated offline against sine tones, bass, drums, and full mixes near commercial loudness, applied to the wet path before the Mix control, so turning up Drive changes the tone more than the loudness.
 
-The modes are calibrated differently. For the original Grit, I rendered each source at fixed drive values, measured the output level against the dry input, and fit one compensation curve. Cream's compensation is generated alongside its model, and the Hybrid Grit blend has its own table measured on the built plugin: one value per half dB of Drive, set so the median <span class="gloss-term" data-gloss="LUFS: loudness units relative to full scale, the standard loudness measure used by streaming platforms. It weights frequencies roughly the way ears do, unlike a plain level meter.">loudness</span> change across the calibration material is exactly zero.
+Both modes are calibrated the same way, on the built plugin: one value per half dB of Drive, set so the median <span class="gloss-term" data-gloss="LUFS: loudness units relative to full scale, the standard loudness measure used by streaming platforms. It weights frequencies roughly the way ears do, unlike a plain level meter.">loudness</span> change across the calibration material is exactly zero.
 
-The table shows the result in dB of gain compensation. Grit gets louder as it saturates, so it is turned down; the original Grit's "target" column is the average reduction the calibration material suggested. Cream does the opposite: rounding peaks costs it a little loudness, so it is turned up slightly. No static curve can match every source, so the goal was to keep the comparison fair without adding a live level detector into the audio path, not to promise an exact loudness match. For Hybrid Grit, the musical material lands within about 1.6 LU at every setting, while a pure sine ends up as much as 3.8 LU louder at full Drive.
+The table shows the result in dB of gain compensation. Grit gets louder as it saturates, so it is turned down. Cream does the opposite: rounding peaks costs it a little loudness, so it is turned up slightly. No static curve can match every source, so the goal was to keep the comparison fair without adding a live level detector into the audio path, not to promise an exact loudness match. For Grit, the musical material lands within about 1.6 LU at every setting, while a pure sine ends up as much as 3.8 LU louder at full Drive.
 
 <table class="bqst-data-table">
   <thead>
     <tr>
       <th>Drive</th>
       <th>Cream Compensation</th>
-      <th>Hybrid Grit Compensation</th>
-      <th>Original Grit Compensation</th>
-      <th>Original Grit Target</th>
+      <th>Grit Compensation</th>
     </tr>
   </thead>
   <tbody>
-    <tr><td>3 dB</td><td>+0.4 dB</td><td>-1.6 dB</td><td>-1.5 dB</td><td>-1.7 dB</td></tr>
-    <tr><td>6 dB</td><td>+0.7 dB</td><td>-3.5 dB</td><td>-3.7 dB</td><td>-3.5 dB</td></tr>
-    <tr><td>12 dB</td><td>+1.7 dB</td><td>-7.6 dB</td><td>-7.9 dB</td><td>-7.8 dB</td></tr>
-    <tr><td>18 dB</td><td>+3.7 dB</td><td>-10.6 dB</td><td>-11.4 dB</td><td>-11.5 dB</td></tr>
+    <tr><td>3 dB</td><td>+0.4 dB</td><td>-1.6 dB</td></tr>
+    <tr><td>6 dB</td><td>+0.7 dB</td><td>-3.5 dB</td></tr>
+    <tr><td>12 dB</td><td>+1.7 dB</td><td>-7.6 dB</td></tr>
+    <tr><td>18 dB</td><td>+3.7 dB</td><td>-10.6 dB</td></tr>
   </tbody>
 </table>
 
@@ -188,11 +186,11 @@ Oversampling gives those new harmonics more room to exist before the <span class
 
 ## demo
 
-Finally, let's actually listen to it. The player below has the same drum loop in two versions: one clean, with no processing, and one processed through BQST. Headphones or monitors are ideal here, because the changes are more about weight, transient shape, and tone. The processed version uses a +2.2 dB high-shelf boost at 2.1 kHz, a +1.7 dB low-shelf boost at 116 Hz, and Cream Drive at 9.7 dB, rendered through BQST 1.1.2 (Cream is unchanged in 1.2.0). **Press play, then flip between Clean and BQST while it is playing.** Listen for added thickness and a touch more edge on the <span class="gloss-term" data-gloss="Transients are the short initial peaks of sounds like drum hits. They strongly affect punch, clarity, and perceived attack.">transients</span>, even though the peaks come out lower after processing: -1.7 <span class="gloss-term" data-gloss="dBFS means decibels relative to full scale. In digital audio, 0 dBFS is the maximum level before clipping.">dBFS</span> clean, -3.8 dBFS through BQST.
+Finally, let's actually listen to it. The player below has the same drum loop in three versions: one clean, with no processing, and two processed through BQST, one with each saturation mode. Headphones or monitors are ideal here, because the changes are more about weight, transient shape, and tone. Both processed versions use a +2.2 dB high-shelf boost at 2.1 kHz and a +1.7 dB low-shelf boost at 116 Hz, with Cream Drive at 9.7 dB or Grit Drive at 11.5 dB. **Press play, then flip between clean, cream and grit while it is playing.** Listen for added thickness and a touch more edge on the <span class="gloss-term" data-gloss="Transients are the short initial peaks of sounds like drum hits. They strongly affect punch, clarity, and perceived attack.">transients</span>, even though the peaks come out lower after processing: -1.7 <span class="gloss-term" data-gloss="dBFS means decibels relative to full scale. In digital audio, 0 dBFS is the maximum level before clipping.">dBFS</span> clean, -3.8 dBFS through Cream and -4.2 dBFS through Grit.
 
 The meters beside the player read the audio you are hearing, with BQST's own ballistics (0 VU at -18 dBFS). They go dark while the clean take plays, as if the plugin were bypassed.
 
-<div id="bqst-audio-demo" data-clean="assets/audio/bqst/drums-clean.wav" data-processed="assets/audio/bqst/drums-bqst.wav" data-bpm="90" data-settings="2.1 kHz +2.2 dB · 116 Hz +1.7 dB · Cream Drive 9.7 dB"></div>
+<div id="bqst-audio-demo" data-clean="assets/audio/bqst/drums-clean.wav" data-processed="assets/audio/bqst/drums-bqst.wav" data-grit="assets/audio/bqst/drums-grit.wav" data-bpm="90" data-settings="2.1 kHz +2.2 dB · 116 Hz +1.7 dB" data-drive="9.7 dB" data-grit-drive="11.5 dB"></div>
 
 ## taste matters
 

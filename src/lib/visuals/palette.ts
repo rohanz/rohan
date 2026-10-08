@@ -51,6 +51,8 @@ export interface BqstPalette {
    * and bar lines reuse `seriesReference`, `ink` and `seriesPrimary`.
    */
   waveProcessed: string;
+  /** The A/B demo's Grit waveform, when the demo has a grit take. */
+  waveGrit: string;
 }
 
 export interface QlaPalette {

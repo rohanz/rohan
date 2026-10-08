@@ -8,9 +8,11 @@
 // original (Legacy) coloured filter chain around `transformerSaturate` in
 // `src/BqtProcessorDsp.cpp`, unchanged in v1.2.0, where it is 75% of the
 // default Hybrid Grit; the captured LA500A branch is not ported. Both run at 4x a 44.1 kHz session, the plugin's
-// default render rate.
+// default render rate. Hybrid Grit's harmonics come instead from a table measured
+// on the v1.2.0 plugin (`hybridGritHarmonicsDb`, below).
 
 import { dbToGain, transformerSaturate, DRIVE_MAX_DB } from './dsp';
+import gritHybridTable from '../../data/bqst-grit-harmonics.json';
 
 export const SAT_RATE = 176400;
 
@@ -227,4 +229,40 @@ export function toneHarmonicsDb(type: SatType, driveDb: number, toneHz: number, 
   if (harmonicCache.size > 400) harmonicCache.clear();
   harmonicCache.set(key, out);
   return out;
+}
+
+// ---- Hybrid Grit (measured) ---------------------------------------------
+interface HarmonicTable { harmonics: number[]; driveDb: number[]; toneHz: number[]; levels: number[][][] }
+const HYBRID = gritHybridTable as HarmonicTable;
+const HYBRID_LOG_TONES = HYBRID.toneHz.map(Math.log);
+
+/** Index of the grid cell holding `v` and the fraction across it, clamped to the grid. */
+function cell(grid: number[], v: number): [number, number] {
+  const last = grid.length - 1;
+  if (v <= grid[0]) return [0, 0];
+  if (v >= grid[last]) return [last - 1, 1];
+  let i = 0;
+  while (grid[i + 1] < v) i++;
+  return [i, (v - grid[i]) / (grid[i + 1] - grid[i])];
+}
+
+/**
+ * BQST 1.2.0's default Grit (75% the chain above + 25% the captured LA500A
+ * path), as `toneHarmonicsDb` would report it. The captured path has filter
+ * memory and lookup tables and is not ported, so this reads a table rendered
+ * from the plugin itself by `tools/measure_bqst_grit_harmonics.py` (same tone,
+ * level, rate and dB reference) and interpolates in dB: linearly across drive,
+ * and across log frequency for the tone. Levels below -90 dB read as -90.
+ */
+export function hybridGritHarmonicsDb(driveDb: number, toneHz: number, harmonics: number[]): number[] {
+  const [i, a] = cell(HYBRID.driveDb, driveDb);
+  const [j, b] = cell(HYBRID_LOG_TONES, Math.log(Math.max(1e-9, toneHz)));
+  const L = HYBRID.levels;
+  return harmonics.map((hn) => {
+    const k = HYBRID.harmonics.indexOf(hn);
+    if (k < 0) throw new RangeError(`harmonic ${hn} is not in the measured Hybrid Grit table`);
+    const tenths = (1 - a) * ((1 - b) * L[i][j][k] + b * L[i][j + 1][k])
+      + a * ((1 - b) * L[i + 1][j][k] + b * L[i + 1][j + 1][k]);
+    return tenths / 10;
+  });
 }

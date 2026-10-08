@@ -288,8 +288,8 @@ export function createArticleOverlay(projects, { onNavigate, onRequestNavigate }
       const src = img.getAttribute('src');
       if (!/^(https?:|data:)/.test(src)) img.setAttribute('src', asset(src.replace(/^\//, '')));
     }
-    for (const el of tpl.content.querySelectorAll('[data-clean], [data-processed]')) {
-      for (const key of ['clean', 'processed']) {
+    for (const el of tpl.content.querySelectorAll('[data-clean], [data-processed], [data-grit]')) {
+      for (const key of ['clean', 'processed', 'grit']) {
         const v = el.dataset[key];
         if (v && !/^(https?:|data:)/.test(v)) el.dataset[key] = asset(v.replace(/^\//, ''));
       }

@@ -38,8 +38,8 @@ type DriveType = 'transfer' | 'harmonics';
 
 const LAB_SLOTS: Array<{ id: string; type: LabType; title: string; meta: string; label: string }> = [
   { id: 'bqst-eq-visual', type: 'eq', title: 'baxandall-style eq curves', meta: 'q 0.38 · all stepped shelf positions · +/-6 db', label: 'BQST low and high shelf frequency response' },
-  { id: 'bqst-transfer-visual', type: 'transfer', title: 'saturation transfer curve', meta: 'static input sweep · follows the drive control', label: 'BQST Cream and original Grit saturation transfer curves' },
-  { id: 'bqst-harmonics-visual', type: 'harmonics', title: 'harmonic fingerprint', meta: 'sine at the test tone · follows the drive control', label: 'BQST Cream and original Grit harmonic profile' },
+  { id: 'bqst-transfer-visual', type: 'transfer', title: 'saturation transfer curve', meta: 'static input sweep · follows the drive control', label: 'BQST Cream and Grit waveshaper saturation transfer curves' },
+  { id: 'bqst-harmonics-visual', type: 'harmonics', title: 'harmonic fingerprint', meta: 'sine at the test tone · follows the drive control', label: 'BQST Cream and Grit harmonic profile' },
   { id: 'bqst-match-visual', type: 'match', title: 'cream against the hardware', meta: 'held-out audio · drive 14.2 db', label: 'BQST Cream compared with the hardware it was fitted to, across the spectrum, at 14.2 dB of drive' },
   { id: 'bqst-oversampling-visual', type: 'aliasing', title: 'why oversampling matters', meta: '6 khz tone · saturated · 44.1 khz session', label: 'BQST oversampling and aliasing visualization' },
 ];
@@ -404,11 +404,30 @@ export function initBqstAudioDemo(options: BqstAudioDemoOptions): () => void {
   const placeholder = options.root.querySelector<HTMLElement>('#bqst-audio-demo');
   if (!placeholder) return () => {};
   const abs = (u?: string) => (u && !/^(https?:)?\//.test(u) ? `/${u}` : u);
+  // data-processed is the Cream take. With data-grit too, the player offers
+  // clean / cream / grit; without it, the original clean / bqst pair.
   const cleanUrl = abs(placeholder.dataset.clean);
-  const processedUrl = abs(placeholder.dataset.processed);
+  const creamUrl = abs(placeholder.dataset.processed);
+  const gritUrl = abs(placeholder.dataset.grit);
   const bpm = Number.parseFloat(placeholder.dataset.bpm || '90');
-  const settings = placeholder.dataset.settings ?? '';
-  if (!cleanUrl || !processedUrl || !hasWebAudio()) return () => {};
+  if (!cleanUrl || !creamUrl || !hasWebAudio()) return () => {};
+  const labels: Partial<Record<BqstVersion, string>> = gritUrl
+    ? { clean: 'clean', cream: 'cream', grit: 'grit' }
+    : { clean: 'clean', cream: 'bqst' };
+  const versions = Object.keys(labels) as BqstVersion[];
+
+  // Meta line: data-settings is the shared EQ part. With data-drive (Cream's
+  // drive; data-grit-drive overrides it for the grit take) it is followed by
+  // the selected saturation mode's drive (clean is the bypass, so it keeps
+  // showing the processed take it is compared against); without data-drive,
+  // data-settings is shown as written.
+  const plainText = (text: string) => text.replace(/[<>&]/g, '');
+  const settings = plainText(placeholder.dataset.settings ?? '');
+  const drive = plainText(placeholder.dataset.drive ?? '');
+  const drives: Partial<Record<BqstVersion, string>> = { cream: drive, grit: plainText(placeholder.dataset.gritDrive ?? '') || drive };
+  const modeNames: Partial<Record<BqstVersion, string>> = { cream: 'Cream', grit: 'Grit' };
+  const settingsFor = (mode: BqstVersion) =>
+    drive ? [settings, `${modeNames[mode]} Drive ${drives[mode]}`].filter(Boolean).join(' · ') : settings;
 
   const PLAY = '<span aria-hidden="true">▶</span>';
   const PAUSE = '<span aria-hidden="true">❚❚</span>';
@@ -417,15 +436,14 @@ export function initBqstAudioDemo(options: BqstAudioDemoOptions): () => void {
     <div class="bqst-audio-demo">
       <div class="bqst-audio-demo-header">
         <span class="bqst-lab-kicker">drum loop a/b test</span>
-        ${settings ? `<span class="bqst-lab-meta">${settings.replace(/[<>&]/g, '')}</span>` : ''}
+        ${settings || drive ? `<span class="bqst-lab-meta">${settingsFor('cream')}</span>` : ''}
       </div>
       <div class="bqst-audio-demo-body">
         <div class="bqst-audio-main">
           <div class="bqst-audio-controls">
             <button class="bqst-audio-play" type="button" aria-label="Play BQST audio demo" aria-pressed="false">${PLAY}</button>
-            <div class="bqst-audio-toggle" role="group" aria-label="Choose audio demo version">
-              <button type="button" class="is-active" data-version="clean" aria-pressed="true">clean</button>
-              <button type="button" data-version="processed" aria-pressed="false">bqst</button>
+            <div class="bqst-audio-toggle${versions.length > 2 ? ' bqst-audio-toggle-3' : ''}" role="group" aria-label="Choose audio demo version">
+              ${versions.map((version) => `<button type="button"${version === 'clean' ? ' class="is-active"' : ''} data-version="${version}" aria-pressed="${version === 'clean'}">${labels[version]}</button>`).join('')}
             </div>
           </div>
           <div class="bqst-audio-wave" aria-hidden="true"><canvas></canvas><span></span><i></i>${options.playhead ? '<b class="bqst-audio-head"></b>' : ''}</div>
@@ -441,27 +459,29 @@ export function initBqstAudioDemo(options: BqstAudioDemoOptions): () => void {
   const waveCtx = waveCanvas.getContext('2d')!;
   const progress = root.querySelector('.bqst-audio-wave i') as HTMLElement;
   const playhead = root.querySelector<HTMLElement>('.bqst-audio-head');
+  const meta = root.querySelector<HTMLElement>('.bqst-lab-meta');
 
   root.classList.add('is-ready');
 
   // -- waveform drawing (colours from the palette; only the audio engine
   // below knows about playback) --
-  let cleanWaveform: WavWaveform | null = null;
-  let processedWaveform: WavWaveform | null = null;
+  const rawWaveforms: Partial<Record<BqstVersion, WavWaveform | null>> = {};
   let previousWaveVersion: BqstVersion | null = null;
   let waveFadeId: number | null = null;
   let waveFadeStart = 0;
   let wavePaintable = typeof IntersectionObserver === 'undefined';
 
-  const waveformForVersion = (version: BqstVersion) => (version === 'clean' ? cleanWaveform : processedWaveform);
+  const waveformForVersion = (version: BqstVersion) => rawWaveforms[version] ?? null;
 
-  // The processed take in its own colour, the clean one in the reference grey.
+  // Each processed take in its own colour (grit in the red twin of cream's),
+  // the clean one in the reference grey.
   function waveColors(version: BqstVersion, alpha: number) {
     const { bqst } = options.palette();
-    const tone = withAlpha(version === 'processed' ? bqst.waveProcessed : bqst.seriesReference);
-    return version === 'processed'
-      ? { line: tone(0.8 * alpha), fill: tone(0.14 * alpha) }
-      : { line: tone(0.72 * alpha), fill: tone(0.13 * alpha) };
+    const colors: Record<BqstVersion, string> = { clean: bqst.seriesReference, cream: bqst.waveProcessed, grit: bqst.waveGrit };
+    const tone = withAlpha(colors[version]);
+    return version === 'clean'
+      ? { line: tone(0.72 * alpha), fill: tone(0.13 * alpha) }
+      : { line: tone(0.8 * alpha), fill: tone(0.14 * alpha) };
   }
 
   // One vertical min/max stroke per device pixel column, then the centre band.
@@ -585,8 +605,7 @@ export function initBqstAudioDemo(options: BqstAudioDemoOptions): () => void {
 
   // -- engine ---------------------------------------------------------
   const engine = new BqstEngine({
-    cleanUrl,
-    processedUrl,
+    urls: { clean: cleanUrl, cream: creamUrl, ...(gritUrl ? { grit: gritUrl } : {}) },
     autoLoad: false,
     getAudioContext: sharedAudioContext,
     mediaSession: {
@@ -596,8 +615,7 @@ export function initBqstAudioDemo(options: BqstAudioDemoOptions): () => void {
       artworkSrc: '/assets/images/projects/bqst/banner.webp',
     },
     onRawWaveform(version, waveform) {
-      if (version === 'clean') cleanWaveform = waveform;
-      else processedWaveform = waveform;
+      rawWaveforms[version] = waveform;
       drawWaveform();
     },
     onReady() {
@@ -618,6 +636,7 @@ export function initBqstAudioDemo(options: BqstAudioDemoOptions): () => void {
     },
     onVersionChange(version, previous) {
       metersBox.classList.toggle('is-bypassed', version === 'clean');
+      if (meta && version !== 'clean') meta.textContent = settingsFor(version);
       requestMeterFrame();
       setActiveButton();
       animateWaveformChange(previous);

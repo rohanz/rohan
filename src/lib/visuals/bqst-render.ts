@@ -11,7 +11,7 @@
 import {
   biquadResponse, transformerSaturate, foldFrequency, gainToDb, drive01From,
 } from './dsp';
-import { CreamModel, toneHarmonicsDb } from './bqst-sat';
+import { CreamModel, toneHarmonicsDb, hybridGritHarmonicsDb } from './bqst-sat';
 import type { VisualPalette } from './palette';
 
 export interface BqstDrawOptions {
@@ -214,7 +214,8 @@ export function drawHarmonics(
 
   const harmonics = [2, 3, 4, 5, 6, 7, 8, 9, 10];
   const cream = toneHarmonicsDb('cream', driveDb, toneHz, harmonics);
-  const grit = toneHarmonicsDb('grit', driveDb, toneHz, harmonics);
+  // Grit is BQST 1.2.0's default Hybrid, measured from the plugin (the captured path is not ported).
+  const grit = hybridGritHarmonicsDb(driveDb, toneHz, harmonics);
   const groupW = plotW / harmonics.length;
   const barW = Math.min(16, groupW * 0.26);
   const yFor = (db: number) => pad.t + ((0 - Math.max(minHarmonicDb, db)) / Math.abs(minHarmonicDb)) * plotH;
@@ -503,11 +504,11 @@ export function legendForBqstVisual(type: string, palette: VisualPalette): strin
     return `<span><i style="background:${p.seriesPrimary}"></i>low shelf positions</span><span><i style="background:${p.seriesComparison}"></i>high shelf positions</span><span><i style="background:${p.seriesReference}"></i>cut reference</span>`;
   }
   if (type === 'transfer') {
-    return `<span><i style="background:${p.seriesReference}"></i>dry signal</span><span><i style="background:${p.seriesPrimary}"></i>cream</span><span><i style="background:${p.seriesComparison}"></i>original grit</span>`;
+    return `<span><i style="background:${p.seriesReference}"></i>dry signal</span><span><i style="background:${p.seriesPrimary}"></i>cream</span><span><i style="background:${p.seriesComparison}"></i>grit waveshaper</span>`;
   }
   if (type === 'aliasing') return ''; // labelled directly on the chart
   if (type === 'match') {
     return `<span><i style="background:${p.seriesReference}"></i>hardware</span><span><i style="background:${p.seriesPrimary}"></i>cream</span>`;
   }
-  return `<span><i style="background:${p.seriesPrimary}"></i>cream</span><span><i style="background:${p.seriesComparison}"></i>original grit</span>`;
+  return `<span><i style="background:${p.seriesPrimary}"></i>cream</span><span><i style="background:${p.seriesComparison}"></i>grit</span>`;
 }

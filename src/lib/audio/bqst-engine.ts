@@ -19,6 +19,7 @@
 
 import { buildSilentWavUrl, extractWavWaveform, type WavWaveform } from './bqst-wav';
 import {
+  BQST_VERSIONS,
   computeStartOffset,
   computePlaybackTime,
   crossfadeTargets,
@@ -33,8 +34,10 @@ import { SilentWavUnlocker } from './bqst-unlock';
 import { updateMediaSession, teardownMediaSession, type MediaSessionConfig } from './bqst-media-session';
 
 export interface BqstEngineOptions {
-  cleanUrl: string;
-  processedUrl: string;
+  /** One WAV per take. The clean take is required; the engine plays and
+   *  crossfades between whichever of the processed takes are given. All takes
+   *  must be the same length so they stay sample-aligned in the loop. */
+  urls: { clean: string } & Partial<Record<BqstVersion, string>>;
   /** Lazily create/reuse the shared AudioContext (see src/lib/audio/graph.ts's
    *  `ensureAudioContext` — callers pass a closure around their module-level
    *  context variable so the SAME context can be shared with other players
@@ -50,9 +53,9 @@ export interface BqstEngineOptions {
    *  before decodeAudioData resolves — so the theme can paint an immediate
    *  waveform instead of a blank canvas. */
   onRawWaveform?: (version: BqstVersion, waveform: WavWaveform | null) => void;
-  /** Called once both buffers are decoded and ready to play. */
+  /** Called once every take is decoded and ready to play. */
   onReady?: () => void;
-  /** Called when the fetch/decode pair fails (network, decode error, ...). */
+  /** Called when any take's fetch/decode fails (network, decode error, ...). */
   onLoadError?: () => void;
   /** Successful retry after a prior onLoadError. */
   onLoadRecovered?: () => void;
@@ -73,13 +76,12 @@ export class BqstEngine {
   private context: AudioContext | null = null;
   /** rAF timestamp of the frame being drawn; 0 outside the progress loop. */
   private frameTime = 0;
+  /** The takes this player was given, in BQST_VERSIONS order. */
+  readonly versions: BqstVersion[];
   private masterGain: GainNode | null = null;
-  private cleanGain: GainNode | null = null;
-  private processedGain: GainNode | null = null;
-  private cleanBuffer: AudioBuffer | null = null;
-  private processedBuffer: AudioBuffer | null = null;
-  private cleanSource: AudioBufferSourceNode | null = null;
-  private processedSource: AudioBufferSourceNode | null = null;
+  private gains: Partial<Record<BqstVersion, GainNode>> = {};
+  private buffers: Partial<Record<BqstVersion, AudioBuffer>> = {};
+  private sources: Partial<Record<BqstVersion, AudioBufferSourceNode>> = {};
 
   private startedAt = 0;
   private pausedAt = 0;
@@ -97,6 +99,7 @@ export class BqstEngine {
 
   constructor(opts: BqstEngineOptions) {
     this.opts = opts;
+    this.versions = BQST_VERSIONS.filter((version) => opts.urls[version]);
     // `autoLoad: false` lets the caller defer the fetch (mobile — see
     // classic's IntersectionObserver-gated `loadAudio()`, which this
     // preserves via the theme calling `engine.load()` itself once the
@@ -114,13 +117,13 @@ export class BqstEngine {
     return this.activeVersion;
   }
   get duration(): number {
-    return this.cleanBuffer?.duration || this.processedBuffer?.duration || 0;
+    return this.buffers.clean?.duration || 0;
   }
   /** The decoded AudioBuffer for `version`, or null before it's ready — for
    *  the theme's own waveform drawing (canvas rendering stays theme-local,
    *  see this file's header comment). */
   getBuffer(version: BqstVersion): AudioBuffer | null {
-    return version === 'clean' ? this.cleanBuffer : this.processedBuffer;
+    return this.buffers[version] ?? null;
   }
   /** Current position within the loop, in seconds — for the theme's own
    *  progress-bar rendering beyond the per-frame onProgress ratio. */
@@ -134,18 +137,19 @@ export class BqstEngine {
     if (!ctx) throw new Error('AudioContext unavailable');
     this.context = ctx;
     this.masterGain = ctx.createGain();
-    this.cleanGain = ctx.createGain();
-    this.processedGain = ctx.createGain();
-    this.cleanGain.connect(this.masterGain);
-    this.processedGain.connect(this.masterGain);
     this.masterGain.connect(ctx.destination);
     this.masterGain.gain.value = 0;
-    this.cleanGain.gain.value = 1;
-    this.processedGain.gain.value = 0;
+    const targets = crossfadeTargets(this.activeVersion);
+    for (const version of this.versions) {
+      const gain = ctx.createGain();
+      gain.connect(this.masterGain);
+      gain.gain.value = targets[version];
+      this.gains[version] = gain;
+    }
     return ctx;
   }
 
-  /** Fetch + decode both versions. Idempotent (a no-op once started, matching
+  /** Fetch + decode every version. Idempotent (a no-op once started, matching
    *  classic's `loadAudio()` — safe to call from both an IntersectionObserver
    *  and "tapped play before scrolled in"), except after a failure, where
    *  `retryLoad()` explicitly re-arms it. */
@@ -161,22 +165,17 @@ export class BqstEngine {
   }
 
   private loadBuffers(): void {
-    Promise.all([this.fetchAudioData(this.opts.cleanUrl), this.fetchAudioData(this.opts.processedUrl)])
-      .then(async ([cleanData, processedData]) => {
+    Promise.all(this.versions.map((version) => this.fetchAudioData(this.opts.urls[version]!)))
+      .then(async (data) => {
         if (this.disposed) return;
         // Raw-RIFF pre-decode waveform (classic's contribution): paint
         // immediately, before decodeAudioData below has finished.
-        this.opts.onRawWaveform?.('clean', extractWavWaveform(cleanData.slice(0)));
-        this.opts.onRawWaveform?.('processed', extractWavWaveform(processedData.slice(0)));
+        this.versions.forEach((version, i) => this.opts.onRawWaveform?.(version, extractWavWaveform(data[i].slice(0))));
 
         const ctx = this.ensureAudioContext();
-        const [clean, processed] = await Promise.all([
-          ctx.decodeAudioData(cleanData.slice(0)),
-          ctx.decodeAudioData(processedData.slice(0)),
-        ]);
+        const decoded = await Promise.all(data.map((bytes) => ctx.decodeAudioData(bytes.slice(0))));
         if (this.disposed) return;
-        this.cleanBuffer = clean;
-        this.processedBuffer = processed;
+        this.versions.forEach((version, i) => { this.buffers[version] = decoded[i]; });
         this.isReady_ = true;
         const wasFailed = this.loadFailed;
         this.loadFailed = false;
@@ -206,8 +205,7 @@ export class BqstEngine {
   }
 
   private stopSources(): void {
-    for (const source of [this.cleanSource, this.processedSource]) {
-      if (!source) continue;
+    for (const source of Object.values(this.sources)) {
       try {
         source.stop();
       } catch {
@@ -215,8 +213,7 @@ export class BqstEngine {
       }
       source.disconnect();
     }
-    this.cleanSource = null;
-    this.processedSource = null;
+    this.sources = {};
   }
 
   private clearStopTimer(): void {
@@ -267,21 +264,20 @@ export class BqstEngine {
     void this.unlocker.unlock();
   }
 
-  /** Change which version is audible, with a short equal-power-ish linear
-   *  crossfade — both sources keep playing throughout, only the gains move,
-   *  so there's no discontinuity in either track's phase. */
+  /** Change which version is audible, with a short linear crossfade — every
+   *  source keeps playing throughout, only the gains move, so there's no
+   *  discontinuity in any track's phase. */
   crossfadeTo(version: BqstVersion): void {
-    if (version === this.activeVersion) return;
+    if (version === this.activeVersion || !this.versions.includes(version)) return;
     const previous = this.activeVersion;
     this.activeVersion = version;
     this.opts.onVersionChange?.(version, previous);
-    if (!this.context || !this.cleanGain || !this.processedGain) return;
+    if (!this.context) return;
     const now = this.context.currentTime;
     const targets = crossfadeTargets(version);
-    for (const [gain, target] of [
-      [this.cleanGain, targets.clean],
-      [this.processedGain, targets.processed],
-    ] as const) {
+    for (const v of this.versions) {
+      const gain = this.gains[v]!;
+      const target = targets[v];
       gain.gain.cancelScheduledValues(now);
       gain.gain.setValueAtTime(gain.gain.value, now);
       gain.gain.linearRampToValueAtTime(target, now + CROSSFADE_SECONDS);
@@ -313,7 +309,7 @@ export class BqstEngine {
     await this.unlocker.unlock();
     if (this.disposed) return;
 
-    if (!this.isReady_ || !this.cleanBuffer || !this.processedBuffer) {
+    if (!this.isReady_ || !this.buffers.clean) {
       if (this.loadFailed) {
         this.loadFailed = false;
         this.retryLoad();
@@ -324,18 +320,18 @@ export class BqstEngine {
     this.wantsToPlay = false;
     this.stopSources();
 
-    const offset = computeStartOffset(this.pausedAt, this.cleanBuffer.duration);
+    const offset = computeStartOffset(this.pausedAt, this.buffers.clean.duration);
     const when = ctx.currentTime;
     this.startedAt = when - offset;
-    this.cleanSource = this.makeSource(this.cleanBuffer, this.cleanGain!);
-    this.processedSource = this.makeSource(this.processedBuffer, this.processedGain!);
-    this.cleanSource.start(when, offset);
-    this.processedSource.start(when, offset);
-
     const targets = crossfadeTargets(this.activeVersion);
+    for (const version of this.versions) {
+      const gain = this.gains[version]!;
+      const source = this.makeSource(this.buffers[version]!, gain);
+      source.start(when, offset);
+      this.sources[version] = source;
+      gain.gain.setValueAtTime(targets[version], when);
+    }
     this.masterGain!.gain.cancelScheduledValues(when);
-    this.cleanGain!.gain.setValueAtTime(targets.clean, when);
-    this.processedGain!.gain.setValueAtTime(targets.processed, when);
     this.masterGain!.gain.setValueAtTime(0, when);
     this.masterGain!.gain.linearRampToValueAtTime(0.95, when + START_FADE_SECONDS);
 
@@ -427,8 +423,7 @@ export class BqstEngine {
     this.clearStopTimer();
     if (this.mutexToken) releasePlayback(this.mutexToken);
     this.stopSources();
-    this.cleanGain?.disconnect();
-    this.processedGain?.disconnect();
+    for (const gain of Object.values(this.gains)) gain.disconnect();
     this.masterGain?.disconnect();
     if (this.opts.mediaSession) teardownMediaSession();
   }
