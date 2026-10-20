@@ -17,6 +17,12 @@ export const RATCHET_HEIGHT = 252;
 export const BENCH_HEIGHT = 286;
 export const COSTS_HEIGHT = 205;
 
+/** The first wording that fits in `maxW` at the current font, else the last (shortest) one. */
+function fitText(ctx: CanvasRenderingContext2D, candidates: string[], maxW: number): string {
+  for (const text of candidates) if (ctx.measureText(text).width <= maxW) return text;
+  return candidates[candidates.length - 1];
+}
+
 function modelLabel(name: string): string { return MODEL_LABELS[name] ?? name; }
 const MODEL_LABELS: Record<string, string> = {
   base: 'untrained (base 9B)',
@@ -124,10 +130,13 @@ export function drawRatchet(
     ctx.fillStyle = last ? palette.qla.compoundCurve : palette.ink(0.8);
     ctx.font = `700 14px ${palette.fonts.ui}`;
     ctx.fillText((run.metric as number).toFixed(3), cx, y0 - bh - 8);
+    // Labels shorten on narrow screens so neighbouring columns never collide.
+    const labelW = gw - 8;
     ctx.fillStyle = palette.ink(0.85); ctx.font = `700 13px ${palette.fonts.ui}`;
-    ctx.fillText(`experiment ${i + 1}`, cx, y0 + 20);
+    ctx.fillText(fitText(ctx, [`experiment ${i + 1}`, `exp ${i + 1}`], labelW), cx, y0 + 20);
     ctx.fillStyle = palette.ink(0.55); ctx.font = `600 12px ${palette.fonts.ui}`;
-    ctx.fillText(`learning rate ${Number(run.lr).toExponential(0).replace('e-','e-')}`, cx, y0 + 38);
+    const lr = Number(run.lr).toExponential(0);
+    ctx.fillText(fitText(ctx, [`learning rate ${lr}`, `lr ${lr}`], labelW), cx, y0 + 38);
     if (i > 0) {
       const prev = runs[i - 1].metric as number;
       const delta = ((run.metric as number) - prev) * 100;
@@ -137,7 +146,11 @@ export function drawRatchet(
   });
   ctx.textAlign = 'left';
   ctx.fillStyle = palette.ink(0.5); ctx.font = `600 12px ${palette.fonts.ui}`;
-  ctx.fillText('score on the frozen 150-question evaluation slice', pad.l, h - 8);
+  ctx.fillText(fitText(ctx, [
+    'score on the frozen 150-question evaluation slice',
+    'score on the frozen 150-question slice',
+    'frozen 150-question slice',
+  ], w - pad.l - pad.r), pad.l, h - 8);
 }
 function benchSeries(rows: BenchRow[], mode: 'tokens' | 'episodes'): Array<{ x: number; y: number }> {
   const workload = mode === 'tokens' ? 'synthetic' : 'real_episode';
@@ -258,9 +271,12 @@ export function drawPromotion(
 ): void {
   const h = PROMOTION_HEIGHT;
   ctx.clearRect(0, 0, w, h);
-  const groups: Array<{ label: string; note: string; a: number; b: number }> = [
-    { label: 'validation set', note: 'the slice the agent optimized', a: ladder.val.grpo, b: ladder.val.grpo_v2 },
-    { label: 'unseen question types', note: 'what it never measured', a: ladder.unseen_templates.grpo, b: ladder.unseen_templates.grpo_v2 },
+  // Each label and note carries a short form for narrow screens.
+  const groups: Array<{ label: string[]; note: string[]; a: number; b: number }> = [
+    { label: ['validation set', 'validation'], note: ['the slice the agent optimized', 'the slice it optimized'],
+      a: ladder.val.grpo, b: ladder.val.grpo_v2 },
+    { label: ['unseen question types', 'unseen types'], note: ['what it never measured', 'never measured'],
+      a: ladder.unseen_templates.grpo, b: ladder.unseen_templates.grpo_v2 },
   ];
   const pad = { l: 30, r: 30 };
   const gw = (w - pad.l - pad.r) / groups.length;
@@ -280,9 +296,9 @@ export function drawPromotion(
     ctx.fillStyle = better ? palette.qla.compoundCurve : palette.qla.agentComparison;
     ctx.fillText(`${(g.b * 100).toFixed(1)}%`, cx + barW / 2 + 8, y0 - scale(g.b) - 7);
     ctx.fillStyle = palette.ink(0.85); ctx.font = `700 13px ${palette.fonts.ui}`;
-    ctx.fillText(g.label, cx, y0 + 22);
+    ctx.fillText(fitText(ctx, g.label, gw - 8), cx, y0 + 22);
     ctx.fillStyle = palette.ink(0.5); ctx.font = `600 12px ${palette.fonts.ui}`;
-    ctx.fillText(g.note, cx, y0 + 40);
+    ctx.fillText(fitText(ctx, g.note, gw - 8), cx, y0 + 40);
     const delta = (g.b - g.a) * 100;
     ctx.fillStyle = better ? palette.qla.compoundCurve : palette.qla.agentComparison;
     ctx.font = `700 14px ${palette.fonts.ui}`;
@@ -290,5 +306,12 @@ export function drawPromotion(
   });
   ctx.textAlign = 'left';
   ctx.fillStyle = palette.ink(0.5); ctx.font = `600 12px ${palette.fonts.ui}`;
-  ctx.fillText('grey = old recipe · colored = the agent\u2019s recipe, trained at full scale', pad.l, h - 6);
+  const key = 'grey = old recipe · colored = the agent\u2019s recipe, trained at full scale';
+  if (ctx.measureText(key).width <= w - pad.l - pad.r) {
+    ctx.fillText(key, pad.l, h - 6);
+  } else {
+    // Two lines on narrow screens; the group notes end at y0 + 40, well above h - 22.
+    ctx.fillText('grey = old recipe', pad.l, h - 22);
+    ctx.fillText('colored = the agent\u2019s recipe, trained at full scale', pad.l, h - 6);
+  }
 }

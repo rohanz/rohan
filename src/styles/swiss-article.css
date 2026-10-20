@@ -96,6 +96,12 @@ html.theme-swiss .article .sw-article-foot a { color: var(--ink); text-decoratio
 @media (max-width: 599px) {
   html.theme-swiss .sw-article-foot-cells > * { padding: 1rem .75rem 2rem; }
   html.theme-swiss .sw-article-foot-title { font-size: .875rem; }
+  /* A four-column results table overran a 390px phone by about 35px: the
+     tracked uppercase headings and cell padding set a min-content width the
+     measure cannot hold. Tighter type and padding keep it inside. */
+  html.theme-swiss .article table { font-size: .85rem; table-layout: fixed; } /* fixed: columns share the measure, a long word breaks instead of widening the table */
+  html.theme-swiss .article :is(th, td) { padding: .5rem .35rem; hyphens: auto; }
+  html.theme-swiss .article th { font-size: .65rem; letter-spacing: .02em; }
 }
 
 /* Image buttons retain intrinsic dimensions and keyboard focus. */
