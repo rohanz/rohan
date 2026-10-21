@@ -47,7 +47,7 @@ Once connected through the plugin, agents share a room. Inside it, an agent can:
 - preview a merge of everyone's work and run the tests on the combined code before anyone commits;
 - start Claude or Codex workers in their own worktrees and collect their finished work.
 
-Claims are advisory. An edit inside someone else's claim raises an **interrupt**, a message that reaches the agent mid-task, but the claim does not block the edit. A separate, optional review checkpoint can hold collection until a reviewer releases it. Developers keep their own editors, agents and Git workflow. Live sharing never overwrites your working files. Explicit worker collection brings finished changes into your checkout for review; Room never commits or pushes on its own. It installs in one line per host:
+Claims are advisory. An edit inside someone else's claim raises an **interrupt**, a message that reaches the agent mid-task, but the claim does not block the edit. A separate, optional review checkpoint can hold collection until a reviewer releases it. Developers keep their own editors, agents and Git workflow. Live sharing never overwrites your working files. Explicit worker collection brings finished changes into your checkout for review; room never commits or pushes on its own. It installs in one line per host:
 
 <div class="copy-lines">
   <p class="copy-lines-label">Claude Code</p>
@@ -66,7 +66,7 @@ I built the first version with [Kieran Ho](https://www.linkedin.com/in/kieranhch
 
 Here's what using it is like day to day.
 
-**Alone, it stays out of the way.** With no server set up, a session starts in a local room: no Room account, with Room’s coordination traffic staying on the machine. Your coding agents still use their configured model providers. Sessions in the same clone or its worktrees share that local room. In Codex, saying “show room state” establishes the connection if it has not started yet. While an agent works alone, room stays quiet. Areas of the code come from the project's `CODEOWNERS` file where there is one.
+**Alone, it stays out of the way.** With no server set up, a session starts in a local room: no room account, with room’s coordination traffic staying on the machine. Your coding agents still use their configured model providers. Sessions in the same clone or its worktrees share that local room. In Codex, saying “show room state” establishes the connection if it has not started yet. While an agent works alone, room stays quiet. Areas of the code come from the project's `CODEOWNERS` file where there is one.
 
 **Changing your mind is a first-class event.** At agent speed, plans change constantly, so revising or cancelling one is announced like any other change (more on that below). When a human changes an agent's instructions midway, as I did in the shop run, the agent announces its revised plan to the room. And finishing a task releases its claims automatically.
 
@@ -74,7 +74,7 @@ Here's what using it is like day to day.
 
 **You can watch it live.** A browser view shows the room as it happens, including a dependency map Kieran built for each participant: what their work depends on, what they're changing, and which files downstream it could reach. The whole record can be exported afterwards.
 
-**Your team chooses the server.** Local rooms need no hosted service. To connect separate clones, someone on the team [hosts a Room server](https://github.com/rohanz/room/blob/main/deploy/self-hosting.md) and shares its URL. Room does not send new users to a default public server. The operator chooses the hosting provider, machine size and server limits. They can also enable operator approval for opening and closing repository rooms. Once a GitHub repository is open, collaborators join by signing in to GitHub and proving push access to that repo; there is no separate teammate list to maintain. A public repository alone does not grant access. This works on a single server today; automatic scaling across multiple machines is future work.
+**Your team chooses the server.** Local rooms need no hosted service. To connect separate clones, someone on the team [hosts a room server](https://github.com/rohanz/room/blob/main/deploy/self-hosting.md) and shares its URL. room does not send new users to a default public server. A published server image (`ghcr.io/rohanz/room`) and a two-file Docker Compose quick start make that a short job; the operator chooses the hosting provider, machine size and server limits. They can also enable operator approval for opening and closing repository rooms. Once a GitHub repository is open, collaborators join by signing in to GitHub and proving push access to that repo; there is no separate teammate list to maintain. A public repository alone does not grant access. This works on a single server today; automatic scaling across multiple machines is future work.
 
 **You choose what to share.** Joining a team room is an explicit choice. It sees the full text of the files you change by default. You can narrow that to your declared scope, or to plans and claims with no file text at all, and change it live. Reconnecting preserves the sharing level you chose; it must not silently turn plans-only sharing back into full file sharing.
 
@@ -109,19 +109,19 @@ Comparing sets of signatures per symbol, rather than single lines, is what handl
 
 The index is name-based. It has no type resolution and matches method calls by method name, so common names like `get` would connect everything to everything. To keep that noise down, a name defined in more than five files only creates an edge when the consumer imports the defining module.
 
-The example below follows three agents building a shop. One writes the tax calculator, another uses it at checkout, and a third works on customer profiles. Choose **planned change** to explore what agents announce before editing, or **detected change** to see what Room notices in the code. Each example explains who needs to know and why; the code is optional.
+The example below follows three agents building a shop. One writes the tax calculator, another uses it at checkout, and a third works on customer profiles. Choose **planned change** to explore what agents announce before editing, or **detected change** to see what room notices in the code. Each example explains who needs to know and why; the code is optional.
 
 <div id="room-contract"></div>
 
 ## one person, many agents
 
-The case I hit most isn't working with other people. It's me running several agents at once, as I mentioned in the intro. Through room, a lead agent can dispatch workers and treat them like teammates, whether they're Claude or Codex, and see their work while it happens rather than when they return.
+The case I hit most isn't working with other people. It's me running several agents at once. Through room, a lead agent can dispatch workers and treat them like teammates, whether they're Claude or Codex, and see their work while it happens rather than when they return.
 
-This delegation is opt-in: ask for “Room workers” or “use Room to have Codex do part of it.” An ordinary request for another agent stays with the host's normal delegation. The lead chooses how many workers the job needs; eight is the default concurrent limit, not a fixed team size.
+This delegation is opt-in: ask for “room workers” or “use room to have Codex do part of it.” An ordinary request for another agent stays with the host's normal delegation. The lead chooses how many workers the job needs; eight is the default concurrent limit, not a fixed team size.
 
 `room_spawn` creates a <span class="gloss-term" data-gloss="A second working directory attached to the same Git repository, on its own branch, so two agents can edit in parallel without touching each other's files.">Git worktree</span> on a `room/<tag>` branch and starts a Claude Code or Codex worker in it. Each starts with the lead's eligible uncommitted work, so a task doesn't begin against yesterday's code. Oversized files and unsafe links are skipped and reported. Workers join the lead's room: they can ask each other questions, see ongoing edits, and receive the same claims and contract notices as human teammates.
 
-Finishing isn't the end of the conversation. A follow-up from the lead resumes the same worker session in the same worktree, with its context and edits intact. Restarting the lead does not automatically restart old tasks. The lead can test the combined work in a merge preview, then use `room_collect` to bring finished changes into its tree as uncommitted, unstaged edits. Conflicting files leave the destination untouched. Once collected or discarded, a worker cannot be resumed through Room. A human decides what to commit.
+Finishing isn't the end of the conversation. A follow-up from the lead resumes the same worker session in the same worktree, with its context and edits intact. Restarting the lead does not automatically restart old tasks. The lead can test the combined work in a merge preview, then use `room_collect` to bring finished changes into its tree as uncommitted, unstaged edits. Conflicting files leave the destination untouched. Once collected or discarded, a worker cannot be resumed through room. A human decides what to commit.
 
 An optional **review hold** keeps that follow-up window open. A reviewer establishes it in the destination checkout, and new collection calls are blocked until the hold is released. Previewing, testing and asking workers for corrections still work. It doesn't stop a collection already underway or prevent ordinary file edits; it's a specific checkpoint before integration.
 
@@ -129,13 +129,13 @@ The example below shows a lead agent coordinating three workers. Choose a view t
 
 <div id="room-lifecycle"></div>
 
-All of it works with Room’s coordination kept in a local room, and that's how much of this site's recent redesign was built. Claude planned and reviewed, and Codex workers took self-contained jobs, such as a mobile accessibility pass or moving a theme to new routes, in parallel worktrees.
+All of it works with room’s coordination kept in a local room, and that's how much of this site's recent redesign was built. Claude planned and reviewed, and Codex workers took self-contained jobs, such as a mobile accessibility pass or moving a theme to new routes, in parallel worktrees.
 
 ## how it works
 
 An agent in a room keeps asking the same questions: who else is editing this file, what are they about to change, and does it affect my work? The answers sit in other people's working copies, uncommitted and changing by the minute. room combines four sources to answer them: a file watcher on each clone, Git state, what each agent says it intends to do, and an index of which code uses which symbols.
 
-The diagram brings together both inputs: file changes from watchers, and plans, claims and questions from agents. Room shares that state, checks overlapping work and possible downstream effects, and delivers relevant messages. Choose **local room** or **team room** to see how the agents connect, then pick an action to highlight the parts involved. “Room MCP” groups the tools, file watcher and code index running beside each agent. A merge preview is a separate working copy where agents can test everyone’s changes together.
+The diagram brings together both inputs: file changes from watchers, and plans, claims and questions from agents. room shares that state, checks overlapping work and possible downstream effects, and delivers relevant messages. Choose **local room** or **team room** to see how the agents connect, then pick an action to highlight the parts involved. “room MCP” groups the tools, file watcher and code index running beside each agent. A merge preview is a separate working copy where agents can test everyone’s changes together.
 
 <div id="room-arch"></div>
 
@@ -151,19 +151,17 @@ The details that make it work:
 
 We dogfooded room on this portfolio’s redesign, long-running work in private repositories, and local tasks on established projects including Flask, Werkzeug, HTTPX and Zod. Those jobs involved existing tests, unfamiliar code, shared files and changes that depended on each other. They exposed problems a tidy demo missed: workers starting without the lead’s uncommitted edits, stale claims, and sharing choices that needed to survive reconnects.
 
-The shop run near the start of this article is a smaller example of tightly coupled work. One agent changed the tax and shipping interfaces while another was building pricing tiers in a handler that called both. A third changed where order currency came from. They had separate tasks, but their changes met in the same checkout flow. Room let them see the new interfaces and each other’s unfinished code before checking the combined result.
-
-The larger local evaluations are recorded in the [Flask](https://github.com/rohanz/room/blob/main/docs/superpowers/rehearsals/2026-10-04-flask-fault-rehearsal.md) and [Zod](https://github.com/rohanz/room/blob/main/docs/superpowers/rehearsals/2026-10-04-zod-historical.md) reports. These were development trials, not upstream contributions.
+The larger local evaluations are recorded in the [Flask](https://github.com/rohanz/room/blob/main/docs/superpowers/rehearsals/2026-10-04-flask-fault-rehearsal.md) and [Zod](https://github.com/rohanz/room/blob/main/docs/superpowers/rehearsals/2026-10-04-zod-historical.md) reports. Those were development trials. The first upstream contributions followed: a fix for uv and a Polars 2.0 compatibility change for narwhals, each written by a Claude lead and Codex workers in a room, then reviewed and reworked with the maintainers like any other pull request.
 
 ## limitations
 
 - **Impact is inferred.** Name-based symbol matching narrowed by imports is good enough to route a message. It does not prove breakage, and runtime compatibility still needs tests.
 - **Claims depend on cooperation.** An agent that ignores room can still write anywhere.
-- **Instant wake-ups need a recent Claude Code.** On Claude Code 2.1.224 or later, room wakes an idle session through Claude Code's built-in inbox for messages between sessions, with no flag; older versions fall back to channels (a research-preview flag). Codex is woken with `codex queue`. A running session picks up plugin updates only when it restarts.
+- **Instant wake-ups need a recent Claude Code.** Versions before 2.1.224 fall back to channels, a research-preview flag. A running session picks up plugin updates only when it restarts.
 
 ## the design principle
 
-Room should stay quiet when there is nothing to coordinate. What mattered most in real use was getting the right change to the right agent, early enough to affect its next decision. Shared context is useful only if agents can trust it without reading a second inbox all day.
+room should stay quiet when there is nothing to coordinate. What mattered most in real use was getting the right change to the right agent, early enough to affect its next decision. Shared context is useful only if agents can trust it without reading a second inbox all day.
 
 <p class="download-actions">
   <a href="https://github.com/rohanz/room" class="support-btn" target="_blank" rel="noopener noreferrer">view source</a>
