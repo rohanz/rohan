@@ -1,6 +1,5 @@
 ---
 import SwissCard from '../components/SwissCard.astro';
-import SwissFooter from '../components/SwissFooter.astro';
 import SwissLayout from '../layouts/SwissLayout.astro';
 import { getCollection } from 'astro:content';
 import { HOME_DESCRIPTION } from '../data/page-meta';
@@ -10,7 +9,7 @@ const selected = (await getCollection('projects'))
   .sort((a, b) => a.data.order - b.data.order)
   .slice(0, 4);
 ---
-<SwissLayout title="rohan.jk - software & ai" description={HOME_DESCRIPTION} section="home" hideFooter>
+<SwissLayout title="rohan.jk - software & ai" description={HOME_DESCRIPTION} section="home">
   <section class="sw-hero">
     <div class="sw-hero-copy">
       <p class="sw-label" data-reveal="block">computer engineering at ntu, singapore</p>
@@ -41,7 +40,6 @@ const selected = (await getCollection('projects'))
         {selected.map((p) => <SwissCard slug={p.id} title={p.data.title} summary={p.data.summary} technologies={p.data.technologies} award={p.data.award} awardEvent={p.data.awardEvent} />)}
       </div>
     </div>
-    <SwissFooter />
   </section>
   <script>
     import '../scripts/swiss/home-snap.ts';

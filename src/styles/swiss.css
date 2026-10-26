@@ -1,5 +1,6 @@
 /* Swiss theme. Scoped under html.theme-swiss so nothing leaks across themes. */
 html.theme-swiss {
+  --footer-h: 6.5rem;
   --paper: #f7f5f0;
   --paper-2: #efece5;
   /* Surfaces stay neutral (ink, paper, one accent). --tint keeps its role as
@@ -78,10 +79,11 @@ html.theme-swiss .sw-grid { display: grid; grid-template-columns: repeat(12, min
 html.theme-swiss .sw-rule { border: 0; border-top: 1px solid var(--hair); margin: 0; }
 html.theme-swiss .sw-section { padding-top: clamp(1.5rem, 2.5vw, 2.5rem); padding-bottom: var(--section); }
 html.theme-swiss .sw-selected-body { padding-top: calc(var(--nav-height) + 2.5rem); }
-/* The last home panel holds the footer: one screen tall, the work centred above
-   a footer pinned to its bottom, so snapping to it shows the end of the page. */
+/* The last home panel plus the layout footer below it make exactly one screen,
+   so snapping to selected work shows the end of the page. --footer-h is set on
+   the html root so the panel and the footer agree on the footer's height. */
 @media (min-width: 900px) {
-  html.theme-swiss .sw-selected-work { min-height: 100vh; min-height: 100svh; display: flex; flex-direction: column; }
+  html.theme-swiss .sw-selected-work { min-height: calc(100vh - var(--footer-h)); min-height: calc(100svh - var(--footer-h)); display: flex; flex-direction: column; }
   html.theme-swiss .sw-selected-body { flex: 1; min-height: 0; width: 100%; padding-bottom: 2.5rem; display: flex; flex-direction: column; justify-content: center; }
 }
 /* Four cards in a row: the panel is exactly one screen, so the grid shrinks
@@ -90,7 +92,7 @@ html.theme-swiss .sw-selected-body { padding-top: calc(var(--nav-height) + 2.5re
    shares the art's grid cell, so it rides the art's bottom edge. Below 600px
    tall the floor would clip the cards, so the panel grows instead. */
 @media (min-width: 1100px) and (min-height: 600px) {
-  html.theme-swiss .sw-selected-work { height: 100svh; }
+  html.theme-swiss .sw-selected-work { height: calc(100svh - var(--footer-h)); }
   html.theme-swiss .sw-selected-grid { flex: 0 1 auto; min-height: 0; grid-auto-rows: minmax(6rem, max-content) minmax(min-content, 1fr); container-type: inline-size; }
   html.theme-swiss .sw-selected-grid :is(.swiss-card, .swiss-card-inner) { display: grid; grid-row: span 2; grid-template-rows: subgrid; }
   html.theme-swiss .sw-selected-grid .swiss-card { container-type: normal; }
@@ -143,8 +145,10 @@ html.theme-swiss .sw-nav-links a[aria-current="page"] { color: var(--accent); }
 html.theme-swiss .sw-menu-toggle, html.theme-swiss .sw-mobile-menu { display: none; }
 /* overflow: clip keeps tilted/lifted cards from growing the document (no scrollbar changes). */
 html.theme-swiss #sw-main { flex: 1 0 auto; overflow: clip; }
-html.theme-swiss .sw-footer { --footer-h: 4.5rem; margin-top: auto; border-top: 1px solid var(--hair); height: var(--footer-h); box-sizing: border-box; display: flex; align-items: center; font-size: 0.875rem; color: var(--muted); }
+html.theme-swiss .sw-footer { margin-top: auto; border-top: 1px solid var(--hair); height: var(--footer-h); box-sizing: border-box; display: flex; align-items: center; font-size: 0.875rem; color: var(--muted); }
 html.theme-swiss .sw-footer > .sw-wrap { width: 100%; }
+/* The home footer is shorter, so the four cards and the footer share one screen. */
+html.theme-swiss.sw-home { --footer-h: 4.5rem; }
 html.theme-swiss .sw-footer-inner { display: flex; flex-wrap: wrap; gap: 1rem 2rem; justify-content: space-between; align-items: center; }
 html.theme-swiss .sw-themes { display: flex; flex-wrap: wrap; gap: .75rem 1.25rem; }
 
