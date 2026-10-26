@@ -1,5 +1,6 @@
 ---
 import Analytics from '../components/Analytics.astro';
+import SwissFooter from '../components/SwissFooter.astro';
 import SwissThemeSwitch from '../components/SwissThemeSwitch.astro';
 import SwissLogo from '../components/SwissLogo.astro';
 import { ClientRouter } from 'astro:transitions';
@@ -97,14 +98,7 @@ const photo = await portrait();
       </div>
     </header>
     <main id="sw-main"><slot /></main>
-    {!hideFooter && <footer class="sw-footer">
-      <div class="sw-wrap sw-footer-inner">
-        <div class="sw-themes">
-          {SOCIALS.map((s) => <a class="sw-label sw-link" href={s.href} target="_blank" rel="noopener noreferrer">{s.label}</a>)}
-        </div>
-        <SwissThemeSwitch />
-      </div>
-    </footer>}
+    {!hideFooter && <SwissFooter />}
     <script>
       import '../scripts/swiss/reveal.ts';
       import '../lib/theme-switch.ts';

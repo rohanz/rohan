@@ -1,5 +1,6 @@
 ---
 import SwissCard from '../components/SwissCard.astro';
+import SwissFooter from '../components/SwissFooter.astro';
 import SwissLayout from '../layouts/SwissLayout.astro';
 import { getCollection } from 'astro:content';
 import { HOME_DESCRIPTION } from '../data/page-meta';
@@ -9,7 +10,7 @@ const selected = (await getCollection('projects'))
   .sort((a, b) => a.data.order - b.data.order)
   .slice(0, 4);
 ---
-<SwissLayout title="rohan.jk - software & ai" description={HOME_DESCRIPTION} section="home">
+<SwissLayout title="rohan.jk - software & ai" description={HOME_DESCRIPTION} section="home" hideFooter>
   <section class="sw-hero">
     <div class="sw-hero-copy">
       <p class="sw-label" data-reveal="block">computer engineering at ntu, singapore</p>
@@ -30,14 +31,17 @@ const selected = (await getCollection('projects'))
       </div>
     </div>
   </section>
-  <section class="sw-wrap sw-section sw-selected-work">
-    <div class="sw-section-head">
-      <h2 class="sw-display sw-display-md">selected work</h2>
-      <a class="sw-label sw-link" href="/projects">all projects</a>
+  <section class="sw-selected-work">
+    <div class="sw-wrap sw-section sw-selected-body">
+      <div class="sw-section-head">
+        <h2 class="sw-display sw-display-md">selected work</h2>
+        <a class="sw-label sw-link" href="/projects">all projects</a>
+      </div>
+      <div class="swiss-grid sw-selected-grid" data-reveal-group>
+        {selected.map((p) => <SwissCard slug={p.id} title={p.data.title} summary={p.data.summary} technologies={p.data.technologies} award={p.data.award} awardEvent={p.data.awardEvent} />)}
+      </div>
     </div>
-    <div class="swiss-grid sw-selected-grid" data-reveal-group>
-      {selected.map((p) => <SwissCard slug={p.id} title={p.data.title} summary={p.data.summary} technologies={p.data.technologies} award={p.data.award} awardEvent={p.data.awardEvent} />)}
-    </div>
+    <SwissFooter />
   </section>
   <script>
     import '../scripts/swiss/home-snap.ts';

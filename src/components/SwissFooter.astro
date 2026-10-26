@@ -1,0 +1,12 @@
+---
+import SwissThemeSwitch from './SwissThemeSwitch.astro';
+import { SOCIALS } from '../data/socials';
+---
+<footer class="sw-footer">
+  <div class="sw-wrap sw-footer-inner">
+    <div class="sw-themes">
+      {SOCIALS.map((s) => <a class="sw-label sw-link" href={s.href} target="_blank" rel="noopener noreferrer">{s.label}</a>)}
+    </div>
+    <SwissThemeSwitch />
+  </div>
+</footer>

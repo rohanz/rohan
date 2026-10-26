@@ -133,6 +133,11 @@ test('home uses native mandatory scroll snap on desktop and none under reduced m
   await page.evaluate(() => window.scrollTo({ top: document.querySelector('.sw-selected-work')!.getBoundingClientRect().top + window.scrollY, behavior: 'instant' }));
   await page.waitForTimeout(600);
   await expect(page.locator('.sw-nav')).toHaveCSS('opacity', '1');
+  // The panel carries the footer, so landing on it is the end of the page.
+  expect(await page.evaluate(() => document.documentElement.scrollHeight - (window.scrollY + innerHeight))).toBe(0);
+  const footer = (await page.locator('.sw-footer').boundingBox())!;
+  expect(footer.y).toBeGreaterThanOrEqual(0);
+  expect(footer.y + footer.height).toBeLessThanOrEqual(900);
   await page.getByRole('navigation', { name: 'Primary' }).getByRole('link', { name: 'music', exact: true }).click();
   await expect(page).toHaveURL(/\/music\/?$/);
   await expect(page.locator('.sw-nav')).toHaveCSS('position', 'sticky');
