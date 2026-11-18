@@ -324,11 +324,20 @@ location.replace(phone ? '${canonical}' + location.search + location.hash : '/bl
 `;
 }
 
+// page-meta.ts is import-free, so it is transpiled and imported the same way
+// socials.ts is in injectFooterSocials below.
+async function loadPageMeta() {
+  const source = await readFile(path.join(sharedDataDir, 'page-meta.ts'), 'utf8');
+  const { code } = await transform(source, { loader: 'ts', format: 'esm', target: 'es2022' });
+  return import(`data:text/javascript,${encodeURIComponent(code)}`);
+}
+
 async function writeShareStubs(projects) {
+  const meta = await loadPageMeta();
   const stubs = [
-    { dir: 'projects', title: 'projects - rohan.jk', description: 'Project write-ups pinned to the workshop wall of the blueprint theme.', canonical: '/projects/' },
-    { dir: 'music', title: 'music - rohan.jk', description: 'Original tracks, playable at the mixing console of the blueprint theme.', canonical: '/music/' },
-    { dir: 'about', title: 'about me - rohan.jk', description: "Rohan's personal specification sheet, on the lounge coffee table of the blueprint theme.", canonical: '/about/' },
+    { dir: 'projects', title: 'projects - rohan.jk', description: meta.PROJECTS_DESCRIPTION, canonical: '/projects/' },
+    { dir: 'music', title: 'music - rohan.jk', description: meta.MUSIC_DESCRIPTION, canonical: '/music/' },
+    { dir: 'about', title: 'about me - rohan.jk', description: meta.ABOUT_DESCRIPTION, canonical: '/about/' },
   ];
   for (const stub of stubs) {
     const dir = path.join(siteBlueprintDir, stub.dir);
@@ -373,7 +382,11 @@ async function injectFooterSocials() {
     .map((social) => `\n      <a href="${social.href}" target="_blank" rel="noopener">${social.name}</a>`)
     .join('');
 
-  const html = await readFile(file, 'utf8');
+  const { HOME_DESCRIPTION } = await loadPageMeta();
+  const html = (await readFile(file, 'utf8')).replace(
+    /(<meta (?:name="description"|property="og:description") content=")[^"]*(")/g,
+    (_, open, close) => open + HOME_DESCRIPTION.replace(/&/g, '&amp;').replace(/"/g, '&quot;') + close,
+  );
   const startIndex = html.indexOf(SOCIALS_START);
   const endIndex = html.indexOf(SOCIALS_END);
   if (startIndex === -1 || endIndex === -1 || endIndex < startIndex) {

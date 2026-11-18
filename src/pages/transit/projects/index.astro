@@ -1,8 +1,9 @@
 ---
 import MapApp from '../../../components/MapApp.astro';
+import { PROJECTS_DESCRIPTION } from '../../../data/page-meta';
 ---
 <MapApp ogImage="/assets/images/og/section-projects.png"
   title="projects - rohan.jk"
-  description="Projects by rohan.jk — software, AI, audio, and data engineering builds."
+  description={PROJECTS_DESCRIPTION}
   initialView="projects"
 />
