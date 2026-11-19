@@ -98,22 +98,20 @@ test('BQST defers WAVs on phones, then plays and switches versions', async ({ pa
   await expect(play).toHaveAttribute('aria-pressed', 'false');
 });
 
-test('piano letter shortcuts require focus and release held notes on Tab', async ({ page }) => {
+test('piano letter shortcuts play while the piano is on screen, without focus', async ({ page }) => {
   await page.goto('/projects/live-chord-monitor');
   const piano = page.getByRole('region', { name: /^Playable piano/ });
   await piano.scrollIntoViewIfNeeded();
-  await page.keyboard.press('KeyA');
-  await expect(piano.locator('.active')).toHaveCount(0);
-  await expect(piano).toHaveAttribute('tabindex', '0');
-  await piano.focus();
-  await page.keyboard.down('KeyA');
-  await expect(piano.locator('.active')).toHaveCount(1);
-  await page.keyboard.press('Tab');
-  await expect(piano.locator('.active')).toHaveCount(0);
+  await expect(piano).not.toBeFocused();
+  // The visibility observer reports asynchronously after the scroll, so retry
+  // the press until it has caught up.
+  await expect(async () => {
+    await page.keyboard.up('KeyA');
+    await page.keyboard.down('KeyA');
+    await expect(piano.locator('.active')).toHaveCount(1, { timeout: 500 });
+  }).toPass({ timeout: 8_000 });
   await page.keyboard.up('KeyA');
-  await page.keyboard.down('KeyA');
   await expect(piano.locator('.active')).toHaveCount(0);
-  await page.keyboard.up('KeyA');
   const key = piano.locator('.lcm-key').first();
   await key.dispatchEvent('pointerdown', { pointerId: 1 });
   await expect(key).toHaveClass(/active/);
