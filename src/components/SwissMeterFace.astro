@@ -1,19 +1,16 @@
 ---
-// The static face of one music meter: grids, axes and the VU dial. Rendered in
+// The static face of one music meter: grids, axes and the VU face. Rendered in
 // the page so it paints with the first frame and follows the row's colour
 // tokens through hover and playback; the canvas above draws only live signal.
-import { VU_HOT_FROM_DB, VU_NEEDLE_LENGTH, VU_PIVOT_RADIUS, VU_RADIUS, VU_TICKS, VU_VIEWBOX, vuPoint } from '../lib/visuals/vu-face';
+// A VU meter is all face: music-viz.ts rotates its needle (--vu-needle on the
+// cell) and lights its lamp. The drawing scales with the cell's width; the
+// labels keep their size and ride on it (see vu-face.ts).
+import { VU_BOX, vuFace } from '../lib/visuals/vu-face';
 
-interface Props { kind: 'wave' | 'freq' | 'stereo' | 'vu' }
-const { kind } = Astro.props;
-
-const pt = (db: number, r: number) => {
-  const p = vuPoint(db, r);
-  return `${p.x.toFixed(2)} ${p.y.toFixed(2)}`;
-};
-const arc = (from: number, to: number) => `M${pt(from, VU_RADIUS)} A${VU_RADIUS} ${VU_RADIUS} 0 0 1 ${pt(to, VU_RADIUS)}`;
-const viewBox = `${VU_VIEWBOX.x} ${VU_VIEWBOX.y} ${VU_VIEWBOX.width} ${VU_VIEWBOX.height}`;
-const rest = vuPoint(-40, VU_NEEDLE_LENGTH);
+interface Props { kind: 'wave' | 'freq' | 'stereo' | 'vu'; channel?: 'L' | 'R' }
+const { kind, channel = 'L' } = Astro.props;
+const vu = kind === 'vu' ? vuFace() : null;
+const at = (l: { left: number; top: number; dx: number; dy: number }) => `left:${l.left}%;top:${l.top}%;--dx:${l.dx}px;--dy:${l.dy}px`;
 ---
 <div class="sw-meter-face" aria-hidden="true">
   {(kind === 'wave' || kind === 'stereo') && <i class="sw-face-line sw-face-h"></i>}
@@ -28,21 +25,26 @@ const rest = vuPoint(-40, VU_NEEDLE_LENGTH);
       </svg>
     </>
   )}
-  {kind === 'vu' && (
-    <svg class="sw-vu-face" viewBox={viewBox} preserveAspectRatio="xMidYMid meet">
-      <path class="sw-vu-arc" d={arc(-40, 0)} vector-effect="non-scaling-stroke" />
-      <path class="sw-vu-hot" d={arc(VU_HOT_FROM_DB, 0)} vector-effect="non-scaling-stroke" />
-      {VU_TICKS.map(({ db, major }) => {
-        const inner = vuPoint(db, VU_RADIUS - (major ? 7 : 3));
-        const outer = vuPoint(db, VU_RADIUS + 3);
-        return <line class:list={['sw-vu-tick', { 'is-major': major }]} x1={inner.x.toFixed(2)} y1={inner.y.toFixed(2)} x2={outer.x.toFixed(2)} y2={outer.y.toFixed(2)} vector-effect="non-scaling-stroke" />;
-      })}
-      {VU_TICKS.filter((tick) => tick.major).map(({ db }) => {
-        const p = vuPoint(db, VU_RADIUS + 15);
-        return <text class="sw-vu-label" x={p.x.toFixed(2)} y={p.y.toFixed(2)}>{db}</text>;
-      })}
-      <line class="sw-vu-needle" x1="0" y1="0" x2={rest.x.toFixed(2)} y2={rest.y.toFixed(2)} vector-effect="non-scaling-stroke" />
-      <circle class="sw-vu-needle" cx="0" cy="0" r={VU_PIVOT_RADIUS} />
-    </svg>
+  {vu && (
+    <>
+      <div class="sw-vu">
+        <svg viewBox={`0 0 ${VU_BOX.width} ${VU_BOX.height}`}>
+          <path class="sw-vu-mark" d={vu.arc} />
+          <path class="sw-vu-hot sw-vu-zone" d={vu.hotArc} />
+          {vu.ticks.map((t) => (
+            <line class={t.kind === 'hot' ? 'sw-vu-hot' : t.kind === 'major' ? 'sw-vu-mark' : 'sw-vu-minor'} x1={t.x1} y1={t.y1} x2={t.x2} y2={t.y2} />
+          ))}
+          <g transform={`translate(${vu.pivot.x} ${vu.pivot.y})`}>
+            <line class="sw-vu-needle" x1="0" y1="0" x2="0" y2={-vu.needleLength} />
+          </g>
+        </svg>
+        {vu.numbers.map((n) => <span class:list={['sw-vu-num', { 'is-hot': n.hot, 'is-fine': n.fine }]} style={at(n)}>{n.text}</span>)}
+        <span class="sw-vu-sign" style={at(vu.minus)}>−</span>
+        <span class="sw-vu-sign is-hot" style={at(vu.plus)}>+</span>
+      </div>
+      <span class="sw-vu-tag">VU</span>
+      <span class="sw-vu-channel">{channel}</span>
+      <i class="sw-vu-lamp"></i>
+    </>
   )}
 </div>

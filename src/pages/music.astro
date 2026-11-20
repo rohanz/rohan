@@ -30,10 +30,15 @@ import { MUSIC_DESCRIPTION } from '../data/page-meta';
             <span class="sw-track-artist">{s.artist}</span>
           </div>
           <div class="sw-track-viz">
-            {['wave', 'freq', 'stereo', 'vu'].map((kind) => (
+            {(['wave', 'freq', 'stereo'] as const).map((kind) => (
               <div class={`sw-meter sw-meter-${kind}`}>
-                <SwissMeterFace kind={kind as 'wave' | 'freq' | 'stereo' | 'vu'} />
-                <canvas data-viz={kind} role="img" aria-label={`${s.title} ${kind === 'wave' ? 'waveform' : kind === 'freq' ? 'frequency spectrum' : kind === 'stereo' ? 'stereo scope' : 'VU meter'}`}></canvas>
+                <SwissMeterFace kind={kind} />
+                <canvas data-viz={kind} role="img" aria-label={`${s.title} ${kind === 'wave' ? 'waveform' : kind === 'freq' ? 'frequency spectrum' : 'stereo scope'}`}></canvas>
+              </div>
+            ))}
+            {(['L', 'R'] as const).map((channel) => (
+              <div class="sw-meter sw-meter-vu" role="img" aria-label={`${s.title} VU meter, ${channel === 'L' ? 'left' : 'right'} channel`}>
+                <SwissMeterFace kind="vu" channel={channel} />
               </div>
             ))}
           </div>

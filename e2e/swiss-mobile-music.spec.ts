@@ -38,7 +38,7 @@ for (const phone of phones) {
         await expect(row.locator('.sw-meter-wave')).toBeVisible();
         await expect(row.locator('.sw-meter-freq')).toBeHidden();
         await expect(row.locator('.sw-meter-stereo')).toBeHidden();
-        await expect(row.locator('.sw-meter-vu')).toBeHidden();
+        for (const vu of await row.locator('.sw-meter-vu').all()) await expect(vu).toBeHidden();
         await expect(row.locator('.sw-track-links a')).toHaveCount(3);
       }
 

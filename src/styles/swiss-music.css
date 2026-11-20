@@ -33,7 +33,7 @@ html.theme-swiss .sw-tracks { min-width: 0; }
 @property --t-hair { syntax: '<color>'; inherits: true; initial-value: #d6d3cc; }
 @property --t-muted { syntax: '<color>'; inherits: true; initial-value: #6b6b66; }
 @property --t-accent { syntax: '<color>'; inherits: true; initial-value: #5f66c2; }
-/* The VU dial's marks and red zone: grey at rest, lit while playing. */
+/* The VU meters' marks, needle and hot zone: grey at rest, lit while playing. */
 @property --t-vu-mark { syntax: '<color>'; inherits: true; initial-value: #d6d3cc; }
 @property --t-vu-hot { syntax: '<color>'; inherits: true; initial-value: #d6d3cc; }
 html.theme-swiss .sw-tracks { --t-ink: var(--ink); --t-paper: var(--paper); --t-hair: var(--hair); --t-muted: var(--muted); --t-accent: var(--accent); --t-vu-mark: var(--hair); --t-vu-hot: var(--hair); }
@@ -114,7 +114,10 @@ html.theme-swiss .sw-track-links a { display: flex; justify-content: space-betwe
 html.theme-swiss .sw-track-links a + a { border-top: 1px solid var(--cell-hair); }
 html.theme-swiss .sw-track-links a:is(:active, :focus-visible) { background: var(--ink); color: var(--paper); }
 @media (hover: hover) { html.theme-swiss .sw-track-links a:hover { background: var(--ink); color: var(--paper); } }
-html.theme-swiss .sw-track-viz { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid var(--cell-hair); }
+/* Waveform and spectrum a quarter each, a square scope (as wide as the strip is
+   tall), and the left and right VU meters share the rest. */
+html.theme-swiss .sw-track { container-type: inline-size; }
+html.theme-swiss .sw-track-viz { grid-column: 1 / -1; display: grid; grid-template-columns: 25% 25% 7rem repeat(2, minmax(0, 1fr)); border-top: 1px solid var(--cell-hair); }
 html.theme-swiss .sw-meter { position: relative; min-width: 0; height: 7rem; }
 html.theme-swiss .sw-meter + .sw-meter { border-left: 1px solid var(--cell-hair); }
 html.theme-swiss .sw-meter canvas { position: relative; display: block; width: 100%; height: 100%; border: 0; background: transparent; }
@@ -126,16 +129,41 @@ html.theme-swiss .sw-face-v { top: 0; bottom: 0; left: calc(50% - .5px); width: 
 /* The correlation track: one pixel row, 15px above the bottom (music-viz.ts corrTrack). */
 html.theme-swiss .sw-face-corr { left: 0; right: 0; bottom: 14px; height: 1px; }
 html.theme-swiss .sw-face-x { position: absolute; top: 0; left: 50%; height: 100%; width: auto; aspect-ratio: 1; transform: translateX(-50%); fill: none; stroke: var(--hair); overflow: visible; }
-html.theme-swiss .sw-vu-face { position: absolute; inset: 12px; width: calc(100% - 24px); height: calc(100% - 24px); overflow: visible; fill: none; stroke: var(--hair); }
-html.theme-swiss .sw-vu-label { font: 500 12px var(--font-ui); text-anchor: middle; dominant-baseline: central; fill: var(--t-vu-mark); stroke: none; }
-html.theme-swiss circle.sw-vu-needle { fill: var(--hair); stroke: none; }
-html.theme-swiss line.sw-vu-needle { stroke-width: 1.5; }
-html.theme-swiss .sw-vu-hot { stroke: var(--t-vu-hot); stroke-width: 2; }
-html.theme-swiss .sw-vu-tick.is-major { stroke: var(--t-vu-mark); }
-/* While the canvas draws the live needle the printed one hides. music-viz.ts
-   sets the class and removes it in the frame the outro clears the canvas, so
-   the handoff runs on one clock. */
-html.theme-swiss .sw-track.has-live-needle .sw-vu-needle { opacity: 0; }
+/* VU meters (SwissMeterFace.astro, vu-face.ts). The drawing's box is the arc's
+   chord, so its width sets the meter's size: about three quarters of the cell.
+   Arc, ticks and needle scale with it at constant stroke; the labels
+   keep their size. Marks, numbers and the needle are grey at rest and lit
+   while playing (--t-vu-mark, --t-vu-hot). */
+html.theme-swiss .sw-meter-vu { container-type: inline-size; --vu-needle: -32deg; --vu-top: 34.5%; }
+html.theme-swiss .sw-vu { position: absolute; top: var(--vu-top); left: 12%; right: 12%; aspect-ratio: 5; }
+html.theme-swiss .sw-vu svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; fill: none; stroke-width: 1; }
+html.theme-swiss .sw-vu svg * { vector-effect: non-scaling-stroke; }
+html.theme-swiss .sw-vu-mark { stroke: var(--t-vu-mark); }
+html.theme-swiss .sw-vu-minor { stroke: var(--hair); }
+html.theme-swiss .sw-vu-hot { stroke: var(--t-vu-hot); }
+html.theme-swiss .sw-vu-zone { stroke-width: 2; }
+html.theme-swiss .sw-meter-vu span { position: absolute; left: 50%; transform: translate(calc(-50% + var(--dx, 0px)), calc(-50% + var(--dy, 0px))); font: 550 10px/1 var(--font-ui); font-variant-numeric: tabular-nums; color: var(--t-vu-mark); }
+html.theme-swiss .sw-meter-vu span.is-hot { color: var(--t-vu-hot); }
+html.theme-swiss .sw-vu-sign, html.theme-swiss .sw-meter-vu .sw-vu-channel { font-weight: 600; }
+html.theme-swiss .sw-meter-vu .sw-vu-tag { top: calc(var(--vu-top) + 28px); font-size: 9px; letter-spacing: 1.4px; margin-left: .7px; }
+html.theme-swiss .sw-vu-channel { top: calc(100% - 13px); }
+@container (width < 180px) { html.theme-swiss .sw-vu-num.is-fine { display: none; } }
+/* One needle, rotated about the hidden pivot by music-viz.ts. */
+html.theme-swiss .sw-vu-needle { stroke: var(--t-vu-mark); stroke-width: 1.25; transform: rotate(var(--vu-needle)); }
+/* Lamp: a 10px hairline square 9px in from the top right, with a slight glow
+   when lit. It lights at once
+   and fades when music-viz.ts drops .is-lit, a second after the needle last
+   ran hot. */
+html.theme-swiss .sw-vu-lamp { position: absolute; top: 9px; right: 9px; width: 10px; height: 10px; border: 1px solid var(--t-vu-mark); box-sizing: border-box; }
+html.theme-swiss .sw-vu-lamp::after { content: ''; position: absolute; inset: -1px; background: var(--t-vu-hot); box-shadow: 0 0 6px 1px color-mix(in srgb, var(--t-vu-hot) 55%, transparent); opacity: 0; transition: opacity 180ms ease-out; }
+html.theme-swiss .sw-vu-lamp.is-lit::after { opacity: 1; transition: none; }
+/* Below a 684px strip a VU cell would drop under 115px (two of them share
+   half the strip less the 7rem scope, and 1rem is 16px at these widths): keep
+   waveform, spectrum and scope as three equal cells instead. */
+@container (width < 684px) {
+  html.theme-swiss .sw-track-viz { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  html.theme-swiss .sw-meter-vu { display: none; }
+}
 @media (min-width: 1100px) {
   html.theme-swiss .sw-music { grid-template-columns: minmax(0, 3fr) minmax(0, 9fr); }
   html.theme-swiss .sw-music-rail { border-bottom: 0; border-right: 1px solid var(--tint-hair); }

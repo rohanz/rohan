@@ -1,7 +1,8 @@
 import { buildAnalyserGraph, ensureAudioContext, type AnalyserGraph } from '../../lib/audio/graph';
-import { FREQ_BANDS, computeBands, smoothCurve, vuDbFromStereo, onePole } from '../../lib/audio/analysis';
+import { FREQ_BANDS, computeBands, smoothCurve, onePole } from '../../lib/audio/analysis';
 import { deviceDpr, sizeCanvasWithDpr } from '../../lib/visuals/canvas';
-import { VU_NEEDLE_LENGTH, VU_PIVOT_RADIUS, fitVuFace, vuAngle } from '../../lib/visuals/vu-face';
+import { VuChannel } from '../../lib/visuals/bqst-vu';
+import { VU_CALIBRATION_GAIN, VU_LAMP_FROM, vuAverage, vuNeedleDegrees } from '../../lib/visuals/vu-face';
 
 let context: AudioContext | null = null;
 // A media element can be connected only once, including after route swaps.
@@ -19,7 +20,7 @@ function fadeMs(): number {
   const ms = raw.endsWith('ms') ? parseFloat(raw) : raw.endsWith('s') ? parseFloat(raw) * 1000 : NaN;
   return Number.isFinite(ms) && ms > 0 ? ms : 250;
 }
-// Inset for trace amplitude, the scope's scale, the VU dial and the correlation
+// Inset for trace amplitude, the scope's scale and the correlation
 // track. Axes and traces still run the full width of their cell, edge to edge,
 // so the meters read as part of the grid.
 const METER_PADDING = 12;
@@ -52,9 +53,10 @@ function resize(row: HTMLElement) {
 // over ~8 frames, and is composited onto the freshly cleared canvas.
 const PHOSPHOR_DECAY = 0.22;
 
-// The meters' static faces (grids, axes, the VU dial) are rendered in the page
+// The meters' static faces (grids, axes, the VU meters) are rendered in the page
 // by SwissMeterFace.astro, so they paint with the first frame and follow the
-// row's colour tokens. The canvas above each face carries only live signal.
+// row's colour tokens. The canvas above each face carries only live signal;
+// the VU meters have no canvas, their printed needle is rotated in place.
 function clearSurface(surface: Surface) {
   surface.ctx.globalAlpha = 1; // the outro leaves this canvas faded
   surface.ctx.clearRect(0, 0, surface.w, surface.h);
@@ -66,28 +68,46 @@ function corrTrack(w: number, h: number) {
   return { x0: 4, x1: w - 4, y: Math.round(h - METER_PADDING - 3) };
 }
 
-/** The live VU needle, on the printed dial's pivot (see lib/visuals/vu-face.ts).
- *  `rest` (0..1) greys it toward the grid-line colour over the same fade as the
- *  row's colours; at rest the page's own needle takes over. */
-function drawVuNeedle(surface: Surface, db: number, inkIn: string, hair: string, rest = 0) {
-  const { ctx, w, h } = surface;
-  const ink = rest <= 0 ? inkIn : rest >= 1 ? hair : `color-mix(in srgb, ${hair} ${Math.round(rest * 100)}%, ${inkIn})`;
-  const { cx, cy, scale } = fitVuFace(w, h);
-  const angle = vuAngle(db);
-  const length = VU_NEEDLE_LENGTH * scale;
-  ctx.save();
-  ctx.globalAlpha = 1;
-  ctx.strokeStyle = ink;
-  ctx.fillStyle = ink;
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.moveTo(cx, cy);
-  ctx.lineTo(cx + length * Math.cos(angle), cy + length * Math.sin(angle));
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.arc(cx, cy, VU_PIVOT_RADIUS * scale, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.restore();
+// The two VU meters of a row, left then right. Their ballistics outlive one
+// play: a row played again mid-fall picks its needles up where they are.
+type Vu = { cell: HTMLElement; lamp: HTMLElement | null; channel: VuChannel; hotUntil: number };
+const vus = new WeakMap<HTMLElement, Vu[]>();
+// The lamp stays lit this long after the needle last ran hot.
+const LAMP_HOLD_MS = 1000;
+function vuMeters(row: HTMLElement): Vu[] {
+  let meters = vus.get(row);
+  if (!meters) {
+    meters = Array.from(row.querySelectorAll<HTMLElement>('.sw-meter-vu'), (cell) => ({
+      cell, lamp: cell.querySelector<HTMLElement>('.sw-vu-lamp'), channel: new VuChannel(), hotUntil: 0,
+    }));
+    vus.set(row, meters);
+  }
+  return meters;
+}
+
+/** Feed each channel `seconds` of its own buffer (silence when null) and move
+ *  its needle and lamp; returns whether anything is still moving or lit. */
+function stepVu(row: HTMLElement, buffers: Float32Array[] | null, seconds: number, now: number): boolean {
+  let active = false;
+  vuMeters(row).forEach((vu, i) => {
+    vu.channel.feed((buffers ? vuAverage(buffers[i]) : 0) * VU_CALIBRATION_GAIN, seconds);
+    const moved = vu.channel.step(seconds);
+    if (vu.channel.needle > VU_LAMP_FROM) vu.hotUntil = now + LAMP_HOLD_MS;
+    const lit = now < vu.hotUntil;
+    vu.cell.style.setProperty('--vu-needle', `${vuNeedleDegrees(vu.channel.needle).toFixed(2)}deg`);
+    vu.lamp?.classList.toggle('is-lit', lit);
+    active ||= moved || lit || vu.channel.needle > 1e-3;
+  });
+  return active;
+}
+
+/** Reduced motion skips the fall: needles and lamps straight to rest. */
+function restVu(row: HTMLElement) {
+  for (const vu of vuMeters(row)) {
+    vu.channel.level = vu.channel.needle = 0;
+    vu.hotUntil = 0;
+  }
+  stepVu(row, null, 0, 0);
 }
 
 /** At rest the canvases are empty: the page's static faces show through. */
@@ -114,7 +134,7 @@ export function observeViz(row: HTMLElement): () => void {
   };
   const onDpr = () => { resize(row); idle(row); watchDpr(); };
   watchDpr();
-  return () => { observer.disconnect(); dprQuery?.removeEventListener('change', onDpr); cancelOutro(row); surfaces.delete(row); };
+  return () => { observer.disconnect(); dprQuery?.removeEventListener('change', onDpr); cancelOutro(row); surfaces.delete(row); vus.delete(row); };
 }
 
 /** Attach only the playing row; cleanup clears back to the static faces. */
@@ -130,9 +150,6 @@ export function attachViz(row: HTMLElement, audio: HTMLAudioElement): () => void
   if (context.state === 'suspended') void context.resume().catch(() => {});
   if (!graph?.analyser) return () => {};
   cancelOutro(row);
-  // The canvas draws the needle from here until the outro ends; the printed
-  // one hides for exactly that span (see .has-live-needle in swiss-music.css).
-  row.classList.add('has-live-needle');
   const { analyser, analyserL, analyserR } = graph;
   const wave = new Uint8Array(analyser.frequencyBinCount);
   const freq = new Uint8Array(analyser.frequencyBinCount);
@@ -144,12 +161,10 @@ export function attachViz(row: HTMLElement, audio: HTMLAudioElement): () => void
   let frame = 0;
   let timer: ReturnType<typeof setTimeout> | undefined;
   let stopped = false;
-  let vuSmoothed = -40;
+  let last = performance.now(); // previous frame, for the VU ballistics
   const fade = fadeMs(); // read once per play, not per frame
   let corrSmoothed = 1; // Pearson correlation of L and R (+1 mono, 0 wide, -1 out of phase)
 
-  // Paints one frame from the current buffers. `alpha` scales the signal ink
-  // (the outro fades it over the static face); `vuDb` drives the needle.
   // Correlation of the current buffers; NaN-safe for silence.
   function correlation(): number {
     const n = Math.min(left.length, right.length);
@@ -162,11 +177,12 @@ export function attachViz(row: HTMLElement, audio: HTMLAudioElement): () => void
     return den > 1e-9 ? num / den : 1;
   }
 
-  function paint(alpha: number, vuDb: number) {
+  // Paints one frame from the current buffers. `alpha` scales the signal ink
+  // (the outro fades it over the static face).
+  function paint(alpha: number) {
     // Playback and its outro cross row states; never retain the old palette.
     const style = getComputedStyle(row);
     const ink = style.getPropertyValue('--ink').trim();
-    const hair = style.getPropertyValue('--hair').trim();
     const accent = style.getPropertyValue('--accent').trim();
     computeBands(freq, bands);
     smoothCurve(bands.freqSmoothed, curve);
@@ -191,9 +207,6 @@ export function attachViz(row: HTMLElement, audio: HTMLAudioElement): () => void
           if (!i) ctx.moveTo(x, y); else ctx.lineTo(x, y);
         }
         ctx.stroke();
-        continue;
-      } else if (canvas.dataset.viz === 'vu') {
-        drawVuNeedle(surface, vuDb, ink, hair, 1 - alpha);
         continue;
       } else {
         // Uniform scale on both axes (a true goniometer); the wide cell just gives
@@ -265,12 +278,15 @@ export function attachViz(row: HTMLElement, audio: HTMLAudioElement): () => void
       analyser!.getByteFrequencyData(freq);
       analyserL?.getFloatTimeDomainData(left);
       analyserR?.getFloatTimeDomainData(right);
-      vuSmoothed = onePole(vuSmoothed, vuDbFromStereo(left, right, Math.min(left.length, right.length)), .18);
+      const now = performance.now();
+      stepVu(row, [left, right], (now - last) / 1000, now);
+      last = now;
       corrSmoothed = onePole(corrSmoothed, correlation(), .12);
       // Fade in over the same span and curve the outro fades out with.
       const t = reduced.matches ? 1 : Math.min(1, (performance.now() - introStart) / fade);
-      paint(1 - Math.pow(1 - t, 3), vuSmoothed);
-    }
+      paint(1 - Math.pow(1 - t, 3));
+    } else last = performance.now(); // a hidden tab's gap is not programme
+
     // Reduced motion samples twice per second, with no intervening RAF loop.
     if (reduced.matches || document.hidden) timer = setTimeout(draw, 500);
     else frame = requestAnimationFrame(draw);
@@ -287,27 +303,25 @@ export function attachViz(row: HTMLElement, audio: HTMLAudioElement): () => void
     // A previous track's queued pause event can arrive after the next play.
     if (audio.paused) cleanup();
   }
-  // Graceful reset: the signals fade over the static face and the needle eases home
-  // over the fade, then the row settles on its idle drawing.
+  // Graceful reset: the signals fade over the static face while the VU meters
+  // are fed silence and fall back under their own ballistics; the loop ends
+  // once the canvases are clear and both needles have stopped.
   function outro() {
     cancelOutro(row);
-    if (reduced.matches) { settle(); return; }
-    const fromDb = vuSmoothed;
+    if (reduced.matches) { idle(row); restVu(row); return; }
     const t0 = performance.now();
+    let prev = t0;
+    let faded = false;
     const step = (now: number) => {
       const t = (now - t0) / fade;
-      if (t >= 1) { outros.delete(row); settle(); return; }
-      const e = 1 - Math.pow(1 - t, 3);
-      paint(1 - e, fromDb + (-40 - fromDb) * e);
+      if (t < 1) paint(Math.pow(1 - t, 3));
+      else if (!faded) { idle(row); faded = true; }
+      const moving = stepVu(row, null, (now - prev) / 1000, now);
+      prev = now;
+      if (t >= 1 && !moving) { outros.delete(row); return; }
       outros.set(row, requestAnimationFrame(step));
     };
     outros.set(row, requestAnimationFrame(step));
-  }
-  // Clearing the canvas and showing the printed needle in the same frame hands
-  // the needle over with no blank or doubled frame between them.
-  function settle() {
-    idle(row);
-    row.classList.remove('has-live-needle');
   }
   function cleanup() {
     stopped = true;

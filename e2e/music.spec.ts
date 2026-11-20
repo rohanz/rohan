@@ -18,36 +18,42 @@ test('play/pause a track produces no console errors @smoke', async ({ page }) =>
   expect(errs).toEqual([]);
 });
 
-// The VU needle is drawn even in silence, so unlike the signal it can be
-// checked. On pause the canvas needle eases home and the printed one takes
-// over; every frame must show exactly one of them. The race this guards
-// against landed on a frame boundary, so it pauses at several offsets.
-test('the VU needle hands over to the printed one without a blank or doubled frame', async ({ page }) => {
+// The classic strip: waveform | spectrum | square scope | VU L | VU R. Real
+// audio drives the analysers in headless Chromium, so the needles can be read
+// (each meter's angle is the --vu-needle it is rotated by).
+const needles = (row: import('@playwright/test').Locator) => row.evaluate((track) =>
+  [...track.querySelectorAll<HTMLElement>('.sw-meter-vu')].map((cell) => parseFloat(getComputedStyle(cell).getPropertyValue('--vu-needle'))));
+
+test('the strip has a square scope and two equal VU meters; the needles rise and fall back', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/music');
   const row = page.locator('.sw-track').first();
-  const faulty: string[] = [];
-  for (let run = 0; run < 10; run++) {
-    await row.locator('.sw-play').click();
-    await page.waitForTimeout(600 + run * 23);
-    const frames = await row.evaluate(async (track) => {
-      const canvas = track.querySelector<HTMLCanvasElement>('canvas[data-viz="vu"]')!;
-      const printed = track.querySelector('line.sw-vu-needle')!;
-      const ctx = canvas.getContext('2d')!;
-      const canvasNeedle = () => ctx.getImageData(0, 0, canvas.width, canvas.height).data.some((v, i) => i % 4 === 3 && v > 40);
-      const seen: { t: number; canvas: boolean; printed: boolean }[] = [];
-      track.querySelector<HTMLButtonElement>('.sw-play')!.click(); // pause
-      const t0 = performance.now();
-      await new Promise<void>((done) => {
-        const tick = () => {
-          seen.push({ t: Math.round(performance.now() - t0), canvas: canvasNeedle(), printed: getComputedStyle(printed).opacity === '1' });
-          if (performance.now() - t0 < 600) requestAnimationFrame(tick); else done();
-        };
-        requestAnimationFrame(tick);
-      });
-      return seen;
-    });
-    for (const f of frames) if (f.canvas === f.printed) faulty.push(`pause ${run} at ${f.t}ms: ${f.canvas ? 'two needles' : 'no needle'}`);
-    await page.waitForTimeout(300);
-  }
-  expect(faulty).toEqual([]);
+  const cells = await row.locator('.sw-meter').evaluateAll((els) => els.map((el) => {
+    const { width, height } = el.getBoundingClientRect();
+    return { cls: el.className, width, height };
+  }));
+  expect(cells.map((c) => c.cls.replace('sw-meter ', ''))).toEqual(['sw-meter-wave', 'sw-meter-freq', 'sw-meter-stereo', 'sw-meter-vu', 'sw-meter-vu']);
+  const [wave, freq, scope, left, right] = cells;
+  expect(Math.abs(scope.width - scope.height)).toBeLessThan(1);
+  expect(Math.abs(left.width - right.width)).toBeLessThan(1);
+  expect(Math.abs(wave.width - freq.width)).toBeLessThan(1);
+  await expect(row.locator('.sw-meter-vu').first()).toHaveAttribute('aria-label', /VU meter, left channel$/);
+
+  expect(await needles(row)).toEqual([-32, -32]);
+  await row.locator('.sw-play').click();
+  await expect.poll(async () => Math.max(...await needles(row)), { timeout: 15_000 }).toBeGreaterThan(-25);
+  await row.locator('.sw-play').click(); // pause
+  await expect.poll(async () => Math.max(...await needles(row)), { timeout: 5_000 }).toBeLessThan(-31.9);
+});
+
+test('the VU meters give way to three equal cells on a narrow strip', async ({ page }) => {
+  await page.setViewportSize({ width: 650, height: 900 });
+  await page.goto('/music');
+  const row = page.locator('.sw-track').first();
+  for (const vu of await row.locator('.sw-meter-vu').all()) await expect(vu).toBeHidden();
+  const widths = await row.locator('.sw-meter:visible').evaluateAll((els) => els.map((el) => el.getBoundingClientRect().width));
+  expect(widths).toHaveLength(3);
+  expect(Math.max(...widths) - Math.min(...widths)).toBeLessThan(1);
+  await page.setViewportSize({ width: 760, height: 900 });
+  for (const vu of await row.locator('.sw-meter-vu').all()) await expect(vu).toBeVisible();
 });
