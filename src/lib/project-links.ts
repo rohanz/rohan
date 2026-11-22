@@ -10,6 +10,8 @@ export interface ProjectLink {
 }
 
 const DOWNLOAD = /\.(pkg|dmg|zip)$/i;
+/** Documents open in a new tab, like an external page. */
+const DOCUMENT = /\.pdf$/i;
 
 export function projectLinks(raw: readonly string[] = []): ProjectLink[] {
   return raw.map((entry, i) => {
@@ -22,7 +24,7 @@ export function projectLinks(raw: readonly string[] = []): ProjectLink[] {
       href,
       className: i === 0 ? 'try-it-btn' : 'support-btn',
       download,
-      external: /^https?:/.test(href) && !download,
+      external: DOCUMENT.test(href) || (/^https?:/.test(href) && !download),
     };
   });
 }
@@ -33,8 +35,9 @@ export function linkAttrs(link: ProjectLink): Record<string, string | boolean> {
     href: link.href,
     class: link.className,
     ...(link.external ? { target: '_blank', rel: 'noopener noreferrer' } : {}),
-    // Same-origin installers must not be prefetched (they are large).
-    ...(link.download ? { download: true, 'data-astro-prefetch': 'false' } : {}),
+    // Same-origin installers and documents must not be prefetched (they are large).
+    ...(link.download ? { download: true } : {}),
+    ...(link.download || DOCUMENT.test(link.href) ? { 'data-astro-prefetch': 'false' } : {}),
   };
 }
 

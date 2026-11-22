@@ -14,6 +14,10 @@ describe('projectLinks', () => {
     expect(remote).toMatchObject({ download: true, external: false });
   });
 
+  it('opens a pdf in a new tab without prefetching it', () => {
+    expect(linksHtml(['a | /x', 'manual | /downloads/m.pdf'])).toContain('<a href="/downloads/m.pdf" class="support-btn" target="_blank" rel="noopener noreferrer" data-astro-prefetch="false">manual</a>');
+  });
+
   it('keeps a pipe in the label and escapes the html', () => {
     expect(projectLinks(['a | b | /x'])[0]).toMatchObject({ label: 'a | b', href: '/x' });
     expect(linksHtml(['<b> | /x'])).toBe('<a href="/x" class="try-it-btn">&lt;b&gt;</a>');
