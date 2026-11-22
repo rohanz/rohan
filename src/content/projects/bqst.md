@@ -10,7 +10,7 @@ technologies:
   - DSP
   - Product Design
 links:
-  - "download bqst for macOS | /downloads/bqst/BQST-1.2.0-macOS-universal.pkg"
+  - "download bqst for macOS | /downloads/bqst/BQST-1.3.0-macOS-universal.pkg"
   - "buy me a coffee | https://ko-fi.com/rohanjk"
 ---
 
@@ -200,7 +200,7 @@ The first working version of BQST already had the core idea: EQ, saturation, ove
 
 It worked, but visually, it left a lot to be desired.
 
-I started designing all the assets myself. I wanted the plugin to borrow from the timeless, familiar language of analog hardware: big cream knobs, physical markings, screws, <span class="gloss-term" data-gloss="A VU meter is a slower level meter originally used in analog audio equipment. It responds more like perceived loudness than a fast peak meter.">VU meters</span>, and textured anodized faceplates, but I also wanted it to feel modern. So I kept the shapes simple, the shadows restrained, and the layout minimal. Those choices make the interface inviting but readable. The VU meters also do a job: they give a slower, more musical sense of level than a twitchy digital peak meter, calibrated so 0 VU sits at -18 dBFS. Their faces are lit like real backlit meters: off-white paper, brightest just above the bottom bar where the bulb would sit, with the scale numbers centred on their ticks.
+I started designing all the assets myself. I wanted the plugin to borrow from the timeless, familiar language of analog hardware: big cream knobs, physical markings, screws, <span class="gloss-term" data-gloss="A VU meter is a slower level meter originally used in analog audio equipment. It responds more like perceived loudness than a fast peak meter.">VU meters</span>, and solid-coloured faceplates, but I also wanted it to feel modern. So I kept the shapes simple, the shadows restrained, and the layout minimal. Those choices make the interface inviting but readable. The VU meters also do a job: they give a slower, more musical sense of level than a twitchy digital peak meter, calibrated so 0 VU sits at -18 dBFS. Their faces are flat cream paper in a thin dark bezel, with the scale numbers centred on their ticks.
 
 <div class="bqst-asset-strip">
   <div class="bqst-asset-card">
@@ -234,6 +234,6 @@ Designing BQST became a bigger lesson about software in general. A product can b
 **Production readiness is a system problem.** The plugin wasn't "done" when it made sound. It needed automation names, undo behavior, presets, AU/VST3 validation, signing, install paths, latency handling, and DAW testing. The VST3 and AU builds pass `pluginval` at strictness level 10, chain-level tests run the whole processing chain in CI, and in Ableton I checked both builds for state recall, automation, bypass behavior, sample-rate changes, buffer-size changes, fixed UI sizes, and offline render settings.
 
 <p class="bqst-download-actions">
-  <a href="/downloads/bqst/BQST-1.2.0-macOS-universal.pkg" class="try-it-btn" data-astro-prefetch="false" download>download bqst for macOS</a>
+  <a href="/downloads/bqst/BQST-1.3.0-macOS-universal.pkg" class="try-it-btn" data-astro-prefetch="false" download>download bqst for macOS</a>
   <a href="https://ko-fi.com/rohanjk" class="support-btn" target="_blank" rel="noopener noreferrer">buy me a coffee</a>
 </p>
