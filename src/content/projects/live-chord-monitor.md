@@ -12,7 +12,7 @@ technologies:
   - Real-Time
   - Music Theory
 links:
-  - "download for macOS | https://github.com/rohanz/live-chord-monitor/releases/download/v0.2.0/Live-Chord-Monitor-0.2.0-universal.dmg"
+  - "download for macOS | https://github.com/rohanz/live-chord-monitor/releases/download/v0.3.0/Live-Chord-Monitor-0.3.0-universal.dmg"
   - "buy me a coffee | https://ko-fi.com/rohanjk"
 ---
 
@@ -26,9 +26,9 @@ The core problem went deeper than I expected. Turning a handful of held keys int
 
 ## what is it?
 
-Live Chord Monitor is a desktop app that listens to every connected MIDI device and the computer keyboard, works out the chord you're playing in real time, and shows both its name and the notes on a <span class="gloss-term" data-gloss="A grand staff is the treble and bass staves joined together, the standard way piano music is written.">grand staff</span>. Settings control the naming style, inversions, sharp or flat spelling, and how long a chord lingers on screen after you let go.
+Live Chord Monitor is a desktop app that listens to every connected MIDI device and the computer keyboard, works out the chord you're playing in real time, and shows both its name and the notes on a <span class="gloss-term" data-gloss="A grand staff is the treble and bass staves joined together, the standard way piano music is written.">grand staff</span>. Settings control the naming style, inversions, sharp or flat spelling, and how long a chord lingers on screen after you let go. A side rail lists the held notes by name, and a full-screen mode stretches the keyboard across the whole window, which is the view I use when sharing my screen in a lesson. The look follows this site: the same paper and ink, with one indigo accent for the keys being held.
 
-![The Live Chord Monitor app: a held chord named at the top, written out on a grand staff, with the notes lit on the piano below.](assets/images/projects/live-chord-monitor/app-ui.webp)
+![The Live Chord Monitor app: a held chord named in the centre and written out on a grand staff, the held notes listed in a rail on the left, and the same notes lit on the piano below.](assets/images/projects/live-chord-monitor/app-ui.webp)
 
 The chord-detection engine at the centre of it runs right here in the browser. I ported it from the app's TypeScript so you can try it without installing anything. The full source is on <a href="https://github.com/rohanz/live-chord-monitor" target="_blank" rel="noopener noreferrer">github.com/rohanz/live-chord-monitor</a>.
 
@@ -86,7 +86,7 @@ The input side has its own set of problems, and they only really surface once re
 
 The first: the same note can arrive from more than one place at once. A MIDI keyboard, the computer keyboard, and a mouse click can all be holding middle C together. So the app tracks which sources are holding each note and releases a note only when the last one lets go. Lifting off one input never cuts a note another is still playing.
 
-The second: hardware gets unplugged mid-chord. Pull out a controller while keys are down and those <span class="gloss-term" data-gloss="A stuck note is one the app thinks is still held because it never received the matching 'note off', often after a device disconnects mid-note.">notes would stick</span> forever, because the matching "note off" never arrives. The app listens for device disconnects over the <span class="gloss-term" data-gloss="The Web MIDI API lets a browser or Electron app talk to MIDI devices directly, including hot-plugging devices while running.">Web MIDI API</span> and fires the missing note-offs itself for whatever that device was holding.
+The second: hardware gets unplugged mid-chord. Pull out a controller while keys are down and those <span class="gloss-term" data-gloss="A stuck note is one the app thinks is still held because it never received the matching 'note off', often after a device disconnects mid-note.">notes would stick</span> forever, because the matching "note off" never arrives. The app listens for device disconnects over the <span class="gloss-term" data-gloss="The Web MIDI API lets a browser or Electron app talk to MIDI devices directly, including hot-plugging devices while running.">Web MIDI API</span> and fires the missing note-offs itself for whatever that device was holding. Switching a device off in settings while it holds notes gets the same treatment, and two devices that share a name are tracked separately, so turning one off leaves the other playing. Ports that exist to control a <span class="gloss-term" data-gloss="A digital audio workstation: the software used to record, arrange and mix music, such as Ableton Live or Logic Pro.">DAW</span> instead of playing notes are skipped by default. For anything that still slips through, an all-notes-off button, also on Esc, silences everything at once.
 
 The third is subtler, and it is purely about feel. When you lift a chord your fingers don't all leave at the same millisecond, so for a moment the app sees the chord shrink to whichever note happened to release last, and the readout flashes a wrong name on the way out. The fix is a small state machine that separates what's displayed from what's held. New notes appear instantly, but a shrinking chord waits about 60 milliseconds to check whether it is a real change or the beginning of a full release, and a full release can linger and fade instead of blinking straight to blank. I moved that timing logic into its own module so I could test it against a fake clock.
 
@@ -96,11 +96,11 @@ The app made sound and named a chord fairly early. That was a long way from fini
 
 Because it is an <span class="gloss-term" data-gloss="Electron packages a web app (HTML/JS) with a browser engine and Node.js so it can run as a native desktop app on macOS, Windows, and Linux.">Electron</span> app taking input from devices, I treated security as part of the build. The renderer runs <span class="gloss-term" data-gloss="A sandboxed renderer is isolated from the operating system, so even a compromised web layer can't freely touch files or the system.">sandboxed</span> with context isolation and no Node access. The production UI is served over a custom privileged `app://` scheme with path-traversal guarding instead of `file://`. There is a real <span class="gloss-term" data-gloss="A Content Security Policy restricts what a page is allowed to load and run, which limits the damage if malicious content ever got in.">Content-Security-Policy</span>, and the permission handler grants MIDI and nothing else.
 
-Distribution is the stage where a lot of side projects stop. This one ships as a signed and <span class="gloss-term" data-gloss="Apple's process of scanning and approving a Mac app so Gatekeeper will run it without scary warnings. Stapling attaches the approval ticket to the app so it works offline.">notarized</span> universal binary: a single download that runs natively on Apple Silicon and Intel Macs, built with a hardened runtime, notarized and stapled by Apple, with every signing credential kept in the macOS keychain and out of the repo. Getting `spctl` to report "Notarized Developer ID" and `stapler` to pass is a real piece of engineering on its own, with nothing to do with music.
+Distribution is the stage where a lot of side projects stop. This one ships as a signed and <span class="gloss-term" data-gloss="Apple's process of scanning and approving a Mac app so Gatekeeper will run it without scary warnings. Stapling attaches the approval ticket to the app so it works offline.">notarized</span> universal binary: a single download that runs natively on Apple Silicon and Intel Macs, built with a hardened runtime, notarized and stapled by Apple, with every signing credential kept in the macOS keychain and out of the repo. The disk image is signed, notarized and stapled as well as the app inside it, and the release script fails outright if it would otherwise produce an unsigned build. Getting `spctl` to report "Notarized Developer ID" and `stapler` to pass is a real piece of engineering on its own, with nothing to do with music.
 
 Live Chord Monitor is free to download. If it's useful to you and you'd like to support future work, you can <a href="https://ko-fi.com/rohanjk" target="_blank" rel="noopener noreferrer">buy me a coffee</a>.
 
-Underneath all of it sits a suite of 282 tests. The chord engine is the most heavily covered, including a corpus of 106 voicings with their expected names: triads, sevenths, extensions, every naming and inversion mode, the fifth-omission cases, the ambiguous voicings, and spelling edge cases like `C7`→Bb and `Cdim7`→B𝄫.
+Underneath all of it sits a suite of 338 tests. The chord engine is the most heavily covered, including a corpus of 105 voicings with their expected names: triads, sevenths, extensions, every naming and inversion mode, the fifth-omission cases, the ambiguous voicings, and spelling edge cases like `C7`→Bb and `Cdim7`→B𝄫.
 
 ## what stuck with me
 
@@ -113,6 +113,6 @@ Underneath all of it sits a suite of 282 tests. The chord engine is the most hea
 **A desktop app has a security surface a web page doesn't.** Wrapping web code in Electron gives it a path to the operating system, so "finished" had to include sandboxing the renderer, serving the UI over a locked-down scheme, enforcing a CSP, and handing the renderer only the MIDI permission. None of it shows up in a screenshot, but once people install software instead of visiting a page, that surface is yours to defend.
 
 <p class="download-actions">
-  <a href="https://github.com/rohanz/live-chord-monitor/releases/download/v0.2.0/Live-Chord-Monitor-0.2.0-universal.dmg" class="try-it-btn">download for macOS</a>
+  <a href="https://github.com/rohanz/live-chord-monitor/releases/download/v0.3.0/Live-Chord-Monitor-0.3.0-universal.dmg" class="try-it-btn">download for macOS</a>
   <a href="https://ko-fi.com/rohanjk" class="support-btn" target="_blank" rel="noopener noreferrer">buy me a coffee</a>
 </p>
