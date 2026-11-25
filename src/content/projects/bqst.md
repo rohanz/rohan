@@ -10,8 +10,8 @@ technologies:
   - DSP
   - Product Design
 links:
-  - "download bqst for macOS | /downloads/bqst/BQST-1.3.1-macOS-universal.pkg"
-  - "user manual (pdf) | /downloads/bqst/BQST-1.3.1-Manual.pdf"
+  - "download bqst for macOS | /downloads/bqst/BQST-1.3.2-macOS-universal.pkg"
+  - "user manual (pdf) | /downloads/bqst/BQST-1.3.2-Manual.pdf"
   - "buy me a coffee | https://ko-fi.com/rohanjk"
 ---
 
@@ -235,7 +235,7 @@ Designing BQST became a bigger lesson about software in general. A product can b
 **Production readiness is a system problem.** The plugin wasn't "done" when it made sound. It needed automation names, undo behavior, presets, AU/VST3 validation, signing, install paths, latency handling, and DAW testing. The VST3 and AU builds pass `pluginval` at strictness level 10, chain-level tests run the whole processing chain in CI, and in Ableton I checked both builds for state recall, automation, bypass behavior, sample-rate changes, buffer-size changes, fixed UI sizes, and offline render settings.
 
 <p class="bqst-download-actions">
-  <a href="/downloads/bqst/BQST-1.3.1-macOS-universal.pkg" class="try-it-btn" data-astro-prefetch="false" download>download bqst for macOS</a>
-  <a href="/downloads/bqst/BQST-1.3.1-Manual.pdf" class="support-btn" target="_blank" rel="noopener noreferrer" data-astro-prefetch="false">user manual (pdf)</a>
+  <a href="/downloads/bqst/BQST-1.3.2-macOS-universal.pkg" class="try-it-btn" data-astro-prefetch="false" download>download bqst for macOS</a>
+  <a href="/downloads/bqst/BQST-1.3.2-Manual.pdf" class="support-btn" target="_blank" rel="noopener noreferrer" data-astro-prefetch="false">user manual (pdf)</a>
   <a href="https://ko-fi.com/rohanjk" class="support-btn" target="_blank" rel="noopener noreferrer">buy me a coffee</a>
 </p>
