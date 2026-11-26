@@ -90,8 +90,7 @@ function vuMeters(row: HTMLElement): Vu[] {
 function stepVu(row: HTMLElement, buffers: Float32Array[] | null, seconds: number, now: number): boolean {
   let active = false;
   vuMeters(row).forEach((vu, i) => {
-    vu.channel.feed((buffers ? vuAverage(buffers[i]) : 0) * VU_CALIBRATION_GAIN, seconds);
-    const moved = vu.channel.step(seconds);
+    const moved = vu.channel.advance((buffers ? vuAverage(buffers[i]) : 0) * VU_CALIBRATION_GAIN, seconds);
     if (vu.channel.needle > VU_LAMP_FROM) vu.hotUntil = now + LAMP_HOLD_MS;
     const lit = now < vu.hotUntil;
     vu.cell.style.setProperty('--vu-needle', `${vuNeedleDegrees(vu.channel.needle).toFixed(2)}deg`);
@@ -104,7 +103,7 @@ function stepVu(row: HTMLElement, buffers: Float32Array[] | null, seconds: numbe
 /** Reduced motion skips the fall: needles and lamps straight to rest. */
 function restVu(row: HTMLElement) {
   for (const vu of vuMeters(row)) {
-    vu.channel.level = vu.channel.needle = 0;
+    vu.channel = new VuChannel();
     vu.hotUntil = 0;
   }
   stepVu(row, null, 0, 0);

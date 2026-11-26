@@ -683,18 +683,17 @@ export function initBqstAudioDemo(options: BqstAudioDemoOptions): () => void {
     const dt = meterLastTime ? (now - meterLastTime) / 1000 : 0;
     meterLastTime = now;
     const buffer = engine.getBuffer(engine.version);
+    let averages = [0, 0];
     if (engine.isPlaying && buffer) {
       const pos = engine.getPlaybackSeconds() % buffer.duration;
       const from = meterLastPos ?? pos;
-      const span = pos >= from ? pos - from : buffer.duration - from + pos;
-      meterChannels.forEach((ch, i) => ch.feed(span > 0 ? rectifiedAverage(buffer, i, from, pos) : 0, span));
+      if (pos !== from) averages = averages.map((_, i) => rectifiedAverage(buffer, i, from, pos));
       meterLastPos = pos;
     } else {
-      meterChannels.forEach((ch) => ch.feed(0, dt));
       meterLastPos = null;
     }
     let moving = false;
-    meterChannels.forEach((ch) => { if (ch.step(dt)) moving = true; });
+    meterChannels.forEach((ch, i) => { if (ch.advance(averages[i], dt)) moving = true; });
     strip.update(meterChannels[0].needle, meterChannels[1].needle);
     if (engine.isPlaying || moving) requestMeterFrame();
     else meterLastTime = 0;

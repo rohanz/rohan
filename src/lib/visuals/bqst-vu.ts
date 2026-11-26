@@ -1,43 +1,65 @@
 // The A/B demo's pair of VU meters: one shared strip, two shallow arcs with
 // their pivots below the window. Drawn as SVG in the site's own colours
 // (text colour + accent), so it follows every theme; `bqst-widgets.css`
-// styles the active and bypassed states.
+// styles the active and bypassed states. The music page's meters (vu-face.ts)
+// share the movement and the scale.
 //
-// Ballistics follow the plugin: `BqtAudioProcessor::updateMeter` (rectified
-// average x 1.1107, a one-pole reaching 99% in 300 ms, 0 VU = -18 dBFS) and
-// the editor's 90 ms needle (src/BqtProcessorDsp.cpp, src/BqtEditorWidgets.cpp).
+// Movement and scale follow BQST 1.3.2 (bqt src/BqtMetering.h VuBallistics and
+// MeterCapture, src/BqtVuMeter.cpp vuDeflectionToScaleFraction): the full-wave
+// rectified average, sine-calibrated, with 0 VU = -18 dBFS, drives a damped
+// second-order movement stepped in exact 1 ms ticks; the needle is the
+// movement. The scale is linear in amplitude, so its marks crowd to the left.
 
-/** Scale position (0 = left stop, 1 = right stop) of a VU reading, as in the plugin. */
-export function vuDbToScaleFraction(db: number): number {
-  const c = Math.max(-20, Math.min(3, db));
-  return c <= 0 ? ((c + 20) / 20) * 0.82 : 0.82 + (c / 3) * 0.18;
+const TICK_SECONDS = 0.001;
+/** Rectified average of a sine x this = its RMS; x 10^(18/20) puts 0 VU at -18 dBFS. */
+const INPUT_GAIN = 1.1107207345395915 * 7.943282347242816;
+/** Longest stretch one call advances: a background tab resumes from where it was. */
+const MAX_SECONDS = 0.1;
+/** +3 VU, the right stop. */
+const FULL_SCALE = 10 ** (3 / 20);
+
+/** Scale position (0 = left stop, 1 = right stop) of an amplitude relative to 0 VU. */
+export function vuScaleFraction(amplitude: number): number {
+  return Math.max(0, Math.min(1, amplitude / FULL_SCALE));
 }
 
-const VU_TAU = 0.3 / 4.605170186;
-const SINE_AVERAGE_TO_RMS = 1.110720735;
-const NEEDLE_TAU = 0.09;
-
-/** One meter channel: the processor's level and the editor's needle. */
+/**
+ * One meter channel: x'' + 2a x' + w^2 x = w^2 input, zeta 0.8127 (1.25%
+ * overshoot), first 99% crossing at 300 ms. State is amplitude relative to 0 VU.
+ */
 export class VuChannel {
-  level = 0;
-  needle = 0;
+  position = 0;
+  velocity = 0;
+  private carry = 0; // seconds not yet ticked
 
-  /** Feed the rectified average of the samples played over `seconds`. */
-  feed(rectifiedAverage: number, seconds: number): void {
-    if (seconds <= 0) return;
-    const release = Math.exp(-seconds / VU_TAU);
-    this.level = this.level * release + rectifiedAverage * SINE_AVERAGE_TO_RMS * (1 - release);
+  /**
+   * Hold the rectified average of the samples played over the last `seconds`
+   * as the input for that long, in whole 1 ms ticks (the remainder carries to
+   * the next call). Returns whether the needle is still moving.
+   */
+  advance(rectifiedAverage: number, seconds: number): boolean {
+    const target = rectifiedAverage * INPUT_GAIN;
+    this.carry += Math.min(MAX_SECONDS, Math.max(0, seconds));
+    const ticks = Math.floor(this.carry / TICK_SECONDS + 1e-9);
+    this.carry = Math.max(0, this.carry - ticks * TICK_SECONDS);
+    for (let i = 0; i < ticks; i++) {
+      // The plugin's exact constant-input transition over 1 ms.
+      const error = this.position - target;
+      this.position = target + 0.9999093801283596 * error + 0.000989068496783596 * this.velocity;
+      this.velocity = -0.18057599708523703 * error + 0.9781867439740358 * this.velocity;
+    }
+    return Math.abs(this.position - target) > 1e-4 || Math.abs(this.velocity) > 1e-3;
   }
 
-  /** Advance the needle towards the level by `seconds`; returns whether it moved visibly. */
-  step(seconds: number): boolean {
-    const target = vuDbToScaleFraction(20 * Math.log10(Math.max(this.level, 1e-9)) + 18);
-    const alpha = 1 - Math.exp(-Math.min(0.25, Math.max(0, seconds)) / NEEDLE_TAU);
-    const before = this.needle;
-    this.needle += (target - this.needle) * alpha;
-    return Math.abs(this.needle - before) > 1e-4;
+  /** Needle position as a scale fraction. */
+  get needle(): number {
+    return vuScaleFraction(this.position);
   }
 }
+
+/** The plugin's marks, in VU: the numbered major ticks, and one minor tick halving -20..-10. */
+export const VU_MAJORS = [-20, -10, -7, -5, -3, -2, -1, 0, 1, 2, 3];
+export const VU_MINORS = [-15];
 
 // ---- the strip -------------------------------------------------------------
 const NS = 'http://www.w3.org/2000/svg';
@@ -46,7 +68,6 @@ const H = 108;
 const PIVOT_Y = 151;   // below the window
 const RADIUS = 120;
 const SWEEP = 32;      // degrees either side of vertical
-const MAJORS = [-20, -10, -7, -5, -3, 0, 3];
 
 function node<K extends keyof SVGElementTagNameMap>(name: K, attrs: Record<string, string | number>, parent?: Element): SVGElementTagNameMap[K] {
   const n = document.createElementNS(NS, name);
@@ -80,16 +101,15 @@ export function createVuStrip(): VuStrip {
   const needles: SVGGElement[] = [];
   for (let side = 0; side < 2; side++) {
     const cx = 80 + 160 * side;
-    const angle = (db: number) => -SWEEP + vuDbToScaleFraction(db) * 2 * SWEEP;
+    const angle = (db: number) => -SWEEP + vuScaleFraction(10 ** (db / 20)) * 2 * SWEEP;
     const arc = (from: number, to: number, cls: string) => {
       node('path', { d: `M ${fmt(point(cx, RADIUS, from))} A ${RADIUS} ${RADIUS} 0 0 1 ${fmt(point(cx, RADIUS, to))}`, class: cls }, root);
     };
     arc(-SWEEP, angle(0), 'bqst-vu-mark');
     arc(angle(0), SWEEP, 'bqst-vu-mark bqst-vu-hot bqst-vu-zone');
-    // Every whole VU, half steps above zero; numbers sit radially on their own ticks.
-    const ticks = [...Array.from({ length: 24 }, (_, i) => i - 20), 0.5, 1.5, 2.5];
-    for (const db of ticks) {
-      const major = MAJORS.includes(db);
+    // Numbers sit radially on their own ticks.
+    for (const db of [...VU_MAJORS, ...VU_MINORS]) {
+      const major = VU_MAJORS.includes(db);
       const a = angle(db);
       const hot = db >= 0 ? ' bqst-vu-hot' : '';
       const [x1, y1] = point(cx, RADIUS, a);
