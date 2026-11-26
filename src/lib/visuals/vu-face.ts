@@ -1,9 +1,8 @@
 // The music page's VU meters (one per channel): the printed face that
 // SwissMeterFace.astro renders, the needle angle music-viz.ts sets on it, and
 // the per-channel input it feeds the BQST movement (bqst-vu.ts VuChannel).
-// A shallow arc with its pivot below the cell. The needle moves as in BQST;
-// the face is this page's own: -20..+3 VU spaced evenly in dB, not the
-// plugin's amplitude-linear scale.
+// A shallow arc with its pivot below the cell, on the site's VU face (-20..+3 VU).
+import { vuDbToScaleFraction } from './bqst-vu';
 
 /** Degrees either side of vertical. */
 export const VU_SWEEP_DEG = 32;
@@ -12,17 +11,6 @@ const MAJORS = [-20, -10, -7, -5, -3, 0, 3];
 /** Numbers dropped when the cell is narrow (swiss-music.css). */
 const FINE = [-7, -3];
 const TICKS = [...Array.from({ length: 21 }, (_, i) => i - 20), 0.5, 1, 1.5, 2, 2.5, 3];
-
-/** Scale position (0 = left stop, 1 = right stop) of a VU reading on this face. */
-export function vuDbToScaleFraction(db: number): number {
-  const c = Math.max(-20, Math.min(3, db));
-  return c <= 0 ? ((c + 20) / 20) * 0.82 : 0.82 + (c / 3) * 0.18;
-}
-
-/** The same for a VuChannel position (amplitude relative to 0 VU). */
-export function vuNeedleFraction(amplitude: number): number {
-  return vuDbToScaleFraction(20 * Math.log10(Math.max(amplitude, 1e-9)));
-}
 
 /**
  * The drawing's box: the arc's chord is its full width (100 units) and the

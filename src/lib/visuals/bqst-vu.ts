@@ -2,26 +2,25 @@
 // their pivots below the window. Drawn as SVG in the site's own colours
 // (text colour + accent), so it follows every theme; `bqst-widgets.css`
 // styles the active and bypassed states. The music page's meters (vu-face.ts)
-// share the movement, on a face of their own.
+// share the movement and the scale.
 //
-// Movement and scale follow BQST 1.3.2 (bqt src/BqtMetering.h VuBallistics and
-// MeterCapture, src/BqtVuMeter.cpp vuDeflectionToScaleFraction): the full-wave
-// rectified average, sine-calibrated, with 0 VU = -18 dBFS, drives a damped
-// second-order movement stepped in exact 1 ms ticks; the needle is the
-// movement. The scale is linear in amplitude, so its marks crowd to the left.
+// The movement follows BQST 1.3.2 (bqt src/BqtMetering.h VuBallistics and
+// MeterCapture): the full-wave rectified average, sine-calibrated, with
+// 0 VU = -18 dBFS, drives a damped second-order movement stepped in exact 1 ms
+// ticks; the needle is the movement. The face is the site's own, spaced evenly
+// in dB, where the plugin's is linear in amplitude.
+
+/** Scale position (0 = left stop, 1 = right stop) of a VU reading on the site's face. */
+export function vuDbToScaleFraction(db: number): number {
+  const c = Math.max(-20, Math.min(3, db));
+  return c <= 0 ? ((c + 20) / 20) * 0.82 : 0.82 + (c / 3) * 0.18;
+}
 
 const TICK_SECONDS = 0.001;
 /** Rectified average of a sine x this = its RMS; x 10^(18/20) puts 0 VU at -18 dBFS. */
 const INPUT_GAIN = 1.1107207345395915 * 7.943282347242816;
 /** Longest stretch one call advances: a background tab resumes from where it was. */
 const MAX_SECONDS = 0.1;
-/** +3 VU, the right stop. */
-const FULL_SCALE = 10 ** (3 / 20);
-
-/** Scale position (0 = left stop, 1 = right stop) of an amplitude relative to 0 VU. */
-export function vuScaleFraction(amplitude: number): number {
-  return Math.max(0, Math.min(1, amplitude / FULL_SCALE));
-}
 
 /**
  * One meter channel: x'' + 2a x' + w^2 x = w^2 input, zeta 0.8127 (1.25%
@@ -53,13 +52,9 @@ export class VuChannel {
 
   /** Needle position as a scale fraction. */
   get needle(): number {
-    return vuScaleFraction(this.position);
+    return vuDbToScaleFraction(20 * Math.log10(Math.max(this.position, 1e-9)));
   }
 }
-
-/** The plugin's marks, in VU: the numbered major ticks, and one minor tick halving -20..-10. */
-const VU_MAJORS = [-20, -10, -7, -5, -3, -2, -1, 0, 1, 2, 3];
-const VU_MINORS = [-15];
 
 // ---- the strip -------------------------------------------------------------
 const NS = 'http://www.w3.org/2000/svg';
@@ -68,6 +63,7 @@ const H = 108;
 const PIVOT_Y = 151;   // below the window
 const RADIUS = 120;
 const SWEEP = 32;      // degrees either side of vertical
+const MAJORS = [-20, -10, -7, -5, -3, 0, 3];
 
 function node<K extends keyof SVGElementTagNameMap>(name: K, attrs: Record<string, string | number>, parent?: Element): SVGElementTagNameMap[K] {
   const n = document.createElementNS(NS, name);
@@ -101,15 +97,16 @@ export function createVuStrip(): VuStrip {
   const needles: SVGGElement[] = [];
   for (let side = 0; side < 2; side++) {
     const cx = 80 + 160 * side;
-    const angle = (db: number) => -SWEEP + vuScaleFraction(10 ** (db / 20)) * 2 * SWEEP;
+    const angle = (db: number) => -SWEEP + vuDbToScaleFraction(db) * 2 * SWEEP;
     const arc = (from: number, to: number, cls: string) => {
       node('path', { d: `M ${fmt(point(cx, RADIUS, from))} A ${RADIUS} ${RADIUS} 0 0 1 ${fmt(point(cx, RADIUS, to))}`, class: cls }, root);
     };
     arc(-SWEEP, angle(0), 'bqst-vu-mark');
     arc(angle(0), SWEEP, 'bqst-vu-mark bqst-vu-hot bqst-vu-zone');
-    // Numbers sit radially on their own ticks.
-    for (const db of [...VU_MAJORS, ...VU_MINORS]) {
-      const major = VU_MAJORS.includes(db);
+    // Every whole VU, half steps above zero; numbers sit radially on their own ticks.
+    const ticks = [...Array.from({ length: 24 }, (_, i) => i - 20), 0.5, 1.5, 2.5];
+    for (const db of ticks) {
+      const major = MAJORS.includes(db);
       const a = angle(db);
       const hot = db >= 0 ? ' bqst-vu-hot' : '';
       const [x1, y1] = point(cx, RADIUS, a);

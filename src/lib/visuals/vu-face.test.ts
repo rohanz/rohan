@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { VuChannel, vuScaleFraction } from './bqst-vu';
-import { VU_BOX, VU_CALIBRATION_GAIN, VU_REFERENCE_DBFS, VU_LAMP_FROM, VU_SWEEP_DEG, vuAverage, vuFace, vuNeedleDegrees, vuNeedleFraction } from './vu-face';
+import { VuChannel, vuDbToScaleFraction } from './bqst-vu';
+import { VU_BOX, VU_CALIBRATION_GAIN, VU_REFERENCE_DBFS, VU_LAMP_FROM, VU_SWEEP_DEG, vuAverage, vuFace, vuNeedleDegrees } from './vu-face';
 
 describe('vuNeedleDegrees', () => {
   it('sweeps 32 degrees either side of vertical', () => {
@@ -64,17 +64,18 @@ describe('calibration', () => {
     const channel = new VuChannel();
     for (let i = 0; i < 300; i++) channel.advance(vuAverage(sine) * VU_CALIBRATION_GAIN, 1 / 60);
     expect(channel.position).toBeCloseTo(1, 2); // 0 VU
-    expect(vuNeedleFraction(channel.position)).toBeCloseTo(0.82, 2); // 0 VU on this face
+    expect(channel.needle).toBeCloseTo(0.82, 2); // 0 VU on the face
   });
 });
 
-describe('vuScaleFraction', () => {
-  it('is linear in amplitude, +3 VU at the right stop', () => {
-    expect(vuScaleFraction(1)).toBeCloseTo(10 ** (-3 / 20), 6); // 0 VU, about 0.708
-    expect(vuScaleFraction(10 ** (3 / 20))).toBe(1);
-    expect(vuScaleFraction(10 ** (-20 / 20))).toBeCloseTo(0.0708, 4);
-    expect(vuScaleFraction(-0.1)).toBe(0);
-    expect(vuScaleFraction(5)).toBe(1);
+describe('vuDbToScaleFraction', () => {
+  it('spaces -20..0 VU evenly over 82% of the sweep and 0..+3 over the rest', () => {
+    expect(vuDbToScaleFraction(-20)).toBe(0);
+    expect(vuDbToScaleFraction(-10)).toBeCloseTo(0.41, 6);
+    expect(vuDbToScaleFraction(0)).toBeCloseTo(0.82, 6);
+    expect(vuDbToScaleFraction(3)).toBe(1);
+    expect(vuDbToScaleFraction(-60)).toBe(0);
+    expect(vuDbToScaleFraction(9)).toBe(1);
   });
 });
 
