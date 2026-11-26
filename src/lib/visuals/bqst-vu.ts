@@ -2,7 +2,7 @@
 // their pivots below the window. Drawn as SVG in the site's own colours
 // (text colour + accent), so it follows every theme; `bqst-widgets.css`
 // styles the active and bypassed states. The music page's meters (vu-face.ts)
-// share the movement and the scale.
+// share the movement, on a face of their own.
 //
 // Movement and scale follow BQST 1.3.2 (bqt src/BqtMetering.h VuBallistics and
 // MeterCapture, src/BqtVuMeter.cpp vuDeflectionToScaleFraction): the full-wave
@@ -58,8 +58,8 @@ export class VuChannel {
 }
 
 /** The plugin's marks, in VU: the numbered major ticks, and one minor tick halving -20..-10. */
-export const VU_MAJORS = [-20, -10, -7, -5, -3, -2, -1, 0, 1, 2, 3];
-export const VU_MINORS = [-15];
+const VU_MAJORS = [-20, -10, -7, -5, -3, -2, -1, 0, 1, 2, 3];
+const VU_MINORS = [-15];
 
 // ---- the strip -------------------------------------------------------------
 const NS = 'http://www.w3.org/2000/svg';

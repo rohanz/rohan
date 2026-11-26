@@ -1,17 +1,28 @@
 // The music page's VU meters (one per channel): the printed face that
 // SwissMeterFace.astro renders, the needle angle music-viz.ts sets on it, and
-// the per-channel input it feeds the BQST ballistics (bqst-vu.ts VuChannel).
-// A shallow arc with its pivot below the cell, on the BQST scale: -20..+3 VU,
-// linear in amplitude, so the marks crowd to the left.
-import { VU_MAJORS, VU_MINORS, vuScaleFraction } from './bqst-vu';
+// the per-channel input it feeds the BQST movement (bqst-vu.ts VuChannel).
+// A shallow arc with its pivot below the cell. The needle moves as in BQST;
+// the face is this page's own: -20..+3 VU spaced evenly in dB, not the
+// plugin's amplitude-linear scale.
 
 /** Degrees either side of vertical. */
 export const VU_SWEEP_DEG = 32;
 const SWEEP = (VU_SWEEP_DEG * Math.PI) / 180;
-/** The numbered majors: -2 and -1 crowd -3 and 0 at this size, so they go unnumbered. */
-const NUMBERED = [-20, -10, -7, -5, -3, 0, 1, 2, 3];
+const MAJORS = [-20, -10, -7, -5, -3, 0, 3];
 /** Numbers dropped when the cell is narrow (swiss-music.css). */
-const FINE = [-7, -3, 1, 2];
+const FINE = [-7, -3];
+const TICKS = [...Array.from({ length: 21 }, (_, i) => i - 20), 0.5, 1, 1.5, 2, 2.5, 3];
+
+/** Scale position (0 = left stop, 1 = right stop) of a VU reading on this face. */
+export function vuDbToScaleFraction(db: number): number {
+  const c = Math.max(-20, Math.min(3, db));
+  return c <= 0 ? ((c + 20) / 20) * 0.82 : 0.82 + (c / 3) * 0.18;
+}
+
+/** The same for a VuChannel position (amplitude relative to 0 VU). */
+export function vuNeedleFraction(amplitude: number): number {
+  return vuDbToScaleFraction(20 * Math.log10(Math.max(amplitude, 1e-9)));
+}
 
 /**
  * The drawing's box: the arc's chord is its full width (100 units) and the
@@ -32,7 +43,7 @@ export function vuNeedleDegrees(fraction: number): number {
   return -VU_SWEEP_DEG + Math.max(0, Math.min(1, fraction)) * 2 * VU_SWEEP_DEG;
 }
 
-const dbAngle = (db: number) => (vuNeedleDegrees(vuScaleFraction(10 ** (db / 20))) * Math.PI) / 180;
+const dbAngle = (db: number) => (vuNeedleDegrees(vuDbToScaleFraction(db)) * Math.PI) / 180;
 const point = (r: number, a: number) => ({ x: +(VU_BOX.width / 2 + Math.sin(a) * r).toFixed(3), y: +(RADIUS - Math.cos(a) * r).toFixed(3) });
 /** A label at radius `r` and angle `a`, pushed `px` pixels further out along the same radius. */
 const label = (r: number, a: number, px: number) => {
@@ -56,12 +67,12 @@ export function vuFace() {
     needleLength: +(RADIUS + 2.3).toFixed(3),
     arc: arc(-SWEEP, dbAngle(0)),
     hotArc: arc(dbAngle(0), SWEEP),
-    ticks: [...VU_MINORS, ...VU_MAJORS].map((db) => {
-      const major = VU_MAJORS.includes(db);
+    ticks: TICKS.map((db) => {
+      const major = MAJORS.includes(db);
       const a = dbAngle(db), p = point(RADIUS, a), q = point(RADIUS + (major ? MAJOR_TICK : MINOR_TICK), a);
       return { x1: p.x, y1: p.y, x2: q.x, y2: q.y, kind: db > 0 ? 'hot' : major ? 'major' : 'minor' };
     }),
-    numbers: NUMBERED.map((db) => ({
+    numbers: MAJORS.map((db) => ({
       ...label(RADIUS + MAJOR_TICK, dbAngle(db), NUMBER_GAP),
       text: String(Math.abs(db)),
       hot: db > 0,
@@ -78,14 +89,14 @@ export function vuFace() {
  * VuChannel reads 0 VU at -18 dBFS (the plugin's reference). These tracks are
  * loud masters: through the meter's own movement they sit around -14 dBFS,
  * reach -12 in loud passages and peak near -10. So the page cuts the input by
- * 11 dB (0 VU here = -11 dBFS): the needle rests near mid-scale (-3 VU), loud
+ * 11 dB (0 VU here = -11 dBFS): the needle rests around -3 VU, loud
  * passages touch 0 and nothing pins.
  */
 export const VU_REFERENCE_DBFS = -11;
 export const VU_CALIBRATION_GAIN = 10 ** ((-18 - VU_REFERENCE_DBFS) / 20);
 
 /** The lamp lights while the needle is past 0 VU, in the hot zone: running hot, not clipping. */
-export const VU_LAMP_FROM = vuScaleFraction(1);
+export const VU_LAMP_FROM = vuDbToScaleFraction(0);
 
 /** One channel's buffer as VuChannel wants it: the rectified average. */
 export function vuAverage(samples: ArrayLike<number>): number {

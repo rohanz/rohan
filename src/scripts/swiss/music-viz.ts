@@ -2,7 +2,7 @@ import { buildAnalyserGraph, ensureAudioContext, type AnalyserGraph } from '../.
 import { FREQ_BANDS, computeBands, smoothCurve, onePole } from '../../lib/audio/analysis';
 import { deviceDpr, sizeCanvasWithDpr } from '../../lib/visuals/canvas';
 import { VuChannel } from '../../lib/visuals/bqst-vu';
-import { VU_CALIBRATION_GAIN, VU_LAMP_FROM, vuAverage, vuNeedleDegrees } from '../../lib/visuals/vu-face';
+import { VU_CALIBRATION_GAIN, VU_LAMP_FROM, vuAverage, vuNeedleDegrees, vuNeedleFraction } from '../../lib/visuals/vu-face';
 
 let context: AudioContext | null = null;
 // A media element can be connected only once, including after route swaps.
@@ -91,11 +91,12 @@ function stepVu(row: HTMLElement, buffers: Float32Array[] | null, seconds: numbe
   let active = false;
   vuMeters(row).forEach((vu, i) => {
     const moved = vu.channel.advance((buffers ? vuAverage(buffers[i]) : 0) * VU_CALIBRATION_GAIN, seconds);
-    if (vu.channel.needle > VU_LAMP_FROM) vu.hotUntil = now + LAMP_HOLD_MS;
+    const needle = vuNeedleFraction(vu.channel.position);
+    if (needle > VU_LAMP_FROM) vu.hotUntil = now + LAMP_HOLD_MS;
     const lit = now < vu.hotUntil;
-    vu.cell.style.setProperty('--vu-needle', `${vuNeedleDegrees(vu.channel.needle).toFixed(2)}deg`);
+    vu.cell.style.setProperty('--vu-needle', `${vuNeedleDegrees(needle).toFixed(2)}deg`);
     vu.lamp?.classList.toggle('is-lit', lit);
-    active ||= moved || lit || vu.channel.needle > 1e-3;
+    active ||= moved || lit || needle > 1e-3;
   });
   return active;
 }

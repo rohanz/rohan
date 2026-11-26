@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { VuChannel, vuScaleFraction } from './bqst-vu';
-import { VU_BOX, VU_CALIBRATION_GAIN, VU_REFERENCE_DBFS, VU_LAMP_FROM, VU_SWEEP_DEG, vuAverage, vuFace, vuNeedleDegrees } from './vu-face';
+import { VU_BOX, VU_CALIBRATION_GAIN, VU_REFERENCE_DBFS, VU_LAMP_FROM, VU_SWEEP_DEG, vuAverage, vuFace, vuNeedleDegrees, vuNeedleFraction } from './vu-face';
 
 describe('vuNeedleDegrees', () => {
   it('sweeps 32 degrees either side of vertical', () => {
@@ -25,9 +25,9 @@ describe('vuFace', () => {
     expect(face.pivot.y).toBeGreaterThan(VU_BOX.height);
   });
   it('numbers the majors without signs and marks the ones a narrow cell drops', () => {
-    expect(face.numbers.map((n) => n.text)).toEqual(['20', '10', '7', '5', '3', '0', '1', '2', '3']);
+    expect(face.numbers.map((n) => n.text)).toEqual(['20', '10', '7', '5', '3', '0', '3']);
     expect(face.numbers.filter((n) => !n.fine).map((n) => n.text)).toEqual(['20', '10', '5', '0', '3']);
-    expect(face.numbers.filter((n) => n.hot).map((n) => n.text)).toEqual(['1', '2', '3']);
+    expect(face.numbers.filter((n) => n.hot).map((n) => n.text)).toEqual(['3']);
   });
   it('pushes each number outward along its own radius by a fixed distance', () => {
     for (const n of face.numbers) expect(Math.hypot(n.dx, n.dy)).toBeCloseTo(7, 1);
@@ -35,11 +35,10 @@ describe('vuFace', () => {
     expect(face.numbers.at(-1)!.dx).toBeGreaterThan(0);
     expect(face.minus.dy).toBeGreaterThan(0); // the signs sit inside the arc
   });
-  it("ticks the plugin's marks and halves -20..-10, hot above 0", () => {
-    expect(face.ticks).toHaveLength(12);
-    expect(face.ticks.filter((t) => t.kind === 'major')).toHaveLength(8);
-    expect(face.ticks.filter((t) => t.kind === 'minor')).toHaveLength(1);
-    expect(face.ticks.filter((t) => t.kind === 'hot')).toHaveLength(3);
+  it('ticks every dB to 0 and every half dB above, hot above 0', () => {
+    expect(face.ticks).toHaveLength(21 + 6);
+    expect(face.ticks.filter((t) => t.kind === 'major')).toHaveLength(6);
+    expect(face.ticks.filter((t) => t.kind === 'hot')).toHaveLength(6);
   });
 });
 
@@ -52,7 +51,7 @@ describe('vuAverage', () => {
 
 describe('lamp', () => {
   it('lights where the hot zone starts, at 0 VU', () => {
-    expect(VU_LAMP_FROM).toBeCloseTo(10 ** (-3 / 20), 6);
+    expect(VU_LAMP_FROM).toBeCloseTo(0.82, 6);
   });
 });
 
@@ -65,6 +64,7 @@ describe('calibration', () => {
     const channel = new VuChannel();
     for (let i = 0; i < 300; i++) channel.advance(vuAverage(sine) * VU_CALIBRATION_GAIN, 1 / 60);
     expect(channel.position).toBeCloseTo(1, 2); // 0 VU
+    expect(vuNeedleFraction(channel.position)).toBeCloseTo(0.82, 2); // 0 VU on this face
   });
 });
 
