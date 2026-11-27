@@ -12,7 +12,7 @@ technologies:
   - Real-Time
   - Music Theory
 links:
-  - "download for macOS | https://github.com/rohanz/live-chord-monitor/releases/download/v0.3.0/Live-Chord-Monitor-0.3.0-universal.dmg"
+  - "download for macOS | https://github.com/rohanz/live-chord-monitor/releases/download/v0.3.1/Live-Chord-Monitor-0.3.1-universal.dmg"
   - "buy me a coffee | https://ko-fi.com/rohanjk"
 ---
 
@@ -113,6 +113,6 @@ Underneath all of it sits a suite of 338 tests. The chord engine is the most hea
 **A desktop app has a security surface a web page doesn't.** Wrapping web code in Electron gives it a path to the operating system, so "finished" had to include sandboxing the renderer, serving the UI over a locked-down scheme, enforcing a CSP, and handing the renderer only the MIDI permission. None of it shows up in a screenshot, but once people install software instead of visiting a page, that surface is yours to defend.
 
 <p class="download-actions">
-  <a href="https://github.com/rohanz/live-chord-monitor/releases/download/v0.3.0/Live-Chord-Monitor-0.3.0-universal.dmg" class="try-it-btn">download for macOS</a>
+  <a href="https://github.com/rohanz/live-chord-monitor/releases/download/v0.3.1/Live-Chord-Monitor-0.3.1-universal.dmg" class="try-it-btn">download for macOS</a>
   <a href="https://ko-fi.com/rohanjk" class="support-btn" target="_blank" rel="noopener noreferrer">buy me a coffee</a>
 </p>
